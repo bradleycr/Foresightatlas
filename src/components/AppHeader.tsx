@@ -1,0 +1,124 @@
+import { Button } from "./ui/button";
+import foresightLogo from "figma:asset/5adf381c3a47c183cc3f5a6e2c971442c2b61290.png";
+
+interface AppHeaderProps {
+  activeTab: "map" | "timeline";
+  onTabChange: (tab: "map" | "timeline") => void;
+  isAdmin: boolean;
+  adminName?: string;
+  onAdminClick: () => void;
+  onLogout: () => void;
+  onAdminPanelClick: () => void;
+}
+
+export function AppHeader({
+  activeTab,
+  onTabChange,
+  isAdmin,
+  adminName,
+  onAdminClick,
+  onLogout,
+  onAdminPanelClick,
+}: AppHeaderProps) {
+  return (
+    <header 
+      className="border-b border-gray-200"
+      style={{
+        background: 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)'
+      }}
+    >
+      <div className="px-4 md:px-8 py-4 md:py-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
+          <div className="flex items-center gap-3 md:gap-4">
+            <img src={foresightLogo} alt="Foresight Institute" className="h-7 md:h-10" />
+            <div className="border-l border-gray-300 pl-3 md:pl-4">
+              <h1 className="text-gray-900 text-base md:text-xl" style={{ fontFamily: 'var(--font-heading)' }}>
+                Fellows and Grantees Map & Timeline
+              </h1>
+              <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
+                Tracking our global network of researchers
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* Tabs */}
+            <div className="flex gap-1 sm:gap-2">
+              <button
+                onClick={() => onTabChange("map")}
+                className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
+                  activeTab === "map"
+                    ? "text-gray-900 shadow-sm border-white/50"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent"
+                }`}
+                style={
+                  activeTab === "map"
+                    ? { background: 'linear-gradient(135deg, #bfdbfe 0%, #c4b5fd 100%)' }
+                    : undefined
+                }
+              >
+                Map
+              </button>
+              <button
+                onClick={() => onTabChange("timeline")}
+                className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
+                  activeTab === "timeline"
+                    ? "text-gray-900 shadow-sm border-white/50"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent"
+                }`}
+                style={
+                  activeTab === "timeline"
+                    ? { background: 'linear-gradient(135deg, #bfdbfe 0%, #c4b5fd 100%)' }
+                    : undefined
+                }
+              >
+                Timeline
+              </button>
+            </div>
+
+            {/* Admin Section */}
+            {!isAdmin ? (
+              <Button
+                onClick={onAdminClick}
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Admin
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2 md:gap-3">
+                <span className="text-sm text-gray-600 hidden md:inline">{adminName}</span>
+                <Button
+                  onClick={onAdminPanelClick}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 hidden sm:inline-flex"
+                >
+                  Admin Panel
+                </Button>
+                <Button
+                  onClick={onAdminPanelClick}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 sm:hidden"
+                >
+                  Panel
+                </Button>
+                <Button
+                  onClick={onLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <span className="hidden md:inline">Log out</span>
+                  <span className="md:hidden">Out</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
