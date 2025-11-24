@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { X, Search, ChevronDown, Check } from "lucide-react";
+import { X, Search, ChevronDown, Check, MapPin, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { ChangeType, Person } from "../types";
 import { activeMultiGradient } from "../styles/gradients";
+import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
 
 interface SuggestUpdateModalProps {
   onClose: () => void;
@@ -18,8 +19,8 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
     personName: "",
     personEmailOrHandle: "",
     selectedPersonId: "",
-    alreadyInSystem: "no",
-    changeType: "New entry" as ChangeType,
+    alreadyInSystem: "yes",
+    changeType: "Update location" as ChangeType,
     // New entry fields
     projectTagline: "",
     focusAreas: "",
@@ -42,6 +43,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,14 +82,119 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
 
   // Handle person selection
   const handlePersonSelect = (person: Person) => {
-    setFormData({
+    const updatedFormData = {
       ...formData,
       personName: person.fullName,
       personEmailOrHandle: person.contactUrlOrHandle || "",
       selectedPersonId: person.id,
-    });
+      // Auto-fill current location from database
+      currentCity: person.currentCity || "",
+      currentCountry: person.currentCountry || "",
+    };
+    
+    // If no change type selected yet, default to "Update location" for existing users
+    if (formData.changeType === "New entry") {
+      updatedFormData.changeType = "Update location";
+    }
+    
+    setFormData(updatedFormData);
     setPersonSearchQuery(person.fullName);
     setShowPersonDropdown(false);
+  };
+
+  // Geocode city name to get country automatically
+  const geocodeCity = async (cityName: string) => {
+    if (!cityName.trim()) return null;
+    
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        return data[0].address?.country || null;
+      }
+    } catch (error) {
+      console.error("Error geocoding city:", error);
+    }
+    return null;
+  };
+
+  // Auto-fill country when city changes (with debounce)
+  useEffect(() => {
+    if (formData.changeType === "Update location" && formData.currentCity && !formData.currentCountry) {
+      const timer = setTimeout(async () => {
+        const country = await geocodeCity(formData.currentCity);
+        if (country) {
+          setFormData(prev => ({ ...prev, currentCountry: country }));
+        }
+      }, 500); // Debounce 500ms
+      return () => clearTimeout(timer);
+    }
+  }, [formData.currentCity, formData.changeType]);
+
+  useEffect(() => {
+    if (formData.changeType === "Add travel window" && formData.tripCity && !formData.tripCountry) {
+      const timer = setTimeout(async () => {
+        const country = await geocodeCity(formData.tripCity);
+        if (country) {
+          setFormData(prev => ({ ...prev, tripCountry: country }));
+        }
+      }, 500); // Debounce 500ms
+      return () => clearTimeout(timer);
+    }
+  }, [formData.tripCity, formData.changeType]);
+
+  // Get current location using geolocation API
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setGettingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Reverse geocode using Nominatim (OpenStreetMap)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data.address) {
+        const city = data.address.city || data.address.town || data.address.village || data.address.municipality || "";
+        const country = data.address.country || "";
+        
+        if (formData.changeType === "Update location") {
+          setFormData({
+            ...formData,
+            currentCity: city,
+            currentCountry: country,
+          });
+        } else if (formData.changeType === "Add travel window") {
+          setFormData({
+            ...formData,
+            tripCity: city,
+            tripCountry: country,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error getting location:", error);
+      alert("Could not get your location. Please enter it manually.");
+    } finally {
+      setGettingLocation(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -205,11 +312,12 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-[99999] p-4" 
+      className="fixed inset-0 flex items-center justify-center p-4" 
       style={{ 
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
         backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)'
+        WebkitBackdropFilter: 'blur(12px)',
+        zIndex: Z_INDEX_MODAL_BACKDROP,
       }}
       onClick={(e) => {
         // Close dropdown if clicking outside
@@ -219,10 +327,13 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
         }
       }}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[99999]" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-          <div>
-            <h2 className="text-gray-900">Suggest an Update</h2>
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative" 
+        style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-gray-900 font-semibold text-lg">Suggest an Update</h2>
             <p className="text-sm text-gray-600 mt-1">
               Foresight fellows & grantees can suggest updates to their location or travel
               plans. A node manager will review and publish approved changes.
@@ -231,12 +342,13 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-4"
+            type="button"
           >
             <X className="size-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
             <div>
@@ -249,9 +361,15 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                     value="yes"
                     checked={formData.alreadyInSystem === "yes"}
                     onChange={(e) => {
+                      const newValue = e.target.value;
+                      // Reset changeType to a valid option based on selection
+                      const validChangeType = newValue === "yes" 
+                        ? "Update location" as ChangeType
+                        : "New entry" as ChangeType;
                       setFormData({ 
                         ...formData, 
-                        alreadyInSystem: e.target.value,
+                        alreadyInSystem: newValue,
+                        changeType: validChangeType,
                         personName: "",
                         personEmailOrHandle: "",
                         selectedPersonId: ""
@@ -269,9 +387,15 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                     value="no"
                     checked={formData.alreadyInSystem === "no"}
                     onChange={(e) => {
+                      const newValue = e.target.value;
+                      // Reset changeType to a valid option based on selection
+                      const validChangeType = newValue === "yes" 
+                        ? "Update location" as ChangeType
+                        : "New entry" as ChangeType;
                       setFormData({ 
                         ...formData, 
-                        alreadyInSystem: e.target.value,
+                        alreadyInSystem: newValue,
+                        changeType: validChangeType,
                         personName: "",
                         personEmailOrHandle: "",
                         selectedPersonId: ""
@@ -287,7 +411,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
             </div>
 
             {formData.alreadyInSystem === "yes" ? (
-              <div className="relative">
+              <div className="relative z-0">
                 <Label>Search for yourself *</Label>
                 {!people || !Array.isArray(people) || people.length === 0 ? (
                   <div className="mt-2">
@@ -295,8 +419,8 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                   </div>
                 ) : (
                   <>
-                    <div className="relative mt-2">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+                    <div className="relative mt-2 z-0">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
                       <Input
                         ref={searchInputRef}
                         placeholder="Type your name, email, or city to search..."
@@ -309,13 +433,14 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                         className="pl-10 pr-10"
                         required={formData.alreadyInSystem === "yes"}
                       />
-                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
                       
                       {/* Dropdown results */}
                       {showPersonDropdown && Array.isArray(filteredPeople) && filteredPeople.length > 0 && (
                         <div 
                           ref={dropdownRef}
-                          className="absolute z-[100000] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                          className="absolute w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto"
+                          style={{ zIndex: Z_INDEX_MODAL_DROPDOWN, top: '100%' }}
                         >
                           {filteredPeople.map((person) => (
                             <button
@@ -324,14 +449,14 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                               onClick={() => handlePersonSelect(person)}
                               className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between border-b border-gray-100 last:border-b-0"
                             >
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900">{person.fullName}</div>
-                                <div className="text-sm text-gray-500">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 truncate">{person.fullName}</div>
+                                <div className="text-sm text-gray-500 truncate">
                                   {person.roleType} · {person.contactUrlOrHandle || person.currentCity}
                                 </div>
                               </div>
                               {formData.selectedPersonId === person.id && (
-                                <Check className="size-4 text-teal-500" />
+                                <Check className="size-4 text-teal-500 flex-shrink-0 ml-2" />
                               )}
                             </button>
                           ))}
@@ -341,7 +466,8 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                       {showPersonDropdown && personSearchQuery && Array.isArray(filteredPeople) && filteredPeople.length === 0 && (
                         <div 
                           ref={dropdownRef}
-                          className="absolute z-[100000] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg p-4 text-sm text-gray-500"
+                          className="absolute w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl p-4 text-sm text-gray-500"
+                          style={{ zIndex: Z_INDEX_MODAL_DROPDOWN, top: '100%' }}
                         >
                           No matches found. Try a different search term.
                         </div>
@@ -387,25 +513,47 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
             <div>
               <Label>Type of Change *</Label>
               <div className="flex flex-col gap-2 mt-2">
-                {(["New entry", "Update location", "Add travel window"] as ChangeType[]).map(
-                  (type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="changeType"
-                        value={type}
-                        checked={formData.changeType === type}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            changeType: e.target.value as ChangeType,
-                          })
-                        }
-                        className="text-teal-500"
-                      />
-                      <span className="text-sm text-gray-700">{type}</span>
-                    </label>
+                {/* Show different options based on whether user is already in system */}
+                {formData.alreadyInSystem === "yes" ? (
+                  // If already in system: can only update location or add travel window
+                  (["Update location", "Add travel window"] as ChangeType[]).map(
+                    (type) => (
+                      <label key={type} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="changeType"
+                          value={type}
+                          checked={formData.changeType === type}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              changeType: e.target.value as ChangeType,
+                            })
+                          }
+                          className="text-teal-500"
+                        />
+                        <span className="text-sm text-gray-700">{type}</span>
+                      </label>
+                    )
                   )
+                ) : (
+                  // If not in system: can only create new entry
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="changeType"
+                      value="New entry"
+                      checked={formData.changeType === "New entry"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          changeType: e.target.value as ChangeType,
+                        })
+                      }
+                      className="text-teal-500"
+                    />
+                    <span className="text-sm text-gray-700">New entry</span>
+                  </label>
                 )}
               </div>
             </div>
@@ -471,28 +619,56 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
           {formData.changeType === "Update location" && (
             <div className="space-y-4 pt-4 border-t border-gray-200">
               <h3 className="text-gray-900">Update Current Location</h3>
+              {formData.selectedPersonId && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
+                  <strong>Current location from database:</strong> {formData.currentCity || "Not set"} {formData.currentCountry && `, ${formData.currentCountry}`}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="currentCity">Current City *</Label>
-                  <Input
-                    id="currentCity"
-                    required
-                    value={formData.currentCity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, currentCity: e.target.value })
-                    }
-                  />
+                  <Label htmlFor="currentCity">New City *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="currentCity"
+                      required
+                      value={formData.currentCity}
+                      onChange={(e) =>
+                        setFormData({ ...formData, currentCity: e.target.value, currentCountry: "" })
+                      }
+                      placeholder="e.g., San Francisco"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={gettingLocation}
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0"
+                      title="Get current location"
+                    >
+                      {gettingLocation ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <MapPin className="size-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="currentCountry">Current Country *</Label>
+                  <Label htmlFor="currentCountry">Country {formData.currentCountry ? "(auto-detected)" : "(optional)"}</Label>
                   <Input
                     id="currentCountry"
-                    required
                     value={formData.currentCountry}
                     onChange={(e) =>
                       setFormData({ ...formData, currentCountry: e.target.value })
                     }
+                    placeholder="Auto-filled from city"
+                    className={formData.currentCountry ? "bg-gray-50" : ""}
                   />
+                  {formData.currentCity && !formData.currentCountry && (
+                    <p className="text-xs text-gray-500 mt-1">Detecting country from city name...</p>
+                  )}
                 </div>
               </div>
               <div>
@@ -505,7 +681,11 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                   onChange={(e) =>
                     setFormData({ ...formData, fromDate: e.target.value })
                   }
+                  min={new Date().toISOString().split('T')[0]}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  When did you arrive at this location?
+                </p>
               </div>
             </div>
           )}
@@ -516,25 +696,48 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="tripCity">City *</Label>
-                  <Input
-                    id="tripCity"
-                    required
-                    value={formData.tripCity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tripCity: e.target.value })
-                    }
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="tripCity"
+                      required
+                      value={formData.tripCity}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tripCity: e.target.value })
+                      }
+                      placeholder="e.g., Berlin"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={gettingLocation}
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0"
+                      title="Get current location"
+                    >
+                      {gettingLocation ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <MapPin className="size-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="tripCountry">Country *</Label>
+                  <Label htmlFor="tripCountry">Country {formData.tripCountry ? "(auto-detected)" : "(optional)"}</Label>
                   <Input
                     id="tripCountry"
-                    required
                     value={formData.tripCountry}
                     onChange={(e) =>
                       setFormData({ ...formData, tripCountry: e.target.value })
                     }
+                    placeholder="Auto-filled from city"
+                    className={formData.tripCountry ? "bg-gray-50" : ""}
                   />
+                  {formData.tripCity && !formData.tripCountry && (
+                    <p className="text-xs text-gray-500 mt-1">Detecting country from city name...</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -548,6 +751,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                     onChange={(e) =>
                       setFormData({ ...formData, tripStartDate: e.target.value })
                     }
+                    min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
                 <div>
@@ -560,6 +764,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
                     onChange={(e) =>
                       setFormData({ ...formData, tripEndDate: e.target.value })
                     }
+                    min={formData.tripStartDate || new Date().toISOString().split('T')[0]}
                   />
                 </div>
               </div>
@@ -579,7 +784,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4 border-t border-gray-200 flex-shrink-0">
             <Button
               type="button"
               onClick={onClose}

@@ -375,6 +375,18 @@
       "notes": "Cross-node neuroscience and AI collaboration"
     },
     {
+      "id": "tw21",
+      "personId": "p8",
+      "title": "Berlin research residency",
+      "city": "Berlin",
+      "country": "Germany",
+      "coordinates": { "lat": 52.52, "lng": 13.405 },
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-31",
+      "type": "Residency",
+      "notes": "Extended research collaboration at Berlin Node"
+    },
+    {
       "id": "tw17",
       "personId": "p9",
       "title": "Bay Area residency",

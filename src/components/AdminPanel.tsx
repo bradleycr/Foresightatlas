@@ -22,6 +22,7 @@ import {
   Trash2,
   Save,
 } from "lucide-react";
+import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { Person, TravelWindow, LocationSuggestion, RoleType, PrimaryNode, TravelWindowType } from "../types";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -56,6 +57,7 @@ import {
   generatePersonId,
   generateTravelWindowId,
 } from "../services/database";
+import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 
 interface AdminPanelProps {
@@ -141,12 +143,43 @@ export function AdminPanel({
     if (!editingPerson) return;
 
     try {
-      if (people.find((p) => p.id === editingPerson.id)) {
+      // Validate required fields
+      if (!editingPerson.fullName.trim()) {
+        toast.error("Full name is required");
+        return;
+      }
+      if (!editingPerson.currentCity.trim() || !editingPerson.currentCountry.trim()) {
+        toast.error("Current city and country are required");
+        return;
+      }
+
+      // Geocode current location if coordinates are missing or zero
+      let personToSave = { ...editingPerson };
+      if (
+        (personToSave.currentCoordinates.lat === 0 &&
+          personToSave.currentCoordinates.lng === 0) ||
+        (!personToSave.currentCity || !personToSave.currentCountry)
+      ) {
+        const geocodeResult = await geocodeCity(
+          personToSave.currentCity,
+          personToSave.currentCountry
+        );
+        if (geocodeResult) {
+          personToSave.currentCoordinates = {
+            lat: geocodeResult.lat,
+            lng: geocodeResult.lng,
+          };
+        }
+      }
+
+      if (people.find((p) => p.id === personToSave.id)) {
         // Update existing
-        await updatePerson(editingPerson.id, editingPerson);
+        await updatePerson(personToSave.id, personToSave);
+        toast.success("Person updated successfully");
       } else {
         // Add new
-        await addPerson(editingPerson);
+        await addPerson(personToSave);
+        toast.success("Person added successfully");
       }
       setEditingPerson(null);
       await onPersonUpdate();
@@ -187,6 +220,7 @@ export function AdminPanel({
 
   // Travel Window CRUD handlers
   const handleAddTravelWindow = () => {
+    const today = new Date().toISOString().split("T")[0];
     const newTravelWindow: TravelWindow = {
       id: generateTravelWindowId(),
       personId: people[0]?.id || "",
@@ -194,8 +228,8 @@ export function AdminPanel({
       city: "",
       country: "",
       coordinates: { lat: 0, lng: 0 },
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: new Date().toISOString().split("T")[0],
+      startDate: today,
+      endDate: today,
       type: "Conference",
       notes: "",
     };
@@ -211,17 +245,52 @@ export function AdminPanel({
     if (!editingTravelWindow) return;
 
     try {
+      // Validate required fields
+      if (!editingTravelWindow.personId) {
+        toast.error("Person is required");
+        return;
+      }
+      if (!editingTravelWindow.city.trim() || !editingTravelWindow.country.trim()) {
+        toast.error("City and country are required");
+        return;
+      }
+      if (!editingTravelWindow.title.trim()) {
+        toast.error("Title is required");
+        return;
+      }
+
+      // Geocode location if coordinates are missing or zero
+      let travelWindowToSave = { ...editingTravelWindow };
       if (
-        travelWindows.find((tw) => tw.id === editingTravelWindow.id)
+        (travelWindowToSave.coordinates.lat === 0 &&
+          travelWindowToSave.coordinates.lng === 0) ||
+        (!travelWindowToSave.city || !travelWindowToSave.country)
+      ) {
+        const geocodeResult = await geocodeCity(
+          travelWindowToSave.city,
+          travelWindowToSave.country
+        );
+        if (geocodeResult) {
+          travelWindowToSave.coordinates = {
+            lat: geocodeResult.lat,
+            lng: geocodeResult.lng,
+          };
+        }
+      }
+
+      if (
+        travelWindows.find((tw) => tw.id === travelWindowToSave.id)
       ) {
         // Update existing
         await updateTravelWindow(
-          editingTravelWindow.id,
-          editingTravelWindow
+          travelWindowToSave.id,
+          travelWindowToSave
         );
+        toast.success("Travel window updated successfully");
       } else {
         // Add new
-        await addTravelWindow(editingTravelWindow);
+        await addTravelWindow(travelWindowToSave);
+        toast.success("Travel window added successfully");
       }
       setEditingTravelWindow(null);
       await onTravelWindowUpdate();
@@ -335,16 +404,18 @@ export function AdminPanel({
   return (
     <>
       <div
-        className="fixed inset-0 flex items-center justify-center z-[99999] p-4"
+        className="fixed inset-0 flex items-center justify-center p-4"
         style={{ 
           backgroundColor: 'rgba(0, 0, 0, 0.7)',
           backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)'
+          WebkitBackdropFilter: 'blur(12px)',
+          zIndex: Z_INDEX_MODAL_BACKDROP,
         }}
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col relative z-[99999]"
+          className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col relative"
+          style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -1073,11 +1144,15 @@ function TravelWindowEditForm({
           <Input
             id="twStartDate"
             type="date"
-            value={travelWindow.startDate.split("T")[0]}
+            value={
+              travelWindow.startDate.includes("T")
+                ? travelWindow.startDate.split("T")[0]
+                : travelWindow.startDate
+            }
             onChange={(e) =>
               onChange({
                 ...travelWindow,
-                startDate: new Date(e.target.value).toISOString(),
+                startDate: e.target.value, // Store as date string (YYYY-MM-DD)
               })
             }
           />
@@ -1088,11 +1163,15 @@ function TravelWindowEditForm({
           <Input
             id="twEndDate"
             type="date"
-            value={travelWindow.endDate.split("T")[0]}
+            value={
+              travelWindow.endDate.includes("T")
+                ? travelWindow.endDate.split("T")[0]
+                : travelWindow.endDate
+            }
             onChange={(e) =>
               onChange({
                 ...travelWindow,
-                endDate: new Date(e.target.value).toISOString(),
+                endDate: e.target.value, // Store as date string (YYYY-MM-DD)
               })
             }
           />

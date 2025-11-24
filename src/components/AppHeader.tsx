@@ -1,5 +1,5 @@
 import { Button } from "./ui/button";
-import foresightLogo from "figma:asset/5adf381c3a47c183cc3f5a6e2c971442c2b61290.png";
+import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 
 interface AppHeaderProps {
   activeTab: "map" | "timeline";
@@ -9,6 +9,7 @@ interface AppHeaderProps {
   onAdminClick: () => void;
   onLogout: () => void;
   onAdminPanelClick: () => void;
+  onSuggestUpdateClick: () => void;
 }
 
 export function AppHeader({
@@ -19,6 +20,7 @@ export function AppHeader({
   onAdminClick,
   onLogout,
   onAdminPanelClick,
+  onSuggestUpdateClick,
 }: AppHeaderProps) {
   return (
     <header 
@@ -36,7 +38,7 @@ export function AppHeader({
                 Fellows and Grantees Map & Timeline
               </h1>
               <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
-                Tracking our global network of researchers
+                Tracking our global network of Fellows, Grantees, and prize winners
               </p>
             </div>
           </div>
@@ -78,14 +80,25 @@ export function AppHeader({
 
             {/* Admin Section */}
             {!isAdmin ? (
-              <Button
-                onClick={onAdminClick}
-                variant="outline"
-                size="sm"
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                Admin
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={onSuggestUpdateClick}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <span className="hidden sm:inline">Suggest an update</span>
+                  <span className="sm:hidden">Suggest</span>
+                </Button>
+                <Button
+                  onClick={onAdminClick}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Admin
+                </Button>
+              </div>
             ) : (
               <div className="flex items-center gap-2 md:gap-3">
                 <span className="text-sm text-gray-600 hidden md:inline">{adminName}</span>

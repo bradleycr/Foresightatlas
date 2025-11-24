@@ -15,9 +15,16 @@ import {
   updateSuggestionStatus,
   getAdminUsers,
   generateSuggestionId,
+  addPerson,
+  updatePerson,
+  addTravelWindow,
+  generatePersonId,
+  generateTravelWindowId,
 } from "./services/database";
+import { geocodeCity } from "./services/geocoding";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
+import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 
 export default function App() {
   // Tab state
@@ -51,7 +58,7 @@ export default function App() {
     year: currentYear, // Can be null for "All time"
     granularity: "Year",
     referenceDate: today.toISOString(),
-    timelineViewMode: "person", // Default to person view
+    timelineViewMode: "location", // Default to location view
   });
 
   // Load data on mount
@@ -157,16 +164,15 @@ export default function App() {
     const personIds = new Set(filteredPeople.map((p) => p.id));
     let filtered = travelWindows.filter((tw) => personIds.has(tw.personId));
     
-    // Filter out travel windows that are too far in the future (beyond next year)
-    // This prevents showing data for years that don't exist yet
-    const currentYear = new Date().getFullYear();
-    const maxAllowedYear = currentYear + 1;
-    filtered = filtered.filter((tw) => {
-      const startYear = new Date(tw.startDate).getFullYear();
-      const endYear = new Date(tw.endDate).getFullYear();
-      // Only show if the travel window is within the allowed range
-      return startYear <= maxAllowedYear && endYear <= maxAllowedYear;
-    });
+    // Apply year filter if specified (don't filter out future years if user explicitly selected them)
+    if (filters.year !== null) {
+      filtered = filtered.filter((tw) => {
+        const startYear = new Date(tw.startDate).getFullYear();
+        const endYear = new Date(tw.endDate).getFullYear();
+        // Show travel windows that overlap with the selected year
+        return startYear <= filters.year && endYear >= filters.year;
+      });
+    }
     
     // Apply city filter to travel windows if cities are selected
     if (filters.cities.length > 0) {
@@ -174,7 +180,7 @@ export default function App() {
     }
     
     return filtered;
-  }, [travelWindows, filteredPeople, filters.cities]);
+  }, [travelWindows, filteredPeople, filters.cities, filters.year]);
 
   // Time window for map view
   const timeWindowStart = useMemo(() => {
@@ -304,19 +310,110 @@ export default function App() {
         throw new Error("Suggestion not found");
       }
 
-      await updateSuggestionStatus(id, "Accepted");
+      const payload = suggestion.requestedPayload;
 
       // Apply the changes based on suggestion type
-      // This is a simplified version - in production you'd want more robust parsing
-      if (suggestion.requestedChangeType === "Add travel window") {
-        // Would need to parse and add travel window
-        // For now, just update status
+      if (suggestion.requestedChangeType === "New entry") {
+        // Create a new person entry
+        const geocodeResult = await geocodeCity(
+          payload.homeBaseCity,
+          payload.homeBaseCountry
+        );
+
+        const newPerson: Person = {
+          id: generatePersonId(),
+          fullName: suggestion.personName,
+          roleType: "Fellow", // Default, admin can change later
+          fellowshipCohortYear: new Date().getFullYear(),
+          focusTags: payload.focusAreas || [],
+          homeBaseCity: payload.homeBaseCity,
+          homeBaseCountry: payload.homeBaseCountry,
+          currentCity: payload.homeBaseCity,
+          currentCountry: payload.homeBaseCountry,
+          currentCoordinates: geocodeResult
+            ? { lat: geocodeResult.lat, lng: geocodeResult.lng }
+            : { lat: 0, lng: 0 },
+          primaryNode: "Global", // Default, admin can change later
+          profileUrl: "",
+          contactUrlOrHandle: suggestion.personEmailOrHandle || null,
+          shortProjectTagline: payload.projectTagline || "",
+          expandedProjectDescription: "",
+          isAlumni: false,
+        };
+
+        await addPerson(newPerson);
+        toast.success("New person entry created");
       } else if (suggestion.requestedChangeType === "Update location") {
-        // Would need to parse and update person location
-        // For now, just update status
+        // Find the person by email/handle or name
+        const person = people.find(
+          (p) =>
+            p.contactUrlOrHandle === suggestion.personEmailOrHandle ||
+            p.fullName === suggestion.personName
+        );
+
+        if (!person) {
+          throw new Error(
+            "Person not found. Please ensure the person exists in the system."
+          );
+        }
+
+        // Geocode the new location
+        const geocodeResult = await geocodeCity(
+          payload.currentCity,
+          payload.currentCountry
+        );
+
+        const updates: Partial<Person> = {
+          currentCity: payload.currentCity,
+          currentCountry: payload.currentCountry,
+          currentCoordinates: geocodeResult
+            ? { lat: geocodeResult.lat, lng: geocodeResult.lng }
+            : person.currentCoordinates,
+        };
+
+        await updatePerson(person.id, updates);
+        toast.success("Location updated successfully");
+      } else if (suggestion.requestedChangeType === "Add travel window") {
+        // Find the person by email/handle or name
+        const person = people.find(
+          (p) =>
+            p.contactUrlOrHandle === suggestion.personEmailOrHandle ||
+            p.fullName === suggestion.personName
+        );
+
+        if (!person) {
+          throw new Error(
+            "Person not found. Please ensure the person exists in the system."
+          );
+        }
+
+        // Geocode the travel destination
+        const geocodeResult = await geocodeCity(
+          payload.city,
+          payload.country
+        );
+
+        const newTravelWindow: TravelWindow = {
+          id: generateTravelWindowId(),
+          personId: person.id,
+          title: payload.notes || "Travel",
+          city: payload.city,
+          country: payload.country,
+          coordinates: geocodeResult
+            ? { lat: geocodeResult.lat, lng: geocodeResult.lng }
+            : { lat: 0, lng: 0 },
+          startDate: payload.startDate || new Date().toISOString().split("T")[0],
+          endDate: payload.endDate || new Date().toISOString().split("T")[0],
+          type: "Other", // Default, admin can change later
+          notes: payload.notes || "",
+        };
+
+        await addTravelWindow(newTravelWindow);
+        toast.success("Travel window added successfully");
       }
 
-      toast.success("Suggestion accepted");
+      // Update suggestion status to Accepted
+      await updateSuggestionStatus(id, "Accepted");
       await loadData(); // Refresh data
     } catch (err) {
       const errorMessage =
@@ -433,16 +530,16 @@ export default function App() {
 
       {/* Loading overlay */}
       {isLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
-          <div className="bg-white rounded-lg p-6">
-            <p className="text-gray-900">Loading data...</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: Z_INDEX_LOADING }}>
+          <div className="bg-white rounded-lg p-6 shadow-lg">
+            <p className="text-gray-900 font-medium">Loading data...</p>
           </div>
         </div>
       )}
 
       {/* Error message */}
       {error && !isLoading && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-[10000]">
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" style={{ zIndex: Z_INDEX_ERROR }}>
           <p className="font-semibold">Error loading data</p>
           <p className="text-sm">{error}</p>
         </div>

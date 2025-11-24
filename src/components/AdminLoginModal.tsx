@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { activeMultiGradient } from "../styles/gradients";
+import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 
 interface AdminLoginModalProps {
   onClose: () => void;
@@ -28,15 +29,19 @@ export function AdminLoginModal({ onClose, onLogin }: AdminLoginModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-[99999] p-4" 
+      className="fixed inset-0 flex items-center justify-center p-4" 
       style={{ 
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
         backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)'
+        WebkitBackdropFilter: 'blur(12px)',
+        zIndex: Z_INDEX_MODAL_BACKDROP,
       }}
       onClick={onClose}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full relative z-[99999]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full relative" 
+        style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-gray-900">Admin Login</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Person, TravelWindow, Granularity, PrimaryNode, TimelineViewMode } from "../types";
 import { Badge } from "./ui/badge";
 import { ExternalLink, X, ChevronDown, ChevronUp, MapPin } from "lucide-react";
@@ -11,6 +12,14 @@ import {
   SheetTitle,
 } from "./ui/sheet";
 import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Z_INDEX_TIMELINE_BAR, Z_INDEX_TIMELINE_TOOLTIP, Z_INDEX_TIMELINE_HEADER } from "../constants/zIndex";
 
 interface TimelineViewProps {
   filteredPeople: Person[];
@@ -66,8 +75,34 @@ export function TimelineView({
     travel: TravelWindow;
   } | null>(null);
 
+  // Tooltip state for person view
+  const [personTooltip, setPersonTooltip] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    content: { personName: string; city: string; country: string; dateRange: string };
+  } | null>(null);
+  const [showMobileWarning, setShowMobileWarning] = useState(false);
+
+  // Show mobile warning when timeline view is accessed on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setShowMobileWarning(true);
+    }
+  }, [isMobile]);
+
+  // Calendar grid structure for Month and Week views
+  interface CalendarCell {
+    date: Date;
+    dayOfMonth: number;
+    isCurrentMonth: boolean;
+    columnIndex: number; // 0-6 (Sunday-Saturday)
+    rowIndex: number; // Week row index
+    value: number; // Unique identifier
+  }
+
   // Calculate visible range and time axis
-  const { rangeStart, rangeEnd, timeAxis } = useMemo(() => {
+  const { rangeStart, rangeEnd, timeAxis, calendarGrid } = useMemo(() => {
     if (granularity === "Year") {
       // Handle "All time" - show a wide range covering all travel windows
       if (year === null) {
@@ -90,7 +125,7 @@ export function TimelineView({
               value: i,
             };
           });
-          return { rangeStart: start, rangeEnd: end, timeAxis: axis };
+          return { rangeStart: start, rangeEnd: end, timeAxis: axis, calendarGrid: null };
         }
         
         const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
@@ -113,6 +148,7 @@ export function TimelineView({
           rangeStart: new Date(startYear, 0, 1, 0, 0, 0, 0),
           rangeEnd: new Date(endYear, 11, 31, 23, 59, 59, 999),
           timeAxis: axis,
+          calendarGrid: null,
         };
       }
       
@@ -127,7 +163,7 @@ export function TimelineView({
           value: i,
         };
       });
-      return { rangeStart: start, rangeEnd: end, timeAxis: axis };
+      return { rangeStart: start, rangeEnd: end, timeAxis: axis, calendarGrid: null };
     }
 
     const ref = new Date(referenceDate);
@@ -135,14 +171,44 @@ export function TimelineView({
     if (granularity === "Month") {
       const month = ref.getMonth();
       const yr = ref.getFullYear();
-      // Start at beginning of first day
-      const start = new Date(yr, month, 1, 0, 0, 0, 0);
+      // Start at beginning of first day of the month
+      const firstDayOfMonth = new Date(yr, month, 1, 0, 0, 0, 0);
       // End at end of last day of month (23:59:59.999)
       const lastDay = new Date(yr, month + 1, 0);
       const end = new Date(yr, month, lastDay.getDate(), 23, 59, 59, 999);
-      const daysInMonth = lastDay.getDate();
       
-      // Create axis with one entry per day
+      // Calculate the first Sunday of the calendar view (may be before month start)
+      const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 6 = Saturday
+      const calendarStart = new Date(firstDayOfMonth);
+      calendarStart.setDate(calendarStart.getDate() - firstDayOfWeek);
+      
+      // Calculate how many weeks we need (usually 4-6 weeks)
+      const daysInMonth = lastDay.getDate();
+      const totalDaysToShow = firstDayOfWeek + daysInMonth;
+      const weeksNeeded = Math.ceil(totalDaysToShow / 7);
+      
+      // Create calendar grid: 7 columns (Sun-Sat), multiple rows
+      const grid: CalendarCell[] = [];
+      let cellValue = 0;
+      
+      for (let week = 0; week < weeksNeeded; week++) {
+        for (let day = 0; day < 7; day++) {
+          const cellDate = new Date(calendarStart);
+          cellDate.setDate(calendarStart.getDate() + (week * 7) + day);
+          const isCurrentMonth = cellDate.getMonth() === month && cellDate.getFullYear() === yr;
+          
+          grid.push({
+            date: new Date(cellDate),
+            dayOfMonth: cellDate.getDate(),
+            isCurrentMonth,
+            columnIndex: day, // 0 = Sunday, 6 = Saturday
+            rowIndex: week,
+            value: cellValue++,
+          });
+        }
+      }
+      
+      // Create axis for backward compatibility (one entry per day in month)
       const axis = Array.from({ length: daysInMonth }, (_, i) => {
         const date = new Date(yr, month, i + 1, 0, 0, 0, 0);
         return {
@@ -151,20 +217,43 @@ export function TimelineView({
           value: i,
         };
       });
-      return { rangeStart: start, rangeEnd: end, timeAxis: axis };
+      
+      return { 
+        rangeStart: firstDayOfMonth, 
+        rangeEnd: end, 
+        timeAxis: axis, 
+        calendarGrid: { cells: grid, weeks: weeksNeeded, columns: 7 }
+      };
     }
 
-    // Week view - show 7 days around the selected reference date's week
+    // Week view - show 7 days (Sunday to Saturday) in a single row
     const base = new Date(referenceDate);
     // Normalize to start of day
     base.setHours(0, 0, 0, 0);
     const start = new Date(base);
-    start.setDate(base.getDate() - base.getDay());
-    // End at end of last day of week (23:59:59.999)
+    start.setDate(base.getDate() - base.getDay()); // Start on Sunday
+    
+    // End at end of last day of week (Saturday, 23:59:59.999)
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
 
+    // Create calendar grid: 7 columns (Sun-Sat), single row
+    const grid: CalendarCell[] = [];
+    for (let day = 0; day < 7; day++) {
+      const cellDate = new Date(start);
+      cellDate.setDate(start.getDate() + day);
+      grid.push({
+        date: new Date(cellDate),
+        dayOfMonth: cellDate.getDate(),
+        isCurrentMonth: true,
+        columnIndex: day, // 0 = Sunday, 6 = Saturday
+        rowIndex: 0,
+        value: day,
+      });
+    }
+
+    // Create axis for backward compatibility
     const axis = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
@@ -176,10 +265,36 @@ export function TimelineView({
       };
     });
 
-    return { rangeStart: start, rangeEnd: end, timeAxis: axis };
+    return { 
+      rangeStart: start, 
+      rangeEnd: end, 
+      timeAxis: axis, 
+      calendarGrid: { cells: grid, weeks: 1, columns: 7 }
+    };
   }, [year, granularity, referenceDate, filteredTravelWindows]);
 
+  // Filter travel windows by the visible date range for month/week views
+  const travelWindowsInRange = useMemo(() => {
+    if (granularity === "Year") {
+      // For year view, use all filtered travel windows
+      return filteredTravelWindows;
+    }
+    
+    // For month/week views, filter by the actual date range
+    return filteredTravelWindows.filter((tw) => {
+      const twStart = new Date(tw.startDate);
+      twStart.setHours(0, 0, 0, 0);
+      const twEnd = new Date(tw.endDate);
+      twEnd.setHours(23, 59, 59, 999);
+      
+      // Check if travel window overlaps with the visible range
+      return twStart <= rangeEnd && twEnd >= rangeStart;
+    });
+  }, [filteredTravelWindows, granularity, rangeStart, rangeEnd]);
+
   // Calculate bar positions within the visible range
+  // For calendar grid views (Month/Week), returns grid cell positions
+  // For other views, returns percentage positions
   const calculateBarPosition = (startDate: string, endDate: string) => {
     // Normalize dates to start of day for consistent calculations
     const start = new Date(startDate);
@@ -193,10 +308,63 @@ export function TimelineView({
     const clampedStart = start < rangeStart ? rangeStart : start;
     const clampedEnd = end > rangeEnd ? rangeEnd : end;
 
-    // Calculate total milliseconds in range
+    // For calendar grid views, calculate which cells the bar spans
+    if (calendarGrid && (granularity === "Month" || granularity === "Week")) {
+      const startCell = calendarGrid.cells.find(cell => {
+        const cellStart = new Date(cell.date);
+        cellStart.setHours(0, 0, 0, 0);
+        const cellEnd = new Date(cell.date);
+        cellEnd.setHours(23, 59, 59, 999);
+        return clampedStart >= cellStart && clampedStart <= cellEnd;
+      });
+      
+      const endCell = calendarGrid.cells.find(cell => {
+        const cellStart = new Date(cell.date);
+        cellStart.setHours(0, 0, 0, 0);
+        const cellEnd = new Date(cell.date);
+        cellEnd.setHours(23, 59, 59, 999);
+        return clampedEnd >= cellStart && clampedEnd <= cellEnd;
+      });
+
+      if (startCell && endCell) {
+        // Calculate position based on grid cells
+        const startCol = startCell.columnIndex;
+        const endCol = endCell.columnIndex;
+        const startRow = startCell.rowIndex;
+        const endRow = endCell.rowIndex;
+        
+        // For single row (week view) or same row spans
+        if (startRow === endRow) {
+          const left = (startCol / 7) * 100;
+          const width = ((endCol - startCol + 1) / 7) * 100;
+          return {
+            left: Math.max(0, Math.min(100, left)),
+            width: Math.max(0, Math.min(100 - left, width)),
+            startCell,
+            endCell,
+            isGridLayout: true,
+          };
+        } else {
+          // Multi-row span (for month view bars that span weeks)
+          // Position at start column, full width of that column
+          const left = (startCol / 7) * 100;
+          const width = (1 / 7) * 100;
+          return {
+            left: Math.max(0, Math.min(100, left)),
+            width: Math.max(0, Math.min(100 - left, width)),
+            startCell,
+            endCell,
+            isGridLayout: true,
+            spansMultipleRows: true,
+          };
+        }
+      }
+    }
+
+    // Fallback to percentage-based positioning for non-grid views
     const totalMs = rangeEnd.getTime() - rangeStart.getTime();
     if (totalMs <= 0) {
-      return { left: 0, width: 0 };
+      return { left: 0, width: 0, isGridLayout: false };
     }
 
     // Calculate offsets in milliseconds
@@ -210,6 +378,7 @@ export function TimelineView({
     return {
       left: Math.max(0, Math.min(100, left)),
       width: Math.max(0, Math.min(100 - left, width)),
+      isGridLayout: false,
     };
   };
 
@@ -231,7 +400,7 @@ export function TimelineView({
       });
 
       // Add people with travel windows in these cities
-      filteredTravelWindows.forEach((tw) => {
+      travelWindowsInRange.forEach((tw) => {
         if (cities.includes(tw.city)) {
           const person = filteredPeople.find((p) => p.id === tw.personId);
           if (person) {
@@ -286,7 +455,7 @@ export function TimelineView({
     } else {
       // Show all unique cities from travel windows
       const citySet = new Set<string>();
-      filteredTravelWindows.forEach((tw) => {
+      travelWindowsInRange.forEach((tw) => {
         citySet.add(tw.city);
       });
 
@@ -299,7 +468,7 @@ export function TimelineView({
       });
 
       // Add people with travel windows
-      filteredTravelWindows.forEach((tw) => {
+      travelWindowsInRange.forEach((tw) => {
         const person = filteredPeople.find((p) => p.id === tw.personId);
         if (person) {
           const location = locationMap.get(tw.city);
@@ -314,11 +483,26 @@ export function TimelineView({
       });
     }
 
-    // Sort locations alphabetically and filter out empty ones (only locations with travel windows)
+    // Sort locations alphabetically and filter out empty ones
+    // If cities are explicitly selected, always show them (even if empty)
+    // If nodes are explicitly selected, show them if they have people
+    // Otherwise, only show cities that have travel windows
     return Array.from(locationMap.values())
-      .filter((loc) => loc.people.some((p) => p.travelWindow !== null))
+      .filter((loc) => {
+        if (cities.length > 0 && loc.locationType === 'city' && cities.includes(loc.locationName)) {
+          // Always show explicitly selected cities, even if they have no travel windows
+          return true;
+        }
+        if (loc.locationType === 'node') {
+          // For nodes, show if there are any people (including those with just current location)
+          return loc.people.length > 0;
+        } else {
+          // For cities (when not explicitly selected), only show if there are travel windows
+          return loc.people.some((p) => p.travelWindow !== null);
+        }
+      })
       .sort((a, b) => a.locationName.localeCompare(b.locationName));
-  }, [cities, nodes, filteredPeople, filteredTravelWindows]);
+  }, [cities, nodes, filteredPeople, travelWindowsInRange]);
 
   // Generate location periods for a person, filling gaps with default location
   const generateLocationPeriods = (
@@ -420,7 +604,7 @@ export function TimelineView({
 
     // Initialize with all filtered people
     filteredPeople.forEach((person) => {
-      const personTravelWindows = filteredTravelWindows.filter(tw => tw.personId === person.id);
+      const personTravelWindows = travelWindowsInRange.filter(tw => tw.personId === person.id);
       personMap.set(person.id, {
         person,
         travelWindows: personTravelWindows,
@@ -430,7 +614,7 @@ export function TimelineView({
     // Return all filtered people (they should always appear, showing default location if no travel)
     return Array.from(personMap.values())
       .sort((a, b) => a.person.fullName.localeCompare(b.person.fullName));
-  }, [filteredPeople, filteredTravelWindows]);
+  }, [filteredPeople, travelWindowsInRange]);
 
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
@@ -476,7 +660,14 @@ export function TimelineView({
     const sortedBars = [...bars].sort((a, b) => a.position.left - b.position.left);
     
     // Track which stack level each bar should be on
-    const barStacks: Array<{ person: Person; travel: TravelWindow; position: { left: number; width: number }; stackIndex: number }> = [];
+    const barStacks: Array<{ 
+      person: Person; 
+      travel?: TravelWindow; 
+      period?: LocationPeriod;
+      isDefaultLocation?: boolean;
+      position: { left: number; width: number }; 
+      stackIndex: number 
+    }> = [];
     const activeStacks: Array<number> = []; // Track when each stack level becomes free
     
     sortedBars.forEach((bar) => {
@@ -536,9 +727,9 @@ export function TimelineView({
     const topOffset = isMobileView ? 5 : 10;
 
     return (
-      <div key={`${location.locationType}-${location.locationName}`} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors">
-        {/* Location Info */}
-        <div className={`${leftColumnWidth} ${isMobileView ? "p-2 sm:p-3" : "p-4"} border-r-2 border-gray-200 flex-shrink-0 bg-white`}>
+      <div key={`${location.locationType}-${location.locationName}`} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors relative">
+        {/* Location Info - Sticky left column */}
+        <div className={`${leftColumnWidth} ${isMobileView ? "p-2 sm:p-3" : "p-4"} border-r-2 border-gray-200 flex-shrink-0 bg-white ${!isMobileView ? "sticky left-0 z-20 shadow-sm" : ""}`}>
           <div className={isMobileView ? "space-y-0.5" : "space-y-1"}>
             <p className={`${isMobileView ? "text-xs sm:text-sm" : "text-sm"} font-medium text-gray-900 ${isMobileView ? "truncate leading-tight" : ""}`} title={location.locationName}>
               {location.locationName}
@@ -549,82 +740,218 @@ export function TimelineView({
           </div>
         </div>
 
-        {/* Timeline Bars */}
-        <div className="flex-1 relative overflow-x-auto" style={{ minHeight: `${rowHeight}px` }}>
-          {/* Grid lines */}
-          <div className={`absolute inset-0 flex ${granularity === "Month" ? "min-w-max" : ""}`}>
-            {timeAxis.map((_, i) => (
-              <div
-                key={i}
-                className={`${granularity === "Month" ? (isMobileView ? "w-14 sm:w-16" : "w-20") : (isMobileView ? "w-20 sm:w-24" : "flex-1")} border-r border-gray-200 last:border-r-0 flex-shrink-0`}
-              />
-            ))}
+        {/* Timeline Bars - Calendar Grid Layout */}
+        {calendarGrid && (granularity === "Month" || granularity === "Week") ? (
+          <div className="flex-1 relative w-full" style={{ minHeight: `${rowHeight}px` }}>
+            {/* Calendar Grid with proper sizing for scrolling */}
+            <div 
+              className="grid w-full h-full"
+              style={{ 
+                gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                gridTemplateRows: granularity === "Month" 
+                  ? `repeat(${calendarGrid.weeks}, minmax(80px, auto))`
+                  : 'minmax(80px, auto)'
+              }}
+            >
+              {calendarGrid.cells.map((cell) => {
+                // Find bars that should appear in this cell based on date range
+                const cellBars = stackedBars.filter(bar => {
+                  if (!bar.travel) return false;
+                  
+                  // Get the actual date range for this travel window
+                  const barStart = new Date(bar.travel.startDate);
+                  barStart.setHours(0, 0, 0, 0);
+                  const barEnd = new Date(bar.travel.endDate);
+                  barEnd.setHours(23, 59, 59, 999);
+                  
+                  // Get the cell's date range
+                  const cellStart = new Date(cell.date);
+                  cellStart.setHours(0, 0, 0, 0);
+                  const cellEnd = new Date(cell.date);
+                  cellEnd.setHours(23, 59, 59, 999);
+                  
+                  // Check if the cell's date falls within the bar's date range
+                  return cellStart <= barEnd && cellEnd >= barStart;
+                });
+
+                return (
+                  <div
+                    key={cell.value}
+                    className={`relative border-r border-b border-gray-200 ${
+                      !cell.isCurrentMonth && granularity === "Month" ? 'bg-gray-50' : 'bg-white'
+                    }`}
+                    style={{
+                      gridColumn: cell.columnIndex + 1,
+                      gridRow: cell.rowIndex + 1
+                    }}
+                  >
+                    {/* Date number */}
+                    <div className={`absolute top-1 left-1 ${isMobileView ? 'text-[10px]' : 'text-xs'} font-medium text-gray-500`}>
+                      {cell.dayOfMonth}
+                    </div>
+                    
+                    {/* Bars in this cell */}
+                    <div className={`pt-5 pb-1 px-0.5 space-y-0.5 h-full`}>
+                      {cellBars.map((bar, idx) => {
+                        const barKey = bar.travel.id;
+                        
+                        // Check if this is the first cell by comparing dates
+                        const barStart = new Date(bar.travel.startDate);
+                        barStart.setHours(0, 0, 0, 0);
+                        const cellStart = new Date(cell.date);
+                        cellStart.setHours(0, 0, 0, 0);
+                        const isFirstCell = cellStart.getTime() === barStart.getTime();
+                        
+                        // For location view, show person name; for person view, show city
+                        const barLabel = timelineViewMode === "location"
+                          ? bar.person.fullName
+                          : bar.travel.city;
+                        
+                        return (
+                          <div
+                            key={barKey}
+                            onClick={() => setSelectedTravel({ person: bar.person, travel: bar.travel! })}
+                            className={`relative ${isMobileView ? 'h-5' : 'h-6'} rounded px-1 flex items-center shadow-sm transition-all border border-white/50 ${isMobileView ? 'text-[9px]' : 'text-xs'} truncate cursor-pointer group hover:shadow-md`}
+                            style={{
+                              background: getRoleGradient(bar.person.roleType),
+                              zIndex: 10,
+                            }}
+                            title={barLabel}
+                            onMouseMove={(e) => {
+                              const tooltip = e.currentTarget.querySelector('[data-tooltip]') as HTMLElement;
+                              if (tooltip) {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                tooltip.style.left = `${rect.left + rect.width / 2}px`;
+                                tooltip.style.top = `${rect.top}px`;
+                              }
+                            }}
+                          >
+                            {(isFirstCell || cellBars.length === 1) && (
+                              <span className={`${isMobileView ? 'text-[9px]' : 'text-[10px]'} text-gray-700 font-medium truncate`}>
+                                {barLabel}
+                              </span>
+                            )}
+                            {/* Custom tooltip for better visibility - using fixed positioning to escape overflow */}
+                            <div 
+                              data-tooltip
+                              className="fixed w-64 bg-gray-900 text-white text-xs p-3 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
+                              style={{ 
+                                zIndex: 99999,
+                                transform: 'translate(-50%, calc(-100% - 8px))',
+                              }}
+                            >
+                              <p className="font-medium">{bar.person.fullName}</p>
+                              <p className="text-gray-300 mt-1">
+                                {bar.travel.city}, {bar.travel.country}
+                              </p>
+                              <p className="text-gray-400 mt-1 text-[10px]">
+                                {formatDateRange(bar.travel.startDate, bar.travel.endDate)}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        ) : (
+          <div className={`flex-1 relative ${isMobileView ? "overflow-x-auto" : ""}`} style={{ minHeight: `${rowHeight}px` }}>
+            {/* Grid lines */}
+            <div className={`absolute inset-0 flex ${isMobileView ? "min-w-max" : "w-full"}`}>
+              {timeAxis.map((_, i) => (
+                <div
+                  key={i}
+                  className={`${isMobileView ? "w-20 sm:w-24 flex-shrink-0" : "flex-1 min-w-0"} border-r border-gray-200 last:border-r-0`}
+                />
+              ))}
+            </div>
 
-          {/* People Bars */}
-          {stackedBars.map((bar) => {
-            const stackTop = stackOffset * bar.stackIndex + topOffset;
-            
-            return isMobileView ? (
-              <button
-                key={bar.travel.id}
-                onClick={() => setSelectedTravel({ person: bar.person, travel: bar.travel })}
-                className="absolute cursor-pointer group z-10 min-w-[50px] touch-manipulation"
-                style={{
-                  left: `${Math.max(0, bar.position.left)}%`,
-                  width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
-                  top: `${stackTop}px`,
-                  height: barHeight,
-                }}
-              >
-                <div 
-                  className="h-full rounded px-1.5 sm:px-2 flex items-center shadow-sm transition-all active:shadow-md border border-white/50"
+            {/* People Bars */}
+            {stackedBars.map((bar) => {
+              // In location view, travel is always present (filtered above)
+              if (!bar.travel) return null;
+              
+              const stackTop = stackOffset * bar.stackIndex + topOffset;
+              
+              return isMobileView ? (
+                <button
+                  key={bar.travel.id}
+                  onClick={() => setSelectedTravel({ person: bar.person, travel: bar.travel! })}
+                  className="absolute cursor-pointer group min-w-[50px] touch-manipulation"
                   style={{
-                    background: getRoleGradient(bar.person.roleType),
+                    left: `${Math.max(0, bar.position.left)}%`,
+                    width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
+                    top: `${stackTop}px`,
+                    height: barHeight,
                   }}
                 >
-                  <span className="text-[9px] sm:text-[10px] text-gray-700 truncate font-medium whitespace-nowrap leading-tight">
-                    {bar.person.fullName}
-                  </span>
-                </div>
-              </button>
-            ) : (
-              <div
-                key={bar.travel.id}
-                className="absolute cursor-pointer group z-10"
-                style={{
-                  left: `${Math.max(0, bar.position.left)}%`,
-                  width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
-                  top: `${stackTop}px`,
-                  height: barHeight,
-                }}
-                onClick={() => setSelectedTravel({ person: bar.person, travel: bar.travel })}
-              >
-                <div 
-                  className="h-full rounded px-3 flex items-center shadow-sm transition-all group-hover:shadow-md border border-white/50"
+                  <div 
+                    className="h-full rounded px-1.5 sm:px-2 flex items-center shadow-sm transition-all active:shadow-md border border-white/50"
+                    style={{
+                      background: getRoleGradient(bar.person.roleType),
+                    }}
+                  >
+                    <span className="text-[9px] sm:text-[10px] text-gray-700 truncate font-medium whitespace-nowrap leading-tight">
+                      {bar.person.fullName}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                <div
+                  key={bar.travel.id}
+                  className="absolute cursor-pointer group"
                   style={{
-                    background: getRoleGradient(bar.person.roleType),
+                    left: `${Math.max(0, bar.position.left)}%`,
+                    width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
+                    top: `${stackTop}px`,
+                    height: barHeight,
+                  }}
+                  onClick={() => setSelectedTravel({ person: bar.person, travel: bar.travel! })}
+                  onMouseMove={(e) => {
+                    const tooltip = e.currentTarget.querySelector('[data-tooltip]') as HTMLElement;
+                    if (tooltip) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      tooltip.style.left = `${rect.left + rect.width / 2}px`;
+                      tooltip.style.top = `${rect.top}px`;
+                    }
                   }}
                 >
-                  <span className="text-xs text-gray-700 truncate font-medium">
-                    {bar.person.fullName}
-                  </span>
-                </div>
+                  <div 
+                    className="h-full rounded px-3 flex items-center shadow-sm transition-all group-hover:shadow-md border border-white/50"
+                    style={{
+                      background: getRoleGradient(bar.person.roleType),
+                    }}
+                  >
+                    <span className="text-xs text-gray-700 truncate font-medium">
+                      {bar.person.fullName}
+                    </span>
+                  </div>
 
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-gray-900 text-white text-xs p-3 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
-                  <p className="font-medium">{bar.person.fullName}</p>
-                  <p className="text-gray-300 mt-1">
-                    {bar.travel.city}, {bar.travel.country}
-                  </p>
-                  <p className="text-gray-400 text-xs mt-1">
-                    {formatDateRange(bar.travel.startDate, bar.travel.endDate)}
-                  </p>
+                  {/* Tooltip */}
+                  <div 
+                    data-tooltip
+                    className="fixed w-64 bg-gray-900 text-white text-xs p-3 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
+                    style={{ 
+                      zIndex: 99999,
+                      transform: 'translate(-50%, calc(-100% - 8px))',
+                    }}
+                  >
+                    <p className="font-medium">{bar.person.fullName}</p>
+                    <p className="text-gray-300 mt-1">
+                      {bar.travel.city}, {bar.travel.country}
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      {formatDateRange(bar.travel.startDate, bar.travel.endDate)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -632,151 +959,335 @@ export function TimelineView({
   // Mobile Layout - Gantt Chart optimized for mobile
   if (isMobile) {
     return (
-      <div className="flex flex-col h-full">
+      <>
+        {/* Mobile Warning Dialog */}
+        <Dialog open={showMobileWarning} onOpenChange={setShowMobileWarning}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Timeline View Designed for Larger Screens</DialogTitle>
+              <DialogDescription className="pt-2">
+                The timeline view is optimized for desktop and tablet screens. For the best experience on your phone, please visit on a computer or use the map view instead.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => setShowMobileWarning(false)}
+                className="flex-1"
+                variant="default"
+              >
+                Continue Anyway
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <div className="flex flex-col h-full">
         {/* Mobile Timeline Grid */}
         <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-          {/* Sticky Timeline Header - Enhanced X-axis */}
-          <div className="border-b-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white sticky top-0 z-20 shadow-sm">
-            <div className="flex">
-              {/* Column Header */}
-              <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-300 flex-shrink-0 bg-white">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {timelineViewMode === "person" ? "Person" : "Location"}
-                </h3>
-              </div>
-              {/* Scrollable Timeline Axis - More prominent */}
-              <div className="flex-1 overflow-x-auto bg-gray-50">
-                <div className="flex min-w-max">
-                  {timeAxis.map((tick) => (
-                    <div
-                      key={tick.value}
-                      className={`${granularity === "Month" ? "w-14 sm:w-16" : "w-20 sm:w-24"} p-2 sm:p-3 text-center border-r border-gray-300 last:border-r-0 flex-shrink-0 bg-white`}
-                    >
-                      <span className="text-xs font-semibold text-gray-900 block whitespace-nowrap">{tick.label}</span>
-                      {granularity === "Month" && (
-                        <span className="text-[10px] text-gray-500 block mt-0.5">
-                          {tick.date.toLocaleDateString("en-US", { weekday: "short" })}
-                        </span>
-                      )}
+          {/* Sticky Timeline Header - Calendar Grid Layout for Month/Week */}
+          <div className="border-b-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white sticky top-0 shadow-sm"
+            style={{ zIndex: 1 }}
+          >
+            {calendarGrid && (granularity === "Month" || granularity === "Week") ? (
+              <>
+                {/* Day of week headers (Sun-Sat) - Beautiful horizontal row */}
+                <div className="flex border-b border-gray-200">
+                  <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-300 flex-shrink-0 bg-white flex items-center">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                      {timelineViewMode === "person" ? "Person" : "Location"}
+                    </h3>
+                  </div>
+                  <div className="flex-1 bg-gradient-to-b from-gray-50 to-white min-w-0">
+                    <div className="flex w-full">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                        <div
+                          key={day}
+                          className="flex-1 p-2 sm:p-3 text-center bg-white border-r border-gray-200 last:border-r-0 flex items-center justify-center min-w-0"
+                        >
+                          <span className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wide truncate">{day}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                </div>
+                {/* Date headers for Month view (multiple rows) - Calendar grid */}
+                {granularity === "Month" && (
+                  <div className="flex" style={{ zIndex: 0 }}>
+                    <div className="w-32 sm:w-40 border-r-2 border-gray-300 flex-shrink-0 bg-white"></div>
+                  <div className="flex-1 bg-white overflow-visible">
+                    <div 
+                      className="grid w-full"
+                      style={{ 
+                        gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                        gridTemplateRows: `repeat(${calendarGrid.weeks}, minmax(60px, auto))`
+                      }}
+                    >
+                        {calendarGrid.cells.map((cell) => (
+                          <div
+                            key={cell.value}
+                            className={`p-1 sm:p-2 text-center border-r border-b border-gray-200 bg-white flex items-center justify-center ${
+                              !cell.isCurrentMonth ? 'bg-gray-50' : ''
+                            }`}
+                            style={{
+                              gridColumn: cell.columnIndex + 1,
+                              gridRow: cell.rowIndex + 1,
+                              zIndex: 0
+                            }}
+                          >
+                            <span className={`text-xs sm:text-sm font-medium ${cell.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                              {cell.dayOfMonth}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex">
+                {/* Column Header */}
+                <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-300 flex-shrink-0 bg-white">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                    {timelineViewMode === "person" ? "Person" : "Location"}
+                  </h3>
+                </div>
+                {/* Scrollable Timeline Axis - More prominent */}
+                <div className="flex-1 overflow-x-auto bg-gray-50">
+                  <div className="flex min-w-max">
+                    {timeAxis.map((tick) => (
+                      <div
+                        key={tick.value}
+                        className="w-20 sm:w-24 p-2 sm:p-3 text-center border-r border-gray-300 last:border-r-0 flex-shrink-0 bg-white"
+                      >
+                        <span className="text-xs font-semibold text-gray-900 block whitespace-nowrap">{tick.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Timeline Rows */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 timeline-scrollable overflow-y-auto">
             {timelineViewMode === "person" ? (
-              // Person-based rows
-              personRows.map((personRow) => {
-              // Generate location periods (travel windows + default location periods)
-              const locationPeriods = generateLocationPeriods(
-                personRow.person,
-                personRow.travelWindows,
-                rangeStart,
-                rangeEnd
-              );
-
-              // Get all bars for this person with their positions
-              const bars = locationPeriods
-                .map((period) => {
-                  const position = calculateBarPosition(
-                    period.startDate.toISOString(),
-                    period.endDate.toISOString()
+              <>
+                {/* Person-based rows */}
+                {personRows.map((personRow) => {
+                  // Generate location periods (travel windows + default location periods)
+                  const locationPeriods = generateLocationPeriods(
+                    personRow.person,
+                    personRow.travelWindows,
+                    rangeStart,
+                    rangeEnd
                   );
-                  return {
-                    person: personRow.person,
-                    travel: period.travelWindow,
-                    period,
-                    position,
-                    isDefaultLocation: period.isDefaultLocation,
-                  };
-                })
-                .filter((b) => b.position.width > 0 && b.position.left < 100);
 
-              // Calculate stacking for overlapping bars
-              const stackedBars = calculateBarStack(bars);
-              const maxStackHeight = stackedBars.length > 0 ? Math.max(...stackedBars.map((b) => b.stackIndex), 0) + 1 : 1;
-              const rowHeight = Math.max(60, maxStackHeight * 48); // Minimum 60px, 48px per stack level on mobile
+                  // Get all bars for this person with their positions
+                  const bars = locationPeriods
+                    .map((period) => {
+                      const position = calculateBarPosition(
+                        period.startDate.toISOString(),
+                        period.endDate.toISOString()
+                      );
+                      return {
+                        person: personRow.person,
+                        travel: period.travelWindow,
+                        period,
+                        position,
+                        isDefaultLocation: period.isDefaultLocation,
+                      };
+                    })
+                    .filter((b) => b.position.width > 0 && b.position.left < 100);
 
-              return (
-                <div key={personRow.person.id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                  {/* Person Info */}
-                  <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-200 flex-shrink-0 bg-white">
-                    <div className="space-y-0.5">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 truncate leading-tight" title={personRow.person.fullName}>
-                        {personRow.person.fullName}
-                      </p>
-                      <p className="text-[10px] text-gray-500">
-                        {personRow.person.roleType} · {personRow.travelWindows.length} {personRow.travelWindows.length === 1 ? 'trip' : 'trips'}
-                      </p>
-                    </div>
-                  </div>
+                  // Calculate stacking for overlapping bars
+                  const stackedBars = calculateBarStack(bars);
+                  const maxStackHeight = stackedBars.length > 0 ? Math.max(...stackedBars.map((b) => b.stackIndex), 0) + 1 : 1;
+                  const rowHeight = Math.max(60, maxStackHeight * 48); // Minimum 60px, 48px per stack level on mobile
 
-                  {/* Timeline Bars - Scrollable horizontally */}
-                  <div className="flex-1 relative overflow-x-auto" style={{ minHeight: `${rowHeight}px` }}>
-                    {/* Grid lines - More visible */}
-                    <div className={`absolute inset-0 flex ${granularity === "Month" ? "min-w-max" : ""}`}>
-                      {timeAxis.map((_, i) => (
-                        <div
-                          key={i}
-                          className={`${granularity === "Month" ? "w-14 sm:w-16" : "w-20 sm:w-24"} border-r border-gray-200 last:border-r-0 flex-shrink-0`}
-                        />
-                      ))}
-                    </div>
+                  return (
+                    <div key={personRow.person.id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      {/* Person Info */}
+                      <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-200 flex-shrink-0 bg-white">
+                        <div className="space-y-0.5">
+                          <p className="text-xs sm:text-sm font-medium text-gray-900 truncate leading-tight" title={personRow.person.fullName}>
+                            {personRow.person.fullName}
+                          </p>
+                          <p className="text-[10px] text-gray-500">
+                            {personRow.person.roleType} · {personRow.travelWindows.length} {personRow.travelWindows.length === 1 ? 'trip' : 'trips'}
+                          </p>
+                        </div>
+                      </div>
 
-                    {/* Location Period Bars */}
-                    {stackedBars.map((bar) => {
-                      const stackOffset = bar.stackIndex * 45; // 45px per stack level on mobile
-                      const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
-                      
-                      return (
-                        <button
-                          key={barKey}
-                          onClick={() => {
-                            if (bar.travel) {
-                              setSelectedTravel({ person: bar.person, travel: bar.travel });
-                            }
-                          }}
-                          disabled={!bar.travel}
-                          className={`absolute z-10 min-w-[50px] touch-manipulation ${
-                            bar.travel ? "cursor-pointer group" : "cursor-default opacity-60"
-                          }`}
-                          style={{
-                            left: `${Math.max(0, bar.position.left)}%`,
-                            width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
-                            top: `${stackOffset + 5}px`,
-                            height: '38px',
-                          }}
-                        >
+                      {/* Timeline Bars - Calendar Grid Layout */}
+                      {calendarGrid && (granularity === "Month" || granularity === "Week") ? (
+                        <div className="flex-1 relative w-full" style={{ minHeight: `${rowHeight}px` }}>
+                          {/* Calendar Grid with proper sizing for scrolling */}
                           <div 
-                            className={`h-full rounded px-1.5 sm:px-2 flex items-center shadow-sm transition-all border border-white/50 ${
-                              bar.travel ? "active:shadow-md" : ""
-                            }`}
-                            style={{
-                              background: bar.isDefaultLocation 
-                                ? `linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)`
-                                : getRoleGradient(bar.person.roleType),
+                            className="grid w-full h-full"
+                            style={{ 
+                              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                              gridTemplateRows: granularity === "Month" 
+                                ? `repeat(${calendarGrid.weeks}, minmax(80px, auto))`
+                                : 'minmax(80px, auto)'
                             }}
                           >
-                            <span className="text-[9px] sm:text-[10px] text-gray-700 truncate font-medium whitespace-nowrap leading-tight">
-                              {bar.period.city}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                            {calendarGrid.cells.map((cell) => {
+                              // Find bars that should appear in this cell based on date range
+                              const cellBars = stackedBars.filter(bar => {
+                                if (!bar.period) return false;
+                                
+                                // Get the actual date range for this period
+                                const barStart = new Date(bar.period.startDate);
+                                barStart.setHours(0, 0, 0, 0);
+                                const barEnd = new Date(bar.period.endDate);
+                                barEnd.setHours(23, 59, 59, 999);
+                                
+                                // Get the cell's date range
+                                const cellStart = new Date(cell.date);
+                                cellStart.setHours(0, 0, 0, 0);
+                                const cellEnd = new Date(cell.date);
+                                cellEnd.setHours(23, 59, 59, 999);
+                                
+                                // Check if the cell's date falls within the bar's date range
+                                return cellStart <= barEnd && cellEnd >= barStart;
+                              });
 
-              {personRows.length === 0 && (
-                <div className="p-12 text-center text-gray-500">
-                  <p className="text-sm sm:text-base">No people match the current filters</p>
-                </div>
-              )}
+                              return (
+                                <div
+                                  key={cell.value}
+                                  className={`relative border-r border-b border-gray-200 ${
+                                    !cell.isCurrentMonth && granularity === "Month" ? 'bg-gray-50' : 'bg-white'
+                                  }`}
+                                  style={{
+                                    gridColumn: cell.columnIndex + 1,
+                                    gridRow: cell.rowIndex + 1
+                                  }}
+                                >
+                                  {/* Date number */}
+                                  <div className="absolute top-1 left-1 text-[10px] font-medium text-gray-500">
+                                    {cell.dayOfMonth}
+                                  </div>
+                                  
+                                  {/* Bars in this cell */}
+                                  <div className="pt-5 pb-1 px-0.5 space-y-0.5 h-full">
+                                    {cellBars.map((bar, idx) => {
+                                      const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
+                                      
+                                      // Check if this is the first cell by comparing dates
+                                      const barStart = new Date(bar.period.startDate);
+                                      barStart.setHours(0, 0, 0, 0);
+                                      const cellStart = new Date(cell.date);
+                                      cellStart.setHours(0, 0, 0, 0);
+                                      const isFirstCell = cellStart.getTime() === barStart.getTime();
+                                      
+                                      // Determine label based on view mode
+                                      const barLabel = timelineViewMode === "person" 
+                                        ? bar.period.city 
+                                        : bar.person.fullName;
+                                      
+                                      return (
+                                        <div
+                                          key={barKey}
+                                          onClick={() => {
+                                            if (bar.travel) {
+                                              setSelectedTravel({ person: bar.person, travel: bar.travel });
+                                            }
+                                          }}
+                                          className={`h-5 rounded px-1 flex items-center shadow-sm transition-all border border-white/50 text-[9px] truncate ${
+                                            bar.travel ? "cursor-pointer group active:shadow-md" : "cursor-default opacity-60"
+                                          }`}
+                                          style={{
+                                            background: bar.isDefaultLocation 
+                                              ? `linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)`
+                                              : getRoleGradient(bar.person.roleType),
+                                          }}
+                                          title={barLabel}
+                                        >
+                                          {(isFirstCell || cellBars.length === 1) && (
+                                            <span className="text-[9px] text-gray-700 font-medium truncate">
+                                              {barLabel}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1 relative overflow-x-auto" style={{ minHeight: `${rowHeight}px` }}>
+                          {/* Grid lines - More visible */}
+                          <div className="absolute inset-0 flex min-w-max">
+                            {timeAxis.map((_, i) => (
+                              <div
+                                key={i}
+                                className="w-20 sm:w-24 border-r border-gray-200 last:border-r-0 flex-shrink-0"
+                              />
+                            ))}
+                          </div>
+
+                          {/* Location Period Bars */}
+                          {stackedBars.map((bar) => {
+                            // In person-based rows, period is always present
+                            if (!bar.period) return null;
+                            
+                            const stackOffset = bar.stackIndex * 45; // 45px per stack level on mobile
+                            const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
+                            const gradientStyle = bar.isDefaultLocation 
+                              ? `linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)`
+                              : getRoleGradient(bar.person.roleType);
+                            
+                            return (
+                              <button
+                                key={barKey}
+                                onClick={() => {
+                                  if (bar.travel) {
+                                    setSelectedTravel({ person: bar.person, travel: bar.travel });
+                                  }
+                                }}
+                                disabled={!bar.travel}
+                                className={`absolute min-w-[50px] touch-manipulation ${
+                                  bar.travel ? "cursor-pointer group" : "cursor-default opacity-60"
+                                }`}
+                                style={{
+                                  left: `${Math.max(0, bar.position.left)}%`,
+                                  width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
+                                  top: `${stackOffset + 5}px`,
+                                  height: '38px',
+                                  zIndex: Z_INDEX_TIMELINE_BAR,
+                                }}
+                              >
+                                <div 
+                                  className={`h-full rounded px-1.5 sm:px-2 flex items-center shadow-sm transition-all border border-white/50 ${
+                                    bar.travel ? "active:shadow-md" : ""
+                                  }`}
+                                  style={{
+                                    background: gradientStyle,
+                                  }}
+                                >
+                                  <span className="text-[9px] sm:text-[10px] text-gray-700 truncate font-medium whitespace-nowrap leading-tight">
+                                    {bar.period.city}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {personRows.length === 0 && (
+                  <div className="p-12 text-center text-gray-500">
+                    <p className="text-sm sm:text-base">No people match the current filters</p>
+                  </div>
+                )}
+              </>
             ) : (
               // Location-based rows
               locationRows.map((location) => renderLocationRow(location, true))
@@ -896,169 +1407,362 @@ export function TimelineView({
           </SheetContent>
         </Sheet>
       </div>
+      </>
     );
   }
 
   // Desktop Layout - Person-based Gantt chart
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4">
+    <div className="flex flex-col lg:flex-row h-full gap-4 min-w-0 overflow-hidden">
       {/* Timeline Grid */}
-      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-        {/* Timeline Header - Enhanced X-axis */}
-        <div className="border-b-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white shadow-sm">
-          <div className="flex">
-            <div className="w-64 p-4 border-r-2 border-gray-300 bg-white">
-              <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm" style={{ fontFamily: 'var(--font-heading)' }}>
-                {timelineViewMode === "person" ? "Person" : "Location"}
-              </h3>
-            </div>
-            <div className="flex-1 overflow-x-auto bg-gray-50">
-              <div className={`flex ${granularity === "Month" ? "min-w-max" : "min-w-[800px]"}`}>
-                {timeAxis.map((tick) => (
-                  <div
-                    key={tick.value}
-                    className={`${granularity === "Month" ? "w-20 flex-shrink-0" : "flex-1"} p-3 text-center border-r border-gray-300 last:border-r-0 bg-white`}
-                  >
-                    <span className={`${granularity === "Month" ? "text-sm" : "text-base"} font-semibold text-gray-900 block whitespace-nowrap`}>
-                      {granularity === "Month" ? (
-                        <>
-                          <span className="block text-xs text-gray-500 mb-1">{tick.date.toLocaleDateString("en-US", { weekday: "short" })}</span>
-                          <span className="block text-base">{tick.date.getDate()}</span>
-                        </>
-                      ) : (
-                        tick.label
-                      )}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline Rows */}
-        <div className="flex-1 overflow-y-auto">
-          {timelineViewMode === "person" ? (
-            // Person-based rows
-            personRows.map((personRow) => {
-            // Generate location periods (travel windows + default location periods)
-            const locationPeriods = generateLocationPeriods(
-              personRow.person,
-              personRow.travelWindows,
-              rangeStart,
-              rangeEnd
-            );
-
-            // Get all bars for this person with their positions
-            const bars = locationPeriods
-              .map((period) => {
-                const position = calculateBarPosition(
-                  period.startDate.toISOString(),
-                  period.endDate.toISOString()
-                );
-                return {
-                  person: personRow.person,
-                  travel: period.travelWindow,
-                  period,
-                  position,
-                  isDefaultLocation: period.isDefaultLocation,
-                };
-              })
-              .filter((b) => b.position.width > 0 && b.position.left < 100);
-
-            // Calculate stacking for overlapping bars
-            const stackedBars = calculateBarStack(bars);
-            const maxStackHeight = stackedBars.length > 0 ? Math.max(...stackedBars.map((b) => b.stackIndex), 0) + 1 : 1;
-            const rowHeight = Math.max(80, maxStackHeight * 50); // Minimum 80px, 50px per stack level
-
-            return (
-              <div key={personRow.person.id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                {/* Person Info */}
-                <div className="w-64 p-4 border-r-2 border-gray-200 bg-white">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-900">{personRow.person.fullName}</p>
-                    <p className="text-xs text-gray-500">
-                      {personRow.person.roleType} · {personRow.travelWindows.length} {personRow.travelWindows.length === 1 ? 'trip' : 'trips'}
-                    </p>
-                  </div>
+      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col min-w-0">
+        {/* Timeline Header - Calendar Grid Layout for Month/Week */}
+        <div className="border-b-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white shadow-sm" style={{ zIndex: 1 }}>
+          {calendarGrid && (granularity === "Month" || granularity === "Week") ? (
+            <>
+              {/* Day of week headers (Sun-Sat) - Beautiful horizontal row */}
+              <div className="flex border-b border-gray-200">
+                <div className="w-64 p-4 border-r-2 border-gray-300 bg-white flex items-center sticky left-0 z-30 shadow-sm">
+                  <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm" style={{ fontFamily: 'var(--font-heading)' }}>
+                    {timelineViewMode === "person" ? "Person" : "Location"}
+                  </h3>
                 </div>
-
-                {/* Timeline Bars */}
-                <div className="flex-1 relative" style={{ minHeight: `${rowHeight}px` }}>
-                  {/* Grid lines - More visible */}
-                  <div className={`absolute inset-0 flex ${granularity === "Month" ? "min-w-max" : ""}`}>
-                    {timeAxis.map((_, i) => (
+                <div className="flex-1 bg-gradient-to-b from-gray-50 to-white min-w-0">
+                  <div className="flex w-full">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                       <div
-                        key={i}
-                        className={`${granularity === "Month" ? "w-20 flex-shrink-0" : "flex-1"} border-r border-gray-200 last:border-r-0`}
-                      />
+                        key={day}
+                        className="flex-1 p-3 sm:p-4 text-center bg-white border-r border-gray-200 last:border-r-0 flex items-center justify-center min-w-0"
+                      >
+                        <span className="text-sm sm:text-base font-bold text-gray-900 uppercase tracking-wide truncate">{day}</span>
+                      </div>
                     ))}
                   </div>
-
-                  {/* Location Period Bars */}
-                  {stackedBars.map((bar) => {
-                    const stackOffset = bar.stackIndex * 50; // 50px per stack level
-                    const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
-                    
-                    return (
-                      <div
-                        key={barKey}
-                        className={`absolute z-10 ${
-                          bar.travel ? "cursor-pointer group" : "cursor-default opacity-60"
-                        }`}
-                        style={{
-                          left: `${Math.max(0, bar.position.left)}%`,
-                          width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
-                          top: `${stackOffset + 10}px`,
-                          height: '40px',
-                        }}
-                        onClick={() => {
-                          if (bar.travel) {
-                            setSelectedTravel({ person: bar.person, travel: bar.travel });
-                          }
-                        }}
-                      >
-                        <div 
-                          className={`h-full rounded px-3 flex items-center shadow-sm transition-all border border-white/50 ${
-                            bar.travel ? "group-hover:shadow-md" : ""
-                          }`}
-                          style={{
-                            background: bar.isDefaultLocation 
-                              ? `linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)`
-                              : getRoleGradient(bar.person.roleType),
-                          }}
-                        >
-                          <span className="text-xs text-gray-700 truncate font-medium">
-                            {bar.period.city}
-                          </span>
-                        </div>
-
-                        {/* Tooltip - only show for travel windows */}
-                        {bar.travel && (
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-gray-900 text-white text-xs p-3 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
-                            <p className="font-medium">{bar.person.fullName}</p>
-                            <p className="text-gray-300 mt-1">
-                              {bar.travel.city}, {bar.travel.country}
-                            </p>
-                            <p className="text-gray-400 text-xs mt-1">
-                              {formatDateRange(bar.travel.startDate, bar.travel.endDate)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
-            );
-          })}
+              {/* Date headers for Month view (multiple rows) - Calendar grid */}
+              {granularity === "Month" && (
+                <div className="flex" style={{ zIndex: 0 }}>
+                  <div className="w-64 border-r-2 border-gray-300 bg-white sticky left-0 z-20"></div>
+                  <div className="flex-1 bg-white overflow-visible">
+                    <div 
+                      className="grid w-full"
+                      style={{ 
+                        gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                        gridTemplateRows: `repeat(${calendarGrid.weeks}, minmax(80px, auto))`
+                      }}
+                    >
+                      {calendarGrid.cells.map((cell) => (
+                        <div
+                          key={cell.value}
+                          className={`p-2 text-center border-r border-b border-gray-200 bg-white flex items-center justify-center ${
+                            !cell.isCurrentMonth ? 'bg-gray-50' : ''
+                          }`}
+                          style={{
+                            gridColumn: cell.columnIndex + 1,
+                            gridRow: cell.rowIndex + 1,
+                            zIndex: 0
+                          }}
+                        >
+                          <span className={`text-sm font-medium ${cell.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {cell.dayOfMonth}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex">
+              <div className="w-64 p-4 border-r-2 border-gray-300 bg-white sticky left-0 z-30 shadow-sm">
+                <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {timelineViewMode === "person" ? "Person" : "Location"}
+                </h3>
+              </div>
+              <div className="flex-1 bg-gray-50">
+                <div className="flex w-full">
+                  {timeAxis.map((tick) => (
+                    <div
+                      key={tick.value}
+                      className="flex-1 p-3 text-center border-r border-gray-300 last:border-r-0 bg-white min-w-0"
+                    >
+                      <span className="text-base font-semibold text-gray-900 block whitespace-nowrap truncate">
+                        {tick.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Timeline Rows - Scrollable container for full month visibility */}
+        <div className={`flex-1 timeline-scrollable overflow-y-auto ${calendarGrid && (granularity === "Month" || granularity === "Week") ? "" : "overflow-x-auto"}`}>
+          {timelineViewMode === "person" ? (
+            <>
+              {/* Person-based rows */}
+              {personRows.map((personRow) => {
+                // Generate location periods (travel windows + default location periods)
+                const locationPeriods = generateLocationPeriods(
+                  personRow.person,
+                  personRow.travelWindows,
+                  rangeStart,
+                  rangeEnd
+                );
+
+                // Get all bars for this person with their positions
+                const bars = locationPeriods
+                  .map((period) => {
+                    const position = calculateBarPosition(
+                      period.startDate.toISOString(),
+                      period.endDate.toISOString()
+                    );
+                    return {
+                      person: personRow.person,
+                      travel: period.travelWindow,
+                      period,
+                      position,
+                      isDefaultLocation: period.isDefaultLocation,
+                    };
+                  })
+                  .filter((b) => b.position.width > 0 && b.position.left < 100);
+
+                // Calculate stacking for overlapping bars
+                const stackedBars = calculateBarStack(bars);
+                const maxStackHeight = stackedBars.length > 0 ? Math.max(...stackedBars.map((b) => b.stackIndex), 0) + 1 : 1;
+                const rowHeight = Math.max(80, maxStackHeight * 50); // Minimum 80px, 50px per stack level
+
+                return (
+                  <div key={personRow.person.id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors relative">
+                    {/* Person Info - Sticky left column */}
+                    <div className="w-64 p-4 border-r-2 border-gray-200 bg-white flex-shrink-0 sticky left-0 z-20 shadow-sm">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-900">{personRow.person.fullName}</p>
+                        <p className="text-xs text-gray-500">
+                          {personRow.person.roleType} · {personRow.travelWindows.length} {personRow.travelWindows.length === 1 ? 'trip' : 'trips'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Timeline Bars - Calendar Grid Layout */}
+                    {calendarGrid && (granularity === "Month" || granularity === "Week") ? (
+                      <div className="flex-1 relative w-full" style={{ minHeight: `${rowHeight}px` }}>
+                        {/* Calendar Grid with proper sizing for scrolling */}
+                        <div 
+                          className="grid w-full h-full"
+                          style={{ 
+                            gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                            gridTemplateRows: granularity === "Month" 
+                              ? `repeat(${calendarGrid.weeks}, minmax(100px, auto))`
+                              : 'minmax(100px, auto)'
+                          }}
+                        >
+                          {calendarGrid.cells.map((cell) => {
+                            // Find bars that should appear in this cell based on date range
+                            const cellBars = stackedBars.filter(bar => {
+                              if (!bar.period) return false;
+                              
+                              // Get the actual date range for this bar
+                              const barStart = new Date(bar.period.startDate);
+                              barStart.setHours(0, 0, 0, 0);
+                              const barEnd = new Date(bar.period.endDate);
+                              barEnd.setHours(23, 59, 59, 999);
+                              
+                              // Get the cell's date range
+                              const cellStart = new Date(cell.date);
+                              cellStart.setHours(0, 0, 0, 0);
+                              const cellEnd = new Date(cell.date);
+                              cellEnd.setHours(23, 59, 59, 999);
+                              
+                              // Check if the cell's date falls within the bar's date range
+                              return cellStart <= barEnd && cellEnd >= barStart;
+                            });
+
+                            return (
+                              <div
+                                key={cell.value}
+                                className={`relative border-r border-b border-gray-200 ${
+                                  !cell.isCurrentMonth && granularity === "Month" ? 'bg-gray-50' : 'bg-white'
+                                }`}
+                                style={{
+                                  gridColumn: cell.columnIndex + 1,
+                                  gridRow: cell.rowIndex + 1
+                                }}
+                              >
+                                {/* Date number */}
+                                <div className="absolute top-1 left-1 text-xs font-medium text-gray-500">
+                                  {cell.dayOfMonth}
+                                </div>
+                                
+                                {/* Bars in this cell */}
+                                <div className="pt-6 pb-1 px-1 space-y-1 h-full">
+                                  {cellBars.map((bar, idx) => {
+                                    const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
+                                    
+                                    // Check if this is the first cell by comparing dates
+                                    const barStart = new Date(bar.period.startDate);
+                                    barStart.setHours(0, 0, 0, 0);
+                                    const cellStart = new Date(cell.date);
+                                    cellStart.setHours(0, 0, 0, 0);
+                                    const isFirstCell = cellStart.getTime() === barStart.getTime();
+                                    
+                                    // Determine label based on view mode
+                                    const barLabel = timelineViewMode === "person" 
+                                      ? bar.period.city 
+                                      : bar.person.fullName;
+                                    
+                                    return (
+                                      <div
+                                        key={barKey}
+                                        onClick={() => {
+                                          if (bar.travel) {
+                                            setSelectedTravel({ person: bar.person, travel: bar.travel });
+                                          }
+                                        }}
+                                        className={`relative h-6 rounded px-2 flex items-center shadow-sm transition-all border border-white/50 text-xs truncate ${
+                                          bar.travel ? "cursor-pointer group hover:shadow-md" : "cursor-default opacity-60"
+                                        }`}
+                                        onMouseEnter={(e) => {
+                                          if (bar.travel) {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setPersonTooltip({
+                                              visible: true,
+                                              x: rect.left + rect.width / 2,
+                                              y: rect.top,
+                                              content: {
+                                                personName: bar.person.fullName,
+                                                city: bar.period.city,
+                                                country: bar.period.country,
+                                                dateRange: formatDateRange(bar.period.startDate, bar.period.endDate),
+                                              },
+                                            });
+                                          }
+                                        }}
+                                        onMouseLeave={() => {
+                                          setPersonTooltip(null);
+                                        }}
+                                        style={{
+                                          background: bar.isDefaultLocation 
+                                            ? `linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)`
+                                            : getRoleGradient(bar.person.roleType),
+                                          zIndex: bar.travel ? 10 : 1,
+                                        }}
+                                        title={barLabel}
+                                      >
+                                        {(isFirstCell || cellBars.length === 1) && (
+                                          <span className="text-[10px] text-gray-700 font-medium truncate">
+                                            {barLabel}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 relative" style={{ minHeight: `${rowHeight}px` }}>
+                        {/* Grid lines - More visible */}
+                        <div className="absolute inset-0 flex w-full">
+                          {timeAxis.map((_, i) => (
+                            <div
+                              key={i}
+                              className="flex-1 border-r border-gray-200 last:border-r-0 min-w-0"
+                            />
+                          ))}
+                        </div>
+
+                        {/* Location Period Bars */}
+                        {stackedBars.map((bar) => {
+                          // In person-based rows, period is always present
+                          if (!bar.period) return null;
+                          
+                          const stackOffset = bar.stackIndex * 50; // 50px per stack level
+                          const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
+                          
+                          return (
+                            <div
+                              key={barKey}
+                              className={`absolute ${
+                                bar.travel ? "cursor-pointer group" : "cursor-default opacity-60"
+                              }`}
+                              style={{
+                                left: `${Math.max(0, bar.position.left)}%`,
+                                width: `${Math.min(100 - bar.position.left, bar.position.width)}%`,
+                                top: `${stackOffset + 10}px`,
+                                height: '40px',
+                                zIndex: Z_INDEX_TIMELINE_BAR,
+                              }}
+                              onClick={() => {
+                                if (bar.travel) {
+                                  setSelectedTravel({ person: bar.person, travel: bar.travel });
+                                }
+                              }}
+                              onMouseMove={(e) => {
+                                const tooltip = e.currentTarget.querySelector('[data-tooltip]') as HTMLElement;
+                                if (tooltip) {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  tooltip.style.left = `${rect.left + rect.width / 2}px`;
+                                  tooltip.style.top = `${rect.top}px`;
+                                }
+                              }}
+                            >
+                              <div 
+                                className={`h-full rounded px-3 flex items-center shadow-sm transition-all border border-white/50 ${
+                                  bar.travel ? "group-hover:shadow-md" : ""
+                                }`}
+                                style={{
+                                  background: bar.isDefaultLocation 
+                                    ? `linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)`
+                                    : getRoleGradient(bar.person.roleType),
+                                }}
+                              >
+                                <span className="text-xs text-gray-700 truncate font-medium">
+                                  {bar.period.city}
+                                </span>
+                              </div>
+
+                              {/* Tooltip - only show for travel windows */}
+                              {bar.travel && (
+                                <div 
+                                  data-tooltip
+                                  className="fixed w-64 bg-gray-900 text-white text-xs p-3 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg"
+                                  style={{ 
+                                    zIndex: 99999,
+                                    transform: 'translate(-50%, calc(-100% - 8px))',
+                                  }}
+                                >
+                                  <p className="font-medium">{bar.person.fullName}</p>
+                                  <p className="text-gray-300 mt-1">
+                                    {bar.travel.city}, {bar.travel.country}
+                                  </p>
+                                  <p className="text-gray-400 text-xs mt-1">
+                                    {formatDateRange(bar.travel.startDate, bar.travel.endDate)}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {personRows.length === 0 && (
                 <div className="p-12 text-center text-gray-500">
                   No people match the current filters
                 </div>
               )}
-            ) : (
+            </>
+          ) : (
               // Location-based rows
               locationRows.map((location) => renderLocationRow(location, false))
             )}
@@ -1162,6 +1866,28 @@ export function TimelineView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Portal-rendered tooltip for person view to escape overflow containers */}
+      {personTooltip && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed w-64 bg-gray-900 text-white text-xs p-3 rounded shadow-lg pointer-events-none"
+          style={{ 
+            zIndex: 999999,
+            left: `${personTooltip.x}px`,
+            top: `${personTooltip.y}px`,
+            transform: 'translate(-50%, calc(-100% - 8px))',
+          }}
+        >
+          <p className="font-medium">{personTooltip.content.personName}</p>
+          <p className="text-gray-300 mt-1">
+            {personTooltip.content.city}, {personTooltip.content.country}
+          </p>
+          <p className="text-gray-400 mt-1 text-[10px]">
+            {personTooltip.content.dateRange}
+          </p>
+        </div>,
+        document.body
       )}
     </div>
   );
