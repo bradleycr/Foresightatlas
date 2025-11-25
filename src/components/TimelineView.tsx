@@ -31,6 +31,7 @@ interface TimelineViewProps {
   nodes: PrimaryNode[]; // Selected nodes filter
   timelineViewMode: TimelineViewMode; // "person" or "location"
   onViewOnMap?: (personId: string, travelWindowId: string) => void;
+  onViewPersonDetails?: (personId: string) => void;
 }
 
 interface PersonRow {
@@ -68,6 +69,7 @@ export function TimelineView({
   nodes,
   timelineViewMode,
   onViewOnMap,
+  onViewPersonDetails,
 }: TimelineViewProps) {
   const isMobile = useIsMobile();
   const [selectedTravel, setSelectedTravel] = useState<{
@@ -1389,17 +1391,18 @@ export function TimelineView({
                         View on Map
                       </Button>
                     )}
-                    {selectedTravel.person.profileUrl && (
-                      <a
-                        href={selectedTravel.person.profileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 w-full text-sm text-teal-600 hover:text-teal-700 py-2 px-4 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors"
-                      >
-                        <ExternalLink className="size-4" />
-                        View full profile
-                      </a>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        console.log("TimelineView: View full profile clicked for:", selectedTravel.person.id);
+                        onViewPersonDetails?.(selectedTravel.person.id);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 w-full text-sm text-teal-600 hover:text-teal-700 py-2 px-4 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors relative z-50"
+                    >
+                      <ExternalLink className="size-4" />
+                      View full profile
+                    </button>
                   </div>
                 </div>
               </>
@@ -1852,17 +1855,18 @@ export function TimelineView({
 
             {/* Actions */}
             <div className="pt-4 border-t border-gray-200">
-              {selectedTravel.person.profileUrl && (
-                <a
-                  href={selectedTravel.person.profileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700"
-                >
-                  <ExternalLink className="size-4" />
-                  View full profile
-                </a>
-              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log("TimelineView: View full profile clicked (mobile) for:", selectedTravel.person.id);
+                  onViewPersonDetails?.(selectedTravel.person.id);
+                }}
+                className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 relative z-50"
+              >
+                <ExternalLink className="size-4" />
+                View full profile
+              </button>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { TimelineView } from "./components/TimelineView";
 import { SuggestUpdateModal } from "./components/SuggestUpdateModal";
 import { AdminLoginModal } from "./components/AdminLoginModal";
 import { AdminPanel } from "./components/AdminPanel";
+import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow, LocationSuggestion } from "./types";
 import {
   getAllPeople,
@@ -34,6 +35,7 @@ export default function App() {
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
   // Auth state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -55,7 +57,7 @@ export default function App() {
     focusTags: [],
     nodes: [],
     cities: [],
-    year: currentYear, // Can be null for "All time"
+    year: null, // Default to "All time" to show all locations
     granularity: "Year",
     referenceDate: today.toISOString(),
     timelineViewMode: "location", // Default to location view
@@ -186,19 +188,39 @@ export default function App() {
   const timeWindowStart = useMemo(() => {
     // "All time" - use a very early date
     if (filters.year === null) {
+      // For Month/Week with "All Time", use reference date's year
+      if (filters.granularity === "Month" || filters.granularity === "Week") {
+        const ref = new Date(filters.referenceDate);
+        const month = ref.getMonth();
+        const day = ref.getDate();
+        
+        if (filters.granularity === "Month") {
+          return new Date(ref.getFullYear(), month, 1);
+        }
+        
+        if (filters.granularity === "Week") {
+          const base = new Date(ref.getFullYear(), month, day);
+          const startOfWeek = new Date(base);
+          startOfWeek.setDate(base.getDate() - base.getDay());
+          return startOfWeek;
+        }
+      }
       return new Date(1900, 0, 1);
     }
 
+    // Year is selected - use it for Month/Week calculations
     const ref = new Date(filters.referenceDate);
     const month = ref.getMonth();
     const day = ref.getDate();
 
     if (filters.granularity === "Month") {
-      return new Date(ref.getFullYear(), month, 1);
+      // Use selected year, not reference date's year
+      return new Date(filters.year, month, 1);
     }
 
     if (filters.granularity === "Week") {
-      const base = new Date(ref.getFullYear(), month, day);
+      // Use selected year, not reference date's year
+      const base = new Date(filters.year, month, day);
       const startOfWeek = new Date(base);
       startOfWeek.setDate(base.getDate() - base.getDay());
       return startOfWeek;
@@ -210,26 +232,49 @@ export default function App() {
   const timeWindowEnd = useMemo(() => {
     // "All time" - use a very far future date
     if (filters.year === null) {
+      // For Month/Week with "All Time", use reference date's year
+      if (filters.granularity === "Month" || filters.granularity === "Week") {
+        const ref = new Date(filters.referenceDate);
+        const month = ref.getMonth();
+        const day = ref.getDate();
+        
+        if (filters.granularity === "Month") {
+          return new Date(ref.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+        }
+        
+        if (filters.granularity === "Week") {
+          const base = new Date(ref.getFullYear(), month, day);
+          const endOfWeek = new Date(base);
+          const daysToAdd = 6 - endOfWeek.getDay();
+          endOfWeek.setDate(base.getDate() + daysToAdd);
+          endOfWeek.setHours(23, 59, 59, 999);
+          return endOfWeek;
+        }
+      }
       return new Date(2100, 11, 31);
     }
 
+    // Year is selected - use it for Month/Week calculations
     const ref = new Date(filters.referenceDate);
     const month = ref.getMonth();
     const day = ref.getDate();
 
     if (filters.granularity === "Month") {
-      return new Date(ref.getFullYear(), month + 1, 0);
+      // Use selected year, not reference date's year
+      return new Date(filters.year, month + 1, 0, 23, 59, 59, 999);
     }
 
     if (filters.granularity === "Week") {
-      const base = new Date(ref.getFullYear(), month, day);
+      // Use selected year, not reference date's year
+      const base = new Date(filters.year, month, day);
       const endOfWeek = new Date(base);
       const daysToAdd = 6 - endOfWeek.getDay();
       endOfWeek.setDate(base.getDate() + daysToAdd);
+      endOfWeek.setHours(23, 59, 59, 999);
       return endOfWeek;
     }
 
-    return new Date(filters.year, 11, 31);
+    return new Date(filters.year, 11, 31, 23, 59, 59, 999);
   }, [filters.year, filters.granularity, filters.referenceDate]);
 
   // Handle reset to current 12 months
@@ -457,7 +502,6 @@ export default function App() {
       <FiltersBar
         filters={filters}
         onFiltersChange={setFilters}
-        onReset={handleResetToCurrent12Months}
         availableCities={availableCities}
         activeTab={activeTab}
       />
@@ -470,6 +514,7 @@ export default function App() {
             filteredTravelWindows={filteredTravelWindows}
             timeWindowStart={timeWindowStart}
             timeWindowEnd={timeWindowEnd}
+            onViewPersonDetails={(personId) => setSelectedPersonId(personId)}
           />
         ) : (
           <TimelineView
@@ -481,6 +526,7 @@ export default function App() {
             referenceDate={filters.referenceDate}
             cities={filters.cities}
             nodes={filters.nodes}
+            onViewPersonDetails={(personId) => setSelectedPersonId(personId)}
           />
         )}
       </div>
@@ -527,6 +573,24 @@ export default function App() {
           onClose={() => setShowAdminPanel(false)}
         />
       )}
+
+      {/* Person Detail Modal */}
+      <PersonDetailModal
+        person={people.find((p) => p.id === selectedPersonId) || null}
+        travelWindows={travelWindows}
+        allPeople={filteredPeople}
+        isOpen={selectedPersonId !== null}
+        isAdmin={isAdmin}
+        onClose={() => {
+          console.log("Closing modal");
+          setSelectedPersonId(null);
+        }}
+        onNavigate={(personId) => {
+          console.log("Navigating to person:", personId);
+          setSelectedPersonId(personId);
+        }}
+        onDataUpdate={loadData}
+      />
 
       {/* Loading overlay */}
       {isLoading && (

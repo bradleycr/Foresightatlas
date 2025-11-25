@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, Calendar } from "lucide-react";
+import { ExternalLink, MapPin, Calendar, Info } from "lucide-react";
 import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -8,6 +8,7 @@ interface FellowCardProps {
   person: Person;
   nextTravel?: TravelWindow;
   onSelect?: () => void;
+  onViewDetails?: () => void;
   isHighlighted?: boolean;
 }
 
@@ -15,6 +16,7 @@ export function FellowCard({
   person,
   nextTravel,
   onSelect,
+  onViewDetails,
   isHighlighted,
 }: FellowCardProps) {
   const formatDateRange = (start: string, end: string) => {
@@ -59,17 +61,19 @@ export function FellowCard({
               </span>
             </div>
           </div>
-          {person.profileUrl && (
-            <a
-              href={person.profileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-teal-500 hover:text-teal-600"
-            >
-              <ExternalLink className="size-4" />
-            </a>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log("Info button clicked for:", person.fullName);
+              onViewDetails?.();
+            }}
+            className="text-teal-500 hover:text-teal-600 transition-colors flex-shrink-0 p-1 rounded hover:bg-teal-50 relative z-50"
+            title="View full details"
+            aria-label="View full details"
+          >
+            <Info className="size-4" />
+          </button>
         </div>
 
         {/* Focus Tags */}

@@ -15,6 +15,7 @@ interface MapViewProps {
   filteredTravelWindows: TravelWindow[];
   timeWindowStart: Date;
   timeWindowEnd: Date;
+  onViewPersonDetails?: (personId: string) => void;
 }
 
 interface MarkerData {
@@ -202,6 +203,7 @@ export function MapView({
   filteredTravelWindows,
   timeWindowStart,
   timeWindowEnd,
+  onViewPersonDetails,
 }: MapViewProps) {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
@@ -314,6 +316,10 @@ export function MapView({
                   setSelectedMarker(personMarker);
                   // Popup will open automatically when marker is clicked/selected
                 }
+              }}
+              onViewDetails={() => {
+                console.log("FellowCard onViewDetails called for:", person.id);
+                onViewPersonDetails?.(person.id);
               }}
               isHighlighted={selectedPerson === person.id}
             />

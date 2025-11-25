@@ -327,11 +327,11 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
         }
       }}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative" 
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col relative overflow-hidden" 
         style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white rounded-t-lg">
           <div className="flex-1 min-w-0">
             <h2 className="text-gray-900 font-semibold text-lg">Suggest an Update</h2>
             <p className="text-sm text-gray-600 mt-1">

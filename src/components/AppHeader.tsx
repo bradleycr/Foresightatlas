@@ -92,9 +92,9 @@ export function AppHeader({
                 </Button>
                 <Button
                   onClick={onAdminClick}
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="text-gray-500 hover:text-gray-700 text-xs"
                 >
                   Admin
                 </Button>
