@@ -4,6 +4,7 @@
   import path from 'path';
 
   export default defineConfig({
+    base: process.env.VITE_BASE_PATH || '/',
     plugins: [react()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -17,8 +18,6 @@
         'next-themes@0.4.6': 'next-themes',
         'lucide-react@0.487.0': 'lucide-react',
         'input-otp@1.4.2': 'input-otp',
-        'figma:asset/5adf381c3a47c183cc3f5a6e2c971442c2b61290.png': path.resolve(__dirname, './src/assets/5adf381c3a47c183cc3f5a6e2c971442c2b61290.png'),
-        'figma:asset/4396d511673bc6640dd36d993bc028270de6d524.png': path.resolve(__dirname, './src/assets/4396d511673bc6640dd36d993bc028270de6d524.png'),
         'embla-carousel-react@8.6.0': 'embla-carousel-react',
         'cmdk@1.1.1': 'cmdk',
         'class-variance-authority@0.7.1': 'class-variance-authority',

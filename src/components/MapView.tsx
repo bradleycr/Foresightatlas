@@ -7,6 +7,7 @@ import { MapPin, Users, List, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
+import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -41,32 +42,74 @@ function FitBounds({ markers }: { markers: MarkerData[] }) {
     map.options.worldCopyJump = false;
     
     // Ensure minimum zoom level to prevent over-zooming and grey areas
-    map.setMinZoom(3);
+    map.setMinZoom(2);
     
     // If current zoom is below minimum, set it to minimum
-    if (map.getZoom() < 3) {
-      map.setZoom(3);
+    if (map.getZoom() < 2) {
+      map.setZoom(2);
     }
 
     if (markers.length === 0) return;
 
-    if (markers.length === 1) {
-      const zoom = Math.max(6, 3); // Ensure never below minimum
-      map.setView([markers[0].coordinates.lat, markers[0].coordinates.lng], zoom);
-      return;
-    }
-
-    const bounds = new LatLngBounds(
-      markers.map((m) => [m.coordinates.lat, m.coordinates.lng])
-    );
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
-    
-    // Ensure zoom never goes below minimum after fitBounds
-    setTimeout(() => {
-      if (map.getZoom() < 3) {
-        map.setZoom(3);
+    // Wait for map to be fully initialized before fitting bounds
+    const fitBoundsToMarkers = () => {
+      // Ensure map knows its container size
+      map.invalidateSize();
+      
+      if (markers.length === 1) {
+        const zoom = Math.max(6, 2); // Ensure never below minimum
+        map.setView([markers[0].coordinates.lat, markers[0].coordinates.lng], zoom);
+        return;
       }
-    }, 100);
+
+      const bounds = new LatLngBounds(
+        markers.map((m) => [m.coordinates.lat, m.coordinates.lng])
+      );
+      
+      // Use viewport-based padding for better results
+      // Calculate padding as percentage of viewport for responsive behavior
+      const container = map.getContainer();
+      const containerHeight = container?.offsetHeight || 600;
+      const containerWidth = container?.offsetWidth || 800;
+      
+      // Use 15% padding on all sides for nice breathing room
+      const paddingTop = Math.round(containerHeight * 0.15);
+      const paddingBottom = Math.round(containerHeight * 0.15);
+      const paddingLeft = Math.round(containerWidth * 0.15);
+      const paddingRight = Math.round(containerWidth * 0.15);
+      
+      // Also set a reasonable maxZoom to prevent over-zooming when markers are close
+      map.fitBounds(bounds, { 
+        padding: [paddingTop, paddingRight, paddingBottom, paddingLeft],
+        maxZoom: 12, // Prevent over-zooming for better overview
+        animate: false // Instant fit on initial load for better UX
+      });
+      
+      // Ensure zoom never goes below minimum after fitBounds
+      setTimeout(() => {
+        if (map.getZoom() < 2) {
+          map.setZoom(2);
+        }
+        // Double-check bounds are correct
+        map.invalidateSize();
+      }, 150);
+    };
+
+    // Wait for map to be ready - use multiple attempts to ensure it works
+    const attemptFit = () => {
+      const container = map.getContainer();
+      if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+        fitBoundsToMarkers();
+      } else {
+        // Retry if container not ready
+        setTimeout(attemptFit, 50);
+      }
+    };
+    
+    // Start attempting after a short delay
+    const timer = setTimeout(attemptFit, 150);
+    
+    return () => clearTimeout(timer);
   }, [map, markers]);
 
   return null;
@@ -79,7 +122,7 @@ function ZoomToMarker({ marker }: { marker: MarkerData | null }) {
   useEffect(() => {
     if (marker) {
       const targetZoom = 8;
-      const finalZoom = Math.max(targetZoom, 3); // Ensure never below minimum
+      const finalZoom = Math.max(targetZoom, 2); // Ensure never below minimum
       map.flyTo(
         [marker.coordinates.lat, marker.coordinates.lng],
         finalZoom,
@@ -318,7 +361,6 @@ export function MapView({
                 }
               }}
               onViewDetails={() => {
-                console.log("FellowCard onViewDetails called for:", person.id);
                 onViewPersonDetails?.(person.id);
               }}
               isHighlighted={selectedPerson === person.id}
@@ -335,9 +377,9 @@ export function MapView({
       <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:min-h-0 shadow-lg border border-gray-100">
         {markers.length > 0 ? (
           <MapContainer
-            center={[20, 0]}
+            center={[50, -30]}
             zoom={3}
-            minZoom={3}
+            minZoom={2}
             maxZoom={18}
             maxBounds={[[-85, -180], [85, 180]]}
             maxBoundsViscosity={1.0}
@@ -566,7 +608,7 @@ export function MapView({
               position: 'absolute',
               top: '1rem',
               right: '1rem',
-              zIndex: 0
+              zIndex: Z_INDEX_MAP_CONTROLS
             }}
           >
             <Button
@@ -578,7 +620,7 @@ export function MapView({
                 background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
                 border: '1px solid rgba(0, 0, 0, 0.15)',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
-                zIndex: 0
+                zIndex: Z_INDEX_MAP_CONTROLS
               }}
             >
               {isSidebarOpen ? (
@@ -607,7 +649,7 @@ export function MapView({
             top: '1rem',
             right: '1rem',
             left: 'auto',
-            zIndex: 0
+            zIndex: Z_INDEX_MAP_CONTROLS
           }}
         >
           <Button
@@ -623,12 +665,11 @@ export function MapView({
 
       {/* Fellows & Grantees List - desktop sidebar */}
       {!isMobile && isSidebarOpen && (
-        <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none relative" style={{ zIndex: 0 }}>
+        <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
           <div 
             className="p-4 border-b border-gray-200 flex items-center justify-between relative"
             style={{
               background: 'linear-gradient(135deg, #fafafa 0%, #f9fafb 100%)',
-              zIndex: 0
             }}
           >
             <div>
@@ -641,7 +682,6 @@ export function MapView({
               variant="ghost"
               size="sm"
               className="text-gray-600 hover:text-gray-900 relative"
-              style={{ zIndex: 0 }}
               onClick={() => setIsSidebarOpen(false)}
             >
               Hide list
@@ -655,12 +695,11 @@ export function MapView({
 
       {/* Mobile: full-screen fellows sheet */}
       {isMobile && isSidebarOpen && (
-        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: 0 }}>
+        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_MODAL_CONTENT }}>
           <div 
             className="px-6 py-4 border-b border-gray-200 flex items-center justify-between relative gap-3"
             style={{
               background: 'linear-gradient(135deg, #fafafa 0%, #f9fafb 100%)',
-              zIndex: 0
             }}
           >
             <div className="flex-1 min-w-0">
@@ -673,7 +712,6 @@ export function MapView({
               variant="outline"
               size="sm"
               className="border-gray-300 text-gray-700 bg-white/80 relative flex-shrink-0"
-              style={{ zIndex: 0 }}
               onClick={() => setIsSidebarOpen(false)}
             >
               Back to map

@@ -62,13 +62,55 @@ app.post("/api/database", async (req, res) => {
       database.adminUsers = [];
     }
 
-    // Write to file
-    await fs.writeFile(DB_PATH, JSON.stringify(database, null, 2), "utf8");
+    // Validate suggestions structure before saving (production-ready validation)
+    for (const suggestion of database.suggestions) {
+      if (!suggestion.id || typeof suggestion.id !== 'string') {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid ID" });
+      }
+      if (!suggestion.personName || typeof suggestion.personName !== 'string') {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid personName" });
+      }
+      if (!suggestion.personEmailOrHandle || typeof suggestion.personEmailOrHandle !== 'string') {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid personEmailOrHandle" });
+      }
+      if (!suggestion.requestedChangeType || !['New entry', 'Update location', 'Add travel window'].includes(suggestion.requestedChangeType)) {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid requestedChangeType" });
+      }
+      if (!suggestion.requestedPayload || typeof suggestion.requestedPayload !== 'object') {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid requestedPayload" });
+      }
+      if (!suggestion.status || !['Pending', 'Accepted', 'Rejected'].includes(suggestion.status)) {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid status" });
+      }
+      if (!suggestion.createdAt || typeof suggestion.createdAt !== 'string') {
+        return res.status(400).json({ error: "Invalid suggestion: missing or invalid createdAt" });
+      }
+    }
+
+    // Write to file with comprehensive error handling
+    try {
+      await fs.writeFile(DB_PATH, JSON.stringify(database, null, 2), "utf8");
+    } catch (writeError) {
+      console.error("Error writing database file:", writeError);
+      // Check if it's a permissions error
+      if (writeError.code === 'EACCES' || writeError.code === 'EPERM') {
+        return res.status(500).json({ error: "Permission denied: cannot write to database file" });
+      }
+      // Check if disk is full
+      if (writeError.code === 'ENOSPC') {
+        return res.status(500).json({ error: "Disk full: cannot save database" });
+      }
+      throw writeError; // Re-throw other errors
+    }
 
     res.json({ success: true, message: "Database saved successfully" });
   } catch (error) {
     console.error("Error writing database:", error);
-    res.status(500).json({ error: "Failed to write database" });
+    // Don't expose internal error details in production
+    const errorMessage = process.env.NODE_ENV === 'production' 
+      ? "Failed to write database" 
+      : error.message;
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -85,5 +127,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
-

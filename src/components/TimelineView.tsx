@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Person, TravelWindow, Granularity, PrimaryNode, TimelineViewMode } from "../types";
 import { Badge } from "./ui/badge";
@@ -87,9 +87,13 @@ export function TimelineView({
   const [showMobileWarning, setShowMobileWarning] = useState(false);
 
   // Show mobile warning when timeline view is accessed on mobile
+  // Respect user's preference to not show again
   useEffect(() => {
     if (isMobile) {
-      setShowMobileWarning(true);
+      const dontShowAgain = localStorage.getItem('timeline-mobile-warning-dismissed');
+      if (!dontShowAgain) {
+        setShowMobileWarning(true);
+      }
     }
   }, [isMobile]);
 
@@ -795,6 +799,8 @@ export function TimelineView({
                     {/* Bars in this cell */}
                     <div className={`pt-5 pb-1 px-0.5 space-y-0.5 h-full`}>
                       {cellBars.map((bar, idx) => {
+                        if (!bar.travel) return null;
+                        
                         const barKey = bar.travel.id;
                         
                         // Check if this is the first cell by comparing dates
@@ -971,13 +977,25 @@ export function TimelineView({
                 The timeline view is optimized for desktop and tablet screens. For the best experience on your phone, please visit on a computer or use the map view instead.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col gap-3 pt-4">
               <Button
-                onClick={() => setShowMobileWarning(false)}
-                className="flex-1"
+                onClick={() => {
+                  setShowMobileWarning(false);
+                }}
+                className="w-full"
                 variant="default"
               >
                 Continue Anyway
+              </Button>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('timeline-mobile-warning-dismissed', 'true');
+                  setShowMobileWarning(false);
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Don't Show Again
               </Button>
             </div>
           </DialogContent>
@@ -1174,6 +1192,8 @@ export function TimelineView({
                                   {/* Bars in this cell */}
                                   <div className="pt-5 pb-1 px-0.5 space-y-0.5 h-full">
                                     {cellBars.map((bar, idx) => {
+                                      if (!bar.period) return null;
+                                      
                                       const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
                                       
                                       // Check if this is the first cell by comparing dates
@@ -1395,7 +1415,6 @@ export function TimelineView({
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        console.log("TimelineView: View full profile clicked for:", selectedTravel.person.id);
                         onViewPersonDetails?.(selectedTravel.person.id);
                       }}
                       className="inline-flex items-center justify-center gap-2 w-full text-sm text-teal-600 hover:text-teal-700 py-2 px-4 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors relative z-50"
@@ -1603,6 +1622,8 @@ export function TimelineView({
                                 {/* Bars in this cell */}
                                 <div className="pt-6 pb-1 px-1 space-y-1 h-full">
                                   {cellBars.map((bar, idx) => {
+                                    if (!bar.period) return null;
+                                    
                                     const barKey = bar.travel ? bar.travel.id : `${bar.person.id}-${bar.period.city}-default`;
                                     
                                     // Check if this is the first cell by comparing dates
@@ -1629,7 +1650,7 @@ export function TimelineView({
                                           bar.travel ? "cursor-pointer group hover:shadow-md" : "cursor-default opacity-60"
                                         }`}
                                         onMouseEnter={(e) => {
-                                          if (bar.travel) {
+                                          if (bar.travel && bar.period) {
                                             const rect = e.currentTarget.getBoundingClientRect();
                                             setPersonTooltip({
                                               visible: true,
@@ -1639,7 +1660,7 @@ export function TimelineView({
                                                 personName: bar.person.fullName,
                                                 city: bar.period.city,
                                                 country: bar.period.country,
-                                                dateRange: formatDateRange(bar.period.startDate, bar.period.endDate),
+                                                dateRange: formatDateRange(bar.period.startDate.toISOString(), bar.period.endDate.toISOString()),
                                               },
                                             });
                                           }
@@ -1859,7 +1880,6 @@ export function TimelineView({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  console.log("TimelineView: View full profile clicked (mobile) for:", selectedTravel.person.id);
                   onViewPersonDetails?.(selectedTravel.person.id);
                 }}
                 className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 relative z-50"

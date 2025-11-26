@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { X } from "lucide-react";
 import { AppHeader } from "./components/AppHeader";
 import { FiltersBar } from "./components/FiltersBar";
 import { MapView } from "./components/MapView";
@@ -25,6 +26,7 @@ import {
 import { geocodeCity } from "./services/geocoding";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
+import { Button } from "./components/ui/button";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 
 export default function App() {
@@ -50,14 +52,13 @@ export default function App() {
 
   // Filter state
   const today = new Date();
-  const currentYear = today.getFullYear();
   const [filters, setFilters] = useState<Filters>({
     search: "",
     programs: [],
     focusTags: [],
     nodes: [],
     cities: [],
-    year: null, // Default to "All time" to show all locations
+    year: today.getFullYear(), // Default to current year
     granularity: "Year",
     referenceDate: today.toISOString(),
     timelineViewMode: "location", // Default to location view
@@ -328,22 +329,46 @@ export default function App() {
   // Handle suggestion submission
   const handleSuggestionSubmit = async (suggestionData: any) => {
     try {
+      // Validate required fields
+      if (!suggestionData.personName || !suggestionData.personEmailOrHandle) {
+        throw new Error("Name and email/contact are required");
+      }
+      if (!suggestionData.requestedChangeType) {
+        throw new Error("Change type is required");
+      }
+      if (!suggestionData.requestedPayload || typeof suggestionData.requestedPayload !== 'object') {
+        throw new Error("Invalid payload data");
+      }
+
+      // Create properly formatted suggestion
       const suggestion: LocationSuggestion = {
-        ...suggestionData,
         id: generateSuggestionId(),
+        personName: suggestionData.personName.trim(),
+        personEmailOrHandle: suggestionData.personEmailOrHandle.trim(),
+        requestedChangeType: suggestionData.requestedChangeType,
+        requestedPayload: suggestionData.requestedPayload,
         createdAt: new Date().toISOString(),
         status: "Pending",
       };
+
+      // Save to database
       await addSuggestion(suggestion);
-      toast.success("Suggestion submitted successfully");
+      
+      toast.success("Suggestion submitted successfully", {
+        description: "Your update has been recorded and will be reviewed by an admin.",
+      });
       setShowSuggestModal(false);
-      await loadData(); // Refresh data
+      
+      // Refresh data to show the new suggestion
+      await loadData();
     } catch (err) {
+      console.error("Error submitting suggestion:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Failed to submit suggestion";
       toast.error("Failed to submit suggestion", {
         description: errorMessage,
       });
+      // Don't close modal on error so user can fix and retry
     }
   };
 
@@ -582,11 +607,9 @@ export default function App() {
         isOpen={selectedPersonId !== null}
         isAdmin={isAdmin}
         onClose={() => {
-          console.log("Closing modal");
           setSelectedPersonId(null);
         }}
         onNavigate={(personId) => {
-          console.log("Navigating to person:", personId);
           setSelectedPersonId(personId);
         }}
         onDataUpdate={loadData}
@@ -603,9 +626,33 @@ export default function App() {
 
       {/* Error message */}
       {error && !isLoading && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" style={{ zIndex: Z_INDEX_ERROR }}>
-          <p className="font-semibold">Error loading data</p>
-          <p className="text-sm">{error}</p>
+        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-900 px-4 py-3 rounded-lg shadow-lg max-w-md" style={{ zIndex: Z_INDEX_ERROR }}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="font-semibold text-red-900 mb-1">Error loading data</p>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+              aria-label="Dismiss error"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button
+              onClick={() => {
+                setError(null);
+                loadData();
+              }}
+              size="sm"
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+            >
+              Retry
+            </Button>
+          </div>
         </div>
       )}
 

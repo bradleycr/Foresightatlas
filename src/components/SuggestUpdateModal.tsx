@@ -254,14 +254,14 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
       };
     }
 
+    // Don't generate ID here - let App.tsx handle it with generateSuggestionId()
+    // This ensures consistent ID format and avoids conflicts
     const suggestion = {
-      id: `sugg-${Date.now()}`,
       personName: data.personName,
       personEmailOrHandle: data.personEmailOrHandle,
       requestedChangeType: data.changeType,
       requestedPayload: payload,
-      createdAt: new Date().toISOString(),
-      status: "Pending",
+      // createdAt and status will be set in App.tsx
     };
 
     onSubmit(suggestion);

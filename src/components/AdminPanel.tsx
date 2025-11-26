@@ -1,11 +1,12 @@
 /**
- * Admin Panel Component
+ * Updates Panel Component
  * 
- * Comprehensive admin interface with full CRUD capabilities for:
- * - Location Suggestions (approve/reject)
+ * Admin interface for reviewing suggested updates and managing data:
+ * - Location Suggestions (approve/reject pending requests)
  * - People Management (create, read, update, delete)
  * - Travel Windows Management (create, read, update, delete)
  * 
+ * Note: The entire admin view is "admin" - this panel specifically handles updates and suggestions.
  * Beautiful, modular design with elegant mobile styling.
  */
 
@@ -414,22 +415,23 @@ export function AdminPanel({
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col relative"
+          className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col relative"
           style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50">
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900">Admin Panel</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">Updates Panel</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Manage people, travel windows, and review suggestions
+                Review suggested updates and manage people and travel windows
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full p-1.5 transition-colors"
+              aria-label="Close panel"
             >
-              <X className="size-6" />
+              <X className="size-5" />
             </button>
           </div>
 
@@ -440,12 +442,12 @@ export function AdminPanel({
               className="flex-1 flex flex-col overflow-hidden"
             >
               <div className="px-6 pt-4 border-b border-gray-200">
-                <TabsList className="grid w-full max-w-md grid-cols-3">
+                <TabsList className="grid w-full max-w-lg grid-cols-3 gap-1">
                   <TabsTrigger value="suggestions" className="flex items-center gap-2">
                     <Clock className="size-4" />
                     <span className="hidden sm:inline">Suggestions</span>
                     {pendingSuggestions.length > 0 && (
-                      <Badge variant="secondary" className="ml-1">
+                      <Badge variant="secondary" className="ml-1 text-xs">
                         {pendingSuggestions.length}
                       </Badge>
                     )}
@@ -470,12 +472,18 @@ export function AdminPanel({
                       <h3 className="text-lg font-semibold text-gray-900">
                         Pending Requests
                       </h3>
-                      <Badge variant="secondary">{pendingSuggestions.length}</Badge>
+                      {pendingSuggestions.length > 0 && (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                          {pendingSuggestions.length}
+                        </Badge>
+                      )}
                     </div>
 
                     {pendingSuggestions.length === 0 ? (
-                      <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
-                        No pending requests
+                      <div className="bg-gray-50 rounded-lg p-12 text-center">
+                        <Clock className="size-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500 font-medium">No pending requests</p>
+                        <p className="text-sm text-gray-400 mt-1">All suggestions have been processed</p>
                       </div>
                     ) : (
                       <div className="space-y-3">

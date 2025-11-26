@@ -117,10 +117,27 @@ export async function getAllSuggestions(): Promise<LocationSuggestion[]> {
 }
 
 export async function addSuggestion(suggestion: LocationSuggestion): Promise<void> {
+  // Validate suggestion structure
+  if (!suggestion.id || !suggestion.personName || !suggestion.personEmailOrHandle) {
+    throw new Error("Invalid suggestion: missing required fields");
+  }
+  if (!suggestion.requestedChangeType || !suggestion.requestedPayload) {
+    throw new Error("Invalid suggestion: missing change type or payload");
+  }
+  if (!['Pending', 'Accepted', 'Rejected'].includes(suggestion.status)) {
+    throw new Error("Invalid suggestion: invalid status");
+  }
+
   const database = await fetchDatabase();
   if (!database.suggestions) {
     database.suggestions = [];
   }
+  
+  // Check for duplicate IDs (shouldn't happen with proper ID generation, but safety check)
+  if (database.suggestions.some(s => s.id === suggestion.id)) {
+    throw new Error("Suggestion with this ID already exists");
+  }
+  
   database.suggestions.push(suggestion);
   await saveDatabase(database);
 }

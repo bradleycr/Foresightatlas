@@ -113,7 +113,7 @@ export function FiltersBar({ filters, onFiltersChange, availableCities, activeTa
       focusTags: [],
       nodes: [],
       cities: [],
-      year: null, // Reset to "All Time"
+      year: currentYear, // Reset to current year
       granularity: "Year", // Reset to Year view
       referenceDate: new Date().toISOString(), // Reset to today
     });

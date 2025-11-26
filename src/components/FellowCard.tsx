@@ -65,7 +65,6 @@ export function FellowCard({
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              console.log("Info button clicked for:", person.fullName);
               onViewDetails?.();
             }}
             className="text-teal-500 hover:text-teal-600 transition-colors flex-shrink-0 p-1 rounded hover:bg-teal-50 relative z-50"
