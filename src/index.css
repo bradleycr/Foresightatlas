@@ -452,6 +452,18 @@
     padding: 0;
   }
 
+  /* Mobile-specific popup styling */
+  @media (max-width: 640px) {
+    .leaflet-popup-content {
+      min-width: 280px;
+      max-width: calc(100vw - 80px);
+    }
+    
+    .leaflet-popup {
+      margin-bottom: 10px;
+    }
+  }
+
   .leaflet-popup-tip {
     background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);

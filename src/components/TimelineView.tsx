@@ -32,6 +32,7 @@ interface TimelineViewProps {
   timelineViewMode: TimelineViewMode; // "person" or "location"
   onViewOnMap?: (personId: string, travelWindowId: string) => void;
   onViewPersonDetails?: (personId: string) => void;
+  onSwitchToMap?: () => void; // Callback to switch to map view
 }
 
 interface PersonRow {
@@ -70,6 +71,7 @@ export function TimelineView({
   timelineViewMode,
   onViewOnMap,
   onViewPersonDetails,
+  onSwitchToMap,
 }: TimelineViewProps) {
   const isMobile = useIsMobile();
   const [selectedTravel, setSelectedTravel] = useState<{
@@ -972,30 +974,48 @@ export function TimelineView({
         <Dialog open={showMobileWarning} onOpenChange={setShowMobileWarning}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Timeline View Designed for Larger Screens</DialogTitle>
-              <DialogDescription className="pt-2">
-                The timeline view is optimized for desktop and tablet screens. For the best experience on your phone, please visit on a computer or use the map view instead.
+              <DialogTitle className="text-xl font-semibold">
+                Timeline View Best on Desktop
+              </DialogTitle>
+              <DialogDescription className="pt-3 text-base leading-relaxed">
+                The timeline view is optimized for larger screens like computers and tablets. For the best experience on your phone, we recommend using the map view instead, or visiting us on a computer for the full timeline experience.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex flex-col gap-3 pt-4">
+            <div className="flex flex-col gap-3 pt-6">
+              {onSwitchToMap && (
+                <Button
+                  onClick={() => {
+                    setShowMobileWarning(false);
+                    onSwitchToMap();
+                  }}
+                  className="w-full"
+                  variant="default"
+                  style={{
+                    background: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+                  }}
+                >
+                  <MapPin className="size-4 mr-2" />
+                  Switch to Map View
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   setShowMobileWarning(false);
                 }}
                 className="w-full"
-                variant="default"
+                variant="outline"
               >
-                Continue Anyway
+                Continue to Timeline Anyway
               </Button>
               <Button
                 onClick={() => {
                   localStorage.setItem('timeline-mobile-warning-dismissed', 'true');
                   setShowMobileWarning(false);
                 }}
-                className="w-full"
-                variant="outline"
+                className="w-full text-sm text-gray-500 hover:text-gray-700"
+                variant="ghost"
               >
-                Don't Show Again
+                Don't Show This Again
               </Button>
             </div>
           </DialogContent>

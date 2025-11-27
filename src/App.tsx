@@ -539,6 +539,7 @@ export default function App() {
             filteredTravelWindows={filteredTravelWindows}
             timeWindowStart={timeWindowStart}
             timeWindowEnd={timeWindowEnd}
+            granularity={filters.granularity}
             onViewPersonDetails={(personId) => setSelectedPersonId(personId)}
           />
         ) : (
@@ -552,6 +553,7 @@ export default function App() {
             cities={filters.cities}
             nodes={filters.nodes}
             onViewPersonDetails={(personId) => setSelectedPersonId(personId)}
+            onSwitchToMap={() => setActiveTab("map")}
           />
         )}
       </div>

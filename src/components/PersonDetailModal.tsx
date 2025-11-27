@@ -39,6 +39,7 @@ import {
 } from "./ui/alert-dialog";
 import { getRoleGradient } from "../styles/roleColors";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import { useIsMobile } from "./ui/use-mobile";
 import { 
   updatePerson, 
   updateTravelWindow, 
@@ -77,6 +78,29 @@ export function PersonDetailModal({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      // Lock body scroll
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // Restore scroll position
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   // Initialize editing state when person changes
   useEffect(() => {
@@ -323,7 +347,7 @@ export function PersonDetailModal({
   return (
     <>
       <div 
-        className="fixed inset-0 flex items-center justify-center p-4 z-50" 
+        className={`fixed inset-0 flex items-center ${isMobile ? 'items-start p-0' : 'items-center p-4'} z-50`}
         style={{ 
           backgroundColor: 'rgba(0, 0, 0, 0.7)',
           backdropFilter: 'blur(12px)',
@@ -333,15 +357,20 @@ export function PersonDetailModal({
         onClick={onClose}
       >
         <div 
-          className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col relative"
-          style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
+          className={`bg-white ${isMobile ? 'rounded-t-2xl rounded-b-none h-full w-full' : 'rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh]'} overflow-hidden flex flex-col relative`}
+          style={{ 
+            zIndex: Z_INDEX_MODAL_CONTENT,
+            // Safe area support for notched devices
+            paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : undefined,
+            paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : undefined,
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex-shrink-0">
-            <div className="px-6 md:px-8 pt-6 pb-6">
+            <div className={`${isMobile ? 'px-4 pt-4 pb-4' : 'px-6 md:px-8 pt-6 pb-6'}`}>
               {/* Name row with buttons on the right */}
-              <div className="flex items-start justify-between gap-4 mb-6">
+              <div className={`flex items-start justify-between ${isMobile ? 'gap-2 mb-4' : 'gap-4 mb-6'}`}>
                 {isEditing && editingPerson ? (
                   <Input
                     value={editingPerson.fullName}
@@ -363,11 +392,11 @@ export function PersonDetailModal({
                   {isAdmin && !isEditing && (
                     <Button
                       variant="outline"
-                      size="sm"
+                      size={isMobile ? "default" : "sm"}
                       onClick={handleEdit}
-                      className="border-gray-300 hover:bg-gray-50"
+                      className={`border-gray-300 hover:bg-gray-50 ${isMobile ? 'min-h-[44px] px-4' : ''}`}
                     >
-                      <Edit className="h-4 w-4 mr-1" />
+                      <Edit className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} mr-1`} />
                       Edit
                     </Button>
                   )}
@@ -375,53 +404,53 @@ export function PersonDetailModal({
                     <>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size={isMobile ? "default" : "sm"}
                         onClick={handleCancel}
                         disabled={isSaving}
-                        className="border-gray-300 hover:bg-gray-50"
+                        className={`border-gray-300 hover:bg-gray-50 ${isMobile ? 'min-h-[44px] px-4' : ''}`}
                       >
                         Cancel
                       </Button>
                       <Button
-                        size="sm"
+                        size={isMobile ? "default" : "sm"}
                         onClick={handleSavePerson}
                         disabled={isSaving}
-                        className="bg-teal-600 hover:bg-teal-700"
+                        className={`bg-teal-600 hover:bg-teal-700 ${isMobile ? 'min-h-[44px] px-4' : ''}`}
                       >
-                        <Save className="h-4 w-4 mr-1" />
+                        <Save className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} mr-1`} />
                         Save
                       </Button>
                     </>
                   )}
                   {/* Navigation buttons */}
                   {!isEditing && (hasPrevious || hasNext) && (
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center ${isMobile ? 'gap-1' : 'gap-2'}`}>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size={isMobile ? "default" : "sm"}
                         onClick={handlePrevious}
                         disabled={!hasPrevious}
-                        className="border-gray-300 hover:bg-gray-50"
+                        className={`border-gray-300 hover:bg-gray-50 ${isMobile ? 'min-h-[44px] min-w-[44px] p-0' : ''}`}
                       >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size={isMobile ? "default" : "sm"}
                         onClick={handleNext}
                         disabled={!hasNext}
-                        className="border-gray-300 hover:bg-gray-50"
+                        className={`border-gray-300 hover:bg-gray-50 ${isMobile ? 'min-h-[44px] min-w-[44px] p-0' : ''}`}
                       >
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                       </Button>
                     </div>
                   )}
                   <button
                     onClick={onClose}
-                    className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 p-1.5 rounded transition-colors"
+                    className={`text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors ${isMobile ? 'p-2 min-w-[44px] min-h-[44px] flex items-center justify-center' : 'p-1.5'}`}
                     aria-label="Close"
                   >
-                    <X className="h-5 w-5" />
+                    <X className={isMobile ? "h-6 w-6" : "h-5 w-5"} />
                   </button>
                 </div>
               </div>
@@ -533,7 +562,7 @@ export function PersonDetailModal({
           </div>
 
           {/* Content - Scrollable */}
-          <div className="flex-1 overflow-y-auto px-6 md:px-8 pt-6 md:pt-8 pb-6 md:pb-8 space-y-6">
+          <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-4 pt-4 pb-6 space-y-4' : 'px-6 md:px-8 pt-6 md:pt-8 pb-6 md:pb-8 space-y-6'}`}>
             {/* Project Information */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Project</h3>

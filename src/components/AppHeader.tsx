@@ -29,15 +29,15 @@ export function AppHeader({
         background: 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)'
       }}
     >
-      <div className="px-4 md:px-8 py-4 md:py-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
+      <div className="px-4 md:px-8 py-4 md:py-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 md:gap-4">
-            <img src={foresightLogo} alt="Foresight Institute" className="h-9 md:h-14" />
+            <img src={foresightLogo} alt="Foresight Institute" className="h-9 md:h-12" />
             <div className="border-l border-gray-300 pl-3 md:pl-4">
-              <h1 className="text-gray-900 text-sm md:text-lg" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h1 className="text-gray-900 text-sm md:text-xl" style={{ fontFamily: 'var(--font-heading)' }}>
                 Fellows and Grantees Map & Timeline
               </h1>
-              <p className="text-xs md:text-xs text-gray-600 hidden sm:block">
+              <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
                 Tracking our global network of Fellows, Grantees, and prize winners
               </p>
             </div>

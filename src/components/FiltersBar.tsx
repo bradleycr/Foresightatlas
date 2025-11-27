@@ -6,7 +6,7 @@ import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { getRoleGradient } from "../styles/roleColors";
 import { activeMultiGradient, badgeGradient, gradientVariant1 } from "../styles/gradients";
-import { Z_INDEX_DROPDOWN } from "../constants/zIndex";
+import { Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 
 interface FiltersBarProps {
   filters: Filters;
@@ -176,9 +176,9 @@ export function FiltersBar({ filters, onFiltersChange, availableCities, activeTa
       {/* Collapsible Filters - Overlay */}
       {!isCollapsed && (
         <div 
-          className="absolute left-4 right-4 md:left-8 md:right-8 top-full mt-2 bg-white rounded-xl border border-gray-200/50 shadow-2xl z-50"
+          className="absolute left-4 right-4 md:left-8 md:right-8 top-full mt-2 bg-white rounded-xl border border-gray-200/50 shadow-2xl"
           style={{ 
-            zIndex: Z_INDEX_DROPDOWN,
+            zIndex: Z_INDEX_MODAL_CONTENT,
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
           }}
         >

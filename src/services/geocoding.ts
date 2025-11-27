@@ -66,3 +66,42 @@ export async function geocodeCountry(cityName: string): Promise<string | null> {
   return result?.country || null;
 }
 
+/**
+ * Reverse geocode coordinates to get city and country name
+ */
+export async function reverseGeocode(
+  lat: number,
+  lng: number
+): Promise<{ city: string; country: string } | null> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'ForesightMap/1.0', // Required by Nominatim
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Reverse geocoding failed: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.address) {
+      const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || "";
+      const country = data.address.country || "";
+      
+      if (city && country) {
+        return { city, country };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error reverse geocoding coordinates:", error);
+    return null;
+  }
+}
+

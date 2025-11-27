@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType } from "../types";
 import { FellowCard } from "./FellowCard";
@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import { reverseGeocode } from "../services/geocoding";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -16,6 +17,7 @@ interface MapViewProps {
   filteredTravelWindows: TravelWindow[];
   timeWindowStart: Date;
   timeWindowEnd: Date;
+  granularity?: "Year" | "Month" | "Week";
   onViewPersonDetails?: (personId: string) => void;
 }
 
@@ -29,27 +31,49 @@ interface MarkerData {
   }>;
 }
 
+// Helper to create a coordinate-based key for grouping markers
+// We group by coordinates only to ensure all people at the same location are aggregated
+// The city name in the popup will come from the marker data (first person's city or travel window city)
+const getCoordinateKey = (coords: { lat: number; lng: number }): string => {
+  // Round coordinates to ~1km precision (0.01 degree) for grouping nearby locations
+  // This ensures people at the exact same location are grouped together
+  const roundedLat = Math.round(coords.lat * 100) / 100;
+  const roundedLng = Math.round(coords.lng * 100) / 100;
+  return `${roundedLat},${roundedLng}`;
+};
+
 // Component to fit map bounds to markers
-function FitBounds({ markers }: { markers: MarkerData[] }) {
+function FitBounds({ markers, skipIfMarkerSelected }: { markers: MarkerData[]; skipIfMarkerSelected?: boolean }) {
   const map = useMap();
 
   useEffect(() => {
+    // Skip fitting bounds if a marker is selected (user is interacting with map)
+    if (skipIfMarkerSelected) {
+      return;
+    }
     // Set max bounds to prevent grey blank areas
     const worldBounds = new LatLngBounds([[-85, -180], [85, 180]]);
     map.setMaxBounds(worldBounds);
     map.options.maxBounds = worldBounds;
     map.options.maxBoundsViscosity = 1.0; // Prevent panning outside bounds
-    map.options.worldCopyJump = false;
+    map.options.worldCopyJump = true; // Allow world copy jump to prevent gray areas
     
     // Ensure minimum zoom level to prevent over-zooming and grey areas
-    map.setMinZoom(2);
+    map.setMinZoom(2.5);
     
     // If current zoom is below minimum, set it to minimum
-    if (map.getZoom() < 2) {
-      map.setZoom(2);
+    if (map.getZoom() < 2.5) {
+      map.setZoom(2.5);
     }
+    
+    // Ensure map fits properly to prevent gray edges
+    map.invalidateSize();
 
-    if (markers.length === 0) return;
+    if (markers.length === 0) {
+      // Set default view to show California when no markers
+      map.setView([30, -120], 2.0);
+      return;
+    }
 
     // Wait for map to be fully initialized before fitting bounds
     const fitBoundsToMarkers = () => {
@@ -57,7 +81,7 @@ function FitBounds({ markers }: { markers: MarkerData[] }) {
       map.invalidateSize();
       
       if (markers.length === 1) {
-        const zoom = Math.max(6, 2); // Ensure never below minimum
+        const zoom = Math.max(6, 2.5); // Ensure never below minimum
         map.setView([markers[0].coordinates.lat, markers[0].coordinates.lng], zoom);
         return;
       }
@@ -87,8 +111,8 @@ function FitBounds({ markers }: { markers: MarkerData[] }) {
       
       // Ensure zoom never goes below minimum after fitBounds
       setTimeout(() => {
-        if (map.getZoom() < 2) {
-          map.setZoom(2);
+        if (map.getZoom() < 2.5) {
+          map.setZoom(2.5);
         }
         // Double-check bounds are correct
         map.invalidateSize();
@@ -110,7 +134,7 @@ function FitBounds({ markers }: { markers: MarkerData[] }) {
     const timer = setTimeout(attemptFit, 150);
     
     return () => clearTimeout(timer);
-  }, [map, markers]);
+  }, [map, markers, skipIfMarkerSelected]);
 
   return null;
 }
@@ -122,11 +146,13 @@ function ZoomToMarker({ marker }: { marker: MarkerData | null }) {
   useEffect(() => {
     if (marker) {
       const targetZoom = 8;
-      const finalZoom = Math.max(targetZoom, 2); // Ensure never below minimum
+      const finalZoom = Math.max(targetZoom, 2.5);
+      
+      // Simply center on the marker - let popup autoPan handle visibility
       map.flyTo(
         [marker.coordinates.lat, marker.coordinates.lng],
         finalZoom,
-        { duration: 0.6 }
+        { duration: 0.5 }
       );
     }
   }, [map, marker]);
@@ -246,12 +272,16 @@ export function MapView({
   filteredTravelWindows,
   timeWindowStart,
   timeWindowEnd,
+  granularity = "Year",
   onViewPersonDetails,
 }: MapViewProps) {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
+  
+  // Cache for reverse geocoded city names (coordinates -> city, country)
+  const [geocodedCities, setGeocodedCities] = useState<Map<string, { city: string; country: string }>>(new Map());
 
   // Keep refs to each person card so we can scroll them into view
   const personRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -263,49 +293,212 @@ export function MapView({
     }
   }, [isMobile]);
 
-  // Calculate markers based on current time window
+  // Reverse geocode coordinates to get actual city names (for cases where city data doesn't match coordinates)
+  useEffect(() => {
+    const geocodeCoordinates = async () => {
+      const coordsToGeocode = new Set<string>();
+      
+      // Collect all unique coordinates that need geocoding
+      filteredPeople.forEach((person) => {
+        if (granularity === "Year") {
+          const coordinates = person.currentCoordinates;
+          if (coordinates.lat !== 0 && coordinates.lng !== 0) {
+            // If homeBaseCity is empty, we need to reverse geocode to get the actual city
+            if (!person.homeBaseCity || !person.homeBaseCountry) {
+              const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
+              if (!geocodedCities.has(geocodeKey)) {
+                coordsToGeocode.add(geocodeKey);
+              }
+            }
+          }
+        }
+      });
+      
+      // Only geocode if we have new coordinates to process
+      if (coordsToGeocode.size === 0) return;
+      
+      // Reverse geocode coordinates with rate limiting (Nominatim allows 1 req/sec)
+      // Process sequentially with delays to respect API limits
+      const results: Array<{ coordKey: string; city: string; country: string } | null> = [];
+      const coordsArray = Array.from(coordsToGeocode).slice(0, 10); // Limit to 10 to avoid long waits
+      
+      for (let i = 0; i < coordsArray.length; i++) {
+        // Wait 1 second between requests to respect rate limits
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1100));
+        }
+        
+        const coordKey = coordsArray[i];
+        const [lat, lng] = coordKey.split(',').map(Number);
+        const result = await reverseGeocode(lat, lng);
+        
+        if (result) {
+          results.push({ coordKey, city: result.city, country: result.country });
+        } else {
+          results.push(null);
+        }
+      }
+      
+      const results = await Promise.all(geocodePromises);
+      
+      // Check if we got any new results
+      const hasNewResults = results.some((result) => {
+        if (!result) return false;
+        return !geocodedCities.has(result.coordKey);
+      });
+      
+      if (hasNewResults) {
+        // Create a new Map instance so React detects the change
+        const newGeocoded = new Map(geocodedCities);
+        results.forEach((result) => {
+          if (result) {
+            newGeocoded.set(result.coordKey, { city: result.city, country: result.country });
+          }
+        });
+        setGeocodedCities(newGeocoded);
+      }
+    };
+    
+    geocodeCoordinates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredPeople, granularity]); // Don't include geocodedCities to avoid infinite loop
+
+  // Calculate markers based on current time window and granularity
   const markers = useMemo(() => {
+    // Use coordinate-based keys to group markers by actual location, not city name
+    // This ensures the popup shows the city where the pin actually is
     const markerMap = new Map<string, MarkerData>();
 
     filteredPeople.forEach((person) => {
-      // Get travel windows for this person in the time range
-      const personTravelWindows = filteredTravelWindows.filter(
-        (tw) =>
-          tw.personId === person.id &&
-          new Date(tw.startDate) <= timeWindowEnd &&
-          new Date(tw.endDate) >= timeWindowStart
-      );
-
-      personTravelWindows.forEach((tw) => {
-        const key = `${tw.city}-${tw.country}`;
-        if (!markerMap.has(key)) {
-          markerMap.set(key, {
-            city: tw.city,
-            country: tw.country,
-            coordinates: tw.coordinates,
-            people: [],
-          });
+      // For Year view: Always show home base (or current location if no home base)
+      // For Month/Week view: Show where they are during that time (trip if applicable, otherwise home base)
+      if (granularity === "Year") {
+        // Year view: Show home base, ignore trips
+        // Note: primaryNode (Bay Area Node, Berlin Node, Global) is organizational, not geographical
+        // So we only use homeBaseCity/homeBaseCountry, or fall back to currentCity/currentCountry
+        
+        // IMPORTANT: In Year view, we want to show where people are "based"
+        // If homeBaseCity is empty, we can't reliably show them because currentCity
+        // might be a temporary travel location that doesn't match currentCoordinates
+        // So we prioritize homeBaseCity and only use currentCity if homeBaseCity is truly not set
+        
+        let homeCity: string;
+        let homeCountry: string;
+        let coordinates = person.currentCoordinates;
+        
+        if (person.homeBaseCity && person.homeBaseCountry) {
+          // Use home base - this is the preferred location for Year view
+          homeCity = person.homeBaseCity;
+          homeCountry = person.homeBaseCountry;
+          // Note: We use currentCoordinates as coordinates since Person type doesn't have homeBaseCoordinates
+          // This assumes home base and current location are the same or close
+        } else if (person.currentCity && person.currentCountry) {
+          // Fallback: Try to use reverse geocoded city name if available
+          // This ensures popup shows the city where the pin actually is
+          const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
+          const geocoded = geocodedCities.get(geocodeKey);
+          
+          if (geocoded) {
+            // Use reverse geocoded city name (matches the coordinates)
+            homeCity = geocoded.city;
+            homeCountry = geocoded.country;
+          } else {
+            // Fallback to currentCity (might not match coordinates, but better than nothing)
+            homeCity = person.currentCity;
+            homeCountry = person.currentCountry;
+          }
+        } else {
+          // Skip if no location data at all
+          return;
         }
-        markerMap.get(key)!.people.push({ person, travelWindow: tw });
-      });
-
-      // Also show current location if no travel windows in range
-      if (personTravelWindows.length === 0) {
-        const key = `${person.currentCity}-${person.currentCountry}`;
-        if (!markerMap.has(key)) {
-          markerMap.set(key, {
-            city: person.currentCity,
-            country: person.currentCountry,
-            coordinates: person.currentCoordinates,
-            people: [],
-          });
+        
+        // Only show if we have valid location data
+        if (homeCity && homeCountry && coordinates.lat !== 0 && coordinates.lng !== 0) {
+          // Group by coordinates only to aggregate all people at the same location
+          // This ensures role type colors work correctly
+          const coordKey = getCoordinateKey(coordinates);
+          
+          if (!markerMap.has(coordKey)) {
+            markerMap.set(coordKey, {
+              city: homeCity,
+              country: homeCountry,
+              coordinates: coordinates,
+              people: [],
+            });
+          }
+          markerMap.get(coordKey)!.people.push({ person });
+          
+          // Update city name if we have a better match
+          // Priority: homeBaseCity > geocoded city > current city
+          const existingMarker = markerMap.get(coordKey)!;
+          const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
+          const geocoded = geocodedCities.get(geocodeKey);
+          
+          // If this person has homeBaseCity, use it (most reliable)
+          if (person.homeBaseCity && person.homeBaseCountry) {
+            existingMarker.city = person.homeBaseCity;
+            existingMarker.country = person.homeBaseCountry;
+          } 
+          // Otherwise, if geocoded city is available, use it (matches coordinates)
+          else if (geocoded) {
+            existingMarker.city = geocoded.city;
+            existingMarker.country = geocoded.country;
+          }
+          // Otherwise keep the current city name (might not match coordinates, but it's what we have)
         }
-        markerMap.get(key)!.people.push({ person });
+      } else {
+        // Month/Week view: Show where they are during the selected time period
+        // Get travel windows for this person in the time range
+        const personTravelWindows = filteredTravelWindows.filter(
+          (tw) =>
+            tw.personId === person.id &&
+            new Date(tw.startDate) <= timeWindowEnd &&
+            new Date(tw.endDate) >= timeWindowStart
+        );
+
+        if (personTravelWindows.length > 0) {
+          // Show trip locations - group by coordinates to aggregate people at same location
+          personTravelWindows.forEach((tw) => {
+            if (tw.coordinates.lat !== 0 && tw.coordinates.lng !== 0) {
+              const coordKey = getCoordinateKey(tw.coordinates);
+              
+              if (!markerMap.has(coordKey)) {
+                // Use travel window city/country for the popup
+                markerMap.set(coordKey, {
+                  city: tw.city,
+                  country: tw.country,
+                  coordinates: tw.coordinates,
+                  people: [],
+                });
+              }
+              markerMap.get(coordKey)!.people.push({ person, travelWindow: tw });
+            }
+          });
+        } else {
+          // No trips in this time period, show home base (or current location if no home base)
+          const homeCity = person.homeBaseCity || person.currentCity;
+          const homeCountry = person.homeBaseCountry || person.currentCountry;
+          
+          if (homeCity && homeCountry && person.currentCoordinates.lat !== 0 && person.currentCoordinates.lng !== 0) {
+            // Group by coordinates only to aggregate all people at the same location
+            const coordKey = getCoordinateKey(person.currentCoordinates);
+            
+            if (!markerMap.has(coordKey)) {
+              markerMap.set(coordKey, {
+                city: homeCity,
+                country: homeCountry,
+                coordinates: person.currentCoordinates,
+                people: [],
+              });
+            }
+            markerMap.get(coordKey)!.people.push({ person });
+          }
+        }
       }
     });
 
     return Array.from(markerMap.values());
-  }, [filteredPeople, filteredTravelWindows, timeWindowStart, timeWindowEnd]);
+  }, [filteredPeople, filteredTravelWindows, timeWindowStart, timeWindowEnd, granularity, geocodedCities]);
 
   // Get next travel window for each person
   const getNextTravel = (personId: string): TravelWindow | undefined => {
@@ -377,30 +570,35 @@ export function MapView({
       <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:min-h-0 shadow-lg border border-gray-100">
         {markers.length > 0 ? (
           <MapContainer
-            center={[50, -30]}
-            zoom={3}
-            minZoom={2}
+            center={[30, -120]}
+            zoom={2.0}
+            minZoom={2.5}
             maxZoom={18}
             maxBounds={[[-85, -180], [85, 180]]}
             maxBoundsViscosity={1.0}
-            worldCopyJump={false}
+            worldCopyJump={true}
             style={{ height: '100%', width: '100%', position: 'relative' }}
             className="rounded-xl"
             zoomControl={true}
             scrollWheelZoom={true}
+            touchZoom={true}
+            doubleClickZoom={true}
+            dragging={true}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              noWrap={true}
+              noWrap={false}
             />
-            <FitBounds markers={markers} />
+            <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} />
             <ZoomToMarker marker={selectedMarker} />
             <MapResizer isSidebarOpen={isSidebarOpen} />
             
             {markers.map((marker, idx) => {
-              const isSelected = selectedMarker?.city === marker.city && 
-                                selectedMarker?.country === marker.country;
+              // Compare by coordinates to handle cases where multiple markers have same city name
+              const isSelected = selectedMarker && 
+                                Math.abs(selectedMarker.coordinates.lat - marker.coordinates.lat) < 0.001 &&
+                                Math.abs(selectedMarker.coordinates.lng - marker.coordinates.lng) < 0.001;
               
               // Extract unique role types present at this location
               const roleTypes = new Set<RoleType>(
@@ -411,7 +609,7 @@ export function MapView({
 
               return (
                 <Marker
-                  key={`${marker.city}-${marker.country}-${idx}`}
+                  key={`${marker.coordinates.lat},${marker.coordinates.lng}-${idx}`}
                   position={[marker.coordinates.lat, marker.coordinates.lng]}
                   icon={icon}
                   eventHandlers={{
@@ -424,6 +622,13 @@ export function MapView({
                         if (marker.people.length === 1) {
                           setSelectedPerson(marker.people[0].person.id);
                         }
+                        // On mobile, if there's only one person, open the detail modal directly
+                        if (isMobile && marker.people.length === 1 && onViewPersonDetails) {
+                          // Small delay to ensure popup doesn't interfere
+                          setTimeout(() => {
+                            onViewPersonDetails(marker.people[0].person.id);
+                          }, 100);
+                        }
                       }
                     },
                   }}
@@ -431,6 +636,8 @@ export function MapView({
                   <Popup 
                     className="custom-popup"
                     autoPan={true}
+                    autoPanPadding={[50, 50]}
+                    keepInView={true}
                   >
                     <div 
                       className="overflow-hidden"
