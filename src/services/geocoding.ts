@@ -13,6 +13,123 @@ export interface GeocodeResult {
 }
 
 /**
+ * Normalize city names for comparison (lowercase, remove common suffixes)
+ */
+function normalizeCityName(city: string): string {
+  return city
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/^the\s+/i, '')
+    .replace(/\s+city$/i, '')
+    .replace(/\s+town$/i, '');
+}
+
+/**
+ * Check if two city names are similar (fuzzy matching)
+ */
+function areCitiesSimilar(city1: string, city2: string): boolean {
+  const norm1 = normalizeCityName(city1);
+  const norm2 = normalizeCityName(city2);
+  
+  // Exact match after normalization
+  if (norm1 === norm2) return true;
+  
+  // One contains the other (e.g., "San Francisco" contains "San Francisco")
+  if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
+  
+  // Check for common variations (e.g., "SF" = "San Francisco", "NYC" = "New York")
+  const commonVariations: Record<string, string[]> = {
+    'san francisco': ['sf', 'san fran', 'bay area'],
+    'new york': ['nyc', 'new york city'],
+    'los angeles': ['la', 'los ang'],
+    'washington': ['dc', 'washington dc'],
+    'bangalore': ['bengaluru'],
+    'mumbai': ['bombay'],
+  };
+  
+  for (const [canonical, variations] of Object.entries(commonVariations)) {
+    if ((norm1 === canonical || variations.includes(norm1)) &&
+        (norm2 === canonical || variations.includes(norm2))) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Validate coordinates are reasonable (not obviously wrong)
+ */
+function areCoordinatesValid(lat: number, lng: number): boolean {
+  // Check if coordinates are within valid ranges
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+  // Check if coordinates are not exactly zero (which usually means unset)
+  if (lat === 0 && lng === 0) return false;
+  // Check if coordinates are not obviously wrong (e.g., both are very small)
+  if (Math.abs(lat) < 0.001 && Math.abs(lng) < 0.001) return false;
+  return true;
+}
+
+/**
+ * Validate reverse geocoding result against expected city/country
+ * Returns true if the result seems reasonable, false if it's likely wrong
+ */
+export function validateReverseGeocodeResult(
+  geocoded: { city: string; country: string },
+  expectedCity?: string,
+  expectedCountry?: string
+): { isValid: boolean; reason?: string } {
+  // If no expected values, assume valid (can't validate)
+  if (!expectedCity && !expectedCountry) {
+    return { isValid: true };
+  }
+  
+  // Check country match first (more reliable)
+  if (expectedCountry) {
+    const normExpected = normalizeCityName(expectedCountry);
+    const normGeocoded = normalizeCityName(geocoded.country);
+    
+    if (normExpected !== normGeocoded && !normGeocoded.includes(normExpected) && !normExpected.includes(normGeocoded)) {
+      // Check for common country name variations
+      const countryVariations: Record<string, string[]> = {
+        'usa': ['united states', 'united states of america', 'us'],
+        'uk': ['united kingdom', 'great britain', 'britain'],
+        'uae': ['united arab emirates'],
+      };
+      
+      let matches = false;
+      for (const [canonical, variations] of Object.entries(countryVariations)) {
+        if ((normExpected === canonical || variations.includes(normExpected)) &&
+            (normGeocoded === canonical || variations.includes(normGeocoded))) {
+          matches = true;
+          break;
+        }
+      }
+      
+      if (!matches) {
+        return {
+          isValid: false,
+          reason: `Country mismatch: expected "${expectedCountry}", got "${geocoded.country}"`
+        };
+      }
+    }
+  }
+  
+  // Check city match
+  if (expectedCity) {
+    if (!areCitiesSimilar(geocoded.city, expectedCity)) {
+      return {
+        isValid: false,
+        reason: `City mismatch: expected "${expectedCity}", got "${geocoded.city}"`
+      };
+    }
+  }
+  
+  return { isValid: true };
+}
+
+/**
  * Geocode a city name to get coordinates and country
  */
 export async function geocodeCity(
@@ -68,40 +185,98 @@ export async function geocodeCountry(cityName: string): Promise<string | null> {
 
 /**
  * Reverse geocode coordinates to get city and country name
+ * @param lat Latitude
+ * @param lng Longitude
+ * @param expectedCity Optional: expected city name for validation
+ * @param expectedCountry Optional: expected country name for validation
+ * @returns City and country, or null if geocoding fails or result is invalid
  */
 export async function reverseGeocode(
   lat: number,
-  lng: number
+  lng: number,
+  expectedCity?: string,
+  expectedCountry?: string
 ): Promise<{ city: string; country: string } | null> {
+  // Validate coordinates first
+  if (!areCoordinatesValid(lat, lng)) {
+    console.warn(`Invalid coordinates: ${lat}, ${lng}`);
+    return null;
+  }
+
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
-      {
-        headers: {
-          'User-Agent': 'ForesightMap/1.0', // Required by Nominatim
-        },
-      }
-    );
+    // Use zoom=18 for more detailed results (city level)
+    // Also try with different zoom levels if first attempt fails
+    const zoomLevels = [18, 10, 5];
     
-    if (!response.ok) {
-      throw new Error(`Reverse geocoding failed: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data && data.address) {
-      const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || "";
-      const country = data.address.country || "";
+    for (const zoom of zoomLevels) {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=${zoom}&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'ForesightMap/1.0', // Required by Nominatim
+          },
+        }
+      );
       
-      if (city && country) {
-        return { city, country };
+      if (!response.ok) {
+        if (zoom === zoomLevels[zoomLevels.length - 1]) {
+          // Last attempt failed
+          console.warn(`Reverse geocoding failed for ${lat}, ${lng}: ${response.statusText}`);
+        }
+        continue; // Try next zoom level
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.address) {
+        // Try multiple fields in order of preference
+        const city = data.address.city 
+          || data.address.town 
+          || data.address.village 
+          || data.address.municipality 
+          || data.address.county 
+          || data.address.state_district
+          || data.address.state
+          || "";
+        const country = data.address.country || "";
+        
+        if (city && country) {
+          const result = { city, country };
+          
+          // Validate result if expected values provided
+          if (expectedCity || expectedCountry) {
+            const validation = validateReverseGeocodeResult(result, expectedCity, expectedCountry);
+            if (!validation.isValid) {
+              console.warn(`Reverse geocode validation failed for ${lat}, ${lng}: ${validation.reason}`);
+              // If validation fails, try next zoom level or return null
+              if (zoom === zoomLevels[zoomLevels.length - 1]) {
+                // Last attempt, return null even if invalid (caller can use fallback)
+                return null;
+              }
+              continue; // Try next zoom level
+            }
+          }
+          
+          // Log successful geocoding
+          if (expectedCity || expectedCountry) {
+            console.log(`✓ Reverse geocoded ${lat}, ${lng} -> ${city}, ${country} (validated)`);
+          } else {
+            console.log(`Reverse geocoded ${lat}, ${lng} -> ${city}, ${country}`);
+          }
+          
+          return result;
+        }
+      }
+      
+      // If we got here, this zoom level didn't work, try next
+      if (zoom === zoomLevels[zoomLevels.length - 1]) {
+        console.warn(`Reverse geocoding incomplete for ${lat}, ${lng} after trying all zoom levels`);
       }
     }
     
     return null;
   } catch (error) {
-    console.error("Error reverse geocoding coordinates:", error);
+    console.error(`Error reverse geocoding ${lat}, ${lng}:`, error);
     return null;
   }
 }
-

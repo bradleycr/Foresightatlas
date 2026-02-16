@@ -3,6 +3,8 @@ import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { getRoleGradient } from "../styles/roleColors";
+import { getNodeLabel } from "../utils/nodeLabels";
+import { getCohortLabel } from "../utils/cohortLabel";
 
 interface FellowCardProps {
   person: Person;
@@ -19,6 +21,11 @@ export function FellowCard({
   onViewDetails,
   isHighlighted,
 }: FellowCardProps) {
+  const projectTagline = person.shortProjectTagline?.trim();
+  const projectFallback = person.isAlumni
+    ? "Alumni profile — project details forthcoming."
+    : "Project details coming soon.";
+  const nodeLabel = getNodeLabel(person.primaryNode);
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -56,8 +63,13 @@ export function FellowCard({
               >
                 {person.roleType}
               </span>
+              {person.isAlumni && (
+                <Badge variant="secondary" className="text-xs">
+                  Alumni
+                </Badge>
+              )}
               <span className="text-sm text-gray-600">
-                Cohort {person.fellowshipCohortYear}
+                Cohort {getCohortLabel(person)}
               </span>
             </div>
           </div>
@@ -85,13 +97,24 @@ export function FellowCard({
         </div>
 
         {/* Project Tagline */}
-        <p className="text-sm text-gray-700">{person.shortProjectTagline}</p>
+        <p className={`text-sm ${projectTagline ? "text-gray-700" : "text-gray-500 italic"}`}>
+          {projectTagline || projectFallback}
+        </p>
 
-        {/* Node */}
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin className="size-4" />
-          <span>{person.primaryNode}</span>
-        </div>
+        {/* Affiliation */}
+        {(person.affiliationOrInstitution ?? "").trim() && (
+          <p className="text-xs text-gray-500">
+            {person.affiliationOrInstitution}
+          </p>
+        )}
+
+        {/* Node — only for current (alumni are not part of a node) */}
+        {!person.isAlumni && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="size-4" />
+            <span>{nodeLabel}</span>
+          </div>
+        )}
 
         {/* Next Travel */}
         {nextTravel && (

@@ -69,3 +69,9 @@ The base path is only applied during the GitHub Pages build.
 - **Build fails**: Check the Actions tab in your GitHub repository for error details
 - **Site not updating**: Wait a few minutes and check the Actions tab to see if deployment completed
 
+
+
+
+
+
+

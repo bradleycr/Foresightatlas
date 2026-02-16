@@ -60,6 +60,7 @@ import {
 } from "../services/database";
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
+import { getNodeLabel } from "../utils/nodeLabels";
 
 interface AdminPanelProps {
   people: Person[];
@@ -119,9 +120,9 @@ export function AdminPanel({
       fullName: "",
       roleType: "Fellow",
       fellowshipCohortYear: new Date().getFullYear(),
+      fellowshipEndYear: null,
+      affiliationOrInstitution: null,
       focusTags: [],
-      homeBaseCity: "",
-      homeBaseCountry: "",
       currentCity: "",
       currentCountry: "",
       currentCoordinates: { lat: 0, lng: 0 },
@@ -349,9 +350,9 @@ export function AdminPanel({
             <span className="text-gray-900">{payload.focusAreas?.join(", ")}</span>
           </p>
           <p>
-            <span className="text-gray-600">Home base:</span>{" "}
+            <span className="text-gray-600">Location:</span>{" "}
             <span className="text-gray-900">
-              {payload.homeBaseCity}, {payload.homeBaseCountry}
+              {payload.currentCity}, {payload.currentCountry}
             </span>
           </p>
         </div>
@@ -619,15 +620,18 @@ export function AdminPanel({
                                 </p>
                                 <Badge variant="outline">{person.roleType}</Badge>
                                 <Badge variant="outline" className="text-xs">
-                                  {person.fellowshipCohortYear}
+                                  {person.fellowshipEndYear != null
+                                    ? `${person.fellowshipCohortYear}–${person.fellowshipEndYear}`
+                                    : person.fellowshipCohortYear}
                                 </Badge>
                               </div>
                               <p className="text-sm text-gray-600 mb-1">
                                 {person.shortProjectTagline}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {person.currentCity}, {person.currentCountry} ·{" "}
-                                {person.primaryNode}
+                                {person.currentCity}, {person.currentCountry}
+                                {!person.isAlumni && ` · ${getNodeLabel(person.primaryNode)}`}
+                                {(person.affiliationOrInstitution ?? "").trim() && ` · ${person.affiliationOrInstitution}`}
                               </p>
                             </div>
                             <div className="flex gap-2">
@@ -810,7 +814,7 @@ function PersonEditForm({
         </div>
 
         <div>
-          <Label htmlFor="cohortYear">Cohort Year *</Label>
+          <Label htmlFor="cohortYear">Cohort Year (start) *</Label>
           <Input
             id="cohortYear"
             type="number"
@@ -821,6 +825,38 @@ function PersonEditForm({
                 fellowshipCohortYear: parseInt(e.target.value) || 2024,
               })
             }
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="cohortEndYear">End Year (optional, for alumni)</Label>
+          <Input
+            id="cohortEndYear"
+            type="number"
+            placeholder="Leave blank if ongoing"
+            value={person.fellowshipEndYear ?? ""}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              onChange({
+                ...person,
+                fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null,
+              });
+            }}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="affiliation">Affiliation / Institution</Label>
+          <Input
+            id="affiliation"
+            value={person.affiliationOrInstitution ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...person,
+                affiliationOrInstitution: e.target.value.trim() || null,
+              })
+            }
+            placeholder="University, company, or institution"
           />
         </div>
 
@@ -839,36 +875,13 @@ function PersonEditForm({
               <SelectItem value="Global">Global</SelectItem>
               <SelectItem value="Berlin Node">Berlin Node</SelectItem>
               <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
+              <SelectItem value="Alumni">Alumni</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div>
-          <Label htmlFor="homeBaseCity">Home Base City *</Label>
-          <Input
-            id="homeBaseCity"
-            value={person.homeBaseCity}
-            onChange={(e) =>
-              onChange({ ...person, homeBaseCity: e.target.value })
-            }
-            placeholder="San Francisco"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="homeBaseCountry">Home Base Country *</Label>
-          <Input
-            id="homeBaseCountry"
-            value={person.homeBaseCountry}
-            onChange={(e) =>
-              onChange({ ...person, homeBaseCountry: e.target.value })
-            }
-            placeholder="USA"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="currentCity">Current City *</Label>
+          <Label htmlFor="currentCity">City *</Label>
           <Input
             id="currentCity"
             value={person.currentCity}
@@ -880,7 +893,7 @@ function PersonEditForm({
         </div>
 
         <div>
-          <Label htmlFor="currentCountry">Current Country *</Label>
+          <Label htmlFor="currentCountry">Country *</Label>
           <Input
             id="currentCountry"
             value={person.currentCountry}

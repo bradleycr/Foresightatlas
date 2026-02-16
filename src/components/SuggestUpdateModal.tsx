@@ -21,12 +21,10 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
     selectedPersonId: "",
     alreadyInSystem: "yes",
     changeType: "Update location" as ChangeType,
-    // New entry fields
+    // New entry fields (location = current location)
     projectTagline: "",
     focusAreas: "",
-    homeBaseCity: "",
-    homeBaseCountry: "",
-    // Update location fields
+    // Update location / New entry location
     currentCity: "",
     currentCountry: "",
     fromDate: "",
@@ -235,8 +233,8 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
       payload = {
         projectTagline: data.projectTagline,
         focusAreas: data.focusAreas.split(",").map((s) => s.trim()),
-        homeBaseCity: data.homeBaseCity,
-        homeBaseCountry: data.homeBaseCountry,
+        currentCity: data.currentCity,
+        currentCountry: data.currentCountry,
       };
     } else if (data.changeType === "Update location") {
       payload = {
@@ -591,24 +589,24 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="homeBaseCity">Home Base City *</Label>
+                  <Label htmlFor="newEntryCity">City *</Label>
                   <Input
-                    id="homeBaseCity"
+                    id="newEntryCity"
                     required
-                    value={formData.homeBaseCity}
+                    value={formData.currentCity}
                     onChange={(e) =>
-                      setFormData({ ...formData, homeBaseCity: e.target.value })
+                      setFormData({ ...formData, currentCity: e.target.value })
                     }
                   />
                 </div>
                 <div>
-                  <Label htmlFor="homeBaseCountry">Home Base Country *</Label>
+                  <Label htmlFor="newEntryCountry">Country *</Label>
                   <Input
-                    id="homeBaseCountry"
+                    id="newEntryCountry"
                     required
-                    value={formData.homeBaseCountry}
+                    value={formData.currentCountry}
                     onChange={(e) =>
-                      setFormData({ ...formData, homeBaseCountry: e.target.value })
+                      setFormData({ ...formData, currentCountry: e.target.value })
                     }
                   />
                 </div>

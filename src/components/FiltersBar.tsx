@@ -7,11 +7,13 @@ import { Badge } from "./ui/badge";
 import { getRoleGradient } from "../styles/roleColors";
 import { activeMultiGradient, badgeGradient, gradientVariant1 } from "../styles/gradients";
 import { Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import { getNodeLabel } from "../utils/nodeLabels";
 
 interface FiltersBarProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
   availableCities: string[];
+  defaultYear: number;
   activeTab: "map" | "timeline";
 }
 
@@ -26,16 +28,25 @@ const FOCUS_AREAS = [
 ];
 
 const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
-const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node"];
+const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node", "Alumni"];
 
-export function FiltersBar({ filters, onFiltersChange, availableCities, activeTab }: FiltersBarProps) {
+export function FiltersBar({
+  filters,
+  onFiltersChange,
+  availableCities,
+  defaultYear,
+  activeTab,
+}: FiltersBarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const today = new Date();
   const currentYear = today.getFullYear();
-  // Only show years up to next year (currentYear + 1) to avoid showing future years without data
-  const years = [currentYear - 1, currentYear, currentYear + 1];
+  // Show all years from 2017 (first fellowship cohort) to next year
+  const years = Array.from({ length: currentYear + 2 - 2017 }, (_, i) => 2017 + i);
   const activeBadgeGradient = badgeGradient;
   const activeToggleGradient = activeMultiGradient;
+  const handleAlumniToggle = () => {
+    onFiltersChange({ ...filters, showAlumni: !filters.showAlumni });
+  };
 
   const toggleProgram = (program: RoleType) => {
     const newPrograms = filters.programs.includes(program)
@@ -113,7 +124,8 @@ export function FiltersBar({ filters, onFiltersChange, availableCities, activeTa
       focusTags: [],
       nodes: [],
       cities: [],
-      year: currentYear, // Reset to current year
+      showAlumni: false,
+      year: defaultYear,
       granularity: "Year", // Reset to Year view
       referenceDate: new Date().toISOString(), // Reset to today
     });
@@ -124,7 +136,9 @@ export function FiltersBar({ filters, onFiltersChange, availableCities, activeTa
     filters.programs.length > 0 ||
     filters.focusTags.length > 0 ||
     filters.nodes.length > 0 ||
-    filters.cities.length > 0;
+    filters.cities.length > 0 ||
+    filters.showAlumni ||
+    filters.year !== defaultYear;
 
   return (
     <div className="border-b border-gray-200 bg-white relative">
@@ -184,6 +198,36 @@ export function FiltersBar({ filters, onFiltersChange, availableCities, activeTa
         >
           <div className="px-4 md:px-8 pt-5 pb-6 md:pb-8 max-h-[70vh] overflow-y-auto">
             <div className="space-y-5">
+            {/* People Filter */}
+            <div>
+              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+                People
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  onClick={handleAlumniToggle}
+                  className={`cursor-pointer transition-all ${
+                    filters.showAlumni
+                      ? "text-gray-900 shadow-sm border-white/50"
+                      : "text-gray-600 hover:text-gray-900 border-gray-200"
+                  }`}
+                  style={
+                    filters.showAlumni
+                      ? {
+                          background: activeToggleGradient,
+                          border: "1px solid rgba(255, 255, 255, 0.5)",
+                        }
+                      : undefined
+                  }
+                >
+                  Show alumni
+                </Badge>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Alumni are hidden by default to keep the map focused.
+              </p>
+            </div>
+
             {/* Programs Filter */}
             <div>
               <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
@@ -276,7 +320,7 @@ export function FiltersBar({ filters, onFiltersChange, availableCities, activeTa
                           : undefined
                       }
                     >
-                      {node}
+                      {getNodeLabel(node)}
                     </Badge>
                   );
                 })}

@@ -1,7 +1,7 @@
 // Data models for Foresight Fellows Map & Timeline
 
 export type RoleType = "Fellow" | "Grantee" | "Prize Winner";
-export type PrimaryNode = "Global" | "Berlin Node" | "Bay Area Node";
+export type PrimaryNode = "Global" | "Berlin Node" | "Bay Area Node" | "Alumni";
 export type TravelWindowType = "Residency" | "Conference" | "Workshop" | "Visit" | "Other";
 export type SuggestionStatus = "Pending" | "Accepted" | "Rejected";
 export type ChangeType = "New entry" | "Update location" | "Add travel window";
@@ -13,9 +13,11 @@ export interface Person {
   fullName: string;
   roleType: RoleType;
   fellowshipCohortYear: number;
+  /** Last year active in the program; null = ongoing (current). Used for alumni and for year-range filtering. */
+  fellowshipEndYear: number | null;
+  /** University, company, or institution (everyone). */
+  affiliationOrInstitution: string | null;
   focusTags: string[];
-  homeBaseCity: string;
-  homeBaseCountry: string;
   currentCity: string;
   currentCountry: string;
   currentCoordinates: { lat: number; lng: number };
@@ -63,6 +65,7 @@ export interface Filters {
   focusTags: string[];
   nodes: PrimaryNode[];
   cities: string[]; // Selected cities to filter by
+  showAlumni: boolean;
   year: number | null; // null means "All time"
   granularity: Granularity;
   /**

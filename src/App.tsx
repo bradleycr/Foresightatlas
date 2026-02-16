@@ -4,159 +4,147 @@ import { AppHeader } from "./components/AppHeader";
 import { FiltersBar } from "./components/FiltersBar";
 import { MapView } from "./components/MapView";
 import { TimelineView } from "./components/TimelineView";
-import { SuggestUpdateModal } from "./components/SuggestUpdateModal";
-import { AdminLoginModal } from "./components/AdminLoginModal";
-import { AdminPanel } from "./components/AdminPanel";
 import { PersonDetailModal } from "./components/PersonDetailModal";
-import { Filters, Person, TravelWindow, LocationSuggestion } from "./types";
-import {
-  getAllPeople,
-  getAllTravelWindows,
-  getAllSuggestions,
-  addSuggestion,
-  updateSuggestionStatus,
-  getAdminUsers,
-  generateSuggestionId,
-  addPerson,
-  updatePerson,
-  addTravelWindow,
-  generatePersonId,
-  generateTravelWindowId,
-} from "./services/database";
-import { geocodeCity } from "./services/geocoding";
+import { Filters, Person, TravelWindow } from "./types";
+import { getAllPeople, getAllTravelWindows } from "./services/database";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
+import { BerlinPage } from "./pages/BerlinPage";
+
+/**
+ * Replace with a real Google Form (or similar) URL when ready.
+ * Set to empty string or undefined to hide the button entirely.
+ */
+const SUGGEST_FORM_URL: string | undefined = undefined;
 
 export default function App() {
+  // Simple app routing
+  const [route, setRoute] = useState(window.location.pathname);
+
   // Tab state
   const [activeTab, setActiveTab] = useState<"map" | "timeline">("map");
 
-  // Modal states
-  const [showSuggestModal, setShowSuggestModal] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  // Modal state
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-
-  // Auth state
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminUser, setAdminUser] = useState<any>(null);
 
   // Data state
   const [people, setPeople] = useState<Person[]>([]);
   const [travelWindows, setTravelWindows] = useState<TravelWindow[]>([]);
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filter state
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const [filters, setFilters] = useState<Filters>({
     search: "",
     programs: [],
     focusTags: [],
     nodes: [],
     cities: [],
-    year: today.getFullYear(), // Default to current year
+    showAlumni: false,
+    year: today.getFullYear(),
     granularity: "Year",
     referenceDate: today.toISOString(),
-    timelineViewMode: "location", // Default to location view
+    timelineViewMode: "location",
   });
+  const [hasInitializedFilters, setHasInitializedFilters] = useState(false);
 
   // Load data on mount
   useEffect(() => {
     loadData();
   }, []);
 
-  // Load all data from database
+  // Keep SPA routing in sync with browser history
+  useEffect(() => {
+    const handlePop = () => setRoute(window.location.pathname);
+    const knownRoutes = ["/", "/berlin"];
+
+    if (!knownRoutes.includes(window.location.pathname)) {
+      window.history.replaceState({}, "", "/");
+      setRoute("/");
+    }
+
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const [peopleData, travelWindowsData, suggestionsData] = await Promise.all([
+      const [peopleData, travelWindowsData] = await Promise.all([
         getAllPeople(),
         getAllTravelWindows(),
-        getAllSuggestions(),
       ]);
       setPeople(peopleData);
       setTravelWindows(travelWindowsData);
-      setSuggestions(suggestionsData);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load data";
+      const errorMessage = err instanceof Error ? err.message : "Failed to load data";
       setError(errorMessage);
-      toast.error("Failed to load data", {
-        description: errorMessage,
-      });
+      toast.error("Failed to load data", { description: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Extract all unique cities from the database
+  // ── Derived state ──────────────────────────────────────────────────
+
+  const defaultCohortYear = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    if (people.length === 0) return currentYear;
+    const nonAlumni = people.filter((p) => !p.isAlumni);
+    const source = nonAlumni.length > 0 ? nonAlumni : people;
+    return source.reduce((max, p) => {
+      const end = p.fellowshipEndYear ?? p.fellowshipCohortYear;
+      return Math.max(max, p.fellowshipCohortYear ?? 0, end ?? 0);
+    }, source[0]?.fellowshipCohortYear ?? currentYear);
+  }, [people]);
+
+  useEffect(() => {
+    if (hasInitializedFilters || people.length === 0) return;
+    setFilters((prev) => ({ ...prev, year: defaultCohortYear }));
+    setHasInitializedFilters(true);
+  }, [defaultCohortYear, hasInitializedFilters, people.length]);
+
   const availableCities = useMemo(() => {
     const citySet = new Set<string>();
-    
-    // Add cities from people (home base and current)
-    people.forEach((person) => {
-      if (person.homeBaseCity) citySet.add(person.homeBaseCity);
-      if (person.currentCity) citySet.add(person.currentCity);
-    });
-    
-    // Add cities from travel windows
-    travelWindows.forEach((tw) => {
-      if (tw.city) citySet.add(tw.city);
-    });
-    
-    // Return sorted array for consistent display
+    people.forEach((p) => { if (p.currentCity) citySet.add(p.currentCity); });
+    travelWindows.forEach((tw) => { if (tw.city) citySet.add(tw.city); });
     return Array.from(citySet).sort();
   }, [people, travelWindows]);
 
-  // Filter logic
+  // ── Filter logic ───────────────────────────────────────────────────
+
   const filteredPeople = useMemo(() => {
     return people.filter((person) => {
-      // Search filter
+      if (!filters.showAlumni && person.isAlumni) return false;
+
+      if (filters.year !== null) {
+        const start = person.fellowshipCohortYear;
+        const end = person.fellowshipEndYear ?? filters.year;
+        if (filters.year < start || filters.year > end) return false;
+      }
+
       if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          person.fullName.toLowerCase().includes(searchLower) ||
-          person.shortProjectTagline.toLowerCase().includes(searchLower) ||
-          person.currentCity.toLowerCase().includes(searchLower) ||
-          person.homeBaseCity.toLowerCase().includes(searchLower);
-
-        if (!matchesSearch) return false;
+        const q = filters.search.toLowerCase();
+        const match =
+          person.fullName.toLowerCase().includes(q) ||
+          (person.affiliationOrInstitution ?? "").toLowerCase().includes(q) ||
+          person.shortProjectTagline.toLowerCase().includes(q) ||
+          person.currentCity.toLowerCase().includes(q);
+        if (!match) return false;
       }
 
-      // Program filter
-      if (filters.programs.length > 0 && !filters.programs.includes(person.roleType)) {
-        return false;
-      }
+      if (filters.programs.length > 0 && !filters.programs.includes(person.roleType)) return false;
+      if (filters.focusTags.length > 0 && !filters.focusTags.some((t) => person.focusTags.includes(t))) return false;
+      if (filters.nodes.length > 0 && !filters.nodes.includes(person.primaryNode)) return false;
 
-      // Focus tags filter
-      if (
-        filters.focusTags.length > 0 &&
-        !filters.focusTags.some((tag) => person.focusTags.includes(tag))
-      ) {
-        return false;
-      }
-
-      // Node filter
-      if (filters.nodes.length > 0 && !filters.nodes.includes(person.primaryNode)) {
-        return false;
-      }
-
-      // City filter - check if person's current city, home base city, or any travel window city matches
       if (filters.cities.length > 0) {
-        const personCities = [person.currentCity, person.homeBaseCity];
-        const personTravelCities = travelWindows
-          .filter((tw) => tw.personId === person.id)
-          .map((tw) => tw.city);
-        const allPersonCities = [...personCities, ...personTravelCities];
-        
-        if (!filters.cities.some((city) => allPersonCities.includes(city))) {
-          return false;
-        }
+        const personCities = [person.currentCity];
+        const twCities = travelWindows.filter((tw) => tw.personId === person.id).map((tw) => tw.city);
+        if (!filters.cities.some((c) => [...personCities, ...twCities].includes(c))) return false;
       }
 
       return true;
@@ -164,374 +152,111 @@ export default function App() {
   }, [people, travelWindows, filters]);
 
   const filteredTravelWindows = useMemo(() => {
-    const personIds = new Set(filteredPeople.map((p) => p.id));
-    let filtered = travelWindows.filter((tw) => personIds.has(tw.personId));
-    
-    // Apply year filter if specified (don't filter out future years if user explicitly selected them)
+    const ids = new Set(filteredPeople.map((p) => p.id));
+    let out = travelWindows.filter((tw) => ids.has(tw.personId));
     if (filters.year !== null) {
-      filtered = filtered.filter((tw) => {
-        const startYear = new Date(tw.startDate).getFullYear();
-        const endYear = new Date(tw.endDate).getFullYear();
-        // Show travel windows that overlap with the selected year
-        return startYear <= filters.year && endYear >= filters.year;
+      out = out.filter((tw) => {
+        const s = new Date(tw.startDate).getFullYear();
+        const e = new Date(tw.endDate).getFullYear();
+        return s <= filters.year! && e >= filters.year!;
       });
     }
-    
-    // Apply city filter to travel windows if cities are selected
-    if (filters.cities.length > 0) {
-      filtered = filtered.filter((tw) => filters.cities.includes(tw.city));
-    }
-    
-    return filtered;
+    if (filters.cities.length > 0) out = out.filter((tw) => filters.cities.includes(tw.city));
+    return out;
   }, [travelWindows, filteredPeople, filters.cities, filters.year]);
 
-  // Time window for map view
+  // ── Time window for map ────────────────────────────────────────────
+
   const timeWindowStart = useMemo(() => {
-    // "All time" - use a very early date
     if (filters.year === null) {
-      // For Month/Week with "All Time", use reference date's year
       if (filters.granularity === "Month" || filters.granularity === "Week") {
         const ref = new Date(filters.referenceDate);
-        const month = ref.getMonth();
-        const day = ref.getDate();
-        
-        if (filters.granularity === "Month") {
-          return new Date(ref.getFullYear(), month, 1);
-        }
-        
-        if (filters.granularity === "Week") {
-          const base = new Date(ref.getFullYear(), month, day);
-          const startOfWeek = new Date(base);
-          startOfWeek.setDate(base.getDate() - base.getDay());
-          return startOfWeek;
-        }
+        const m = ref.getMonth(), d = ref.getDate();
+        if (filters.granularity === "Month") return new Date(ref.getFullYear(), m, 1);
+        const base = new Date(ref.getFullYear(), m, d);
+        base.setDate(base.getDate() - base.getDay());
+        return base;
       }
       return new Date(1900, 0, 1);
     }
-
-    // Year is selected - use it for Month/Week calculations
     const ref = new Date(filters.referenceDate);
-    const month = ref.getMonth();
-    const day = ref.getDate();
-
-    if (filters.granularity === "Month") {
-      // Use selected year, not reference date's year
-      return new Date(filters.year, month, 1);
-    }
-
+    const m = ref.getMonth(), d = ref.getDate();
+    if (filters.granularity === "Month") return new Date(filters.year, m, 1);
     if (filters.granularity === "Week") {
-      // Use selected year, not reference date's year
-      const base = new Date(filters.year, month, day);
-      const startOfWeek = new Date(base);
-      startOfWeek.setDate(base.getDate() - base.getDay());
-      return startOfWeek;
+      const base = new Date(filters.year, m, d);
+      base.setDate(base.getDate() - base.getDay());
+      return base;
     }
-
     return new Date(filters.year, 0, 1);
   }, [filters.year, filters.granularity, filters.referenceDate]);
 
   const timeWindowEnd = useMemo(() => {
-    // "All time" - use a very far future date
     if (filters.year === null) {
-      // For Month/Week with "All Time", use reference date's year
       if (filters.granularity === "Month" || filters.granularity === "Week") {
         const ref = new Date(filters.referenceDate);
-        const month = ref.getMonth();
-        const day = ref.getDate();
-        
-        if (filters.granularity === "Month") {
-          return new Date(ref.getFullYear(), month + 1, 0, 23, 59, 59, 999);
-        }
-        
-        if (filters.granularity === "Week") {
-          const base = new Date(ref.getFullYear(), month, day);
-          const endOfWeek = new Date(base);
-          const daysToAdd = 6 - endOfWeek.getDay();
-          endOfWeek.setDate(base.getDate() + daysToAdd);
-          endOfWeek.setHours(23, 59, 59, 999);
-          return endOfWeek;
-        }
+        const m = ref.getMonth(), d = ref.getDate();
+        if (filters.granularity === "Month") return new Date(ref.getFullYear(), m + 1, 0, 23, 59, 59, 999);
+        const base = new Date(ref.getFullYear(), m, d);
+        base.setDate(base.getDate() + (6 - base.getDay()));
+        base.setHours(23, 59, 59, 999);
+        return base;
       }
       return new Date(2100, 11, 31);
     }
-
-    // Year is selected - use it for Month/Week calculations
     const ref = new Date(filters.referenceDate);
-    const month = ref.getMonth();
-    const day = ref.getDate();
-
-    if (filters.granularity === "Month") {
-      // Use selected year, not reference date's year
-      return new Date(filters.year, month + 1, 0, 23, 59, 59, 999);
-    }
-
+    const m = ref.getMonth(), d = ref.getDate();
+    if (filters.granularity === "Month") return new Date(filters.year, m + 1, 0, 23, 59, 59, 999);
     if (filters.granularity === "Week") {
-      // Use selected year, not reference date's year
-      const base = new Date(filters.year, month, day);
-      const endOfWeek = new Date(base);
-      const daysToAdd = 6 - endOfWeek.getDay();
-      endOfWeek.setDate(base.getDate() + daysToAdd);
-      endOfWeek.setHours(23, 59, 59, 999);
-      return endOfWeek;
+      const base = new Date(filters.year, m, d);
+      base.setDate(base.getDate() + (6 - base.getDay()));
+      base.setHours(23, 59, 59, 999);
+      return base;
     }
-
     return new Date(filters.year, 11, 31, 23, 59, 59, 999);
   }, [filters.year, filters.granularity, filters.referenceDate]);
 
-  // Handle reset to current 12 months
-  const handleResetToCurrent12Months = () => {
-    const now = new Date();
-    setFilters({
-      ...filters,
-      year: now.getFullYear(),
-      granularity: "Year",
-      cities: [], // Clear city filter on reset
-      referenceDate: now.toISOString(),
-    });
+  // ── Navigation ─────────────────────────────────────────────────────
+
+  const navigate = (path: string) => {
+    if (path === route) return;
+    window.history.pushState({}, "", path);
+    setRoute(path);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle admin login
-  const handleAdminLogin = async (
-    email: string,
-    password: string
-  ): Promise<boolean> => {
-    try {
-      // Check against database admin users
-      const adminUsers = await getAdminUsers();
-      const admin = adminUsers.find(
-        (u) => u.email === email && u.passwordPlaceholder === password
-      );
-
-      if (admin) {
-        setIsAdmin(true);
-        setAdminUser(admin);
-        setShowAdminLogin(false);
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      console.error("Login error:", err);
-      toast.error("Failed to authenticate", {
-        description: "Unable to verify credentials. Please try again.",
-      });
-      return false;
-    }
+  const handleNodeQuickFilter = (node: Filters["nodes"][number]) => {
+    setFilters((prev) => ({ ...prev, nodes: prev.nodes.includes(node) ? [] : [node] }));
+    setActiveTab("map");
+    navigate("/");
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    setIsAdmin(false);
-    setAdminUser(null);
-    toast.success("Logged out successfully");
-  };
+  const nodeQuickActions = [
+    { label: "Berlin Node", node: "Berlin Node" as const },
+    { label: "San Francisco Node", node: "Bay Area Node" as const },
+  ];
 
-  // Handle suggestion submission
-  const handleSuggestionSubmit = async (suggestionData: any) => {
-    try {
-      // Validate required fields
-      if (!suggestionData.personName || !suggestionData.personEmailOrHandle) {
-        throw new Error("Name and email/contact are required");
-      }
-      if (!suggestionData.requestedChangeType) {
-        throw new Error("Change type is required");
-      }
-      if (!suggestionData.requestedPayload || typeof suggestionData.requestedPayload !== 'object') {
-        throw new Error("Invalid payload data");
-      }
+  // ── Views ──────────────────────────────────────────────────────────
 
-      // Create properly formatted suggestion
-      const suggestion: LocationSuggestion = {
-        id: generateSuggestionId(),
-        personName: suggestionData.personName.trim(),
-        personEmailOrHandle: suggestionData.personEmailOrHandle.trim(),
-        requestedChangeType: suggestionData.requestedChangeType,
-        requestedPayload: suggestionData.requestedPayload,
-        createdAt: new Date().toISOString(),
-        status: "Pending",
-      };
-
-      // Save to database
-      await addSuggestion(suggestion);
-      
-      toast.success("Suggestion submitted successfully", {
-        description: "Your update has been recorded and will be reviewed by an admin.",
-      });
-      setShowSuggestModal(false);
-      
-      // Refresh data to show the new suggestion
-      await loadData();
-    } catch (err) {
-      console.error("Error submitting suggestion:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to submit suggestion";
-      toast.error("Failed to submit suggestion", {
-        description: errorMessage,
-      });
-      // Don't close modal on error so user can fix and retry
-    }
-  };
-
-  // Handle suggestion acceptance
-  const handleAcceptSuggestion = async (id: string) => {
-    try {
-      const suggestion = suggestions.find((s) => s.id === id);
-      if (!suggestion) {
-        throw new Error("Suggestion not found");
-      }
-
-      const payload = suggestion.requestedPayload;
-
-      // Apply the changes based on suggestion type
-      if (suggestion.requestedChangeType === "New entry") {
-        // Create a new person entry
-        const geocodeResult = await geocodeCity(
-          payload.homeBaseCity,
-          payload.homeBaseCountry
-        );
-
-        const newPerson: Person = {
-          id: generatePersonId(),
-          fullName: suggestion.personName,
-          roleType: "Fellow", // Default, admin can change later
-          fellowshipCohortYear: new Date().getFullYear(),
-          focusTags: payload.focusAreas || [],
-          homeBaseCity: payload.homeBaseCity,
-          homeBaseCountry: payload.homeBaseCountry,
-          currentCity: payload.homeBaseCity,
-          currentCountry: payload.homeBaseCountry,
-          currentCoordinates: geocodeResult
-            ? { lat: geocodeResult.lat, lng: geocodeResult.lng }
-            : { lat: 0, lng: 0 },
-          primaryNode: "Global", // Default, admin can change later
-          profileUrl: "",
-          contactUrlOrHandle: suggestion.personEmailOrHandle || null,
-          shortProjectTagline: payload.projectTagline || "",
-          expandedProjectDescription: "",
-          isAlumni: false,
-        };
-
-        await addPerson(newPerson);
-        toast.success("New person entry created");
-      } else if (suggestion.requestedChangeType === "Update location") {
-        // Find the person by email/handle or name
-        const person = people.find(
-          (p) =>
-            p.contactUrlOrHandle === suggestion.personEmailOrHandle ||
-            p.fullName === suggestion.personName
-        );
-
-        if (!person) {
-          throw new Error(
-            "Person not found. Please ensure the person exists in the system."
-          );
-        }
-
-        // Geocode the new location
-        const geocodeResult = await geocodeCity(
-          payload.currentCity,
-          payload.currentCountry
-        );
-
-        const updates: Partial<Person> = {
-          currentCity: payload.currentCity,
-          currentCountry: payload.currentCountry,
-          currentCoordinates: geocodeResult
-            ? { lat: geocodeResult.lat, lng: geocodeResult.lng }
-            : person.currentCoordinates,
-        };
-
-        await updatePerson(person.id, updates);
-        toast.success("Location updated successfully");
-      } else if (suggestion.requestedChangeType === "Add travel window") {
-        // Find the person by email/handle or name
-        const person = people.find(
-          (p) =>
-            p.contactUrlOrHandle === suggestion.personEmailOrHandle ||
-            p.fullName === suggestion.personName
-        );
-
-        if (!person) {
-          throw new Error(
-            "Person not found. Please ensure the person exists in the system."
-          );
-        }
-
-        // Geocode the travel destination
-        const geocodeResult = await geocodeCity(
-          payload.city,
-          payload.country
-        );
-
-        const newTravelWindow: TravelWindow = {
-          id: generateTravelWindowId(),
-          personId: person.id,
-          title: payload.notes || "Travel",
-          city: payload.city,
-          country: payload.country,
-          coordinates: geocodeResult
-            ? { lat: geocodeResult.lat, lng: geocodeResult.lng }
-            : { lat: 0, lng: 0 },
-          startDate: payload.startDate || new Date().toISOString().split("T")[0],
-          endDate: payload.endDate || new Date().toISOString().split("T")[0],
-          type: "Other", // Default, admin can change later
-          notes: payload.notes || "",
-        };
-
-        await addTravelWindow(newTravelWindow);
-        toast.success("Travel window added successfully");
-      }
-
-      // Update suggestion status to Accepted
-      await updateSuggestionStatus(id, "Accepted");
-      await loadData(); // Refresh data
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to accept suggestion";
-      toast.error("Failed to accept suggestion", {
-        description: errorMessage,
-      });
-    }
-  };
-
-  // Handle suggestion rejection
-  const handleRejectSuggestion = async (id: string) => {
-    try {
-      await updateSuggestionStatus(id, "Rejected");
-      toast.success("Suggestion rejected");
-      await loadData(); // Refresh data
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to reject suggestion";
-      toast.error("Failed to reject suggestion", {
-        description: errorMessage,
-      });
-    }
-  };
-
-  return (
+  const homeView = (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
       <AppHeader
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        isAdmin={isAdmin}
-        adminName={adminUser?.displayName}
-        onAdminClick={() => setShowAdminLogin(true)}
-        onLogout={handleLogout}
-        onAdminPanelClick={() => setShowAdminPanel(true)}
-        onSuggestUpdateClick={() => setShowSuggestModal(true)}
+        suggestFormUrl={SUGGEST_FORM_URL}
+        nodeQuickActions={nodeQuickActions.map((a) => ({
+          label: a.label,
+          onClick: () => handleNodeQuickFilter(a.node),
+        }))}
       />
 
-      {/* Filters */}
       <FiltersBar
         filters={filters}
         onFiltersChange={setFilters}
         availableCities={availableCities}
+        defaultYear={defaultCohortYear}
         activeTab={activeTab}
       />
 
-      {/* Content Area */}
       <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-hidden">
         {activeTab === "map" ? (
           <MapView
@@ -540,7 +265,7 @@ export default function App() {
             timeWindowStart={timeWindowStart}
             timeWindowEnd={timeWindowEnd}
             granularity={filters.granularity}
-            onViewPersonDetails={(personId) => setSelectedPersonId(personId)}
+            onViewPersonDetails={(id) => setSelectedPersonId(id)}
           />
         ) : (
           <TimelineView
@@ -552,72 +277,41 @@ export default function App() {
             referenceDate={filters.referenceDate}
             cities={filters.cities}
             nodes={filters.nodes}
-            onViewPersonDetails={(personId) => setSelectedPersonId(personId)}
+            onViewPersonDetails={(id) => setSelectedPersonId(id)}
             onSwitchToMap={() => setActiveTab("map")}
           />
         )}
       </div>
+    </div>
+  );
 
-      {/* Modals */}
-      {showSuggestModal && (
-        <SuggestUpdateModal
-          onClose={() => setShowSuggestModal(false)}
-          onSubmit={handleSuggestionSubmit}
-          people={people}
-        />
-      )}
+  const berlinView = (
+    <BerlinPage
+      people={people}
+      travelWindows={travelWindows}
+      isAdmin={false}
+      onAdminLogin={() => {}}
+      onAdminPanel={() => {}}
+      onNavigateHome={() => navigate("/")}
+      onDataRefresh={loadData}
+    />
+  );
 
-      {showAdminLogin && (
-        <AdminLoginModal
-          onClose={() => setShowAdminLogin(false)}
-          onLogin={handleAdminLogin}
-        />
-      )}
+  return (
+    <>
+      {route === "/berlin" ? berlinView : homeView}
 
-      {showAdminPanel && (
-        <AdminPanel
-          people={people}
-          travelWindows={travelWindows}
-          suggestions={suggestions}
-          onAccept={handleAcceptSuggestion}
-          onReject={handleRejectSuggestion}
-          onPersonUpdate={async () => {
-            await loadData();
-            toast.success("Person updated successfully");
-          }}
-          onPersonDelete={async () => {
-            await loadData();
-            toast.success("Person deleted successfully");
-          }}
-          onTravelWindowUpdate={async () => {
-            await loadData();
-            toast.success("Travel window updated successfully");
-          }}
-          onTravelWindowDelete={async () => {
-            await loadData();
-            toast.success("Travel window deleted successfully");
-          }}
-          onClose={() => setShowAdminPanel(false)}
-        />
-      )}
-
-      {/* Person Detail Modal */}
       <PersonDetailModal
         person={people.find((p) => p.id === selectedPersonId) || null}
         travelWindows={travelWindows}
         allPeople={filteredPeople}
         isOpen={selectedPersonId !== null}
-        isAdmin={isAdmin}
-        onClose={() => {
-          setSelectedPersonId(null);
-        }}
-        onNavigate={(personId) => {
-          setSelectedPersonId(personId);
-        }}
+        isAdmin={false}
+        onClose={() => setSelectedPersonId(null)}
+        onNavigate={(id) => setSelectedPersonId(id)}
         onDataUpdate={loadData}
       />
 
-      {/* Loading overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: Z_INDEX_LOADING }}>
           <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -626,40 +320,29 @@ export default function App() {
         </div>
       )}
 
-      {/* Error message */}
       {error && !isLoading && (
-        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-900 px-4 py-3 rounded-lg shadow-lg max-w-md" style={{ zIndex: Z_INDEX_ERROR }}>
+        <div
+          className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-900 px-4 py-3 rounded-lg shadow-lg max-w-md"
+          style={{ zIndex: Z_INDEX_ERROR }}
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <p className="font-semibold text-red-900 mb-1">Error loading data</p>
               <p className="text-sm text-red-700">{error}</p>
             </div>
-            <button
-              onClick={() => setError(null)}
-              className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
-              aria-label="Dismiss error"
-            >
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0" aria-label="Dismiss error">
               <X className="size-4" />
             </button>
           </div>
           <div className="mt-3 flex gap-2">
-            <Button
-              onClick={() => {
-                setError(null);
-                loadData();
-              }}
-              size="sm"
-              variant="outline"
-              className="border-red-300 text-red-700 hover:bg-red-100"
-            >
+            <Button onClick={() => { setError(null); loadData(); }} size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
               Retry
             </Button>
           </div>
         </div>
       )}
 
-      {/* Toast notifications */}
       <Toaster />
-    </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { Person, TravelWindow, Granularity, PrimaryNode, TimelineViewMode } from
 import { Badge } from "./ui/badge";
 import { ExternalLink, X, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { getRoleGradient } from "../styles/roleColors";
+import { getCohortLabel } from "../utils/cohortLabel";
 import { useIsMobile } from "./ui/use-mobile";
 import {
   Sheet,
@@ -46,7 +47,7 @@ interface LocationPeriod {
   endDate: Date;
   city: string;
   country: string;
-  isDefaultLocation: boolean; // true if this is their home base/current location, false if it's a travel window
+  isDefaultLocation: boolean; // true if this is their current location, false if it's a travel window
   travelWindow?: TravelWindow; // Only present if isDefaultLocation is false
 }
 
@@ -520,8 +521,8 @@ export function TimelineView({
     rangeEnd: Date
   ): LocationPeriod[] => {
     const periods: LocationPeriod[] = [];
-    const defaultCity = person.currentCity || person.homeBaseCity;
-    const defaultCountry = person.currentCountry || person.homeBaseCountry;
+    const defaultCity = person.currentCity;
+    const defaultCountry = person.currentCountry;
 
     // Sort travel windows by start date
     const sortedTravelWindows = [...travelWindows].sort(
@@ -1353,7 +1354,7 @@ export function TimelineView({
                   </SheetTitle>
                   <p className="text-sm text-gray-600 text-left">
                     {selectedTravel.person.roleType} · Cohort{" "}
-                    {selectedTravel.person.fellowshipCohortYear}
+                    {getCohortLabel(selectedTravel.person)}
                   </p>
                 </SheetHeader>
 
@@ -1826,7 +1827,7 @@ export function TimelineView({
               <h3 className="text-gray-900">{selectedTravel.person.fullName}</h3>
               <p className="text-sm text-gray-600">
                 {selectedTravel.person.roleType} · Cohort{" "}
-                {selectedTravel.person.fellowshipCohortYear}
+                {getCohortLabel(selectedTravel.person)}
               </p>
             </div>
             <button

@@ -38,6 +38,8 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { getRoleGradient } from "../styles/roleColors";
+import { getNodeLabel } from "../utils/nodeLabels";
+import { getCohortLabel } from "../utils/cohortLabel";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
 import { 
@@ -486,6 +488,21 @@ export function PersonDetailModal({
                           })
                         }
                         className="w-24"
+                        placeholder="Start year"
+                      />
+                      <span className="text-gray-400">–</span>
+                      <Input
+                        type="number"
+                        placeholder="End (optional)"
+                        className="w-24"
+                        value={editingPerson.fellowshipEndYear ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value.trim();
+                          setEditingPerson({
+                            ...editingPerson,
+                            fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null,
+                          });
+                        }}
                       />
                       <div className="flex items-center gap-2">
                         <input
@@ -514,7 +531,7 @@ export function PersonDetailModal({
                         {displayPerson.roleType}
                       </span>
                       <span className="text-sm text-gray-700">
-                        Cohort {displayPerson.fellowshipCohortYear}
+                        Cohort {getCohortLabel(displayPerson)}
                       </span>
                       {displayPerson.isAlumni && (
                         <Badge variant="secondary" className="text-xs">
@@ -587,6 +604,18 @@ export function PersonDetailModal({
                     rows={4}
                     placeholder="Expanded project description"
                   />
+                  <Label className="text-sm font-semibold text-gray-700 mt-3 block">Affiliation / Institution</Label>
+                  <Input
+                    value={editingPerson.affiliationOrInstitution ?? ""}
+                    onChange={(e) =>
+                      setEditingPerson({
+                        ...editingPerson,
+                        affiliationOrInstitution: e.target.value.trim() || null,
+                      })
+                    }
+                    placeholder="University, company, or institution"
+                    className="mt-1"
+                  />
                 </>
               ) : (
                 <>
@@ -598,44 +627,21 @@ export function PersonDetailModal({
                       {displayPerson.expandedProjectDescription}
                     </p>
                   )}
+                  {(displayPerson.affiliationOrInstitution ?? "").trim() && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      {displayPerson.affiliationOrInstitution}
+                    </p>
+                  )}
                 </>
               )}
             </div>
 
-            {/* Location Information */}
+            {/* Location */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Home Base
-                </h3>
-                {isEditing && editingPerson ? (
-                  <div className="space-y-2">
-                    <Input
-                      value={editingPerson.homeBaseCity}
-                      onChange={(e) =>
-                        setEditingPerson({ ...editingPerson, homeBaseCity: e.target.value })
-                      }
-                      placeholder="City"
-                    />
-                    <Input
-                      value={editingPerson.homeBaseCountry}
-                      onChange={(e) =>
-                        setEditingPerson({ ...editingPerson, homeBaseCountry: e.target.value })
-                      }
-                      placeholder="Country"
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-900">
-                    {displayPerson.homeBaseCity}, {displayPerson.homeBaseCountry}
-                  </p>
-                )}
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Current Location
+                  Location
                 </h3>
                 {isEditing && editingPerson ? (
                   <div className="space-y-2">
@@ -676,10 +682,13 @@ export function PersonDetailModal({
                       <SelectItem value="Global">Global</SelectItem>
                       <SelectItem value="Berlin Node">Berlin Node</SelectItem>
                       <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
+                      <SelectItem value="Alumni">Alumni</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="text-sm text-gray-900">{displayPerson.primaryNode}</p>
+                  <p className="text-sm text-gray-900">
+                    {displayPerson.primaryNode === "Alumni" ? "—" : getNodeLabel(displayPerson.primaryNode)}
+                  </p>
                 )}
               </div>
             </div>
