@@ -12,6 +12,11 @@ import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 import { BerlinPage } from "./pages/BerlinPage";
+import {
+  getRoutePath,
+  buildFullPath,
+  consumeRedirectPath,
+} from "./utils/router";
 
 /**
  * Replace with a real Google Form (or similar) URL when ready.
@@ -20,8 +25,8 @@ import { BerlinPage } from "./pages/BerlinPage";
 const SUGGEST_FORM_URL: string | undefined = undefined;
 
 export default function App() {
-  // Simple app routing
-  const [route, setRoute] = useState(window.location.pathname);
+  // Base-path-aware routing (works on GitHub Pages e.g. /Foresightmap/)
+  const [route, setRoute] = useState(() => getRoutePath());
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"map" | "timeline">("map");
@@ -43,7 +48,7 @@ export default function App() {
     focusTags: [],
     nodes: [],
     cities: [],
-    showAlumni: false,
+    showAlumni: true,
     year: today.getFullYear(),
     granularity: "Year",
     referenceDate: today.toISOString(),
@@ -56,16 +61,24 @@ export default function App() {
     loadData();
   }, []);
 
+  // Restore path after 404 redirect (deep links on GitHub Pages)
+  useEffect(() => {
+    const stored = consumeRedirectPath();
+    if (stored) {
+      window.history.replaceState({}, "", stored);
+      setRoute(getRoutePath());
+    }
+  }, []);
+
   // Keep SPA routing in sync with browser history
   useEffect(() => {
-    const handlePop = () => setRoute(window.location.pathname);
+    const handlePop = () => setRoute(getRoutePath());
     const knownRoutes = ["/", "/berlin"];
-
-    if (!knownRoutes.includes(window.location.pathname)) {
-      window.history.replaceState({}, "", "/");
+    const current = getRoutePath();
+    if (!knownRoutes.includes(current)) {
+      window.history.replaceState({}, "", buildFullPath("/"));
       setRoute("/");
     }
-
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
@@ -219,21 +232,11 @@ export default function App() {
 
   const navigate = (path: string) => {
     if (path === route) return;
-    window.history.pushState({}, "", path);
+    const fullPath = buildFullPath(path);
+    window.history.pushState({}, "", fullPath);
     setRoute(path);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  const handleNodeQuickFilter = (node: Filters["nodes"][number]) => {
-    setFilters((prev) => ({ ...prev, nodes: prev.nodes.includes(node) ? [] : [node] }));
-    setActiveTab("map");
-    navigate("/");
-  };
-
-  const nodeQuickActions = [
-    { label: "Berlin Node", node: "Berlin Node" as const },
-    { label: "San Francisco Node", node: "Bay Area Node" as const },
-  ];
 
   // ── Views ──────────────────────────────────────────────────────────
 
@@ -243,10 +246,6 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         suggestFormUrl={SUGGEST_FORM_URL}
-        nodeQuickActions={nodeQuickActions.map((a) => ({
-          label: a.label,
-          onClick: () => handleNodeQuickFilter(a.node),
-        }))}
       />
 
       <FiltersBar
@@ -297,9 +296,11 @@ export default function App() {
     />
   );
 
+  const isBerlin = route === "/berlin";
+
   return (
     <>
-      {route === "/berlin" ? berlinView : homeView}
+      {isBerlin ? berlinView : homeView}
 
       <PersonDetailModal
         person={people.find((p) => p.id === selectedPersonId) || null}

@@ -180,6 +180,55 @@
     color: #374151 !important;
   }
 
+  /* Map node popup: slim, balanced spacing — not bulky */
+  .map-node-popup .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  .map-node-popup .leaflet-popup-content {
+    min-width: 260px;
+    max-width: 320px;
+  }
+  .map-node-popup__person {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Marker clusters: match app palette so they don’t feel out of place when zoomed out */
+  .marker-cluster {
+    background-color: rgba(196, 181, 253, 0.45) !important;
+  }
+  .marker-cluster div {
+    background-color: rgba(124, 58, 237, 0.7) !important;
+    color: #fff !important;
+    font-weight: 600;
+  }
+  .marker-cluster-small {
+    background-color: rgba(196, 181, 253, 0.5) !important;
+  }
+  .marker-cluster-small div {
+    background-color: rgba(124, 58, 237, 0.75) !important;
+  }
+  .marker-cluster-medium {
+    background-color: rgba(196, 181, 253, 0.45) !important;
+  }
+  .marker-cluster-medium div {
+    background-color: rgba(124, 58, 237, 0.7) !important;
+  }
+  .marker-cluster-large {
+    background-color: rgba(196, 181, 253, 0.4) !important;
+  }
+  .marker-cluster-large div {
+    background-color: rgba(124, 58, 237, 0.65) !important;
+  }
+
+  @media (max-width: 640px) {
+    .map-node-popup .leaflet-popup-content {
+      min-width: 240px;
+      max-width: min(320px, calc(100vw - 48px));
+    }
+  }
+
   /* Mobile-specific Leaflet zoom controls positioning */
   @media (max-width: 768px) {
     /* Ensure zoom controls are positioned top-left with proper spacing */
@@ -260,4 +309,23 @@
 
 html {
   font-size: var(--font-size);
+}
+
+/* Person detail modal: section spacing and top-block gap */
+.person-detail-modal .person-detail-content section + section {
+  margin-top: 2.5rem;
+}
+@media (min-width: 48rem) {
+  .person-detail-modal .person-detail-content section + section {
+    margin-top: 3rem;
+  }
+}
+/* Extra space between name/metadata block and first content section (Project) */
+.person-detail-modal .person-detail-content__head {
+  margin-bottom: 2.5rem;
+}
+@media (min-width: 48rem) {
+  .person-detail-modal .person-detail-content__head {
+    margin-bottom: 3rem;
+  }
 }

@@ -49,9 +49,10 @@ gh repo view --web
 ## How It Works
 
 - The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
-  - Builds your Vite app when you push to `main`
-  - Deploys it to GitHub Pages
-  - Uses the correct base path based on your repository name
+  - Builds your Vite app when you push to `main` with `VITE_BASE_PATH=/${{ repo name }}/`
+  - Deploys the `build/` output to GitHub Pages
+- The app uses **base-path-aware routing** (`src/utils/router.ts`), so links and history work correctly at e.g. `https://username.github.io/Foresightmap/`.
+- **Deep links**: Visiting a path that doesn’t exist as a file (e.g. `.../Foresightmap/berlin`) triggers GitHub’s 404 page. The included `404.html` redirects to the app root and stores the path in `sessionStorage` so the SPA can restore the route (e.g. Berlin page) without a second load.
 
 ## Local Development
 

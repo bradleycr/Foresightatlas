@@ -1,4 +1,4 @@
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, ChevronRight } from "lucide-react";
 import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -128,6 +128,22 @@ export function FellowCard({
             </div>
           </div>
         )}
+
+        {/* More details — clear call-to-action */}
+        <div className="pt-3 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.();
+            }}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-md px-1 py-0.5 -ml-1 transition-colors"
+            aria-label={`More details about ${person.fullName}`}
+          >
+            More details
+            <ChevronRight className="size-4" aria-hidden />
+          </button>
+        </div>
       </div>
     </Card>
   );

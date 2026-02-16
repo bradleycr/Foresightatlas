@@ -124,20 +124,20 @@ export function FiltersBar({
       focusTags: [],
       nodes: [],
       cities: [],
-      showAlumni: false,
+      showAlumni: true,
       year: defaultYear,
-      granularity: "Year", // Reset to Year view
-      referenceDate: new Date().toISOString(), // Reset to today
+      granularity: "Year",
+      referenceDate: new Date().toISOString(),
     });
   };
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.search !== "" ||
     filters.programs.length > 0 ||
     filters.focusTags.length > 0 ||
     filters.nodes.length > 0 ||
     filters.cities.length > 0 ||
-    filters.showAlumni ||
+    filters.showAlumni === false ||
     filters.year !== defaultYear;
 
   return (
@@ -198,7 +198,7 @@ export function FiltersBar({
         >
           <div className="px-4 md:px-8 pt-5 pb-6 md:pb-8 max-h-[70vh] overflow-y-auto">
             <div className="space-y-5">
-            {/* People Filter */}
+            {/* People: include alumni (toggle off to hide) */}
             <div>
               <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
                 People
@@ -223,9 +223,6 @@ export function FiltersBar({
                   Show alumni
                 </Badge>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Alumni are hidden by default to keep the map focused.
-              </p>
             </div>
 
             {/* Programs Filter */}

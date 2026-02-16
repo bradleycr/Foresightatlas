@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-markercluster";
 import { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType } from "../types";
 import { FellowCard } from "./FellowCard";
-import { MapPin, List, X } from "lucide-react";
+import { List, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
@@ -181,40 +182,27 @@ function MapResizer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
   return null;
 }
 
+// Canonical order for segment layout so the badge always looks consistent
+const ROLE_ORDER: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+
 /**
- * Creates a beautiful gradient that blends multiple role type colors
- * When multiple roles are present, creates a smooth gradient mix
+ * Badge background: one color for a single role type; segmented (halves or thirds)
+ * for multiple types so you can see the mix at a glance.
  */
-const createRoleBasedGradient = (roleTypes: Set<RoleType>): string => {
-  const roles = Array.from(roleTypes);
-  
-  // Single role type - use its dedicated color
+const createRoleBasedBadgeBackground = (roleTypes: Set<RoleType>): string => {
+  const roles = ROLE_ORDER.filter((r) => roleTypes.has(r));
+  if (roles.length === 0) return "linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%)";
   if (roles.length === 1) {
-    const color = ROLE_COLORS[roles[0]];
-    return `linear-gradient(135deg, ${color.start} 0%, ${color.end} 100%)`;
+    const { start, end } = ROLE_COLORS[roles[0]];
+    return `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
   }
-  
-  // Multiple role types - create a beautiful blended gradient
   if (roles.length === 2) {
-    const [role1, role2] = roles;
-    const color1 = ROLE_COLORS[role1];
-    const color2 = ROLE_COLORS[role2];
-    // Create a smooth diagonal blend transitioning between the two colors
-    return `linear-gradient(135deg, ${color1.start} 0%, ${color1.end} 40%, ${color2.start} 60%, ${color2.end} 100%)`;
+    const [a, b] = roles.map((r) => ROLE_COLORS[r].end);
+    return `conic-gradient(${a} 0deg 180deg, ${b} 180deg 360deg)`;
   }
-  
-  // All three role types - create a tri-color gradient
-  if (roles.length === 3) {
-    const [role1, role2, role3] = roles;
-    const color1 = ROLE_COLORS[role1];
-    const color2 = ROLE_COLORS[role2];
-    const color3 = ROLE_COLORS[role3];
-    // Beautiful three-way gradient blend with smooth transitions
-    return `linear-gradient(135deg, ${color1.start} 0%, ${color1.end} 30%, ${color2.start} 35%, ${color2.end} 65%, ${color3.start} 70%, ${color3.end} 100%)`;
-  }
-  
-  // Fallback (shouldn't happen)
-  return `linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%)`;
+  // Three types: thirds
+  const [a, b, c] = roles.map((r) => ROLE_COLORS[r].end);
+  return `conic-gradient(${a} 0deg 120deg, ${b} 120deg 240deg, ${c} 240deg 360deg)`;
 };
 
 // Create custom icon for markers with badge (moved outside component)
@@ -224,7 +212,7 @@ const createCustomIcon = (
   isSelected: boolean,
   foresightIcon: string
 ) => {
-  const gradient = createRoleBasedGradient(roleTypes);
+  const background = createRoleBasedBadgeBackground(roleTypes);
   const iconSize = isSelected ? 48 : 40;
   const badgeSize = isSelected ? 28 : 24;
 
@@ -242,7 +230,7 @@ const createCustomIcon = (
         width: ${badgeSize}px;
         height: ${badgeSize}px;
         border-radius: 50%;
-        background: ${gradient};
+        background: ${background};
         border: 2px solid white;
         display: flex;
         align-items: center;
@@ -646,8 +634,8 @@ export function MapView({
   const peopleListContent = (
     <>
       {filteredPeople.length === 0 ? (
-        <p className="text-center text-gray-500 py-8">
-          No fellows or grantees match your filters
+        <p className="text-center text-gray-500 py-8 text-sm">
+          No people match your filters. Try changing search, year, or filter options.
         </p>
       ) : (
         filteredPeople.map((person) => (
@@ -706,7 +694,12 @@ export function MapView({
             <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} />
             <ZoomToMarker marker={selectedMarker} />
             <MapResizer isSidebarOpen={isSidebarOpen} />
-            
+            <MarkerClusterGroup
+              maxClusterRadius={70}
+              zoomToBoundsOnClick={true}
+              spiderfyOnMaxZoom={true}
+              showCoverageOnHover={false}
+            >
             {markers.map((marker, idx) => {
               // Compare by coordinates to handle cases where multiple markers have same city name
               const isSelected = selectedMarker && 
@@ -731,139 +724,91 @@ export function MapView({
                         setSelectedMarker(null);
                         setSelectedPerson(null);
                       } else {
+                        // Always show popup first: list everyone at this location.
+                        // User then taps a person to open their detail modal.
                         setSelectedMarker(marker);
-                        if (marker.people.length === 1) {
-                          setSelectedPerson(marker.people[0].person.id);
-                        }
-                        // On mobile, if there's only one person, open the detail modal directly
-                        if (isMobile && marker.people.length === 1 && onViewPersonDetails) {
-                          // Small delay to ensure popup doesn't interfere
-                          setTimeout(() => {
-                            onViewPersonDetails(marker.people[0].person.id);
-                          }, 100);
-                        }
+                        setSelectedPerson(null);
                       }
                     },
                   }}
                 >
                   <Popup 
-                    className="custom-popup"
+                    className="custom-popup map-node-popup"
                     autoPan={true}
-                    autoPanPadding={[50, 50]}
+                    autoPanPadding={[24, 24]}
                     keepInView={true}
                   >
-                    <div 
-                      className="overflow-hidden"
-                      style={{
-                        background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)'
-                      }}
-                    >
-                      {/* Clean, subtle header */}
-                      <div 
-                        className="px-4 py-3 pr-12 border-b border-gray-200/60 relative"
-                        style={{
-                          background: 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)'
-                        }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h4 
-                              className="font-semibold text-gray-900 text-base leading-tight" 
-                              style={{ fontFamily: 'var(--font-heading)' }}
-                            >
-                              {marker.city}, {marker.country}
-                            </h4>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {marker.people.length} {marker.people.length === 1 ? 'person' : 'people'}
-                            </p>
-                          </div>
-                        </div>
+                    <div className="map-node-popup__inner overflow-hidden bg-white">
+                      {/* Compact header: location + count — tight vertical rhythm */}
+                      <div className="px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100">
+                        <h4 
+                          className="font-semibold text-gray-900 text-sm leading-tight sm:text-base" 
+                          style={{ fontFamily: 'var(--font-heading)' }}
+                        >
+                          {marker.city}, {marker.country}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-0.5 leading-snug">
+                          {marker.people.length} {marker.people.length === 1 ? 'person' : 'people'} — click a name for profile
+                        </p>
                       </div>
-                      
-                      {/* People list with beautiful cards */}
-                      <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
-                        {marker.people.map(({ person, travelWindow }, personIdx) => {
-                          // Soft cards behind each person entry
-                          const cardGradients = [
-                            'linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)', // Mint to White
-                            'linear-gradient(135deg, #fef3f2 0%, #ffffff 100%)', // Rose to White
-                            'linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)', // Sky to White
-                            'linear-gradient(135deg, #faf5ff 0%, #ffffff 100%)', // Purple to White
-                            'linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)', // Orange to White
-                            'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)', // Green to White
-                          ];
-                          const cardGradient = cardGradients[personIdx % cardGradients.length];
-                          
-                          return (
-                            <div
-                              key={person.id}
-                              className="p-3 rounded-lg cursor-pointer transition-all hover:shadow-md border border-gray-200/60"
-                              style={{
-                                background: cardGradient
-                              }}
-                              onClick={() => openSidebarAndScrollToPerson(person.id)}
-                            >
-                              <p className="text-sm text-gray-900 font-semibold">{person.fullName}</p>
-                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                <span 
-                                  className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                  style={{
-                                    background: getRoleGradient(person.roleType),
-                                    color: '#374151'
-                                  }}
-                                >
-                                  {person.roleType}
+                      {/* Compact people list: click a row to open that person’s profile modal */}
+                      <div className="max-h-52 overflow-y-auto overscroll-contain pt-px">
+                        {marker.people.map(({ person, travelWindow }) => (
+                          <button
+                            key={person.id}
+                            type="button"
+                            className="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1"
+                            onClick={() => {
+                              openSidebarAndScrollToPerson(person.id);
+                              onViewPersonDetails?.(person.id);
+                            }}
+                            aria-label={`View profile for ${person.fullName}`}
+                          >
+                            <span className="text-sm font-medium text-gray-900 truncate">{person.fullName}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0"
+                                style={{
+                                  background: getRoleGradient(person.roleType),
+                                  color: '#374151'
+                                }}
+                              >
+                                {person.roleType}
+                              </span>
+                              {person.isAlumni && (
+                                <span className="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600 shrink-0">
+                                  Alumni
                                 </span>
-                                {person.isAlumni && (
-                                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
-                                    Alumni
-                                  </span>
-                                )}
-                                {person.focusTags.slice(0, 2).map((tag, tagIdx) => (
-                                  <span
-                                    key={tag}
-                                    className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                    style={{
-                                      background: tagIdx === 0 
-                                        ? 'linear-gradient(135deg, #e9d5ff 0%, #fbcfe8 100%)'
-                                        : 'linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%)',
-                                      color: '#374151'
-                                    }}
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                                {person.focusTags.length === 0 && (
-                                  <span className="text-xs text-gray-500 italic">
-                                    Focus areas coming soon
-                                  </span>
-                                )}
-                              </div>
-                              {person.isAlumni && !person.shortProjectTagline?.trim() && (
-                                <p className="text-xs text-gray-500 italic mt-1">
-                                  Alumni profile — project details forthcoming.
-                                </p>
                               )}
+                              {person.focusTags.slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate"
+                                  title={tag}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
                               {travelWindow && (
-                                <div className="mt-2 pt-2 border-t border-gray-200/50">
-                                  <p className="text-xs text-gray-600 font-medium">
-                                    📅 {new Date(travelWindow.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(travelWindow.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                  </p>
-                                </div>
+                                <span className="text-[11px] text-gray-500 shrink-0 truncate max-w-[90px]">
+                                  {new Date(travelWindow.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–{new Date(travelWindow.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
                               )}
                             </div>
-                          );
-                        })}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </Popup>
                 </Marker>
               );
             })}
+            </MarkerClusterGroup>
           </MapContainer>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            No locations to display
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-2 px-4 text-center">
+            <p>No locations to display.</p>
+            <p className="text-sm">Try adjusting your filters or year.</p>
           </div>
         )}
 
@@ -960,9 +905,9 @@ export function MapView({
         </div>
       )}
 
-      {/* Mobile: full-screen fellows sheet */}
+      {/* Mobile: full-screen fellows sheet — below modals so detail modal appears on top */}
       {isMobile && isSidebarOpen && (
-        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_MODAL_CONTENT }}>
+        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_SIDEBAR }}>
           <div 
             className="px-6 py-4 border-b border-gray-200 flex items-center justify-between relative gap-3"
             style={{

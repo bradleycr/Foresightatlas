@@ -1,17 +1,14 @@
-import { Button } from "./ui/button";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 
 interface AppHeaderProps {
   activeTab: "map" | "timeline";
   onTabChange: (tab: "map" | "timeline") => void;
-  nodeQuickActions?: Array<{ label: string; onClick: () => void }>;
   suggestFormUrl?: string;
 }
 
 export function AppHeader({
   activeTab,
   onTabChange,
-  nodeQuickActions,
   suggestFormUrl,
 }: AppHeaderProps) {
   return (
@@ -64,22 +61,6 @@ export function AppHeader({
                 Timeline · Coming soon
               </button>
             </div>
-
-            {nodeQuickActions && nodeQuickActions.length > 0 && (
-              <div className="flex items-center gap-2">
-                {nodeQuickActions.map((action) => (
-                  <Button
-                    key={action.label}
-                    onClick={action.onClick}
-                    variant="outline"
-                    size="sm"
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                  >
-                    {action.label}
-                  </Button>
-                ))}
-              </div>
-            )}
 
             {/* Suggest an update — links to external form (swap URL when ready) */}
             {suggestFormUrl && (

@@ -1,19 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <title>Foresight Map</title>
     <script>
-      // SPA redirect: GitHub Pages serves 404.html for unknown routes.
-      // We redirect to index.html with the original path so the client
-      // router can handle it.
-      const path = window.location.pathname;
-      const search = window.location.search;
-      const hash = window.location.hash;
-      window.location.replace(
-        window.location.origin + path + search + hash
-      );
+      // GitHub Pages serves this for unknown routes. Redirect to app root
+      // and store the requested path so the SPA can restore it (deep links).
+      (function () {
+        var path = window.location.pathname;
+        var segments = path.replace(/^\//, '').split('/');
+        var baseSegment = segments[0] || '';
+        var base = baseSegment ? '/' + baseSegment + '/' : '/';
+        try {
+          sessionStorage.setItem('foresightmap_redirect', path);
+        } catch (e) {}
+        window.location.replace(window.location.origin + base);
+      })();
     </script>
   </head>
-  <body></body>
+  <body>
+    <p>Redirecting…</p>
+  </body>
 </html>
