@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "re
 import { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType } from "../types";
 import { FellowCard } from "./FellowCard";
-import { MapPin, Users, List, X } from "lucide-react";
+import { MapPin, List, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
@@ -661,18 +661,13 @@ export function MapView({
               person={person}
               nextTravel={getNextTravel(person.id)}
               onSelect={() => {
-                // Highlight in the list and focus the corresponding marker
+                // Open the details modal and keep list/map in sync
+                onViewPersonDetails?.(person.id);
                 openSidebarAndScrollToPerson(person.id);
                 const personMarker = markers.find((m) =>
                   m.people.some((p) => p.person.id === person.id)
                 );
-                if (personMarker) {
-                  setSelectedMarker(personMarker);
-                  // Popup will open automatically when marker is clicked/selected
-                }
-              }}
-              onViewDetails={() => {
-                onViewPersonDetails?.(person.id);
+                if (personMarker) setSelectedMarker(personMarker);
               }}
               isHighlighted={selectedPerson === person.id}
             />
@@ -682,33 +677,10 @@ export function MapView({
     </>
   );
 
-  const roleLegend: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
-
   return (
     <div className="flex flex-col lg:flex-row h-full gap-4 relative">
       {/* Map Panel */}
       <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100">
-        <div
-          className="absolute left-4 top-4 z-50 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/70 shadow-md px-3 py-2 space-y-2 pointer-events-auto"
-          style={{ zIndex: Z_INDEX_MAP_CONTROLS }}
-        >
-          <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Map Legend</p>
-          <div className="flex flex-col gap-2">
-            {roleLegend.map((role) => (
-              <div key={role} className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: getRoleGradient(role) }}
-                />
-                <span className="text-xs text-gray-700">{role}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
-              <span className="text-xs text-gray-600">Alumni (optional)</span>
-            </div>
-          </div>
-        </div>
         {markers.length > 0 ? (
           <MapContainer
             center={[30, -120]}
@@ -894,74 +866,6 @@ export function MapView({
             No locations to display
           </div>
         )}
-
-        {/* Map Info Overlay with Gradient and Color Legend */}
-        <div 
-          className="absolute bottom-4 left-4 sm:bottom-4 sm:left-4 rounded-xl shadow-lg p-3 sm:p-4 border border-white/20 backdrop-blur-sm z-[1000] pointer-events-auto"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 250, 251, 0.98) 100%)'
-          }}
-        >
-          {/* Stats Row */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-700 mb-3 pb-3 border-b border-gray-200/60">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="size-3 sm:size-4 text-blue-500 flex-shrink-0" />
-              <span className="hidden sm:inline">{markers.length} locations</span>
-              <span className="sm:hidden">{markers.length}</span>
-            </div>
-            <span className="text-gray-400 hidden sm:inline">·</span>
-            <div className="flex items-center gap-1.5">
-              <Users className="size-3 sm:size-4 text-purple-500 flex-shrink-0" />
-              <span className="hidden sm:inline">{filteredPeople.length} people</span>
-              <span className="sm:hidden">{filteredPeople.length}</span>
-            </div>
-          </div>
-          
-          {/* Color Legend */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-700 mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
-              Pin Colors
-            </p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded-full flex-shrink-0 border border-white shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${ROLE_COLORS.Fellow.start} 0%, ${ROLE_COLORS.Fellow.end} 100%)`
-                  }}
-                />
-                <span className="text-xs text-gray-600">Fellow</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded-full flex-shrink-0 border border-white shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${ROLE_COLORS.Grantee.start} 0%, ${ROLE_COLORS.Grantee.end} 100%)`
-                  }}
-                />
-                <span className="text-xs text-gray-600">Grantee</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded-full flex-shrink-0 border border-white shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${ROLE_COLORS['Prize Winner'].start} 0%, ${ROLE_COLORS['Prize Winner'].end} 100%)`
-                  }}
-                />
-                <span className="text-xs text-gray-600">Prize Winner</span>
-              </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-gray-200/40">
-                <div 
-                  className="w-4 h-4 rounded-full flex-shrink-0 border border-white shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${ROLE_COLORS.Fellow.start} 0%, ${ROLE_COLORS.Fellow.end} 50%, ${ROLE_COLORS.Grantee.start} 50%, ${ROLE_COLORS.Grantee.end} 100%)`
-                  }}
-                />
-                <span className="text-xs text-gray-500 italic">Mixed roles</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Sidebar toggle - always visible, prominent button in top-right of map */}
         {!isMobile && (

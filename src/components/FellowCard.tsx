@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, Calendar, Info } from "lucide-react";
+import { MapPin, Calendar } from "lucide-react";
 import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -9,8 +9,8 @@ import { getCohortLabel } from "../utils/cohortLabel";
 interface FellowCardProps {
   person: Person;
   nextTravel?: TravelWindow;
+  /** Click anywhere on the card to open the full details modal. */
   onSelect?: () => void;
-  onViewDetails?: () => void;
   isHighlighted?: boolean;
 }
 
@@ -18,7 +18,6 @@ export function FellowCard({
   person,
   nextTravel,
   onSelect,
-  onViewDetails,
   isHighlighted,
 }: FellowCardProps) {
   const projectTagline = person.shortProjectTagline?.trim();
@@ -47,11 +46,20 @@ export function FellowCard({
           : 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)'
       }}
       onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect?.();
+        }
+      }}
+      aria-label={`View full profile for ${person.fullName}`}
     >
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0 flex-1">
             <h3 className="text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>{person.fullName}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span
@@ -73,18 +81,6 @@ export function FellowCard({
               </span>
             </div>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onViewDetails?.();
-            }}
-            className="text-teal-500 hover:text-teal-600 transition-colors flex-shrink-0 p-1 rounded hover:bg-teal-50 relative z-50"
-            title="View full details"
-            aria-label="View full details"
-          >
-            <Info className="size-4" />
-          </button>
         </div>
 
         {/* Focus Tags */}
