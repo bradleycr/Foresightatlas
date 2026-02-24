@@ -136,12 +136,20 @@ function rowsToObjects(rows, headers, rowToEntity) {
 }
 
 async function fetchSheetRange(sheets, sheetName, range) {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `'${sheetName}'!${range}`,
-    valueRenderOption: "UNFORMATTED_VALUE",
-  });
-  return res.data.values || [];
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${sheetName}'!${range}`,
+      valueRenderOption: "UNFORMATTED_VALUE",
+    });
+    return res.data.values || [];
+  } catch (err) {
+    if (err.code === 400 && err.message?.includes("Unable to parse range")) {
+      console.warn(`Tab '${sheetName}' not found in spreadsheet — skipping.`);
+      return [];
+    }
+    throw err;
+  }
 }
 
 async function main() {

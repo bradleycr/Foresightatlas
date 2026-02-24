@@ -134,16 +134,21 @@ async function writeSheet(sheets, sheetName, headers, rows) {
 
 async function main() {
   const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (!keyPath) {
+  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+
+  let key;
+  if (keyJson) {
+    key = JSON.parse(keyJson);
+  } else if (keyPath) {
+    key = JSON.parse(await fs.readFile(path.resolve(keyPath), "utf8"));
+  } else {
     console.error(
-      "Set GOOGLE_APPLICATION_CREDENTIALS to the path of your service account JSON key. Share the sheet with that account's email as Editor."
+      "Set GOOGLE_SERVICE_ACCOUNT_KEY (JSON string) or GOOGLE_APPLICATION_CREDENTIALS (file path) " +
+      "to your service account key. Share the sheet with the account's email as Editor."
     );
     process.exit(1);
   }
 
-  const key = JSON.parse(
-    await fs.readFile(path.resolve(keyPath), "utf8")
-  );
   const auth = new google.auth.GoogleAuth({
     credentials: key,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
