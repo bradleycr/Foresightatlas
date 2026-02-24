@@ -1,12 +1,11 @@
-@custom-variant dark (&:is(.dark *));
-
-/* Import fonts - Arizona (serif) and Neue Haas Unica (sans-serif) alternatives */
 @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
   --font-size: 16px;
-  --font-heading: 'Libre Baskerville', Georgia, serif; /* Closest to Arizona */
-  --font-body: 'Inter', -apple-system, sans-serif; /* Closest to Neue Haas Unica */
+  --font-heading: 'Libre Baskerville', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
@@ -23,7 +22,7 @@
   --accent-foreground: #030213;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+  --border: rgba(0, 0, 0, 0.08);
   --input: transparent;
   --input-background: #f3f3f5;
   --switch-background: #cbced4;
@@ -132,6 +131,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Leaflet map fixes */
@@ -180,7 +181,6 @@
     color: #374151 !important;
   }
 
-  /* Map node popup: slim, balanced spacing — not bulky */
   .map-node-popup .leaflet-popup-content-wrapper {
     border-radius: 12px;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -194,7 +194,6 @@
     touch-action: manipulation;
   }
 
-  /* Marker clusters: match app palette so they don’t feel out of place when zoomed out */
   .marker-cluster {
     background-color: rgba(196, 181, 253, 0.45) !important;
   }
@@ -229,15 +228,12 @@
     }
   }
 
-  /* Mobile-specific Leaflet zoom controls positioning */
   @media (max-width: 768px) {
-    /* Ensure zoom controls are positioned top-left with proper spacing */
     .leaflet-top.leaflet-left {
       top: 1rem !important;
       left: 1rem !important;
     }
     
-    /* Make zoom control buttons larger and more touch-friendly on mobile */
     .leaflet-control-zoom a {
       width: 36px !important;
       height: 36px !important;
@@ -245,34 +241,30 @@
       font-size: 20px !important;
     }
     
-    /* Ensure zoom controls don't overlap with other UI elements */
     .leaflet-control-zoom {
       margin: 0 !important;
     }
   }
 }
 
-/**
- * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
- */
 @layer base {
   :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
     h1 {
       font-size: var(--text-2xl);
       font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     h2 {
       font-size: var(--text-xl);
       font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     h3 {
       font-size: var(--text-lg);
       font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     h4 {
@@ -284,7 +276,7 @@
     p {
       font-size: var(--text-base);
       font-weight: var(--font-weight-normal);
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     label {
@@ -311,21 +303,78 @@ html {
   font-size: var(--font-size);
 }
 
-/* Person detail modal: section spacing and top-block gap */
+/* ── Person detail modal: section rhythm ──────────────────────────────── */
+
 .person-detail-modal .person-detail-content section + section {
-  margin-top: 2.5rem;
+  margin-top: 2rem;
 }
 @media (min-width: 48rem) {
   .person-detail-modal .person-detail-content section + section {
-    margin-top: 3rem;
+    margin-top: 2.5rem;
   }
 }
-/* Extra space between name/metadata block and first content section (Project) */
+
 .person-detail-modal .person-detail-content__head {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 @media (min-width: 48rem) {
   .person-detail-modal .person-detail-content__head {
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
   }
+}
+
+/* Subtle entrance animation for the person-detail panel */
+.person-detail-modal {
+  animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Smooth scroll within the detail content */
+.person-detail-content {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+}
+.person-detail-content::-webkit-scrollbar {
+  width: 6px;
+}
+.person-detail-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.person-detail-content::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+}
+.person-detail-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.14);
+}
+
+/* ── Timeline scrollbar polish ────────────────────────────────────────── */
+
+.timeline-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+.timeline-scrollable::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.timeline-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+.timeline-scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+.timeline-scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.18);
 }

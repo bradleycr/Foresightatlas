@@ -1,3 +1,10 @@
+/**
+ * App Header
+ *
+ * Top-level navigation bar with logo, title, and view tabs.
+ * Adapts gracefully to mobile widths.
+ */
+
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 
 interface AppHeaderProps {
@@ -13,62 +20,61 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="border-b border-gray-200"
+      className="border-b border-gray-100"
       style={{
         background: "linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)",
       }}
     >
-      <div className="px-4 md:px-8 py-4 md:py-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="px-4 md:px-8 py-3.5 md:py-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          {/* Left: logo + title */}
           <div className="flex items-center gap-3 md:gap-4">
-            <img src={foresightLogo} alt="Foresight Institute" className="h-9 md:h-12" />
-            <div className="border-l border-gray-300 pl-3 md:pl-4">
+            <img
+              src={foresightLogo}
+              alt="Foresight Institute"
+              className="h-8 md:h-10"
+            />
+            <div className="border-l border-gray-200 pl-3 md:pl-4">
               <h1
-                className="text-gray-900 text-sm md:text-xl"
+                className="text-gray-900 text-sm md:text-lg font-semibold leading-tight"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Fellows and Grantees Map & Timeline
+                Fellows & Grantees
               </h1>
-              <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
-                Tracking our global network of Fellows, Grantees, and prize winners
+              <p className="text-[10px] md:text-xs text-gray-400 hidden sm:block mt-0.5">
+                Tracking our global network of Fellows, Grantees and prize winners
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-4">
-            {/* Tabs */}
-            <div className="flex gap-1 sm:gap-2">
+          {/* Right: tabs + optional suggest link */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex gap-1 bg-gray-100/80 p-0.5 rounded-lg">
               <button
                 onClick={() => onTabChange("map")}
-                className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
+                className={`px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all ${
                   activeTab === "map"
-                    ? "text-gray-900 shadow-sm border-white/50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
-                style={
-                  activeTab === "map"
-                    ? { background: "linear-gradient(135deg, #bfdbfe 0%, #c4b5fd 100%)" }
-                    : undefined
-                }
               >
                 Map
               </button>
               <button
                 disabled
                 aria-disabled="true"
-                className="px-4 py-2 rounded-lg text-sm sm:text-base border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                className="px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-medium text-gray-300 cursor-not-allowed"
               >
-                Timeline · Coming soon
+                Timeline
               </button>
             </div>
 
-            {/* Suggest an update — links to external form (swap URL when ready) */}
             {suggestFormUrl && (
               <a
                 href={suggestFormUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-200 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <span className="hidden sm:inline">Suggest an update</span>
                 <span className="sm:hidden">Suggest</span>

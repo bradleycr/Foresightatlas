@@ -1,3 +1,11 @@
+/**
+ * Berlin Node Programming Page
+ *
+ * A living Gantt calendar for all 2026 Berlin plans — residencies, workshops,
+ * conferences, and visits.  Designed to feel like a polished dashboard that
+ * admins can curate without leaving the page.
+ */
+
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -6,17 +14,13 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Users,
+  BarChart3,
+  Sparkles,
 } from "lucide-react";
 import { Person, TravelWindow, TravelWindowType } from "../types";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import {
@@ -60,48 +64,19 @@ const BERLIN_COORDS = { lat: 52.52, lng: 13.405 };
 const YEAR_START = new Date("2026-01-01T00:00:00");
 const YEAR_END = new Date("2026-12-31T23:59:59");
 
-const TYPE_STYLES: Record<
-  TravelWindowType,
-  { bg: string; border: string; text: string }
-> = {
-  Residency: {
-    bg: "from-cyan-50/80 via-cyan-100/70 to-sky-100/70",
-    border: "border-cyan-200",
-    text: "text-cyan-900",
-  },
-  Conference: {
-    bg: "from-indigo-50/80 via-indigo-100/70 to-purple-100/70",
-    border: "border-indigo-200",
-    text: "text-indigo-900",
-  },
-  Workshop: {
-    bg: "from-amber-50/80 via-yellow-50/70 to-orange-100/70",
-    border: "border-amber-200",
-    text: "text-amber-900",
-  },
-  Visit: {
-    bg: "from-emerald-50/80 via-emerald-100/70 to-teal-100/70",
-    border: "border-emerald-200",
-    text: "text-emerald-900",
-  },
-  Other: {
-    bg: "from-slate-50/80 via-gray-100/70 to-gray-50/70",
-    border: "border-gray-200",
-    text: "text-gray-900",
-  },
+const TYPE_COLORS: Record<TravelWindowType, { bar: string; badge: string; text: string }> = {
+  Residency: { bar: "from-cyan-300/90 to-sky-400/80", badge: "bg-cyan-100 text-cyan-800 border-cyan-200", text: "text-cyan-700" },
+  Conference: { bar: "from-indigo-300/90 to-purple-400/80", badge: "bg-indigo-100 text-indigo-800 border-indigo-200", text: "text-indigo-700" },
+  Workshop: { bar: "from-amber-300/90 to-orange-400/80", badge: "bg-amber-100 text-amber-800 border-amber-200", text: "text-amber-700" },
+  Visit: { bar: "from-emerald-300/90 to-teal-400/80", badge: "bg-emerald-100 text-emerald-800 border-emerald-200", text: "text-emerald-700" },
+  Other: { bar: "from-gray-300/90 to-slate-400/80", badge: "bg-gray-100 text-gray-800 border-gray-200", text: "text-gray-700" },
 };
 
 function formatRange(start: string, end: string) {
   const startDate = new Date(start);
   const endDate = new Date(end);
-  const startFmt = startDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  const endFmt = endDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  const startFmt = startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const endFmt = endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   return `${startFmt} – ${endFmt}${startDate.getFullYear() !== endDate.getFullYear() ? `, ${endDate.getFullYear()}` : ""}`;
 }
 
@@ -214,9 +189,7 @@ export function BerlinPage({
       await deleteTravelWindow(id);
       toast.success("Plan removed from Berlin calendar");
       await onDataRefresh();
-      if (draft.id === id) {
-        resetDraft();
-      }
+      if (draft.id === id) resetDraft();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to delete plan";
@@ -273,121 +246,94 @@ export function BerlinPage({
     }
   };
 
-  const heroBadge = isAdmin ? "Admin live view" : "Public demo";
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50 text-gray-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onNavigateHome}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="size-4 mr-2" />
-              Back to map
-            </Button>
-            <Badge variant="outline" className="bg-white/80">
-              {heroBadge}
-            </Badge>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50/30 text-gray-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-8 md:space-y-12">
 
+        {/* ── Nav bar ────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <button
+            onClick={onNavigateHome}
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="size-4" />
+            Back to map
+          </button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onAdminPanel}>
-              Open admin panel
+            {isAdmin && (
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-50 border-emerald-200 text-emerald-700">
+                Admin
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={onAdminPanel} className="text-xs h-8 px-3 border-gray-200">
+              Admin panel
             </Button>
             {!isAdmin && (
-              <Button size="sm" onClick={onAdminLogin}>
-                Admin login
+              <Button size="sm" onClick={onAdminLogin} className="text-xs h-8 px-3 bg-gray-900 hover:bg-gray-800">
+                Log in
               </Button>
             )}
           </div>
         </div>
 
-        <section className="rounded-3xl bg-white/80 shadow-lg ring-1 ring-gray-100 p-6 md:p-8 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
-                Berlin Node · 2026
-              </p>
-              <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
-                Programming calendar for the Berlin Node
-              </h1>
-              <p className="text-gray-600 max-w-2xl">
-                A clean, living Gantt for everything planned in Berlin across
-                2026. Residencies, workshops, conferences, and special visits
-                are mapped month by month so the node can see momentum at a
-                glance.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white px-4 py-3 shadow-md">
-                <p className="text-xs uppercase tracking-wide text-white/80">
-                  Active plans
+        {/* ── Hero ───────────────────────────────────────────── */}
+        <section className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100/80 overflow-hidden">
+          <div className="p-6 md:p-10">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+              <div className="space-y-3 max-w-2xl">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-blue-500">
+                  Berlin Node · 2026
                 </p>
-                <p className="text-3xl font-semibold">{berlinPlans.length}</p>
+                <h1
+                  className="text-2xl md:text-4xl font-bold leading-tight tracking-tight text-gray-900"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  Programming Calendar
+                </h1>
+                <p className="text-sm md:text-base text-gray-500 leading-relaxed">
+                  A living Gantt for everything planned in Berlin across 2026.
+                  Residencies, workshops, conferences, and visits mapped month by
+                  month so the node can see momentum at a glance.
+                </p>
               </div>
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white px-4 py-3 shadow-md">
-                <p className="text-xs uppercase tracking-wide text-white/80">
-                  Berlin fellows
-                </p>
-                <p className="text-3xl font-semibold">{berlinLeads.length}</p>
-              </div>
-              <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white px-4 py-3 shadow-md">
-                <p className="text-xs uppercase tracking-wide text-white/80">
-                  Node days booked
-                </p>
-                <p className="text-3xl font-semibold">{totalDays}</p>
+
+              {/* Stat cards */}
+              <div className="flex gap-3 flex-shrink-0">
+                <StatCard icon={<BarChart3 className="size-4" />} label="Plans" value={berlinPlans.length} gradient="from-blue-600 to-indigo-600" />
+                <StatCard icon={<Users className="size-4" />} label="Fellows" value={berlinLeads.length} gradient="from-emerald-500 to-teal-500" />
+                <StatCard icon={<CalendarDays className="size-4" />} label="Days" value={totalDays} gradient="from-amber-500 to-orange-500" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-blue-50/30 p-4 md:p-6">
-            <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                  Berlin programming calendar
-                </p>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Gantt view · 2026
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Each bar is a Berlin-based plan. Bars clamp to 2026 so
-                  multi-year residencies stay readable.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="flex items-center gap-1">
-                  <CalendarDays className="size-4 text-blue-500" /> Months
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock3 className="size-4 text-amber-500" /> Duration
-                </span>
+          {/* ── Gantt chart ──────────────────────────────────── */}
+          <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50/40 to-white p-4 md:p-8">
+            {/* Month header labels */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-semibold text-gray-900">Gantt View</h2>
+              <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                <span className="flex items-center gap-1"><CalendarDays className="size-3" /> Months</span>
+                <span className="flex items-center gap-1"><Clock3 className="size-3" /> Duration</span>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <div className="min-w-[1040px] space-y-3">
-                <div className="grid grid-cols-[240px_repeat(12,minmax(0,1fr))] gap-x-2 text-xs text-gray-600 pl-2 pr-1">
-                  <div className="text-sm font-semibold text-gray-700">
-                    Plan
-                  </div>
+            <div className="overflow-x-auto -mx-2 px-2 pb-2">
+              <div className="min-w-[960px] space-y-2">
+                {/* Month axis */}
+                <div className="grid grid-cols-[220px_repeat(12,minmax(0,1fr))] gap-x-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider pl-1">
+                  <div className="text-xs text-gray-500 normal-case tracking-normal font-semibold">Plan</div>
                   {months.map((month) => (
-                    <div
-                      key={month.label}
-                      className="text-center font-medium tracking-tight"
-                    >
-                      {month.label}
-                    </div>
+                    <div key={month.label} className="text-center">{month.label}</div>
                   ))}
                 </div>
 
                 {berlinPlans.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-gray-200 bg-white/70 p-6 text-center text-gray-600">
-                    No Berlin programming is scheduled for 2026 yet. Add the
-                    first plan below.
+                  <div className="rounded-xl border border-dashed border-gray-200 bg-white p-10 text-center">
+                    <Sparkles className="size-6 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">
+                      No Berlin programming scheduled for 2026 yet.
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Add the first plan below.</p>
                   </div>
                 )}
 
@@ -406,75 +352,68 @@ export function BerlinPage({
                     12;
                   const left = Math.max(0, Math.min(100, startFraction * 100));
                   const width = Math.max(
-                    4,
+                    3,
                     Math.min(100 - left, (endFraction - startFraction) * 100)
                   );
-                  const typeStyle = TYPE_STYLES[plan.type];
+                  const typeStyle = TYPE_COLORS[plan.type];
 
                   return (
                     <div
                       key={plan.id}
-                      className="grid grid-cols-[240px_1fr] gap-x-3 rounded-2xl border border-gray-100 bg-white/90 shadow-sm p-3 md:p-4"
+                      className="grid grid-cols-[220px_1fr] gap-x-3 rounded-xl border border-gray-100 bg-white hover:shadow-sm transition-shadow p-3 md:p-4"
                     >
-                      <div className="space-y-2">
+                      {/* Left label */}
+                      <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-gray-900">
+                          <span className="text-sm font-semibold text-gray-900 truncate">
                             {plan.title}
                           </span>
-                          <Badge variant="outline">{plan.type}</Badge>
+                          <span className={cn("inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded border", typeStyle.badge)}>
+                            {plan.type}
+                          </span>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs text-gray-500 truncate">
                           {plan.person?.fullName || "Unassigned lead"}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {formatRange(plan.startDate, plan.endDate)} ·{" "}
-                          {plan.duration} days
+                        <p className="text-[10px] text-gray-400">
+                          {formatRange(plan.startDate, plan.endDate)} · {plan.duration}d
                         </p>
                         {isAdmin && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
+                          <div className="flex gap-1.5 pt-1">
+                            <button
                               onClick={() => handleEdit(plan)}
-                              className="h-8 px-3 text-xs"
+                              className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-md transition-colors"
                             >
-                              <Pencil className="size-4 mr-1" /> Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 px-3 text-xs text-red-600 hover:text-red-700"
+                              <Pencil className="size-3" /> Edit
+                            </button>
+                            <button
                               onClick={() => handleDelete(plan.id)}
                               disabled={isSaving}
+                              className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-md transition-colors disabled:opacity-40"
                             >
-                              <Trash2 className="size-4 mr-1" /> Remove
-                            </Button>
+                              <Trash2 className="size-3" /> Remove
+                            </button>
                           </div>
                         )}
                       </div>
 
-                      <div className="relative">
-                        <div className="grid grid-cols-12 gap-2 h-12">
+                      {/* Bar area */}
+                      <div className="relative self-center">
+                        <div className="grid grid-cols-12 gap-1 h-10">
                           {months.map((month) => (
                             <div
                               key={`${plan.id}-${month.label}`}
-                              className="h-full rounded-lg border border-dashed border-gray-200 bg-gray-50"
+                              className="h-full rounded-md border border-dashed border-gray-100 bg-gray-50/50"
                             />
                           ))}
                         </div>
                         <div
                           className={cn(
-                            "absolute top-1 bottom-1 rounded-lg border shadow-sm overflow-hidden",
-                            typeStyle.border
+                            "absolute top-0.5 bottom-0.5 rounded-md shadow-sm overflow-hidden"
                           )}
                           style={{ left: `${left}%`, width: `${width}%` }}
                         >
-                          <div
-                            className={cn(
-                              "h-full w-full bg-gradient-to-r",
-                              typeStyle.bg
-                            )}
-                          />
+                          <div className={cn("h-full w-full bg-gradient-to-r", typeStyle.bar)} />
                         </div>
                       </div>
                     </div>
@@ -485,201 +424,155 @@ export function BerlinPage({
           </div>
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white/90 shadow-lg border-gray-100">
-            <CardHeader>
-              <CardTitle>Berlin node highlights</CardTitle>
-              <CardDescription>
-                Quick signal on the strength of the Berlin program.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-blue-500">
-                    Resident-driven activity
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    Anchored by {berlinLeads.length} Berlin-based fellows and{" "}
-                    {berlinPlans.length} confirmed plans.
-                  </p>
-                </div>
-                <CalendarDays className="size-6 text-blue-500" />
-              </div>
-              <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-emerald-600">
-                    Momentum
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    {totalDays} Berlin days already committed across 2026.
-                  </p>
-                </div>
-                <Clock3 className="size-6 text-emerald-600" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* ── Bottom cards ───────────────────────────────────── */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Highlights */}
+          <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100/80 p-6 md:p-8 space-y-5">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Berlin Node Highlights</h3>
+              <p className="text-xs text-gray-400 mt-1">Quick signal on the strength of the Berlin program.</p>
+            </div>
+            <div className="space-y-3">
+              <HighlightRow
+                accent="bg-blue-500"
+                label="Resident-driven activity"
+                description={`Anchored by ${berlinLeads.length} Berlin-based fellows and ${berlinPlans.length} confirmed plans.`}
+                icon={<CalendarDays className="size-5 text-blue-500" />}
+              />
+              <HighlightRow
+                accent="bg-emerald-500"
+                label="Momentum"
+                description={`${totalDays} Berlin days already committed across 2026.`}
+                icon={<Clock3 className="size-5 text-emerald-500" />}
+              />
+            </div>
+          </div>
 
-          <Card className="bg-white/95 shadow-lg border-gray-100">
-            <CardHeader>
-              <CardTitle>Curate the Berlin plan</CardTitle>
-              <CardDescription>
-                Admins can adapt the Berlin-specific calendar without leaving
-                this view.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!isAdmin && (
-                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-                  <p className="font-medium">Admin access required</p>
-                  <p className="text-gray-600">
-                    Log in to adjust Berlin plans directly from this demo page.
-                  </p>
-                  <Button
-                    className="mt-3"
-                    size="sm"
-                    onClick={onAdminLogin}
-                    variant="default"
+          {/* Admin form */}
+          <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100/80 p-6 md:p-8 space-y-5">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Curate the Berlin Plan</h3>
+              <p className="text-xs text-gray-400 mt-1">
+                Admins can adapt the Berlin calendar without leaving this view.
+              </p>
+            </div>
+
+            {!isAdmin && (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-5 py-4 text-center">
+                <p className="text-sm font-medium text-gray-700">Admin access required</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Log in to adjust Berlin plans directly from this page.
+                </p>
+                <Button className="mt-3 text-xs h-8 px-4 bg-gray-900 hover:bg-gray-800" size="sm" onClick={onAdminLogin}>
+                  Admin login
+                </Button>
+              </div>
+            )}
+
+            <div className={cn(!isAdmin && "pointer-events-none opacity-50 select-none", "space-y-4")}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FieldGroup label="Plan title">
+                  <Input
+                    value={draft.title}
+                    onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                    placeholder="Residency, workshop, summit..."
+                  />
+                </FieldGroup>
+                <FieldGroup label="Lead">
+                  <Select
+                    value={draft.personId}
+                    onValueChange={(val) => setDraft((d) => ({ ...d, personId: val }))}
                   >
-                    Admin login
-                  </Button>
-                </div>
-              )}
-
-              <div className={cn(!isAdmin && "pointer-events-none opacity-70")}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-800">
-                      Plan title
-                    </label>
-                    <Input
-                      value={draft.title}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, title: e.target.value }))
-                      }
-                      placeholder="Residency, workshop, summit..."
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-800">
-                      Lead
-                    </label>
-                    <Select
-                      value={draft.personId}
-                      onValueChange={(val) =>
-                        setDraft((d) => ({ ...d, personId: val }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select person" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {people.map((person) => (
-                          <SelectItem key={person.id} value={person.id}>
-                            {person.fullName} · {getNodeLabel(person.primaryNode)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-800">
-                      Start date
-                    </label>
-                    <Input
-                      type="date"
-                      value={draft.startDate}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, startDate: e.target.value }))
-                      }
-                      min="2026-01-01"
-                      max="2026-12-31"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-800">
-                      End date
-                    </label>
-                    <Input
-                      type="date"
-                      value={draft.endDate}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, endDate: e.target.value }))
-                      }
-                      min="2026-01-01"
-                      max="2026-12-31"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-800">
-                      Type
-                    </label>
-                    <Select
-                      value={draft.type}
-                      onValueChange={(val) =>
-                        setDraft((d) => ({ ...d, type: val as TravelWindowType }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(
-                          ["Residency", "Conference", "Workshop", "Visit", "Other"] as TravelWindowType[]
-                        ).map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-800">
-                      Notes
-                    </label>
-                    <Textarea
-                      value={draft.notes}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, notes: e.target.value }))
-                      }
-                      placeholder="Agenda, partners, venues..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  <Button onClick={handleSave} disabled={isSaving}>
-                    <Plus className="size-4 mr-2" />
-                    {draft.id ? "Update Berlin plan" : "Add to Berlin 2026"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={resetDraft}
-                    disabled={isSaving}
-                  >
-                    Clear
-                  </Button>
-                  {draft.id && (
-                    <Badge variant="outline" className="border-blue-200 text-blue-800">
-                      Editing existing plan
-                    </Badge>
-                  )}
-                </div>
+                    <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
+                    <SelectContent>
+                      {people.map((person) => (
+                        <SelectItem key={person.id} value={person.id}>
+                          {person.fullName} · {getNodeLabel(person.primaryNode)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldGroup>
               </div>
-            </CardContent>
-          </Card>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FieldGroup label="Start date">
+                  <Input type="date" value={draft.startDate} onChange={(e) => setDraft((d) => ({ ...d, startDate: e.target.value }))} min="2026-01-01" max="2026-12-31" />
+                </FieldGroup>
+                <FieldGroup label="End date">
+                  <Input type="date" value={draft.endDate} onChange={(e) => setDraft((d) => ({ ...d, endDate: e.target.value }))} min="2026-01-01" max="2026-12-31" />
+                </FieldGroup>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FieldGroup label="Type">
+                  <Select value={draft.type} onValueChange={(val) => setDraft((d) => ({ ...d, type: val as TravelWindowType }))}>
+                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <SelectContent>
+                      {(["Residency", "Conference", "Workshop", "Visit", "Other"] as TravelWindowType[]).map((option) => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldGroup>
+                <FieldGroup label="Notes">
+                  <Textarea
+                    value={draft.notes}
+                    onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                    placeholder="Agenda, partners, venues..."
+                    rows={3}
+                  />
+                </FieldGroup>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Button onClick={handleSave} disabled={isSaving} className="bg-gray-900 hover:bg-gray-800 text-xs h-9 px-4">
+                  <Plus className="size-3.5 mr-1.5" />
+                  {draft.id ? "Update plan" : "Add to Berlin 2026"}
+                </Button>
+                <Button type="button" variant="ghost" onClick={resetDraft} disabled={isSaving} className="text-xs h-9 px-3 text-gray-500">
+                  Clear
+                </Button>
+                {draft.id && (
+                  <Badge variant="outline" className="text-[10px] font-semibold bg-blue-50 border-blue-200 text-blue-700">
+                    Editing existing plan
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </div>
   );
 }
 
+/* ─── Tiny sub-components ─────────────────────────────────────────────── */
+
+function StatCard({ icon, label, value, gradient }: { icon: React.ReactNode; label: string; value: number; gradient: string }) {
+  return (
+    <div className={cn("rounded-xl bg-gradient-to-br text-white px-4 py-3 shadow-md min-w-[88px]", gradient)}>
+      <div className="flex items-center gap-1.5 mb-1 opacity-80">{icon}<span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span></div>
+      <p className="text-2xl font-bold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function HighlightRow({ accent, label, description, icon }: { accent: string; label: string; description: string; icon: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3.5 rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3.5">
+      <div className="flex-shrink-0 mt-0.5">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-gray-700">{label}</p>
+        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
+      {children}
+    </div>
+  );
+}

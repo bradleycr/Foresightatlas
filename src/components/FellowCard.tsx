@@ -1,6 +1,13 @@
-import { MapPin, Calendar, ChevronRight } from "lucide-react";
+/**
+ * Fellow Card
+ *
+ * Compact, information-dense card representing a single person.
+ * Clicking anywhere opens the full detail modal.
+ * Designed to feel modern yet restrained — no visual clutter.
+ */
+
+import { MapPin, Calendar, ArrowUpRight } from "lucide-react";
 import { Person, TravelWindow } from "../types";
-import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { getRoleGradient } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
@@ -9,7 +16,6 @@ import { getCohortLabel } from "../utils/cohortLabel";
 interface FellowCardProps {
   person: Person;
   nextTravel?: TravelWindow;
-  /** Click anywhere on the card to open the full details modal. */
   onSelect?: () => void;
   isHighlighted?: boolean;
 }
@@ -25,25 +31,25 @@ export function FellowCard({
     ? "Alumni profile — project details forthcoming."
     : "Project details coming soon.";
   const nodeLabel = getNodeLabel(person.primaryNode);
+
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
-    const options: Intl.DateTimeFormatOptions = {
-      month: "short",
-      day: "numeric",
-    };
-    return `${startDate.toLocaleDateString("en-US", options)} - ${endDate.toLocaleDateString("en-US", options)}`;
+    const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+    return `${startDate.toLocaleDateString("en-US", options)} – ${endDate.toLocaleDateString("en-US", options)}`;
   };
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:shadow-lg border ${
-        isHighlighted ? "ring-2 ring-teal-500 shadow-lg border-teal-200" : "border-gray-100"
+      className={`group relative p-0 cursor-pointer transition-all duration-200 border overflow-hidden ${
+        isHighlighted
+          ? "ring-2 ring-teal-400/60 shadow-lg border-teal-200/80"
+          : "border-gray-100/80 hover:border-gray-200 hover:shadow-md"
       }`}
       style={{
-        background: isHighlighted 
-          ? 'linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)'
-          : 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)'
+        background: isHighlighted
+          ? "linear-gradient(145deg, #f0fdfa 0%, #ffffff 100%)"
+          : "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)",
       }}
       onClick={onSelect}
       role="button"
@@ -56,95 +62,92 @@ export function FellowCard({
       }}
       aria-label={`View full profile for ${person.fullName}`}
     >
-      <div className="space-y-3">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>{person.fullName}</h3>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                style={{
-                  background: getRoleGradient(person.roleType),
-                  color: "#374151",
-                }}
-              >
-                {person.roleType}
+      <div className="p-4 md:p-5 space-y-3">
+        {/* Name + Role line */}
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              className="text-sm md:text-base font-semibold text-gray-900 leading-snug"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              {person.fullName}
+            </h3>
+            <ArrowUpRight className="size-4 text-gray-300 group-hover:text-teal-500 transition-colors flex-shrink-0 mt-0.5" />
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <span
+              className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold"
+              style={{
+                background: getRoleGradient(person.roleType),
+                color: "#374151",
+              }}
+            >
+              {person.roleType}
+            </span>
+            <span className="text-xs text-gray-400 font-medium">
+              {getCohortLabel(person)}
+            </span>
+            {person.isAlumni && (
+              <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                Alumni
               </span>
-              {person.isAlumni && (
-                <Badge variant="secondary" className="text-xs">
-                  Alumni
-                </Badge>
-              )}
-              <span className="text-sm text-gray-600">
-                Cohort {getCohortLabel(person)}
-              </span>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Focus Tags */}
-        <div className="flex flex-wrap gap-1">
-          {person.focusTags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        {person.focusTags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {person.focusTags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center text-[10px] font-medium text-gray-500 bg-gray-100/70 px-2 py-0.5 rounded-md"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
-        {/* Project Tagline */}
-        <p className={`text-sm ${projectTagline ? "text-gray-700" : "text-gray-500 italic"}`}>
+        {/* Project tagline */}
+        <p className={`text-xs leading-relaxed line-clamp-2 ${
+          projectTagline ? "text-gray-600" : "text-gray-400 italic"
+        }`}>
           {projectTagline || projectFallback}
         </p>
 
         {/* Affiliation */}
         {(person.affiliationOrInstitution ?? "").trim() && (
-          <p className="text-xs text-gray-500">
+          <p className="text-[10px] text-gray-400 font-medium">
             {person.affiliationOrInstitution}
           </p>
         )}
 
-        {/* Node — only for current (alumni are not part of a node) */}
+        {/* Node */}
         {!person.isAlumni && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="size-4" />
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <MapPin className="size-3" />
             <span>{nodeLabel}</span>
           </div>
         )}
+      </div>
 
-        {/* Next Travel */}
-        {nextTravel && (
-          <div className="pt-3 border-t border-gray-200">
-            <div className="flex items-start gap-2 text-sm">
-              <Calendar className="size-4 text-teal-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-gray-900">
-                  {nextTravel.city}, {nextTravel.country}
-                </p>
-                <p className="text-xs text-gray-600">
-                  {formatDateRange(nextTravel.startDate, nextTravel.endDate)}
-                </p>
-              </div>
+      {/* Next travel — visual footer */}
+      {nextTravel && (
+        <div className="border-t border-gray-100 bg-gray-50/50 px-4 md:px-5 py-3">
+          <div className="flex items-start gap-2">
+            <Calendar className="size-3.5 text-teal-500 mt-0.5 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-gray-700 truncate">
+                {nextTravel.city}, {nextTravel.country}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {formatDateRange(nextTravel.startDate, nextTravel.endDate)}
+              </p>
             </div>
           </div>
-        )}
-
-        {/* More details — clear call-to-action */}
-        <div className="pt-3 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect?.();
-            }}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-md px-1 py-0.5 -ml-1 transition-colors"
-            aria-label={`More details about ${person.fullName}`}
-          >
-            More details
-            <ChevronRight className="size-4" aria-hidden />
-          </button>
         </div>
-      </div>
+      )}
     </Card>
   );
 }

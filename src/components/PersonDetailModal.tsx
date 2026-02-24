@@ -1,18 +1,15 @@
 /**
- * Person Detail Modal Component
- * 
- * Displays comprehensive person information in a full-screen modal.
- * When admin is logged in, provides full CRUD editing capabilities for:
- * - Person details (name, role, cohort, focus tags, locations, project info, contact)
- * - Travel windows (create, edit, delete)
- * 
- * Beautiful, modular design with elegant mobile styling and production-ready error handling.
+ * Person Detail Modal
+ *
+ * Full-screen overlay displaying comprehensive person information.
+ * Admin mode unlocks inline CRUD for person details and travel windows.
+ * Designed for cross-platform elegance with careful mobile spacing.
  */
 
 import React, { useState, useEffect } from "react";
-import { 
+import {
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle
+  Edit, Save, Trash2, Plus, XCircle, Briefcase, Plane, Link2
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType } from "../types";
 import { Badge } from "./ui/badge";
@@ -42,12 +39,12 @@ import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel } from "../utils/cohortLabel";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
-import { 
-  updatePerson, 
-  updateTravelWindow, 
-  addTravelWindow, 
+import {
+  updatePerson,
+  updateTravelWindow,
+  addTravelWindow,
   deleteTravelWindow,
-  generateTravelWindowId 
+  generateTravelWindowId
 } from "../services/database";
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
@@ -82,19 +79,15 @@ export function PersonDetailModal({
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
 
-  // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      // Save current scroll position
       const scrollY = window.scrollY;
-      // Lock body scroll
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
 
       return () => {
-        // Restore scroll position
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
@@ -104,7 +97,6 @@ export function PersonDetailModal({
     }
   }, [isOpen]);
 
-  // Initialize editing state when person changes
   useEffect(() => {
     if (person) {
       setEditingPerson({ ...person });
@@ -117,14 +109,12 @@ export function PersonDetailModal({
 
   if (!isOpen || !person) return null;
 
-  // Get travel windows for this person, sorted by start date
-  const personTravelWindows = isEditing 
-    ? editingTravelWindows 
+  const personTravelWindows = isEditing
+    ? editingTravelWindows
     : travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-  // Find current person index for navigation
   const currentIndex = allPeople.findIndex((p) => p.id === person.id);
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < allPeople.length - 1;
@@ -149,12 +139,10 @@ export function PersonDetailModal({
       month: "long",
       day: "numeric",
     };
-    return `${startDate.toLocaleDateString("en-US", options)} - ${endDate.toLocaleDateString("en-US", options)}`;
+    return `${startDate.toLocaleDateString("en-US", options)} – ${endDate.toLocaleDateString("en-US", options)}`;
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
+  const handleEdit = () => setIsEditing(true);
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -174,7 +162,6 @@ export function PersonDetailModal({
     try {
       setIsSaving(true);
 
-      // Validate required fields
       if (!editingPerson.fullName.trim()) {
         toast.error("Full name is required");
         return;
@@ -184,7 +171,6 @@ export function PersonDetailModal({
         return;
       }
 
-      // Geocode current location if coordinates are missing or zero
       let personToSave = { ...editingPerson };
       if (
         (personToSave.currentCoordinates.lat === 0 &&
@@ -212,9 +198,7 @@ export function PersonDetailModal({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to save person";
-      toast.error("Failed to save person", {
-        description: errorMessage,
-      });
+      toast.error("Failed to save person", { description: errorMessage });
     } finally {
       setIsSaving(false);
     }
@@ -247,7 +231,6 @@ export function PersonDetailModal({
     try {
       setIsSaving(true);
 
-      // Validate required fields
       if (!editingTravelWindow.city.trim() || !editingTravelWindow.country.trim()) {
         toast.error("City and country are required");
         return;
@@ -257,7 +240,6 @@ export function PersonDetailModal({
         return;
       }
 
-      // Geocode location if coordinates are missing or zero
       let travelWindowToSave = { ...editingTravelWindow };
       if (
         (travelWindowToSave.coordinates.lat === 0 &&
@@ -281,14 +263,12 @@ export function PersonDetailModal({
       );
 
       if (existingIndex >= 0) {
-        // Update existing
         await updateTravelWindow(travelWindowToSave.id, travelWindowToSave);
         const updated = [...editingTravelWindows];
         updated[existingIndex] = travelWindowToSave;
         setEditingTravelWindows(updated);
         toast.success("Travel window updated successfully");
       } else {
-        // Add new
         await addTravelWindow(travelWindowToSave);
         setEditingTravelWindows([...editingTravelWindows, travelWindowToSave]);
         toast.success("Travel window added successfully");
@@ -303,9 +283,7 @@ export function PersonDetailModal({
         error instanceof Error
           ? error.message
           : "Failed to save travel window";
-      toast.error("Failed to save travel window", {
-        description: errorMessage,
-      });
+      toast.error("Failed to save travel window", { description: errorMessage });
     } finally {
       setIsSaving(false);
     }
@@ -336,9 +314,7 @@ export function PersonDetailModal({
         error instanceof Error
           ? error.message
           : "Failed to delete travel window";
-      toast.error("Failed to delete travel window", {
-        description: errorMessage,
-      });
+      toast.error("Failed to delete travel window", { description: errorMessage });
     } finally {
       setIsSaving(false);
     }
@@ -346,123 +322,141 @@ export function PersonDetailModal({
 
   const displayPerson = isEditing && editingPerson ? editingPerson : person;
 
+  /* Travel-window type → colour token for the accent pip */
+  const typeAccent: Record<TravelWindowType, string> = {
+    Residency: "bg-cyan-400",
+    Conference: "bg-indigo-400",
+    Workshop: "bg-amber-400",
+    Visit: "bg-emerald-400",
+    Other: "bg-gray-400",
+  };
+
   return (
     <>
-      <div 
-        className={`fixed inset-0 flex items-center ${isMobile ? 'items-start p-0' : 'items-center p-4'} z-50`}
-        style={{ 
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           zIndex: Z_INDEX_MODAL_BACKDROP,
         }}
         onClick={onClose}
       >
-        <div 
-          className={`person-detail-modal bg-white ${isMobile ? 'rounded-t-2xl rounded-b-none h-full w-full max-h-[100dvh]' : 'rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh]'} overflow-hidden flex flex-col relative`}
-          style={{ 
+        {/* Panel */}
+        <div
+          className={`person-detail-modal bg-white flex flex-col relative ${
+            isMobile
+              ? 'rounded-t-3xl rounded-b-none h-full w-full max-h-[100dvh]'
+              : 'rounded-2xl shadow-2xl max-w-3xl w-full max-h-[88vh]'
+          } overflow-hidden`}
+          style={{
             zIndex: Z_INDEX_MODAL_CONTENT,
             paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : undefined,
             paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : undefined,
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Single scroll area — name, metadata, and all sections scroll as one */}
-          <div 
+          {/* Scrollable content */}
+          <div
             className="person-detail-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
             style={isMobile ? { paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' } : undefined}
           >
-            <div className="px-4 pt-4 pb-12 md:px-8 md:pt-6 md:pb-12">
-              {/* Toolbar — close, nav, edit at top of scroll */}
-              <div className={`flex items-center justify-end gap-2 ${isMobile ? 'mb-4' : 'mb-6'}`}>
-                {isAdmin && !isEditing && (
-                  <Button
-                    variant="outline"
-                    size={isMobile ? "default" : "sm"}
-                    onClick={handleEdit}
-                    className="border-gray-300 hover:bg-gray-50 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:px-3"
+            <div className="px-5 pt-5 pb-10 md:px-10 md:pt-8 md:pb-14">
+
+              {/* ── Top toolbar ────────────────────────────────── */}
+              <div className={`flex items-center justify-between ${isMobile ? 'mb-6' : 'mb-8'}`}>
+                {/* Navigation arrows (left side) */}
+                <div className="flex items-center gap-1.5">
+                  {!isEditing && (hasPrevious || hasNext) && (
+                    <>
+                      <button
+                        onClick={handlePrevious}
+                        disabled={!hasPrevious}
+                        className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={handleNext}
+                        disabled={!hasNext}
+                        className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Action buttons (right side) */}
+                <div className="flex items-center gap-2">
+                  {isAdmin && !isEditing && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEdit}
+                      className="border-gray-200 hover:bg-gray-50 text-xs h-8 px-3"
+                    >
+                      <Edit className="h-3.5 w-3.5 mr-1.5" />
+                      Edit
+                    </Button>
+                  )}
+                  {isEditing && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancel}
+                        disabled={isSaving}
+                        className="border-gray-200 hover:bg-gray-50 text-xs h-8 px-3"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSavePerson}
+                        disabled={isSaving}
+                        className="bg-teal-600 hover:bg-teal-700 text-xs h-8 px-3"
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1.5" />
+                        Save
+                      </Button>
+                    </>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="flex items-center justify-center w-9 h-9 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                    aria-label="Close"
                   >
-                    <Edit className="h-4 w-4 md:mr-1" />
-                    <span className="hidden md:inline">Edit</span>
-                  </Button>
-                )}
-                {isEditing && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleCancel}
-                      disabled={isSaving}
-                      className="border-gray-300 hover:bg-gray-50 min-h-[44px] md:min-h-0 px-4"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleSavePerson}
-                      disabled={isSaving}
-                      className="bg-teal-600 hover:bg-teal-700 min-h-[44px] md:min-h-0 px-4"
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save
-                    </Button>
-                  </>
-                )}
-                {!isEditing && (hasPrevious || hasNext) && (
-                  <div className="flex items-center gap-1 md:gap-2">
-                    <Button
-                      variant="outline"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handlePrevious}
-                      disabled={!hasPrevious}
-                      className="border-gray-300 hover:bg-gray-50 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0"
-                    >
-                      <ChevronLeft className="h-4 w-4 md:h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleNext}
-                      disabled={!hasNext}
-                      className="border-gray-300 hover:bg-gray-50 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0"
-                    >
-                      <ChevronRight className="h-4 w-4 md:h-4" />
-                    </Button>
-                  </div>
-                )}
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-1.5 flex items-center justify-center"
-                  aria-label="Close"
-                >
-                  <X className="h-5 w-5 md:h-5" />
-                </button>
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
-              {/* Name */}
-              <div className={`${isMobile ? 'mb-4' : 'mb-5'}`}>
+              {/* ── Identity block (name, role badge, cohort, tags) ── */}
+              <div className="person-detail-content__head">
+                {/* Name */}
                 {isEditing && editingPerson ? (
                   <Input
                     value={editingPerson.fullName}
                     onChange={(e) =>
                       setEditingPerson({ ...editingPerson, fullName: e.target.value })
                     }
-                    className="text-2xl md:text-3xl font-bold"
+                    className="text-2xl md:text-3xl font-bold mb-3"
                     placeholder="Full Name"
                   />
                 ) : (
                   <h2
-                    className="text-2xl md:text-3xl font-bold text-gray-900"
+                    className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"
                     style={{ fontFamily: "var(--font-heading)" }}
                   >
                     {displayPerson.fullName}
                   </h2>
                 )}
-              </div>
 
-              {/* Metadata — role, cohort, focus tags; extra space below via globals .person-detail-content__head */}
-              <div className="person-detail-content__head space-y-4">
-                <div className="flex items-center gap-3 flex-wrap">
+                {/* Role + Cohort + Alumni */}
+                <div className="flex items-center gap-2.5 mt-3 flex-wrap">
                   {isEditing && editingPerson ? (
                     <>
                       <Select
@@ -471,7 +465,7 @@ export function PersonDetailModal({
                           setEditingPerson({ ...editingPerson, roleType: value })
                         }
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-32 h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -489,14 +483,14 @@ export function PersonDetailModal({
                             fellowshipCohortYear: parseInt(e.target.value) || 2024,
                           })
                         }
-                        className="w-24"
+                        className="w-24 h-8 text-xs"
                         placeholder="Start year"
                       />
-                      <span className="text-gray-400">–</span>
+                      <span className="text-gray-300">–</span>
                       <Input
                         type="number"
                         placeholder="End (optional)"
-                        className="w-24"
+                        className="w-24 h-8 text-xs"
                         value={editingPerson.fellowshipEndYear ?? ""}
                         onChange={(e) => {
                           const v = e.target.value.trim();
@@ -516,7 +510,7 @@ export function PersonDetailModal({
                           }
                           className="rounded"
                         />
-                        <Label htmlFor="isAlumni" className="cursor-pointer text-sm">
+                        <Label htmlFor="isAlumni" className="cursor-pointer text-xs">
                           Alumni
                         </Label>
                       </div>
@@ -524,7 +518,7 @@ export function PersonDetailModal({
                   ) : (
                     <>
                       <span
-                        className="text-sm px-3 py-1 rounded-full font-medium"
+                        className="inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold tracking-wide"
                         style={{
                           background: getRoleGradient(displayPerson.roleType),
                           color: "#374151",
@@ -532,21 +526,23 @@ export function PersonDetailModal({
                       >
                         {displayPerson.roleType}
                       </span>
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-gray-500 font-medium">
                         Cohort {getCohortLabel(displayPerson)}
                       </span>
                       {displayPerson.isAlumni && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs font-medium">
                           Alumni
                         </Badge>
                       )}
                     </>
                   )}
                 </div>
+
+                {/* Focus tags */}
                 {isEditing && editingPerson ? (
-                  <div>
-                    <Label htmlFor="focusTags" className="text-sm font-semibold text-gray-700 mb-2 block">
-                      Focus Tags (comma-separated)
+                  <div className="mt-4">
+                    <Label htmlFor="focusTags" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                      Focus Tags
                     </Label>
                     <Input
                       id="focusTags"
@@ -565,293 +561,314 @@ export function PersonDetailModal({
                   </div>
                 ) : (
                   displayPerson.focusTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 mt-4">
                       {displayPerson.focusTags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-sm">
+                        <span
+                          key={tag}
+                          className="inline-flex items-center text-xs font-medium text-gray-600 bg-gray-100/80 px-2.5 py-1 rounded-md border border-gray-200/60"
+                        >
                           {tag}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
                   )
                 )}
               </div>
 
-              {/* Project — first content section */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700">Project</h3>
-              {isEditing && editingPerson ? (
-                <>
-                  <Input
-                    value={editingPerson.shortProjectTagline}
-                    onChange={(e) =>
-                      setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })
-                    }
-                    placeholder="Short project tagline"
-                    className="mb-3"
-                  />
-                  <Textarea
-                    value={editingPerson.expandedProjectDescription}
-                    onChange={(e) =>
-                      setEditingPerson({
-                        ...editingPerson,
-                        expandedProjectDescription: e.target.value,
-                      })
-                    }
-                    rows={4}
-                    placeholder="Expanded project description"
-                  />
-                  <Label className="text-sm font-semibold text-gray-700 mt-3 block">Affiliation / Institution</Label>
-                  <Input
-                    value={editingPerson.affiliationOrInstitution ?? ""}
-                    onChange={(e) =>
-                      setEditingPerson({
-                        ...editingPerson,
-                        affiliationOrInstitution: e.target.value.trim() || null,
-                      })
-                    }
-                    placeholder="University, company, or institution"
-                    className="mt-1"
-                  />
-                </>
-              ) : (
-                <>
-                  <p className="text-base text-gray-900 font-medium mb-3">
-                    {displayPerson.shortProjectTagline}
-                  </p>
-                  {displayPerson.expandedProjectDescription && (
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {displayPerson.expandedProjectDescription}
-                    </p>
-                  )}
-                  {(displayPerson.affiliationOrInstitution ?? "").trim() && (
-                    <p className="text-sm text-gray-500 mt-2">
-                      {displayPerson.affiliationOrInstitution}
-                    </p>
-                  )}
-                </>
-              )}
-            </section>
-
-            {/* Location & Primary Node */}
-            <section>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Location
-                  </h3>
-                  {isEditing && editingPerson ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editingPerson.currentCity}
-                        onChange={(e) =>
-                          setEditingPerson({ ...editingPerson, currentCity: e.target.value })
-                        }
-                        placeholder="City"
-                      />
-                      <Input
-                        value={editingPerson.currentCountry}
-                        onChange={(e) =>
-                          setEditingPerson({ ...editingPerson, currentCountry: e.target.value })
-                        }
-                        placeholder="Country"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-900">
-                      {displayPerson.currentCity}, {displayPerson.currentCountry}
-                    </p>
-                  )}
+              {/* ── Project ─────────────────────────────────────── */}
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Briefcase className="h-4 w-4 text-gray-400" />
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Project</h3>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Primary Node</h3>
-                  {isEditing && editingPerson ? (
-                    <Select
-                      value={editingPerson.primaryNode}
-                      onValueChange={(value: PrimaryNode) =>
-                        setEditingPerson({ ...editingPerson, primaryNode: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Global">Global</SelectItem>
-                        <SelectItem value="Berlin Node">Berlin Node</SelectItem>
-                        <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
-                        <SelectItem value="Alumni">Alumni</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-gray-900">
-                      {displayPerson.primaryNode === "Alumni" ? "—" : getNodeLabel(displayPerson.primaryNode)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Travel & Residencies */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Travel & Residencies ({personTravelWindows.length})
-                </h3>
-                {isEditing && isAdmin && (
-                  <Button
-                    size="sm"
-                    onClick={handleAddTravelWindow}
-                    className="bg-teal-600 hover:bg-teal-700"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Travel Window
-                  </Button>
-                )}
-              </div>
-              {editingTravelWindow ? (
-                <TravelWindowEditForm
-                  travelWindow={editingTravelWindow}
-                  onChange={setEditingTravelWindow}
-                  onSave={handleSaveTravelWindow}
-                  onCancel={() => setEditingTravelWindow(null)}
-                  isSaving={isSaving}
-                />
-              ) : (
-                <div className="space-y-4">
-                  {personTravelWindows.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">No travel windows</p>
-                  ) : (
-                    personTravelWindows.map((tw) => (
-                      <div
-                        key={tw.id}
-                        className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4 mb-3">
-                          <div className="flex-1">
-                            <h4 className="text-base font-semibold text-gray-900 mb-1">
-                              {tw.title}
-                            </h4>
-                            <p className="text-sm text-gray-700">
-                              {tw.city}, {tw.country}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs flex-shrink-0">
-                              {tw.type}
-                            </Badge>
-                            {isEditing && isAdmin && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleEditTravelWindow(tw)}
-                                  className="h-7 w-7 p-0"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeleteTravelWindow(tw)}
-                                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDateRange(tw.startDate, tw.endDate)}</span>
-                        </div>
-                        {tw.notes && (
-                          <p className="text-sm text-gray-600 mt-3 italic">{tw.notes}</p>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </section>
-
-            {/* Contact — border then padding */}
-            <section 
-              className="border-t border-gray-200 pt-6 pb-8 md:pt-8 md:pb-8" 
-              style={isMobile ? { paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px) + 1rem)' } : undefined}
-            >
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact & Links</h3>
-              {isEditing && editingPerson ? (
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="contact">Contact/Handle</Label>
+                {isEditing && editingPerson ? (
+                  <div className="space-y-3">
                     <Input
-                      id="contact"
-                      value={editingPerson.contactUrlOrHandle || ""}
+                      value={editingPerson.shortProjectTagline}
+                      onChange={(e) =>
+                        setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })
+                      }
+                      placeholder="Short project tagline"
+                    />
+                    <Textarea
+                      value={editingPerson.expandedProjectDescription}
                       onChange={(e) =>
                         setEditingPerson({
                           ...editingPerson,
-                          contactUrlOrHandle: e.target.value || null,
+                          expandedProjectDescription: e.target.value,
                         })
                       }
-                      placeholder="@username or email"
+                      rows={4}
+                      placeholder="Expanded project description"
                     />
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">
+                        Affiliation / Institution
+                      </Label>
+                      <Input
+                        value={editingPerson.affiliationOrInstitution ?? ""}
+                        onChange={(e) =>
+                          setEditingPerson({
+                            ...editingPerson,
+                            affiliationOrInstitution: e.target.value.trim() || null,
+                          })
+                        }
+                        placeholder="University, company, or institution"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 p-5 md:p-6">
+                    <p className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
+                      {displayPerson.shortProjectTagline}
+                    </p>
+                    {displayPerson.expandedProjectDescription && (
+                      <p className="text-sm text-gray-600 leading-relaxed mt-3">
+                        {displayPerson.expandedProjectDescription}
+                      </p>
+                    )}
+                    {(displayPerson.affiliationOrInstitution ?? "").trim() && (
+                      <p className="text-xs text-gray-400 font-medium mt-4 uppercase tracking-wide">
+                        {displayPerson.affiliationOrInstitution}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* ── Location & Primary Node ────────────────────── */}
+              <section>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Location</h3>
+                    </div>
+                    {isEditing && editingPerson ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editingPerson.currentCity}
+                          onChange={(e) =>
+                            setEditingPerson({ ...editingPerson, currentCity: e.target.value })
+                          }
+                          placeholder="City"
+                        />
+                        <Input
+                          value={editingPerson.currentCountry}
+                          onChange={(e) =>
+                            setEditingPerson({ ...editingPerson, currentCountry: e.target.value })
+                          }
+                          placeholder="Country"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-800">
+                        {displayPerson.currentCity}, {displayPerson.currentCountry}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="profileUrl">Profile URL</Label>
-                    <Input
-                      id="profileUrl"
-                      type="url"
-                      value={editingPerson.profileUrl}
-                      onChange={(e) =>
-                        setEditingPerson({ ...editingPerson, profileUrl: e.target.value })
-                      }
-                      placeholder="https://foresight.org/fellow/..."
-                    />
+                    <div className="flex items-center gap-2 mb-3">
+                      <Globe className="h-4 w-4 text-gray-400" />
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Primary Node</h3>
+                    </div>
+                    {isEditing && editingPerson ? (
+                      <Select
+                        value={editingPerson.primaryNode}
+                        onValueChange={(value: PrimaryNode) =>
+                          setEditingPerson({ ...editingPerson, primaryNode: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Global">Global</SelectItem>
+                          <SelectItem value="Berlin Node">Berlin Node</SelectItem>
+                          <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
+                          <SelectItem value="Alumni">Alumni</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-800">
+                        {displayPerson.primaryNode === "Alumni" ? "—" : getNodeLabel(displayPerson.primaryNode)}
+                      </p>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {displayPerson.contactUrlOrHandle && (
-                    <a
-                      href={
-                        displayPerson.contactUrlOrHandle.startsWith("@")
-                          ? `https://twitter.com/${displayPerson.contactUrlOrHandle.slice(1)}`
-                          : displayPerson.contactUrlOrHandle.startsWith("http")
+              </section>
+
+              {/* ── Travel & Residencies ───────────────────────── */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Plane className="h-4 w-4 text-gray-400" />
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                      Travel & Residencies
+                    </h3>
+                    <span className="text-xs text-gray-300 font-medium ml-1">
+                      {personTravelWindows.length}
+                    </span>
+                  </div>
+                  {isEditing && isAdmin && (
+                    <Button
+                      size="sm"
+                      onClick={handleAddTravelWindow}
+                      className="bg-teal-600 hover:bg-teal-700 text-xs h-8 px-3"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Add
+                    </Button>
+                  )}
+                </div>
+
+                {editingTravelWindow ? (
+                  <TravelWindowEditForm
+                    travelWindow={editingTravelWindow}
+                    onChange={setEditingTravelWindow}
+                    onSave={handleSaveTravelWindow}
+                    onCancel={() => setEditingTravelWindow(null)}
+                    isSaving={isSaving}
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {personTravelWindows.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <Plane className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">No travel windows yet</p>
+                      </div>
+                    ) : (
+                      personTravelWindows.map((tw) => (
+                        <div
+                          key={tw.id}
+                          className="group relative rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all p-4 md:p-5"
+                        >
+                          {/* Colour accent pip */}
+                          <div className={`absolute top-4 left-0 w-1 h-8 rounded-r-full ${typeAccent[tw.type]}`} />
+
+                          <div className="flex items-start justify-between gap-3 pl-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                <h4 className="text-sm font-semibold text-gray-900">
+                                  {tw.title}
+                                </h4>
+                                <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                                  {tw.type}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {tw.city}, {tw.country}
+                              </p>
+                              <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-2">
+                                <Calendar className="h-3 w-3" />
+                                <span>{formatDateRange(tw.startDate, tw.endDate)}</span>
+                              </div>
+                              {tw.notes && (
+                                <p className="text-xs text-gray-500 mt-2.5 italic leading-relaxed">{tw.notes}</p>
+                              )}
+                            </div>
+                            {isEditing && isAdmin && (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button
+                                  onClick={() => handleEditTravelWindow(tw)}
+                                  className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTravelWindow(tw)}
+                                  className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* ── Contact & Links ────────────────────────────── */}
+              <section
+                className="border-t border-gray-100 pt-8"
+                style={isMobile ? { paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px) + 1rem)' } : undefined}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Link2 className="h-4 w-4 text-gray-400" />
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Contact & Links</h3>
+                </div>
+                {isEditing && editingPerson ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="contact" className="text-xs text-gray-500">Contact / Handle</Label>
+                      <Input
+                        id="contact"
+                        value={editingPerson.contactUrlOrHandle || ""}
+                        onChange={(e) =>
+                          setEditingPerson({
+                            ...editingPerson,
+                            contactUrlOrHandle: e.target.value || null,
+                          })
+                        }
+                        placeholder="@username or email"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="profileUrl" className="text-xs text-gray-500">Profile URL</Label>
+                      <Input
+                        id="profileUrl"
+                        type="url"
+                        value={editingPerson.profileUrl}
+                        onChange={(e) =>
+                          setEditingPerson({ ...editingPerson, profileUrl: e.target.value })
+                        }
+                        placeholder="https://foresight.org/fellow/..."
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2.5">
+                    {displayPerson.contactUrlOrHandle && (
+                      <a
+                        href={
+                          displayPerson.contactUrlOrHandle.startsWith("@")
+                            ? `https://twitter.com/${displayPerson.contactUrlOrHandle.slice(1)}`
+                            : displayPerson.contactUrlOrHandle.startsWith("http")
+                            ? displayPerson.contactUrlOrHandle
+                            : `mailto:${displayPerson.contactUrlOrHandle}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-800 bg-teal-50/60 hover:bg-teal-100/60 px-3.5 py-2 rounded-lg border border-teal-100 transition-colors"
+                      >
+                        {displayPerson.contactUrlOrHandle.includes("@") &&
+                         !displayPerson.contactUrlOrHandle.startsWith("@") ? (
+                          <Mail className="h-3.5 w-3.5" />
+                        ) : (
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        )}
+                        {displayPerson.contactUrlOrHandle.startsWith("@")
                           ? displayPerson.contactUrlOrHandle
-                          : `mailto:${displayPerson.contactUrlOrHandle}`
-                      }
+                          : "Contact"}
+                      </a>
+                    )}
+                    <a
+                      href="https://foresight.org"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-50/80 hover:bg-gray-100/80 px-3.5 py-2 rounded-lg border border-gray-200/60 transition-colors"
                     >
-                      {displayPerson.contactUrlOrHandle.includes("@") && 
-                       !displayPerson.contactUrlOrHandle.startsWith("@") ? (
-                        <Mail className="h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                      {displayPerson.contactUrlOrHandle.startsWith("@")
-                        ? displayPerson.contactUrlOrHandle
-                        : "Contact"}
+                      <Globe className="h-3.5 w-3.5" />
+                      Foresight.org
                     </a>
-                  )}
-                  <a
-                    href="https://foresight.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700"
-                  >
-                    <Globe className="h-4 w-4" />
-                    Foresight.org
-                  </a>
-                </div>
-              )}
-            </section>
+                  </div>
+                )}
+              </section>
 
-              {/* Spacer for extra scrollable space */}
-              <div className="h-24 md:h-32" aria-hidden />
+              <div className="h-16 md:h-20" aria-hidden />
             </div>
           </div>
         </div>
@@ -884,7 +901,8 @@ export function PersonDetailModal({
   );
 }
 
-// Travel Window Edit Form Component
+/* ─── Travel Window Edit Form ─────────────────────────────────────────── */
+
 interface TravelWindowEditFormProps {
   travelWindow: TravelWindow;
   onChange: (travelWindow: TravelWindow) => void;
@@ -901,10 +919,10 @@ function TravelWindowEditForm({
   isSaving,
 }: TravelWindowEditFormProps) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4 space-y-4 border border-gray-200">
+    <div className="rounded-xl bg-gray-50/80 border border-gray-200 p-5 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="twTitle">Title *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="twTitle" className="text-xs font-medium text-gray-600">Title *</Label>
           <Input
             id="twTitle"
             value={travelWindow.title}
@@ -912,9 +930,8 @@ function TravelWindowEditForm({
             placeholder="Conference name or event"
           />
         </div>
-
-        <div>
-          <Label htmlFor="twType">Type *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="twType" className="text-xs font-medium text-gray-600">Type *</Label>
           <Select
             value={travelWindow.type}
             onValueChange={(value: TravelWindowType) =>
@@ -933,9 +950,8 @@ function TravelWindowEditForm({
             </SelectContent>
           </Select>
         </div>
-
-        <div>
-          <Label htmlFor="twCity">City *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="twCity" className="text-xs font-medium text-gray-600">City *</Label>
           <Input
             id="twCity"
             value={travelWindow.city}
@@ -943,9 +959,8 @@ function TravelWindowEditForm({
             placeholder="San Francisco"
           />
         </div>
-
-        <div>
-          <Label htmlFor="twCountry">Country *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="twCountry" className="text-xs font-medium text-gray-600">Country *</Label>
           <Input
             id="twCountry"
             value={travelWindow.country}
@@ -953,9 +968,8 @@ function TravelWindowEditForm({
             placeholder="USA"
           />
         </div>
-
-        <div>
-          <Label htmlFor="twStartDate">Start Date *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="twStartDate" className="text-xs font-medium text-gray-600">Start Date *</Label>
           <Input
             id="twStartDate"
             type="date"
@@ -965,16 +979,12 @@ function TravelWindowEditForm({
                 : travelWindow.startDate
             }
             onChange={(e) =>
-              onChange({
-                ...travelWindow,
-                startDate: e.target.value,
-              })
+              onChange({ ...travelWindow, startDate: e.target.value })
             }
           />
         </div>
-
-        <div>
-          <Label htmlFor="twEndDate">End Date *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="twEndDate" className="text-xs font-medium text-gray-600">End Date *</Label>
           <Input
             id="twEndDate"
             type="date"
@@ -984,17 +994,14 @@ function TravelWindowEditForm({
                 : travelWindow.endDate
             }
             onChange={(e) =>
-              onChange({
-                ...travelWindow,
-                endDate: e.target.value,
-              })
+              onChange({ ...travelWindow, endDate: e.target.value })
             }
           />
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="twNotes">Notes</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="twNotes" className="text-xs font-medium text-gray-600">Notes</Label>
         <Textarea
           id="twNotes"
           value={travelWindow.notes}
@@ -1004,12 +1011,12 @@ function TravelWindowEditForm({
         />
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button onClick={onSave} disabled={isSaving} className="flex-1 bg-teal-600 hover:bg-teal-700">
-          <Save className="h-4 w-4 mr-2" />
+      <div className="flex gap-2 pt-1">
+        <Button onClick={onSave} disabled={isSaving} className="flex-1 bg-teal-600 hover:bg-teal-700 h-9 text-sm">
+          <Save className="h-3.5 w-3.5 mr-1.5" />
           Save
         </Button>
-        <Button onClick={onCancel} variant="outline" className="flex-1" disabled={isSaving}>
+        <Button onClick={onCancel} variant="outline" className="flex-1 h-9 text-sm" disabled={isSaving}>
           Cancel
         </Button>
       </div>

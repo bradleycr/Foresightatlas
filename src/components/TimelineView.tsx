@@ -1349,55 +1349,52 @@ export function TimelineView({
             {selectedTravel && (
               <>
                 <SheetHeader>
-                  <SheetTitle className="text-left">
+                  <SheetTitle className="text-left text-base" style={{ fontFamily: 'var(--font-heading)' }}>
                     {selectedTravel.person.fullName}
                   </SheetTitle>
-                  <p className="text-sm text-gray-600 text-left">
+                  <p className="text-xs text-gray-400 text-left mt-1">
                     {selectedTravel.person.roleType} · Cohort{" "}
                     {getCohortLabel(selectedTravel.person)}
                   </p>
                 </SheetHeader>
 
-                <div className="mt-6 space-y-6">
-                  {/* Focus Tags */}
+                <div className="mt-5 space-y-5">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Focus Areas</p>
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Focus Areas</p>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedTravel.person.focusTags.map((tag) => (
-                        <Badge key={tag} variant="secondary">
+                        <span key={tag} className="inline-flex items-center text-[10px] font-medium text-gray-500 bg-gray-100/70 px-2 py-0.5 rounded-md">
                           {tag}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
                   </div>
 
-                  {/* Project */}
                   {selectedTravel.person.shortProjectTagline && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">Project</p>
-                      <p className="text-sm text-gray-900">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Project</p>
+                      <p className="text-sm text-gray-700 leading-relaxed">
                         {selectedTravel.person.shortProjectTagline}
                       </p>
                     </div>
                   )}
 
-                  {/* Travel Details */}
-                  <div className="pt-4 border-t border-gray-200">
-                    <h4 className="text-base font-semibold text-gray-900 mb-4">Travel Details</h4>
-                    <dl className="space-y-3">
+                  <div className="pt-4 border-t border-gray-100">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Travel Details</p>
+                    <dl className="space-y-2.5">
                       <div>
-                        <dt className="text-sm font-medium text-gray-600 mb-1">Title</dt>
-                        <dd className="text-sm text-gray-900">{selectedTravel.travel.title}</dd>
+                        <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</dt>
+                        <dd className="text-sm text-gray-800 mt-0.5">{selectedTravel.travel.title}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-gray-600 mb-1">Location</dt>
-                        <dd className="text-sm text-gray-900">
+                        <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Location</dt>
+                        <dd className="text-sm text-gray-800 mt-0.5">
                           {selectedTravel.travel.city}, {selectedTravel.travel.country}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-gray-600 mb-1">Dates</dt>
-                        <dd className="text-sm text-gray-900">
+                        <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Dates</dt>
+                        <dd className="text-sm text-gray-800 mt-0.5">
                           {formatDateRange(
                             selectedTravel.travel.startDate,
                             selectedTravel.travel.endDate
@@ -1405,30 +1402,29 @@ export function TimelineView({
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-gray-600 mb-1">Type</dt>
-                        <dd className="text-sm text-gray-900">{selectedTravel.travel.type}</dd>
+                        <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Type</dt>
+                        <dd className="text-sm text-gray-800 mt-0.5">{selectedTravel.travel.type}</dd>
                       </div>
                       {selectedTravel.travel.notes && (
                         <div>
-                          <dt className="text-sm font-medium text-gray-600 mb-1">Notes</dt>
-                          <dd className="text-sm text-gray-900">{selectedTravel.travel.notes}</dd>
+                          <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Notes</dt>
+                          <dd className="text-sm text-gray-700 mt-0.5 italic">{selectedTravel.travel.notes}</dd>
                         </div>
                       )}
                     </dl>
                   </div>
 
-                  {/* Actions */}
-                  <div className="pt-4 border-t border-gray-200 space-y-3">
+                  <div className="pt-4 border-t border-gray-100 space-y-2.5">
                     {onViewOnMap && (
                       <Button
                         onClick={() => {
                           onViewOnMap(selectedTravel.person.id, selectedTravel.travel.id);
                           setSelectedTravel(null);
                         }}
-                        className="w-full"
+                        className="w-full h-9 text-xs"
                         variant="outline"
                       >
-                        <MapPin className="size-4 mr-2" />
+                        <MapPin className="size-3.5 mr-1.5" />
                         View on Map
                       </Button>
                     )}
@@ -1438,9 +1434,9 @@ export function TimelineView({
                         e.preventDefault();
                         onViewPersonDetails?.(selectedTravel.person.id);
                       }}
-                      className="inline-flex items-center justify-center gap-2 w-full text-sm text-teal-600 hover:text-teal-700 py-2 px-4 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors relative z-50"
+                      className="inline-flex items-center justify-center gap-2 w-full text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50/60 hover:bg-teal-100/60 py-2.5 px-4 border border-teal-100 rounded-lg transition-colors relative z-50"
                     >
-                      <ExternalLink className="size-4" />
+                      <ExternalLink className="size-3.5" />
                       View full profile
                     </button>
                   </div>
@@ -1821,61 +1817,60 @@ export function TimelineView({
 
       {/* Side Panel */}
       {selectedTravel && (
-        <div className="w-96 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-gray-200 flex items-start justify-between">
+        <div className="w-96 bg-white rounded-xl shadow-lg ring-1 ring-gray-100/80 overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between">
             <div>
-              <h3 className="text-gray-900">{selectedTravel.person.fullName}</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>{selectedTravel.person.fullName}</h3>
+              <p className="text-xs text-gray-400 mt-1">
                 {selectedTravel.person.roleType} · Cohort{" "}
                 {getCohortLabel(selectedTravel.person)}
               </p>
             </div>
             <button
               onClick={() => setSelectedTravel(null)}
-              className="text-gray-400 hover:text-gray-600"
+              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             >
-              <X className="size-5" />
+              <X className="size-4" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Focus Tags */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
             <div>
-              <p className="text-sm text-gray-600 mb-2">Focus Areas</p>
-              <div className="flex flex-wrap gap-1">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Focus Areas</p>
+              <div className="flex flex-wrap gap-1.5">
                 {selectedTravel.person.focusTags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
+                  <span key={tag} className="inline-flex items-center text-[10px] font-medium text-gray-500 bg-gray-100/70 px-2 py-0.5 rounded-md">
                     {tag}
-                  </Badge>
+                  </span>
                 ))}
               </div>
             </div>
 
-            {/* Project */}
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Project</p>
-              <p className="text-sm text-gray-900">
-                {selectedTravel.person.shortProjectTagline}
-              </p>
-            </div>
+            {selectedTravel.person.shortProjectTagline && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Project</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {selectedTravel.person.shortProjectTagline}
+                </p>
+              </div>
+            )}
 
-            {/* Travel Details */}
-            <div className="pt-4 border-t border-gray-200">
-              <h4 className="text-gray-900 mb-3">Travel Details</h4>
-              <dl className="space-y-2 text-sm">
+            <div className="pt-4 border-t border-gray-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Travel Details</p>
+              <dl className="space-y-2.5 text-sm">
                 <div>
-                  <dt className="text-gray-600">Title</dt>
-                  <dd className="text-gray-900">{selectedTravel.travel.title}</dd>
+                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</dt>
+                  <dd className="text-sm text-gray-800 mt-0.5">{selectedTravel.travel.title}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-600">Location</dt>
-                  <dd className="text-gray-900">
+                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Location</dt>
+                  <dd className="text-sm text-gray-800 mt-0.5">
                     {selectedTravel.travel.city}, {selectedTravel.travel.country}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-600">Dates</dt>
-                  <dd className="text-gray-900">
+                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Dates</dt>
+                  <dd className="text-sm text-gray-800 mt-0.5">
                     {formatDateRange(
                       selectedTravel.travel.startDate,
                       selectedTravel.travel.endDate
@@ -1883,29 +1878,28 @@ export function TimelineView({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-600">Type</dt>
-                  <dd className="text-gray-900">{selectedTravel.travel.type}</dd>
+                  <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Type</dt>
+                  <dd className="text-sm text-gray-800 mt-0.5">{selectedTravel.travel.type}</dd>
                 </div>
                 {selectedTravel.travel.notes && (
                   <div>
-                    <dt className="text-gray-600">Notes</dt>
-                    <dd className="text-gray-900">{selectedTravel.travel.notes}</dd>
+                    <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Notes</dt>
+                    <dd className="text-sm text-gray-700 mt-0.5 italic">{selectedTravel.travel.notes}</dd>
                   </div>
                 )}
               </dl>
             </div>
 
-            {/* Actions */}
-            <div className="pt-4 border-t border-gray-200">
+            <div className="pt-4 border-t border-gray-100">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   onViewPersonDetails?.(selectedTravel.person.id);
                 }}
-                className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 relative z-50"
+                className="inline-flex items-center gap-2 text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50/60 hover:bg-teal-100/60 px-3.5 py-2 rounded-lg border border-teal-100 transition-colors relative z-50"
               >
-                <ExternalLink className="size-4" />
+                <ExternalLink className="size-3.5" />
                 View full profile
               </button>
             </div>

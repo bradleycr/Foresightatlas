@@ -314,29 +314,29 @@ export default function App() {
       />
 
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: Z_INDEX_LOADING }}>
-          <div className="bg-white rounded-lg p-6 shadow-lg">
-            <p className="text-gray-900 font-medium">Loading data...</p>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center" style={{ zIndex: Z_INDEX_LOADING }}>
+          <div className="bg-white rounded-xl px-8 py-5 shadow-2xl">
+            <p className="text-sm font-medium text-gray-700">Loading data...</p>
           </div>
         </div>
       )}
 
       {error && !isLoading && (
         <div
-          className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-900 px-4 py-3 rounded-lg shadow-lg max-w-md"
+          className="fixed bottom-4 right-4 bg-white border border-red-200/60 text-red-900 px-5 py-4 rounded-xl shadow-xl max-w-sm"
           style={{ zIndex: Z_INDEX_ERROR }}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <p className="font-semibold text-red-900 mb-1">Error loading data</p>
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm font-semibold text-red-800">Error loading data</p>
+              <p className="text-xs text-red-600 mt-1">{error}</p>
             </div>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0" aria-label="Dismiss error">
+            <button onClick={() => setError(null)} className="text-red-300 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5" aria-label="Dismiss error">
               <X className="size-4" />
             </button>
           </div>
-          <div className="mt-3 flex gap-2">
-            <Button onClick={() => { setError(null); loadData(); }} size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
+          <div className="mt-3">
+            <Button onClick={() => { setError(null); loadData(); }} size="sm" variant="outline" className="border-red-200 text-red-700 hover:bg-red-50 text-xs h-8 px-3">
               Retry
             </Button>
           </div>
