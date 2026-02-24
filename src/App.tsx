@@ -5,7 +5,6 @@ import { FiltersBar } from "./components/FiltersBar";
 import { MapView } from "./components/MapView";
 import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
-import { SuggestUpdateModal } from "./components/SuggestUpdateModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getAllPeople, getAllTravelWindows } from "./services/database";
 import { toast } from "sonner";
@@ -34,7 +33,6 @@ export default function App() {
 
   // Modal state
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-  const [showSuggestModal, setShowSuggestModal] = useState(false);
 
   // Data state
   const [people, setPeople] = useState<Person[]>([]);
@@ -248,7 +246,6 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         suggestFormUrl={SUGGEST_FORM_URL}
-        onSuggestUpdate={() => setShowSuggestModal(true)}
       />
 
       <FiltersBar
@@ -315,18 +312,6 @@ export default function App() {
         onNavigate={(id) => setSelectedPersonId(id)}
         onDataUpdate={loadData}
       />
-
-      {showSuggestModal && (
-        <SuggestUpdateModal
-          onClose={() => setShowSuggestModal(false)}
-          onSubmit={(suggestion) => {
-            console.log("Suggestion submitted:", suggestion);
-            toast.success("Thank you for your suggestion!");
-            setShowSuggestModal(false);
-          }}
-          people={people}
-        />
-      )}
 
       {isLoading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: Z_INDEX_LOADING }}>

@@ -4,14 +4,12 @@ interface AppHeaderProps {
   activeTab: "map" | "timeline";
   onTabChange: (tab: "map" | "timeline") => void;
   suggestFormUrl?: string;
-  onSuggestUpdate?: () => void;
 }
 
 export function AppHeader({
   activeTab,
   onTabChange,
   suggestFormUrl,
-  onSuggestUpdate,
 }: AppHeaderProps) {
   return (
     <header
@@ -75,15 +73,6 @@ export function AppHeader({
                 <span className="hidden sm:inline">Suggest an update</span>
                 <span className="sm:hidden">Suggest</span>
               </a>
-            )}
-            {!suggestFormUrl && onSuggestUpdate && (
-              <button
-                onClick={onSuggestUpdate}
-                className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <span className="hidden sm:inline">Suggest an update</span>
-                <span className="sm:hidden">Suggest</span>
-              </button>
             )}
           </div>
         </div>
