@@ -65,5 +65,8 @@
         "dev:api": "node server/index.js",
         "dev:all": "concurrently \"npm run dev:api\" \"npm run dev\"",
         "build": "vite build"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": ["@swc/core", "esbuild"]
     }
 }
