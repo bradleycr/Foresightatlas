@@ -1024,7 +1024,7 @@ export function TimelineView({
 
         <div className="flex flex-col h-full">
         {/* Mobile Timeline Grid */}
-        <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+        <div className="app-surface flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
           {/* Sticky Timeline Header - Calendar Grid Layout for Month/Week */}
           <div className="border-b-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white sticky top-0 shadow-sm"
             style={{ zIndex: 1 }}
@@ -1456,9 +1456,9 @@ export function TimelineView({
 
   // Desktop Layout - Person-based Gantt chart
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4 min-w-0 overflow-hidden">
+    <div className="timeline-layout flex flex-col lg:flex-row h-full gap-4 min-w-0 overflow-hidden">
       {/* Timeline Grid */}
-      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col min-w-0">
+      <div className="app-surface flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col min-w-0">
         {/* Timeline Header - Calendar Grid Layout for Month/Week */}
         <div className="border-b-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white shadow-sm" style={{ zIndex: 1 }}>
           {calendarGrid && (granularity === "Month" || granularity === "Week") ? (
@@ -1821,7 +1821,7 @@ export function TimelineView({
 
       {/* Side Panel */}
       {selectedTravel && (
-        <div className="w-96 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+        <div className="app-surface timeline-side-panel w-96 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
           <div className="p-4 border-b border-gray-200 flex items-start justify-between">
             <div>
               <h3 className="text-gray-900">{selectedTravel.person.fullName}</h3>

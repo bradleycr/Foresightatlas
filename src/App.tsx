@@ -241,11 +241,12 @@ export default function App() {
   // ── Views ──────────────────────────────────────────────────────────
 
   const homeView = (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="app-shell h-screen flex flex-col overflow-hidden">
       <AppHeader
         activeTab={activeTab}
         onTabChange={setActiveTab}
         suggestFormUrl={SUGGEST_FORM_URL}
+        onProgramNavigate={() => navigate("/berlin")}
       />
 
       <FiltersBar
@@ -256,30 +257,32 @@ export default function App() {
         activeTab={activeTab}
       />
 
-      <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-hidden">
-        {activeTab === "map" ? (
-          <MapView
-            filteredPeople={filteredPeople}
-            filteredTravelWindows={filteredTravelWindows}
-            timeWindowStart={timeWindowStart}
-            timeWindowEnd={timeWindowEnd}
-            granularity={filters.granularity}
-            onViewPersonDetails={(id) => setSelectedPersonId(id)}
-          />
-        ) : (
-          <TimelineView
-            timelineViewMode={filters.timelineViewMode}
-            filteredPeople={filteredPeople}
-            filteredTravelWindows={filteredTravelWindows}
-            year={filters.year}
-            granularity={filters.granularity}
-            referenceDate={filters.referenceDate}
-            cities={filters.cities}
-            nodes={filters.nodes}
-            onViewPersonDetails={(id) => setSelectedPersonId(id)}
-            onSwitchToMap={() => setActiveTab("map")}
-          />
-        )}
+      <div className="app-shell__content flex-1 min-h-0 p-3 sm:p-4 md:p-6 overflow-hidden">
+        <div className="app-surface h-full overflow-hidden">
+          {activeTab === "map" ? (
+            <MapView
+              filteredPeople={filteredPeople}
+              filteredTravelWindows={filteredTravelWindows}
+              timeWindowStart={timeWindowStart}
+              timeWindowEnd={timeWindowEnd}
+              granularity={filters.granularity}
+              onViewPersonDetails={(id) => setSelectedPersonId(id)}
+            />
+          ) : (
+            <TimelineView
+              timelineViewMode={filters.timelineViewMode}
+              filteredPeople={filteredPeople}
+              filteredTravelWindows={filteredTravelWindows}
+              year={filters.year}
+              granularity={filters.granularity}
+              referenceDate={filters.referenceDate}
+              cities={filters.cities}
+              nodes={filters.nodes}
+              onViewPersonDetails={(id) => setSelectedPersonId(id)}
+              onSwitchToMap={() => setActiveTab("map")}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

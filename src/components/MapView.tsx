@@ -666,9 +666,9 @@ export function MapView({
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4 relative">
+    <div className="map-layout flex flex-col lg:flex-row h-full gap-4 relative">
       {/* Map Panel */}
-      <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100">
+      <div className="app-surface flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100">
         {markers.length > 0 ? (
           <MapContainer
             center={[30, -120]}
@@ -877,7 +877,7 @@ export function MapView({
 
       {/* Fellows & Grantees List - desktop sidebar */}
       {!isMobile && isSidebarOpen && (
-        <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
+        <div className="app-surface w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
           <div 
             className="p-4 border-b border-gray-200 flex items-center justify-between relative"
             style={{
@@ -907,7 +907,7 @@ export function MapView({
 
       {/* Mobile: full-screen fellows sheet — below modals so detail modal appears on top */}
       {isMobile && isSidebarOpen && (
-        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_SIDEBAR }}>
+        <div className="mobile-sheet-shell fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_SIDEBAR }}>
           <div 
             className="px-6 py-4 border-b border-gray-200 flex items-center justify-between relative gap-3"
             style={{

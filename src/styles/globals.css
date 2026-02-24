@@ -311,21 +311,295 @@ html {
   font-size: var(--font-size);
 }
 
-/* Person detail modal: section spacing and top-block gap */
-.person-detail-modal .person-detail-content section + section {
-  margin-top: 2.5rem;
+/* Global shell and glass surfaces */
+.app-shell {
+  background:
+    radial-gradient(1200px 480px at 12% -20%, rgba(191, 219, 254, 0.48), transparent 60%),
+    radial-gradient(900px 420px at 88% -16%, rgba(196, 181, 253, 0.36), transparent 62%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 58%, #f3f4f6 100%);
 }
+
+.app-shell__content {
+  position: relative;
+}
+
+.app-surface {
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(249, 250, 251, 0.92) 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08), 0 6px 14px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.app-header-shell {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 250, 251, 0.96) 100%);
+  backdrop-filter: blur(8px);
+}
+
+.app-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
+  background: #f8fafc;
+}
+
+.app-segmented-control__button {
+  border: none;
+  border-radius: 0.7rem;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  transition: all 0.2s ease;
+}
+
+.app-segmented-control__button:hover {
+  color: #111827;
+}
+
+.app-segmented-control__button.is-active {
+  color: #111827;
+  background: linear-gradient(135deg, #bfdbfe 0%, #c4b5fd 100%);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
+}
+
+.app-program-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.84rem;
+  color: #374151;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+  transition: all 0.2s ease;
+}
+
+.app-program-link:hover {
+  border-color: #9ca3af;
+  color: #111827;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+/* Filters */
+.filters-shell {
+  border: 1px solid rgba(209, 213, 219, 0.8);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  padding: 0.9rem;
+}
+
+.filters-popover {
+  border: 1px solid rgba(209, 213, 219, 0.72);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.13);
+}
+
+.filters-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.74rem;
+  color: #4b5563;
+  background: #ffffff;
+}
+
+.filter-group-label {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #4b5563;
+  text-transform: uppercase;
+}
+
+.filter-chip {
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  padding: 0.32rem 0.78rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4b5563;
+  background: #ffffff;
+  transition: all 0.18s ease;
+}
+
+.filter-chip:hover {
+  border-color: #d1d5db;
+  color: #111827;
+  background: #f9fafb;
+}
+
+.filter-chip--active {
+  color: #111827;
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+}
+
+/* Cards and list surfaces */
+.profile-card {
+  border-radius: 14px;
+  border-color: rgba(229, 231, 235, 0.85);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.map-layout .app-surface,
+.timeline-layout .app-surface {
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.mobile-sheet-shell {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.timeline-side-panel {
+  max-width: 24rem;
+}
+
+/* Program page */
+.program-page-shell {
+  background:
+    radial-gradient(1100px 420px at 10% -20%, rgba(191, 219, 254, 0.45), transparent 58%),
+    radial-gradient(1000px 460px at 90% -22%, rgba(167, 243, 208, 0.34), transparent 62%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 62%, #f0f9ff 100%);
+}
+
+.program-hero,
+.program-side-card,
+.program-gantt,
+.program-plan-row {
+  border-radius: 1rem;
+}
+
+.program-hero {
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.09), 0 8px 16px rgba(15, 23, 42, 0.06);
+}
+
+.program-kpi-grid {
+  align-items: stretch;
+}
+
+.program-kpi {
+  min-width: 136px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+}
+
+.program-gantt {
+  border-color: rgba(229, 231, 235, 0.85);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65), 0 14px 24px rgba(15, 23, 42, 0.06);
+}
+
+.program-grid-header {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.program-plan-row {
+  border-color: rgba(229, 231, 235, 0.8);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
+}
+
+.program-track-cell {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.program-side-card {
+  border-color: rgba(229, 231, 235, 0.8);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.08);
+}
+
+/* Person detail modal: section rhythm + card treatment */
+.person-modal-shell {
+  border: 1px solid rgba(209, 213, 219, 0.85);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.24);
+}
+
+.person-modal-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 0.35rem 0.4rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.person-profile-hero {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+  padding: 1rem;
+}
+
+.person-detail-modal .person-detail-content section + section {
+  margin-top: 1.2rem;
+}
+
+.person-detail-modal .person-detail-content__head {
+  margin-bottom: 1.5rem;
+}
+
+.person-section-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.95rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.person-section-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.person-travel-item {
+  border-color: rgba(209, 213, 219, 0.8);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.travel-edit-form {
+  border-color: rgba(209, 213, 219, 0.85);
+  background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+}
+
 @media (min-width: 48rem) {
+  .person-profile-hero,
+  .person-section-card {
+    padding: 1.25rem;
+  }
+
   .person-detail-modal .person-detail-content section + section {
-    margin-top: 3rem;
+    margin-top: 1.4rem;
   }
 }
-/* Extra space between name/metadata block and first content section (Project) */
-.person-detail-modal .person-detail-content__head {
-  margin-bottom: 2.5rem;
-}
-@media (min-width: 48rem) {
-  .person-detail-modal .person-detail-content__head {
-    margin-bottom: 3rem;
+
+@media (max-width: 48rem) {
+  .program-kpi {
+    min-width: 110px;
+    flex: 1;
+  }
+
+  .timeline-side-panel {
+    max-width: 100%;
   }
 }

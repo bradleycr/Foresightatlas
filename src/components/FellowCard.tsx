@@ -37,7 +37,7 @@ export function FellowCard({
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:shadow-lg border ${
+      className={`profile-card p-4 cursor-pointer transition-all hover:shadow-lg border ${
         isHighlighted ? "ring-2 ring-teal-500 shadow-lg border-teal-200" : "border-gray-100"
       }`}
       style={{
@@ -56,12 +56,12 @@ export function FellowCard({
       }}
       aria-label={`View full profile for ${person.fullName}`}
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>{person.fullName}</h3>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span
                 className="text-xs px-2 py-0.5 rounded-full font-medium"
                 style={{
@@ -93,7 +93,7 @@ export function FellowCard({
         </div>
 
         {/* Project Tagline */}
-        <p className={`text-sm ${projectTagline ? "text-gray-700" : "text-gray-500 italic"}`}>
+        <p className={`text-sm ${projectTagline ? "text-gray-700" : "text-gray-500 italic"}`} style={{ lineHeight: 1.6 }}>
           {projectTagline || projectFallback}
         </p>
 
@@ -130,7 +130,8 @@ export function FellowCard({
         )}
 
         {/* More details — clear call-to-action */}
-        <div className="pt-3 border-t border-gray-100">
+        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-xs text-gray-500">View profile and project details</span>
           <button
             type="button"
             onClick={(e) => {

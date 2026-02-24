@@ -12,7 +12,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle
+  Edit, Save, Trash2, Plus
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType } from "../types";
 import { Badge } from "./ui/badge";
@@ -359,7 +359,7 @@ export function PersonDetailModal({
         onClick={onClose}
       >
         <div 
-          className={`person-detail-modal bg-white ${isMobile ? 'rounded-t-2xl rounded-b-none h-full w-full max-h-[100dvh]' : 'rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh]'} overflow-hidden flex flex-col relative`}
+          className={`person-detail-modal person-modal-shell bg-white ${isMobile ? 'rounded-t-2xl rounded-b-none h-full w-full max-h-[100dvh]' : 'rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh]'} overflow-hidden flex flex-col relative`}
           style={{ 
             zIndex: Z_INDEX_MODAL_CONTENT,
             paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : undefined,
@@ -374,7 +374,7 @@ export function PersonDetailModal({
           >
             <div className="px-4 pt-4 pb-12 md:px-8 md:pt-6 md:pb-12">
               {/* Toolbar — close, nav, edit at top of scroll */}
-              <div className={`flex items-center justify-end gap-2 ${isMobile ? 'mb-4' : 'mb-6'}`}>
+              <div className={`person-modal-toolbar flex items-center justify-end gap-2 ${isMobile ? 'mb-4' : 'mb-6'}`}>
                 {isAdmin && !isEditing && (
                   <Button
                     variant="outline"
@@ -439,146 +439,148 @@ export function PersonDetailModal({
                 </button>
               </div>
 
-              {/* Name */}
-              <div className={`${isMobile ? 'mb-4' : 'mb-5'}`}>
-                {isEditing && editingPerson ? (
-                  <Input
-                    value={editingPerson.fullName}
-                    onChange={(e) =>
-                      setEditingPerson({ ...editingPerson, fullName: e.target.value })
-                    }
-                    className="text-2xl md:text-3xl font-bold"
-                    placeholder="Full Name"
-                  />
-                ) : (
-                  <h2
-                    className="text-2xl md:text-3xl font-bold text-gray-900"
-                    style={{ fontFamily: "var(--font-heading)" }}
-                  >
-                    {displayPerson.fullName}
-                  </h2>
-                )}
-              </div>
-
-              {/* Metadata — role, cohort, focus tags; extra space below via globals .person-detail-content__head */}
-              <div className="person-detail-content__head space-y-4">
-                <div className="flex items-center gap-3 flex-wrap">
+              <div className="person-profile-hero">
+                {/* Name */}
+                <div className={`${isMobile ? 'mb-4' : 'mb-5'}`}>
                   {isEditing && editingPerson ? (
-                    <>
-                      <Select
-                        value={editingPerson.roleType}
-                        onValueChange={(value: RoleType) =>
-                          setEditingPerson({ ...editingPerson, roleType: value })
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Fellow">Fellow</SelectItem>
-                          <SelectItem value="Grantee">Grantee</SelectItem>
-                          <SelectItem value="Prize Winner">Prize Winner</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <Input
+                      value={editingPerson.fullName}
+                      onChange={(e) =>
+                        setEditingPerson({ ...editingPerson, fullName: e.target.value })
+                      }
+                      className="text-2xl md:text-3xl font-bold"
+                      placeholder="Full Name"
+                    />
+                  ) : (
+                    <h2
+                      className="text-2xl md:text-3xl font-bold text-gray-900"
+                      style={{ fontFamily: "var(--font-heading)" }}
+                    >
+                      {displayPerson.fullName}
+                    </h2>
+                  )}
+                </div>
+
+                {/* Metadata — role, cohort, focus tags; extra space below via globals .person-detail-content__head */}
+                <div className="person-detail-content__head space-y-4">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {isEditing && editingPerson ? (
+                      <>
+                        <Select
+                          value={editingPerson.roleType}
+                          onValueChange={(value: RoleType) =>
+                            setEditingPerson({ ...editingPerson, roleType: value })
+                          }
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Fellow">Fellow</SelectItem>
+                            <SelectItem value="Grantee">Grantee</SelectItem>
+                            <SelectItem value="Prize Winner">Prize Winner</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          value={editingPerson.fellowshipCohortYear}
+                          onChange={(e) =>
+                            setEditingPerson({
+                              ...editingPerson,
+                              fellowshipCohortYear: parseInt(e.target.value) || 2024,
+                            })
+                          }
+                          className="w-24"
+                          placeholder="Start year"
+                        />
+                        <span className="text-gray-400">–</span>
+                        <Input
+                          type="number"
+                          placeholder="End (optional)"
+                          className="w-24"
+                          value={editingPerson.fellowshipEndYear ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value.trim();
+                            setEditingPerson({
+                              ...editingPerson,
+                              fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null,
+                            });
+                          }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="isAlumni"
+                            checked={editingPerson.isAlumni}
+                            onChange={(e) =>
+                              setEditingPerson({ ...editingPerson, isAlumni: e.target.checked })
+                            }
+                            className="rounded"
+                          />
+                          <Label htmlFor="isAlumni" className="cursor-pointer text-sm">
+                            Alumni
+                          </Label>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className="text-sm px-3 py-1 rounded-full font-medium"
+                          style={{
+                            background: getRoleGradient(displayPerson.roleType),
+                            color: "#374151",
+                          }}
+                        >
+                          {displayPerson.roleType}
+                        </span>
+                        <span className="text-sm text-gray-700">
+                          Cohort {getCohortLabel(displayPerson)}
+                        </span>
+                        {displayPerson.isAlumni && (
+                          <Badge variant="secondary" className="text-xs">
+                            Alumni
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {isEditing && editingPerson ? (
+                    <div>
+                      <Label htmlFor="focusTags" className="text-sm font-semibold text-gray-700 mb-2 block">
+                        Focus Tags (comma-separated)
+                      </Label>
                       <Input
-                        type="number"
-                        value={editingPerson.fellowshipCohortYear}
+                        id="focusTags"
+                        value={editingPerson.focusTags.join(", ")}
                         onChange={(e) =>
                           setEditingPerson({
                             ...editingPerson,
-                            fellowshipCohortYear: parseInt(e.target.value) || 2024,
+                            focusTags: e.target.value
+                              .split(",")
+                              .map((tag) => tag.trim())
+                              .filter((tag) => tag.length > 0),
                           })
                         }
-                        className="w-24"
-                        placeholder="Start year"
+                        placeholder="Secure AI, Longevity Biotechnology"
                       />
-                      <span className="text-gray-400">–</span>
-                      <Input
-                        type="number"
-                        placeholder="End (optional)"
-                        className="w-24"
-                        value={editingPerson.fellowshipEndYear ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value.trim();
-                          setEditingPerson({
-                            ...editingPerson,
-                            fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null,
-                          });
-                        }}
-                      />
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="isAlumni"
-                          checked={editingPerson.isAlumni}
-                          onChange={(e) =>
-                            setEditingPerson({ ...editingPerson, isAlumni: e.target.checked })
-                          }
-                          className="rounded"
-                        />
-                        <Label htmlFor="isAlumni" className="cursor-pointer text-sm">
-                          Alumni
-                        </Label>
-                      </div>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <span
-                        className="text-sm px-3 py-1 rounded-full font-medium"
-                        style={{
-                          background: getRoleGradient(displayPerson.roleType),
-                          color: "#374151",
-                        }}
-                      >
-                        {displayPerson.roleType}
-                      </span>
-                      <span className="text-sm text-gray-700">
-                        Cohort {getCohortLabel(displayPerson)}
-                      </span>
-                      {displayPerson.isAlumni && (
-                        <Badge variant="secondary" className="text-xs">
-                          Alumni
-                        </Badge>
-                      )}
-                    </>
+                    displayPerson.focusTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {displayPerson.focusTags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-sm">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )
                   )}
                 </div>
-                {isEditing && editingPerson ? (
-                  <div>
-                    <Label htmlFor="focusTags" className="text-sm font-semibold text-gray-700 mb-2 block">
-                      Focus Tags (comma-separated)
-                    </Label>
-                    <Input
-                      id="focusTags"
-                      value={editingPerson.focusTags.join(", ")}
-                      onChange={(e) =>
-                        setEditingPerson({
-                          ...editingPerson,
-                          focusTags: e.target.value
-                            .split(",")
-                            .map((tag) => tag.trim())
-                            .filter((tag) => tag.length > 0),
-                        })
-                      }
-                      placeholder="Secure AI, Longevity Biotechnology"
-                    />
-                  </div>
-                ) : (
-                  displayPerson.focusTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {displayPerson.focusTags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-sm">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )
-                )}
               </div>
 
               {/* Project — first content section */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700">Project</h3>
+            <section className="person-section-card space-y-3">
+              <h3 className="person-section-title">Project</h3>
               {isEditing && editingPerson ? (
                 <>
                   <Input
@@ -633,10 +635,10 @@ export function PersonDetailModal({
             </section>
 
             {/* Location & Primary Node */}
-            <section>
+            <section className="person-section-card">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <h3 className="person-section-title flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     Location
                   </h3>
@@ -664,7 +666,7 @@ export function PersonDetailModal({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Primary Node</h3>
+                  <h3 className="person-section-title">Primary Node</h3>
                   {isEditing && editingPerson ? (
                     <Select
                       value={editingPerson.primaryNode}
@@ -692,9 +694,9 @@ export function PersonDetailModal({
             </section>
 
             {/* Travel & Residencies */}
-            <section className="space-y-4">
+            <section className="person-section-card space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <h3 className="person-section-title flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Travel & Residencies ({personTravelWindows.length})
                 </h3>
@@ -725,7 +727,7 @@ export function PersonDetailModal({
                     personTravelWindows.map((tw) => (
                       <div
                         key={tw.id}
-                        className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors"
+                        className="person-travel-item p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="flex-1">
@@ -776,12 +778,12 @@ export function PersonDetailModal({
               )}
             </section>
 
-            {/* Contact — border then padding */}
+            {/* Contact */}
             <section 
-              className="border-t border-gray-200 pt-6 pb-8 md:pt-8 md:pb-8" 
+              className="person-section-card pb-8 md:pb-8" 
               style={isMobile ? { paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px) + 1rem)' } : undefined}
             >
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact & Links</h3>
+              <h3 className="person-section-title mb-3">Contact & Links</h3>
               {isEditing && editingPerson ? (
                 <div className="space-y-3">
                   <div>
@@ -901,7 +903,7 @@ function TravelWindowEditForm({
   isSaving,
 }: TravelWindowEditFormProps) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4 space-y-4 border border-gray-200">
+    <div className="travel-edit-form bg-gray-50 rounded-lg p-4 space-y-4 border border-gray-200">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="twTitle">Title *</Label>

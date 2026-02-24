@@ -276,7 +276,7 @@ export function BerlinPage({
   const heroBadge = isAdmin ? "Admin live view" : "Public demo";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50 text-gray-900">
+    <div className="program-page-shell min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50 text-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
@@ -306,7 +306,7 @@ export function BerlinPage({
           </div>
         </div>
 
-        <section className="rounded-3xl bg-white/80 shadow-lg ring-1 ring-gray-100 p-6 md:p-8 space-y-6">
+        <section className="program-hero rounded-3xl bg-white/80 shadow-lg ring-1 ring-gray-100 p-6 md:p-8 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-2">
               <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
@@ -322,20 +322,20 @@ export function BerlinPage({
                 glance.
               </p>
             </div>
-            <div className="flex gap-3">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white px-4 py-3 shadow-md">
+            <div className="program-kpi-grid flex gap-3 flex-wrap">
+              <div className="program-kpi rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white px-4 py-3 shadow-md">
                 <p className="text-xs uppercase tracking-wide text-white/80">
                   Active plans
                 </p>
                 <p className="text-3xl font-semibold">{berlinPlans.length}</p>
               </div>
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white px-4 py-3 shadow-md">
+              <div className="program-kpi rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white px-4 py-3 shadow-md">
                 <p className="text-xs uppercase tracking-wide text-white/80">
                   Berlin fellows
                 </p>
                 <p className="text-3xl font-semibold">{berlinLeads.length}</p>
               </div>
-              <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white px-4 py-3 shadow-md">
+              <div className="program-kpi rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white px-4 py-3 shadow-md">
                 <p className="text-xs uppercase tracking-wide text-white/80">
                   Node days booked
                 </p>
@@ -344,7 +344,7 @@ export function BerlinPage({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-blue-50/30 p-4 md:p-6">
+          <div className="program-gantt rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-blue-50/30 p-4 md:p-6">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
@@ -370,7 +370,7 @@ export function BerlinPage({
 
             <div className="overflow-x-auto">
               <div className="min-w-[1040px] space-y-3">
-                <div className="grid grid-cols-[240px_repeat(12,minmax(0,1fr))] gap-x-2 text-xs text-gray-600 pl-2 pr-1">
+                <div className="program-grid-header grid grid-cols-[240px_repeat(12,minmax(0,1fr))] gap-x-2 text-xs text-gray-600 pl-2 pr-1">
                   <div className="text-sm font-semibold text-gray-700">
                     Plan
                   </div>
@@ -414,7 +414,7 @@ export function BerlinPage({
                   return (
                     <div
                       key={plan.id}
-                      className="grid grid-cols-[240px_1fr] gap-x-3 rounded-2xl border border-gray-100 bg-white/90 shadow-sm p-3 md:p-4"
+                      className="program-plan-row grid grid-cols-[240px_1fr] gap-x-3 rounded-2xl border border-gray-100 bg-white/90 shadow-sm p-3 md:p-4"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -454,11 +454,11 @@ export function BerlinPage({
                       </div>
 
                       <div className="relative">
-                        <div className="grid grid-cols-12 gap-2 h-12">
+                        <div className="program-track grid grid-cols-12 gap-2 h-12">
                           {months.map((month) => (
                             <div
                               key={`${plan.id}-${month.label}`}
-                              className="h-full rounded-lg border border-dashed border-gray-200 bg-gray-50"
+                              className="program-track-cell h-full rounded-lg border border-dashed border-gray-200 bg-gray-50"
                             />
                           ))}
                         </div>
@@ -486,7 +486,7 @@ export function BerlinPage({
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white/90 shadow-lg border-gray-100">
+          <Card className="program-side-card bg-white/90 shadow-lg border-gray-100">
             <CardHeader>
               <CardTitle>Berlin node highlights</CardTitle>
               <CardDescription>
@@ -520,7 +520,7 @@ export function BerlinPage({
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 shadow-lg border-gray-100">
+          <Card className="program-side-card bg-white/95 shadow-lg border-gray-100">
             <CardHeader>
               <CardTitle>Curate the Berlin plan</CardTitle>
               <CardDescription>

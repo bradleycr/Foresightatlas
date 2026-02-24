@@ -139,86 +139,100 @@ export function FiltersBar({
     filters.cities.length > 0 ||
     filters.showAlumni === false ||
     filters.year !== defaultYear;
+  const selectedFiltersCount =
+    (filters.search ? 1 : 0) +
+    filters.programs.length +
+    filters.focusTags.length +
+    filters.nodes.length +
+    filters.cities.length +
+    (filters.showAlumni ? 0 : 1) +
+    (filters.year !== defaultYear ? 1 : 0);
+  const getFilterChipClass = (isActive: boolean) =>
+    `filter-chip ${isActive ? "filter-chip--active" : ""}`;
+  const getFilterChipStyle = (isActive: boolean, activeBackground: string) =>
+    isActive ? { background: activeBackground } : undefined;
 
   return (
-    <div className="border-b border-gray-200 bg-white relative">
-      <div className="px-4 md:px-8 pt-4 md:pt-5 pb-3 md:pb-4">
-        {/* Search Bar - Always Visible */}
-        <div className="flex items-center gap-2 md:gap-3 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Search by name, project, or city..."
-              value={filters.search}
-              onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-              className="pl-10 pr-4 py-2 text-sm md:text-base"
-            />
-          </div>
-          <Button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            variant="outline"
-            size="sm"
-            className="border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            {isCollapsed ? (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Filters</span>
-              </>
-            ) : (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Hide</span>
-              </>
-            )}
-          </Button>
-          {hasActiveFilters && (
+    <div className="border-b border-gray-200 bg-white relative backdrop-blur-sm">
+      <div className="px-4 md:px-8 pt-4 md:pt-5 pb-4 md:pb-5">
+        <div className="filters-shell">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search by name, project, or city..."
+                value={filters.search}
+                onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                className="pl-10 pr-4 py-2 text-sm md:text-base"
+              />
+            </div>
             <Button
-              onClick={clearAllFilters}
+              onClick={() => setIsCollapsed(!isCollapsed)}
               variant="outline"
               size="sm"
               className="border-gray-300 text-gray-700 hover:bg-gray-50"
             >
-              <X className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Clear</span>
+              {isCollapsed ? (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Filters</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Hide</span>
+                </>
+              )}
             </Button>
-          )}
+            {hasActiveFilters && (
+              <Button
+                onClick={clearAllFilters}
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <X className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Clear</span>
+              </Button>
+            )}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="filters-summary-pill">
+              {selectedFiltersCount > 0
+                ? `${selectedFiltersCount} active filter${selectedFiltersCount === 1 ? "" : "s"}`
+                : "No active filters"}
+            </span>
+            <span className="filters-summary-pill">
+              {filters.year === null ? "All Time" : filters.year} • {filters.granularity}
+            </span>
+            {filters.search && (
+              <span className="filters-summary-pill">Query: "{filters.search}"</span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Collapsible Filters - Overlay */}
       {!isCollapsed && (
         <div 
-          className="absolute left-4 right-4 md:left-8 md:right-8 top-full mt-2 bg-white rounded-xl border border-gray-200/50 shadow-2xl"
-          style={{ 
-            zIndex: Z_INDEX_MODAL_CONTENT,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-          }}
+          className="filters-popover absolute left-4 right-4 md:left-8 md:right-8 top-full mt-2"
+          style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
         >
           <div className="px-4 md:px-8 pt-5 pb-6 md:pb-8 max-h-[70vh] overflow-y-auto">
             <div className="space-y-5">
             {/* People: include alumni (toggle off to hide) */}
             <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+              <label className="filter-group-label">
                 People
               </label>
               <div className="flex flex-wrap gap-2">
                 <Badge
+                  variant="outline"
                   onClick={handleAlumniToggle}
-                  className={`cursor-pointer transition-all ${
-                    filters.showAlumni
-                      ? "text-gray-900 shadow-sm border-white/50"
-                      : "text-gray-600 hover:text-gray-900 border-gray-200"
-                  }`}
-                  style={
-                    filters.showAlumni
-                      ? {
-                          background: activeToggleGradient,
-                          border: "1px solid rgba(255, 255, 255, 0.5)",
-                        }
-                      : undefined
-                  }
+                  className={getFilterChipClass(filters.showAlumni)}
+                  style={getFilterChipStyle(filters.showAlumni, activeToggleGradient)}
                 >
                   Show alumni
                 </Badge>
@@ -227,7 +241,7 @@ export function FiltersBar({
 
             {/* Programs Filter */}
             <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+              <label className="filter-group-label">
                 Programs
               </label>
               <div className="flex flex-wrap gap-2">
@@ -235,21 +249,11 @@ export function FiltersBar({
                   const isActive = filters.programs.includes(program);
                   return (
                     <Badge
+                      variant="outline"
                       key={program}
                       onClick={() => toggleProgram(program)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: getRoleGradient(program),
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
+                      className={getFilterChipClass(isActive)}
+                      style={getFilterChipStyle(isActive, getRoleGradient(program))}
                     >
                       {program}
                     </Badge>
@@ -260,7 +264,7 @@ export function FiltersBar({
 
             {/* Focus Areas Filter */}
             <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+              <label className="filter-group-label">
                 Focus Areas
               </label>
               <div className="flex flex-wrap gap-2">
@@ -268,21 +272,11 @@ export function FiltersBar({
                   const isActive = filters.focusTags.includes(tag);
                   return (
                     <Badge
+                      variant="outline"
                       key={tag}
                       onClick={() => toggleFocusTag(tag)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: activeBadgeGradient,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
+                      className={getFilterChipClass(isActive)}
+                      style={getFilterChipStyle(isActive, activeBadgeGradient)}
                     >
                       {tag}
                     </Badge>
@@ -293,7 +287,7 @@ export function FiltersBar({
 
             {/* Nodes Filter */}
             <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+              <label className="filter-group-label">
                 Nodes
               </label>
               <div className="flex flex-wrap gap-2">
@@ -301,21 +295,11 @@ export function FiltersBar({
                   const isActive = filters.nodes.includes(node);
                   return (
                     <Badge
+                      variant="outline"
                       key={node}
                       onClick={() => toggleNode(node)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: gradientVariant1,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
+                      className={getFilterChipClass(isActive)}
+                      style={getFilterChipStyle(isActive, gradientVariant1)}
                     >
                       {getNodeLabel(node)}
                     </Badge>
@@ -327,7 +311,7 @@ export function FiltersBar({
             {/* Cities Filter */}
             {availableCities.length > 0 && (
               <div>
-                <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+                <label className="filter-group-label">
                   Cities
                 </label>
                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
@@ -335,21 +319,11 @@ export function FiltersBar({
                     const isActive = filters.cities.includes(city);
                     return (
                       <Badge
+                        variant="outline"
                         key={city}
                         onClick={() => toggleCity(city)}
-                        className={`cursor-pointer transition-all ${
-                          isActive
-                            ? "text-gray-900 shadow-sm border-white/50"
-                            : "text-gray-600 hover:text-gray-900 border-gray-200"
-                        }`}
-                        style={
-                          isActive
-                            ? {
-                                background: activeBadgeGradient,
-                                border: "1px solid rgba(255, 255, 255, 0.5)",
-                              }
-                            : undefined
-                        }
+                        className={getFilterChipClass(isActive)}
+                        style={getFilterChipStyle(isActive, activeBadgeGradient)}
                       >
                         {city}
                       </Badge>
@@ -361,25 +335,15 @@ export function FiltersBar({
 
             {/* Year and Granularity - Available for both Map and Timeline */}
             <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+              <label className="filter-group-label">
                 Year
               </label>
               <div className="flex flex-wrap gap-2">
                 <Badge
+                  variant="outline"
                   onClick={() => handleYearChange(null)}
-                  className={`cursor-pointer transition-all ${
-                    filters.year === null
-                      ? "text-gray-900 shadow-sm border-white/50"
-                      : "text-gray-600 hover:text-gray-900 border-gray-200"
-                  }`}
-                  style={
-                    filters.year === null
-                      ? {
-                          background: activeToggleGradient,
-                          border: "1px solid rgba(255, 255, 255, 0.5)",
-                        }
-                      : undefined
-                  }
+                  className={getFilterChipClass(filters.year === null)}
+                  style={getFilterChipStyle(filters.year === null, activeToggleGradient)}
                 >
                   All Time
                 </Badge>
@@ -387,21 +351,11 @@ export function FiltersBar({
                   const isActive = filters.year === year;
                   return (
                     <Badge
+                      variant="outline"
                       key={year}
                       onClick={() => handleYearChange(year)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: activeToggleGradient,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
+                      className={getFilterChipClass(isActive)}
+                      style={getFilterChipStyle(isActive, activeToggleGradient)}
                     >
                       {year}
                     </Badge>
@@ -411,7 +365,7 @@ export function FiltersBar({
             </div>
 
             <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+              <label className="filter-group-label">
                 View Granularity
               </label>
               <div className="flex flex-wrap gap-2">
@@ -419,21 +373,11 @@ export function FiltersBar({
                   const isActive = filters.granularity === granularity;
                   return (
                     <Badge
+                      variant="outline"
                       key={granularity}
                       onClick={() => handleGranularityChange(granularity)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: activeToggleGradient,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
+                      className={getFilterChipClass(isActive)}
+                      style={getFilterChipStyle(isActive, activeToggleGradient)}
                     >
                       {granularity}
                     </Badge>
@@ -445,7 +389,7 @@ export function FiltersBar({
             {/* Reference Date Input - Only for Month/Week views */}
             {(filters.granularity === "Month" || filters.granularity === "Week") && (
               <div>
-                <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+                <label className="filter-group-label">
                   {filters.granularity === "Month" ? "Select Month" : "Select Week"}
                 </label>
                 <Input
@@ -472,7 +416,7 @@ export function FiltersBar({
             {/* Timeline View Mode - Only for Timeline */}
             {activeTab === "timeline" && (
               <div>
-                <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
+                <label className="filter-group-label">
                   Timeline View Mode
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -480,21 +424,11 @@ export function FiltersBar({
                     const isActive = filters.timelineViewMode === mode;
                     return (
                       <Badge
+                        variant="outline"
                         key={mode}
                         onClick={() => handleTimelineViewModeChange(mode)}
-                        className={`cursor-pointer transition-all capitalize ${
-                          isActive
-                            ? "text-gray-900 shadow-sm border-white/50"
-                            : "text-gray-600 hover:text-gray-900 border-gray-200"
-                        }`}
-                        style={
-                          isActive
-                            ? {
-                                background: activeToggleGradient,
-                                border: "1px solid rgba(255, 255, 255, 0.5)",
-                              }
-                            : undefined
-                        }
+                        className={`${getFilterChipClass(isActive)} capitalize`}
+                        style={getFilterChipStyle(isActive, activeToggleGradient)}
                       >
                         {mode}
                       </Badge>
