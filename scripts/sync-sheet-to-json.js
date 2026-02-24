@@ -50,24 +50,24 @@ function rowToPerson(row) {
       ? null
       : parseInt(String(fellowshipEndYearRaw), 10);
   return {
-    id: get(row[idx("id")]) || undefined,
-    fullName: get(row[idx("fullName")]),
-    roleType: get(row[idx("roleType")]) || "Fellow",
+    id: get(idx("id")) || undefined,
+    fullName: get(idx("fullName")),
+    roleType: get(idx("roleType")) || "Fellow",
     fellowshipCohortYear: parseInt(row[idx("fellowshipCohortYear")], 10) || 0,
     fellowshipEndYear: Number.isNaN(fellowshipEndYear) ? null : fellowshipEndYear,
-    affiliationOrInstitution: get(row[idx("affiliationOrInstitution")]) || null,
+    affiliationOrInstitution: get(idx("affiliationOrInstitution")) || null,
     focusTags: Array.isArray(focusTags) ? focusTags : [],
-    currentCity: get(row[idx("currentCity")]),
-    currentCountry: get(row[idx("currentCountry")]),
+    currentCity: get(idx("currentCity")),
+    currentCountry: get(idx("currentCountry")),
     currentCoordinates: {
       lat: Number.isFinite(lat) ? lat : 0,
       lng: Number.isFinite(lng) ? lng : 0,
     },
-    primaryNode: get(row[idx("primaryNode")]) || "Global",
-    profileUrl: get(row[idx("profileUrl")]),
-    contactUrlOrHandle: get(row[idx("contactUrlOrHandle")]) || null,
-    shortProjectTagline: get(row[idx("shortProjectTagline")]),
-    expandedProjectDescription: get(row[idx("expandedProjectDescription")]),
+    primaryNode: get(idx("primaryNode")) || "Global",
+    profileUrl: get(idx("profileUrl")),
+    contactUrlOrHandle: get(idx("contactUrlOrHandle")) || null,
+    shortProjectTagline: get(idx("shortProjectTagline")),
+    expandedProjectDescription: get(idx("expandedProjectDescription")),
     isAlumni: String(row[idx("isAlumni")]).toLowerCase() === "true",
   };
 }
@@ -78,19 +78,19 @@ function rowToTravelWindow(row) {
   const lat = parseFloat(row[idx("lat")]);
   const lng = parseFloat(row[idx("lng")]);
   return {
-    id: get(row[idx("id")]),
-    personId: get(row[idx("personId")]),
-    title: get(row[idx("title")]),
-    city: get(row[idx("city")]),
-    country: get(row[idx("country")]),
+    id: get(idx("id")),
+    personId: get(idx("personId")),
+    title: get(idx("title")),
+    city: get(idx("city")),
+    country: get(idx("country")),
     coordinates: {
       lat: Number.isFinite(lat) ? lat : 0,
       lng: Number.isFinite(lng) ? lng : 0,
     },
-    startDate: get(row[idx("startDate")]),
-    endDate: get(row[idx("endDate")]),
-    type: get(row[idx("type")]) || "Other",
-    notes: get(row[idx("notes")]),
+    startDate: get(idx("startDate")),
+    endDate: get(idx("endDate")),
+    type: get(idx("type")) || "Other",
+    notes: get(idx("notes")),
   };
 }
 
@@ -99,13 +99,13 @@ function rowToSuggestion(row) {
   const idx = (name) => SUGGESTIONS_HEADERS.indexOf(name);
   const payload = parseJsonSafe(row[idx("requestedPayload")], {});
   return {
-    id: get(row[idx("id")]),
-    personName: get(row[idx("personName")]),
-    personEmailOrHandle: get(row[idx("personEmailOrHandle")]),
-    requestedChangeType: get(row[idx("requestedChangeType")]),
+    id: get(idx("id")),
+    personName: get(idx("personName")),
+    personEmailOrHandle: get(idx("personEmailOrHandle")),
+    requestedChangeType: get(idx("requestedChangeType")),
     requestedPayload: payload,
-    createdAt: get(row[idx("createdAt")]),
-    status: get(row[idx("status")]) || "Pending",
+    createdAt: get(idx("createdAt")),
+    status: get(idx("status")) || "Pending",
   };
 }
 
@@ -113,10 +113,10 @@ function rowToAdminUser(row) {
   const get = (i) => (row[i] != null ? String(row[i]).trim() : "");
   const idx = (name) => ADMIN_USERS_HEADERS.indexOf(name);
   return {
-    id: get(row[idx("id")]),
-    displayName: get(row[idx("displayName")]),
-    email: get(row[idx("email")]),
-    passwordPlaceholder: get(row[idx("passwordPlaceholder")]),
+    id: get(idx("id")),
+    displayName: get(idx("displayName")),
+    email: get(idx("email")),
+    passwordPlaceholder: get(idx("passwordPlaceholder")),
   };
 }
 
