@@ -1,16 +1,20 @@
+import React from "react";
 import { MapPin, Calendar, ChevronRight } from "lucide-react";
 import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { getRoleGradient } from "../styles/roleColors";
+import { cn } from "./ui/utils";
+import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel } from "../utils/cohortLabel";
 
 interface FellowCardProps {
   person: Person;
   nextTravel?: TravelWindow;
-  /** Click anywhere on the card to open the full details modal. */
+  /** Called when "More details" is clicked — opens the full details modal. */
   onSelect?: () => void;
+  /** Optional: when card body is clicked (not "More details"), highlight + scroll only; if not set, card click uses onSelect. */
+  onHighlight?: () => void;
   isHighlighted?: boolean;
 }
 
@@ -18,8 +22,10 @@ export function FellowCard({
   person,
   nextTravel,
   onSelect,
+  onHighlight,
   isHighlighted,
 }: FellowCardProps) {
+  const handleCardClick = () => (onHighlight ?? onSelect)?.();
   const projectTagline = person.shortProjectTagline?.trim();
   const projectFallback = person.isAlumni
     ? "Alumni profile — project details forthcoming."
@@ -38,36 +44,27 @@ export function FellowCard({
   return (
     <Card
       className={`p-4 cursor-pointer transition-all hover:shadow-lg border ${
-        isHighlighted ? "ring-2 ring-teal-500 shadow-lg border-teal-200" : "border-gray-100"
+        isHighlighted ? "ring-2 ring-teal-500 shadow-lg border-teal-200 bg-app-card-highlight" : "border-gray-100 bg-app-card"
       }`}
-      style={{
-        background: isHighlighted 
-          ? 'linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)'
-          : 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)'
-      }}
-      onClick={onSelect}
+      onClick={handleCardClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onSelect?.();
+          handleCardClick();
         }
       }}
-      aria-label={`View full profile for ${person.fullName}`}
+      aria-label={onHighlight ? `Select ${person.fullName}` : `View full profile for ${person.fullName}`}
     >
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>{person.fullName}</h3>
+            <h3 className="text-gray-900 font-heading">{person.fullName}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span
-                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                style={{
-                  background: getRoleGradient(person.roleType),
-                  color: "#374151",
-                }}
+                className={cn("text-xs px-2 py-0.5 rounded-full font-medium", getRolePillClass(person.roleType))}
               >
                 {person.roleType}
               </span>

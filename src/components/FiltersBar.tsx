@@ -1,5 +1,15 @@
-import { useState } from "react";
-import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
+/**
+ * FiltersBar — collapsible search + filter overlay
+ *
+ * Sits at the top of the page, always shows a search bar,
+ * and expands to reveal Programs, Focus Areas, Nodes, Year, and Granularity.
+ *
+ * Intentionally lean: no alumni toggle (year selection implicitly includes
+ * alumni for older cohorts) and no exhaustive city list (search covers cities).
+ */
+
+import React, { useState } from "react";
+import { Search, X, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 import { Filters, RoleType, PrimaryNode, Granularity, TimelineViewMode } from "../types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -28,7 +38,7 @@ const FOCUS_AREAS = [
 ];
 
 const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
-const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node", "Alumni"];
+const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node"];
 
 export function FiltersBar({
   filters,
@@ -40,40 +50,29 @@ export function FiltersBar({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const today = new Date();
   const currentYear = today.getFullYear();
-  // Show all years from 2017 (first fellowship cohort) to next year
   const years = Array.from({ length: currentYear + 2 - 2017 }, (_, i) => 2017 + i);
   const activeBadgeGradient = badgeGradient;
   const activeToggleGradient = activeMultiGradient;
-  const handleAlumniToggle = () => {
-    onFiltersChange({ ...filters, showAlumni: !filters.showAlumni });
-  };
 
   const toggleProgram = (program: RoleType) => {
-    const newPrograms = filters.programs.includes(program)
+    const next = filters.programs.includes(program)
       ? filters.programs.filter((p) => p !== program)
       : [...filters.programs, program];
-    onFiltersChange({ ...filters, programs: newPrograms });
+    onFiltersChange({ ...filters, programs: next });
   };
 
   const toggleFocusTag = (tag: string) => {
-    const newTags = filters.focusTags.includes(tag)
+    const next = filters.focusTags.includes(tag)
       ? filters.focusTags.filter((t) => t !== tag)
       : [...filters.focusTags, tag];
-    onFiltersChange({ ...filters, focusTags: newTags });
+    onFiltersChange({ ...filters, focusTags: next });
   };
 
   const toggleNode = (node: PrimaryNode) => {
-    const newNodes = filters.nodes.includes(node)
+    const next = filters.nodes.includes(node)
       ? filters.nodes.filter((n) => n !== node)
       : [...filters.nodes, node];
-    onFiltersChange({ ...filters, nodes: newNodes });
-  };
-
-  const toggleCity = (city: string) => {
-    const newCities = filters.cities.includes(city)
-      ? filters.cities.filter((c) => c !== city)
-      : [...filters.cities, city];
-    onFiltersChange({ ...filters, cities: newCities });
+    onFiltersChange({ ...filters, nodes: next });
   };
 
   const handleYearChange = (year: number | null) => {
@@ -81,30 +80,17 @@ export function FiltersBar({
   };
 
   const handleGranularityChange = (granularity: Granularity) => {
-    // When switching to Month/Week, ensure reference date is set appropriately
     let newReferenceDate = filters.referenceDate;
-    
     if (granularity === "Month" || granularity === "Week") {
       const refDate = new Date(filters.referenceDate);
-      // If a year is selected, use that year for the reference date
       if (filters.year !== null) {
         refDate.setFullYear(filters.year);
-        // For Month, default to first of the month
-        if (granularity === "Month") {
-          refDate.setMonth(0, 1); // January 1st of selected year
-        }
-        // For Week, default to first week of the year
-        else if (granularity === "Week") {
-          refDate.setMonth(0, 1); // January 1st of selected year
-        }
+        refDate.setMonth(0, 1);
         newReferenceDate = refDate.toISOString();
-      }
-      // If "All Time" is selected, use today's date
-      else {
+      } else {
         newReferenceDate = new Date().toISOString();
       }
     }
-    
     onFiltersChange({ ...filters, granularity, referenceDate: newReferenceDate });
   };
 
@@ -137,19 +123,27 @@ export function FiltersBar({
     filters.focusTags.length > 0 ||
     filters.nodes.length > 0 ||
     filters.cities.length > 0 ||
-    filters.showAlumni === false ||
     filters.year !== defaultYear;
+
+  // Count active non-search filters for badge
+  const activeFilterCount =
+    filters.programs.length +
+    filters.focusTags.length +
+    filters.nodes.length +
+    filters.cities.length +
+    (filters.year !== defaultYear ? 1 : 0);
 
   return (
     <div className="border-b border-gray-200 bg-white relative">
       <div className="px-4 md:px-8 pt-4 md:pt-5 pb-3 md:pb-4">
-        {/* Search Bar - Always Visible */}
-        <div className="flex items-center gap-2 md:gap-3 mb-4">
+        {/* Search + filter toggle */}
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
-              placeholder="Search by name, project, or city..."
+              placeholder="Search…"
+              title="Search by name, project, or city"
               value={filters.search}
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
               className="pl-10 pr-4 py-2 text-sm md:text-base"
@@ -159,11 +153,11 @@ export function FiltersBar({
             onClick={() => setIsCollapsed(!isCollapsed)}
             variant="outline"
             size="sm"
-            className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="border-gray-300 text-gray-700 hover:bg-gray-50 relative"
           >
             {isCollapsed ? (
               <>
-                <ChevronDown className="h-4 w-4 mr-1" />
+                <SlidersHorizontal className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline">Filters</span>
               </>
             ) : (
@@ -172,14 +166,14 @@ export function FiltersBar({
                 <span className="hidden sm:inline">Hide</span>
               </>
             )}
+            {activeFilterCount > 0 && isCollapsed && (
+              <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-teal-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
           </Button>
           {hasActiveFilters && (
-            <Button
-              onClick={clearAllFilters}
-              variant="outline"
-              size="sm"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
+            <Button onClick={clearAllFilters} variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
               <X className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Clear</span>
             </Button>
@@ -187,262 +181,62 @@ export function FiltersBar({
         </div>
       </div>
 
-      {/* Collapsible Filters - Overlay */}
+      {/* Collapsible filter overlay */}
       {!isCollapsed && (
-        <div 
+        <div
           className="absolute left-4 right-4 md:left-8 md:right-8 top-full mt-2 bg-white rounded-xl border border-gray-200/50 shadow-2xl"
-          style={{ 
-            zIndex: Z_INDEX_MODAL_CONTENT,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-          }}
+          style={{ zIndex: Z_INDEX_MODAL_CONTENT, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}
         >
-          <div className="px-4 md:px-8 pt-5 pb-6 md:pb-8 max-h-[70vh] overflow-y-auto">
-            <div className="space-y-5">
-            {/* People: include alumni (toggle off to hide) */}
-            <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                People
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <Badge
-                  onClick={handleAlumniToggle}
-                  className={`cursor-pointer transition-all ${
-                    filters.showAlumni
-                      ? "text-gray-900 shadow-sm border-white/50"
-                      : "text-gray-600 hover:text-gray-900 border-gray-200"
-                  }`}
-                  style={
-                    filters.showAlumni
-                      ? {
-                          background: activeToggleGradient,
-                          border: "1px solid rgba(255, 255, 255, 0.5)",
-                        }
-                      : undefined
-                  }
-                >
-                  Show alumni
-                </Badge>
-              </div>
-            </div>
+          <div className="px-4 md:px-8 pt-5 pb-6 md:pb-8 max-h-[70vh] overflow-y-auto space-y-5">
+            {/* Programs */}
+            <FilterSection label="Programs">
+              {PROGRAMS.map((p) => (
+                <ToggleBadge key={p} active={filters.programs.includes(p)} activeStyle={{ background: getRoleGradient(p), border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => toggleProgram(p)}>
+                  {p}
+                </ToggleBadge>
+              ))}
+            </FilterSection>
 
-            {/* Programs Filter */}
-            <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                Programs
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {PROGRAMS.map((program) => {
-                  const isActive = filters.programs.includes(program);
-                  return (
-                    <Badge
-                      key={program}
-                      onClick={() => toggleProgram(program)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: getRoleGradient(program),
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
-                    >
-                      {program}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Focus Areas */}
+            <FilterSection label="Focus Areas">
+              {FOCUS_AREAS.map((tag) => (
+                <ToggleBadge key={tag} active={filters.focusTags.includes(tag)} activeStyle={{ background: activeBadgeGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => toggleFocusTag(tag)}>
+                  {tag}
+                </ToggleBadge>
+              ))}
+            </FilterSection>
 
-            {/* Focus Areas Filter */}
-            <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                Focus Areas
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {FOCUS_AREAS.map((tag) => {
-                  const isActive = filters.focusTags.includes(tag);
-                  return (
-                    <Badge
-                      key={tag}
-                      onClick={() => toggleFocusTag(tag)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: activeBadgeGradient,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
-                    >
-                      {tag}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Nodes */}
+            <FilterSection label="Nodes">
+              {NODES.map((node) => (
+                <ToggleBadge key={node} active={filters.nodes.includes(node)} activeStyle={{ background: gradientVariant1, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => toggleNode(node)}>
+                  {getNodeLabel(node)}
+                </ToggleBadge>
+              ))}
+            </FilterSection>
 
-            {/* Nodes Filter */}
-            <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                Nodes
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {NODES.map((node) => {
-                  const isActive = filters.nodes.includes(node);
-                  return (
-                    <Badge
-                      key={node}
-                      onClick={() => toggleNode(node)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: gradientVariant1,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
-                    >
-                      {getNodeLabel(node)}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Year */}
+            <FilterSection label="Year">
+              <ToggleBadge active={filters.year === null} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => handleYearChange(null)}>
+                All Time
+              </ToggleBadge>
+              {years.map((y) => (
+                <ToggleBadge key={y} active={filters.year === y} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => handleYearChange(y)}>
+                  {y}
+                </ToggleBadge>
+              ))}
+            </FilterSection>
 
-            {/* Cities Filter */}
-            {availableCities.length > 0 && (
-              <div>
-                <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                  Cities
-                </label>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                  {availableCities.map((city) => {
-                    const isActive = filters.cities.includes(city);
-                    return (
-                      <Badge
-                        key={city}
-                        onClick={() => toggleCity(city)}
-                        className={`cursor-pointer transition-all ${
-                          isActive
-                            ? "text-gray-900 shadow-sm border-white/50"
-                            : "text-gray-600 hover:text-gray-900 border-gray-200"
-                        }`}
-                        style={
-                          isActive
-                            ? {
-                                background: activeBadgeGradient,
-                                border: "1px solid rgba(255, 255, 255, 0.5)",
-                              }
-                            : undefined
-                        }
-                      >
-                        {city}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* Granularity */}
+            <FilterSection label="View Granularity">
+              {(["Year", "Month", "Week"] as Granularity[]).map((g) => (
+                <ToggleBadge key={g} active={filters.granularity === g} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => handleGranularityChange(g)}>
+                  {g}
+                </ToggleBadge>
+              ))}
+            </FilterSection>
 
-            {/* Year and Granularity - Available for both Map and Timeline */}
-            <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                Year
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <Badge
-                  onClick={() => handleYearChange(null)}
-                  className={`cursor-pointer transition-all ${
-                    filters.year === null
-                      ? "text-gray-900 shadow-sm border-white/50"
-                      : "text-gray-600 hover:text-gray-900 border-gray-200"
-                  }`}
-                  style={
-                    filters.year === null
-                      ? {
-                          background: activeToggleGradient,
-                          border: "1px solid rgba(255, 255, 255, 0.5)",
-                        }
-                      : undefined
-                  }
-                >
-                  All Time
-                </Badge>
-                {years.map((year) => {
-                  const isActive = filters.year === year;
-                  return (
-                    <Badge
-                      key={year}
-                      onClick={() => handleYearChange(year)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: activeToggleGradient,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
-                    >
-                      {year}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                View Granularity
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {(["Year", "Month", "Week"] as Granularity[]).map((granularity) => {
-                  const isActive = filters.granularity === granularity;
-                  return (
-                    <Badge
-                      key={granularity}
-                      onClick={() => handleGranularityChange(granularity)}
-                      className={`cursor-pointer transition-all ${
-                        isActive
-                          ? "text-gray-900 shadow-sm border-white/50"
-                          : "text-gray-600 hover:text-gray-900 border-gray-200"
-                      }`}
-                      style={
-                        isActive
-                          ? {
-                              background: activeToggleGradient,
-                              border: "1px solid rgba(255, 255, 255, 0.5)",
-                            }
-                          : undefined
-                      }
-                    >
-                      {granularity}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Reference Date Input - Only for Month/Week views */}
+            {/* Reference date for Month/Week */}
             {(filters.granularity === "Month" || filters.granularity === "Week") && (
               <div>
                 <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
@@ -452,12 +246,9 @@ export function FiltersBar({
                   type="date"
                   value={filters.referenceDate.split("T")[0]}
                   onChange={(e) => {
-                    const selectedDate = new Date(e.target.value + "T00:00:00.000Z");
-                    // If a year is selected, ensure the date stays within that year
-                    if (filters.year !== null) {
-                      selectedDate.setFullYear(filters.year);
-                    }
-                    handleReferenceDateChange(selectedDate.toISOString());
+                    const d = new Date(e.target.value + "T00:00:00.000Z");
+                    if (filters.year !== null) d.setFullYear(filters.year);
+                    handleReferenceDateChange(d.toISOString());
                   }}
                   className="max-w-xs"
                 />
@@ -469,41 +260,16 @@ export function FiltersBar({
               </div>
             )}
 
-            {/* Timeline View Mode - Only for Timeline */}
+            {/* Timeline view mode */}
             {activeTab === "timeline" && (
-              <div>
-                <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">
-                  Timeline View Mode
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {(["person", "location"] as TimelineViewMode[]).map((mode) => {
-                    const isActive = filters.timelineViewMode === mode;
-                    return (
-                      <Badge
-                        key={mode}
-                        onClick={() => handleTimelineViewModeChange(mode)}
-                        className={`cursor-pointer transition-all capitalize ${
-                          isActive
-                            ? "text-gray-900 shadow-sm border-white/50"
-                            : "text-gray-600 hover:text-gray-900 border-gray-200"
-                        }`}
-                        style={
-                          isActive
-                            ? {
-                                background: activeToggleGradient,
-                                border: "1px solid rgba(255, 255, 255, 0.5)",
-                              }
-                            : undefined
-                        }
-                      >
-                        {mode}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </div>
+              <FilterSection label="Timeline View Mode">
+                {(["person", "location"] as TimelineViewMode[]).map((m) => (
+                  <ToggleBadge key={m} active={filters.timelineViewMode === m} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => handleTimelineViewModeChange(m)}>
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </ToggleBadge>
+                ))}
+              </FilterSection>
             )}
-            </div>
           </div>
         </div>
       )}
@@ -511,4 +277,26 @@ export function FiltersBar({
   );
 }
 
+/* ── Helpers ────────────────────────────────────────────────────────── */
 
+const FilterSection: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div>
+    <label className="text-xs md:text-sm font-medium text-gray-700 mb-2.5 block">{label}</label>
+    <div className="flex flex-wrap gap-2">{children}</div>
+  </div>
+);
+
+const ToggleBadge: React.FC<{
+  active: boolean;
+  activeStyle: React.CSSProperties;
+  onClick: () => void;
+  children: React.ReactNode;
+}> = ({ active, activeStyle, onClick, children }) => (
+  <Badge
+    onClick={onClick}
+    className={`cursor-pointer transition-all ${active ? "text-gray-900 shadow-sm border-white/50" : "text-gray-600 hover:text-gray-900 border-gray-200"}`}
+    style={active ? activeStyle : undefined}
+  >
+    {children}
+  </Badge>
+);

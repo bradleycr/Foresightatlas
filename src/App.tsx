@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { AppHeader } from "./components/AppHeader";
-import { FiltersBar } from "./components/FiltersBar";
 import { MapView } from "./components/MapView";
 import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
@@ -11,7 +10,8 @@ import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
-import { BerlinPage } from "./pages/BerlinPage";
+import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
+import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
   buildFullPath,
@@ -73,7 +73,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin"];
+    const knownRoutes = ["/", "/berlin", "/sf"];
     const current = getRoutePath();
     if (!knownRoutes.includes(current)) {
       window.history.replaceState({}, "", buildFullPath("/"));
@@ -121,19 +121,12 @@ export default function App() {
     setHasInitializedFilters(true);
   }, [defaultCohortYear, hasInitializedFilters, people.length]);
 
-  const availableCities = useMemo(() => {
-    const citySet = new Set<string>();
-    people.forEach((p) => { if (p.currentCity) citySet.add(p.currentCity); });
-    travelWindows.forEach((tw) => { if (tw.city) citySet.add(tw.city); });
-    return Array.from(citySet).sort();
-  }, [people, travelWindows]);
-
   // ── Filter logic ───────────────────────────────────────────────────
 
   const filteredPeople = useMemo(() => {
     return people.filter((person) => {
-      if (!filters.showAlumni && person.isAlumni) return false;
-
+      // Year-based filtering: if a year is selected, only show people active in that year.
+      // Alumni are implicitly included when their cohort year range overlaps.
       if (filters.year !== null) {
         const start = person.fellowshipCohortYear;
         const end = person.fellowshipEndYear ?? filters.year;
@@ -230,13 +223,36 @@ export default function App() {
 
   // ── Navigation ─────────────────────────────────────────────────────
 
-  const navigate = (path: string) => {
+  const navigate = useCallback((path: string) => {
     if (path === route) return;
     const fullPath = buildFullPath(path);
     window.history.pushState({}, "", fullPath);
     setRoute(path);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, [route]);
+
+  /**
+   * When "Show on map" is tapped on the programming page, navigate
+   * home and constrain the visible people to those who RSVP'd "going".
+   */
+  const handleShowEventOnMap = useCallback(
+    (_eventId: string, goingPersonIds: string[]) => {
+      if (goingPersonIds.length === 0) return;
+      setMapFilterIds(new Set(goingPersonIds));
+      setActiveTab("map");
+      navigate("/");
+    },
+    [navigate],
+  );
+
+  // ── Map overlay filter (set from programming page) ────────────────
+
+  const [mapFilterIds, setMapFilterIds] = useState<Set<string> | null>(null);
+
+  const mapPeople = useMemo(() => {
+    if (!mapFilterIds) return filteredPeople;
+    return filteredPeople.filter((p) => mapFilterIds.has(p.id));
+  }, [filteredPeople, mapFilterIds]);
 
   // ── Views ──────────────────────────────────────────────────────────
 
@@ -244,27 +260,41 @@ export default function App() {
     <div className="h-screen flex flex-col bg-gray-50">
       <AppHeader
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setMapFilterIds(null);
+        }}
         suggestFormUrl={SUGGEST_FORM_URL}
+        onNavigateNode={(slug) => navigate(`/${slug}`)}
       />
 
-      <FiltersBar
-        filters={filters}
-        onFiltersChange={setFilters}
-        availableCities={availableCities}
-        defaultYear={defaultCohortYear}
-        activeTab={activeTab}
-      />
+      {/* Event filter banner — shown when returning from programming page */}
+      {mapFilterIds && (
+        <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between gap-3">
+          <p className="text-sm text-blue-700">
+            Showing <strong>{mapFilterIds.size}</strong> attendee{mapFilterIds.size !== 1 && "s"} from event RSVP
+          </p>
+          <button
+            onClick={() => setMapFilterIds(null)}
+            className="text-xs text-blue-600 hover:text-blue-800 underline transition-colors"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-hidden">
         {activeTab === "map" ? (
           <MapView
-            filteredPeople={filteredPeople}
+            filteredPeople={mapPeople}
             filteredTravelWindows={filteredTravelWindows}
             timeWindowStart={timeWindowStart}
             timeWindowEnd={timeWindowEnd}
             granularity={filters.granularity}
             onViewPersonDetails={(id) => setSelectedPersonId(id)}
+            filters={filters}
+            onFiltersChange={setFilters}
+            defaultYear={defaultCohortYear}
           />
         ) : (
           <TimelineView
@@ -284,23 +314,21 @@ export default function App() {
     </div>
   );
 
-  const berlinView = (
-    <BerlinPage
-      people={people}
-      travelWindows={travelWindows}
-      isAdmin={false}
-      onAdminLogin={() => {}}
-      onAdminPanel={() => {}}
-      onNavigateHome={() => navigate("/")}
-      onDataRefresh={loadData}
-    />
-  );
+  const nodeSlug = route === "/berlin" ? "berlin" : route === "/sf" ? "sf" : null;
 
-  const isBerlin = route === "/berlin";
+  const programmingView = nodeSlug ? (
+    <NodeProgrammingPage
+      initialNode={nodeSlug as NodeSlug}
+      people={people}
+      onNavigateHome={() => navigate("/")}
+      onNavigateNode={(slug) => navigate(`/${slug}`)}
+      onShowEventOnMap={handleShowEventOnMap}
+    />
+  ) : null;
 
   return (
     <>
-      {isBerlin ? berlinView : homeView}
+      {programmingView ?? homeView}
 
       <PersonDetailModal
         person={people.find((p) => p.id === selectedPersonId) || null}

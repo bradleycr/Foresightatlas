@@ -36,6 +36,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Sync database from Google Sheet
+        env:
+          GOOGLE_SHEETS_API_KEY: ${{ secrets.GOOGLE_SHEETS_API_KEY }}
+          SPREADSHEET_ID: ${{ vars.SPREADSHEET_ID || '1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ' }}
+        run: node scripts/sync-sheet-to-json.js
+
       - name: Build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/

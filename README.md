@@ -15,6 +15,8 @@ Anyone can browse the map and timeline, filter by program type, focus area, or l
 
 You'll need Node.js installed. The app uses a simple Express server for the database (JSON file).
 
+**Environment variables (optional):** For a new environment or integrations (e.g. Supabase), copy `.env.example` to `.env.local` and set any values you need. The app runs without env vars using the default API server and local JSON data.
+
 ```bash
 # Install dependencies
 npm install
@@ -27,7 +29,7 @@ npm run dev:api    # Starts server on port 3001
 npm run dev        # Starts frontend on port 5173
 ```
 
-The app will be available at `http://localhost:5173`. The database is stored in `public/data/database.json`.
+The app will be available at `http://localhost:5173`. The database is stored in `public/data/database.json`. You can use a **Google Sheet** as the source of truth and sync into that file — see [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md).
 
 ## Tech stack
 
