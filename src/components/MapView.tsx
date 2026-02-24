@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-markercluster";
-import { divIcon, LatLngBounds } from "leaflet";
-import { Person, TravelWindow, RoleType } from "../types";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import L, { divIcon, LatLngBounds } from "leaflet";
+import { Person, TravelWindow, RoleType, Filters } from "../types";
 import { FellowCard } from "./FellowCard";
+import { InlineFilters } from "./InlineFilters";
 import { List, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
@@ -20,6 +20,10 @@ interface MapViewProps {
   timeWindowEnd: Date;
   granularity?: "Year" | "Month" | "Week";
   onViewPersonDetails?: (personId: string) => void;
+  /** Filters & setter so the sidebar can host inline quick-filters */
+  filters?: Filters;
+  onFiltersChange?: (f: Filters) => void;
+  defaultYear?: number;
 }
 
 interface MarkerData {
@@ -104,10 +108,11 @@ function FitBounds({ markers, skipIfMarkerSelected }: { markers: MarkerData[]; s
       const paddingRight = Math.round(containerWidth * 0.15);
       
       // Also set a reasonable maxZoom to prevent over-zooming when markers are close
-      map.fitBounds(bounds, { 
-        padding: [paddingTop, paddingRight, paddingBottom, paddingLeft],
-        maxZoom: 12, // Prevent over-zooming for better overview
-        animate: false // Instant fit on initial load for better UX
+      map.fitBounds(bounds, {
+        paddingTopLeft: [paddingLeft, paddingTop],
+        paddingBottomRight: [paddingRight, paddingBottom],
+        maxZoom: 12,
+        animate: false,
       });
       
       // Ensure zoom never goes below minimum after fitBounds
@@ -140,23 +145,27 @@ function FitBounds({ markers, skipIfMarkerSelected }: { markers: MarkerData[]; s
   return null;
 }
 
-// Simple component to zoom to selected marker
-function ZoomToMarker({ marker }: { marker: MarkerData | null }) {
+// Zoom to marker only when user selected from the list (sidebar), not when they clicked the map.
+// Map clicks should just open the popup and keep current zoom.
+function ZoomToMarker({
+  marker,
+  onlyWhenFromList,
+}: {
+  marker: MarkerData | null;
+  onlyWhenFromList: boolean;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    if (marker) {
-      const targetZoom = 8;
-      const finalZoom = Math.max(targetZoom, 2.5);
-      
-      // Simply center on the marker - let popup autoPan handle visibility
-      map.flyTo(
-        [marker.coordinates.lat, marker.coordinates.lng],
-        finalZoom,
-        { duration: 0.5 }
-      );
-    }
-  }, [map, marker]);
+    if (!marker || !onlyWhenFromList) return;
+    const targetZoom = 8;
+    const finalZoom = Math.max(targetZoom, 2.5);
+    map.flyTo(
+      [marker.coordinates.lat, marker.coordinates.lng],
+      finalZoom,
+      { duration: 0.5 }
+    );
+  }, [map, marker, onlyWhenFromList]);
 
   return null;
 }
@@ -254,6 +263,241 @@ const createCustomIcon = (
   });
 };
 
+const escapeHtml = (s: string) =>
+  String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/** Build popup HTML for one marker (location + list of people). */
+function buildPopupHtml(marker: MarkerData): string {
+  const cityCountry = escapeHtml(`${marker.city}, ${marker.country}`);
+  const n = marker.people.length;
+  const peopleWord = n === 1 ? "person" : "people";
+  const rows = marker.people
+    .map(({ person, travelWindow }) => {
+      const name = escapeHtml(person.fullName);
+      const roleGradient = getRoleGradient(person.roleType);
+      const roleStyle = `background:${roleGradient};color:#374151`;
+      const alumni = person.isAlumni ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600 shrink-0">Alumni</span>' : "";
+      const focusTags = person.focusTags
+        .slice(0, 3)
+        .map((tag) => `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`)
+        .join("");
+      const travel =
+        travelWindow &&
+        `<span class="text-[11px] text-gray-500 shrink-0 truncate max-w-[90px]">${escapeHtml(
+          `${new Date(travelWindow.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${new Date(travelWindow.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+        )}</span>`;
+      return `<button type="button" class="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1 cursor-pointer" data-person-id="${escapeHtml(person.id)}">
+        <span class="text-sm font-medium text-gray-900 truncate">${name}</span>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0" style="${roleStyle}">${escapeHtml(person.roleType)}</span>
+          ${alumni}
+          ${focusTags}
+          ${travel || ""}
+        </div>
+      </button>`;
+    })
+    .join("");
+  return `<div class="map-node-popup__inner overflow-hidden bg-white">
+    <div class="map-node-popup__header px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100 shrink-0">
+      <h4 class="font-semibold text-gray-900 text-sm leading-tight sm:text-base font-heading">${cityCountry}</h4>
+      <p class="text-xs text-gray-500 mt-0.5 leading-snug">${n} ${peopleWord} — tap a name to see in list; use More details for full profile</p>
+    </div>
+    <div class="map-node-popup__list overflow-y-auto overscroll-contain pt-px min-h-0">${rows}</div>
+  </div>`;
+}
+
+/**
+ * Renders markers inside a Leaflet MarkerClusterGroup (imperative) so we get
+ * clustering when zoomed out without relying on the broken React wrapper context.
+ */
+function ImperativeMarkerClusters({
+  markers,
+  foresightIcon,
+  onMarkerClick,
+  onPersonClick,
+}: {
+  markers: MarkerData[];
+  foresightIcon: string;
+  onMarkerClick: (marker: MarkerData) => void;
+  onPersonClick: (personId: string) => void;
+}) {
+  const map = useMap();
+  const onPersonClickRef = useRef(onPersonClick);
+  onPersonClickRef.current = onPersonClick;
+
+  useEffect(() => {
+    if (!map || markers.length === 0) return;
+    const ClusterGroup = (L as unknown as { markerClusterGroup: (o?: object) => L.LayerGroup }).markerClusterGroup;
+    if (typeof ClusterGroup !== "function") return;
+
+    type MarkerWithRoles = L.Marker & { __roleTypes?: Set<RoleType>; __markerData?: MarkerData };
+    const group = ClusterGroup({
+      maxClusterRadius: 70,
+      zoomToBoundsOnClick: false, // We handle clusterclick ourselves so single-marker clusters open popup on first click
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      iconCreateFunction(cluster) {
+        const allRoles = new Set<RoleType>();
+        cluster.getAllChildMarkers().forEach((m) => {
+          (m as MarkerWithRoles).__roleTypes?.forEach((t) => allRoles.add(t));
+        });
+        const count = cluster.getChildCount();
+        const background = createRoleBasedBadgeBackground(allRoles);
+        const roles = ROLE_ORDER.filter((r) => allRoles.has(r));
+        const innerColor = roles.length ? ROLE_COLORS[roles[0]].end : "#6d28d9";
+        const sizeClass = count < 10 ? "small" : count < 100 ? "medium" : "large";
+        return L.divIcon({
+          html: `<div class="marker-cluster-role-outer" style="background:${background};border:2px solid white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><div class="marker-cluster-role-inner" style="background:${innerColor};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px">${count}</div></div>`,
+          className: `marker-cluster marker-cluster-${sizeClass} marker-cluster-role`,
+          iconSize: L.point(40, 40),
+          iconAnchor: L.point(20, 20),
+        });
+      },
+    });
+
+    type ClusterLayer = L.Marker & {
+      getChildCount(): number;
+      getAllChildMarkers(): L.Marker[];
+      _childClusters?: ClusterLayer[];
+      _zoom?: number;
+      _childCount?: number;
+      spiderfy(): void;
+      zoomToBounds(): void;
+    };
+
+    const MIN_ZOOM_ON_NODE_CLICK = 10;
+
+    const handleClusterClick = (e: L.LeafletEvent & { layer: ClusterLayer }) => {
+      const cluster = e.layer;
+      const count = cluster.getChildCount();
+      if (count === 1) {
+        const child = cluster.getAllChildMarkers()[0] as MarkerWithRoles;
+        const markerData = child?.__markerData;
+        if (markerData) {
+          const { lat, lng } = markerData.coordinates;
+          const zoom = Math.max(MIN_ZOOM_ON_NODE_CLICK, map.getZoom());
+          map.flyTo([lat, lng], zoom, { duration: 0.4 });
+          (child as L.Marker).openPopup();
+          onMarkerClick(markerData);
+        }
+        return;
+      }
+      let bottomCluster: ClusterLayer = cluster;
+      while (bottomCluster._childClusters?.length === 1) {
+        bottomCluster = bottomCluster._childClusters[0];
+      }
+      const maxZoom = map.getMaxZoom();
+      if (
+        bottomCluster._zoom === maxZoom &&
+        bottomCluster._childCount === cluster.getChildCount()
+      ) {
+        cluster.spiderfy();
+      } else {
+        cluster.zoomToBounds();
+      }
+    };
+
+    group.on("clusterclick", handleClusterClick);
+
+    // Desktop: open popup on hover only when already zoomed in (no zoom on hover). Mobile: click only.
+    const prefersHover = typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
+
+    const openPopupOnClick = (m: L.Marker, data: MarkerData) => {
+      const zoom = Math.max(MIN_ZOOM_ON_NODE_CLICK, map.getZoom());
+      map.flyTo([data.coordinates.lat, data.coordinates.lng], zoom, { duration: 0.3 });
+      m.openPopup();
+      onMarkerClick(data);
+    };
+
+    const openPopupOnHover = (m: L.Marker, data: MarkerData) => {
+      if (map.getZoom() < MIN_ZOOM_ON_NODE_CLICK) return;
+      m.openPopup();
+      onMarkerClick(data);
+    };
+
+    markers.forEach((marker) => {
+      const roleTypes = new Set<RoleType>(marker.people.map((p) => p.person.roleType));
+      const icon = createCustomIcon(marker.people.length, roleTypes, false, foresightIcon);
+      const latLng: L.LatLngExpression = [marker.coordinates.lat, marker.coordinates.lng];
+      const content = document.createElement("div");
+      content.innerHTML = buildPopupHtml(marker);
+      const leafletMarker = L.marker(latLng, { icon }).bindPopup(content, {
+        className: "custom-popup map-node-popup",
+        autoPan: true,
+        autoPanPadding: L.point(24, 48),
+        offset: L.point(0, 10),
+      }) as MarkerWithRoles;
+      leafletMarker.__roleTypes = roleTypes;
+      leafletMarker.__markerData = marker;
+
+      let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+      const scheduleClose = () => {
+        closeTimeout = setTimeout(() => {
+          leafletMarker.closePopup();
+          closeTimeout = null;
+        }, 280);
+      };
+      const cancelClose = () => {
+        if (closeTimeout) {
+          clearTimeout(closeTimeout);
+          closeTimeout = null;
+        }
+      };
+
+      if (prefersHover) {
+        leafletMarker.on("mouseover", () => openPopupOnHover(leafletMarker, marker));
+        leafletMarker.on("mouseout", () => scheduleClose());
+      }
+
+      leafletMarker.on("click", () => {
+        cancelClose();
+        openPopupOnClick(leafletMarker, marker);
+      });
+
+      leafletMarker.on("popupopen", () => {
+        const popupContent = leafletMarker.getPopup()?.getContent();
+        if (popupContent && typeof popupContent !== "string") {
+          const el = popupContent as HTMLElement;
+          const handler = (e: Event) => {
+            const target = (e.target as HTMLElement).closest("[data-person-id]");
+            if (target) {
+              const id = (target as HTMLElement).getAttribute("data-person-id");
+              if (id) onPersonClickRef.current(id);
+            }
+          };
+          el.addEventListener("click", handler);
+          leafletMarker.once("popupclose", () => el.removeEventListener("click", handler));
+        }
+        if (prefersHover) {
+          const popupEl = leafletMarker.getPopup()?.getElement();
+          if (popupEl) {
+            popupEl.addEventListener("mouseenter", cancelClose);
+            popupEl.addEventListener("mouseleave", scheduleClose);
+            leafletMarker.once("popupclose", () => {
+              popupEl.removeEventListener("mouseenter", cancelClose);
+              popupEl.removeEventListener("mouseleave", scheduleClose);
+            });
+          }
+        }
+      });
+      group.addLayer(leafletMarker);
+    });
+
+    map.addLayer(group);
+    return () => {
+      group.off("clusterclick", handleClusterClick);
+      map.removeLayer(group);
+      group.clearLayers();
+    };
+  }, [map, markers, foresightIcon, onMarkerClick]);
+
+  return null;
+}
+
 
 export function MapView({
   filteredPeople,
@@ -262,9 +506,14 @@ export function MapView({
   timeWindowEnd,
   granularity = "Year",
   onViewPersonDetails,
+  filters,
+  onFiltersChange,
+  defaultYear,
 }: MapViewProps) {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
+  /** When true, selection came from the list (sidebar); when false, from map click. Used so we only fly to marker when selecting from list. */
+  const [selectedMarkerFromList, setSelectedMarkerFromList] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
   
@@ -280,6 +529,12 @@ export function MapView({
       setIsSidebarOpen(false);
     }
   }, [isMobile]);
+
+  // Reset selected marker when filtered results change so FitBounds re-runs
+  useEffect(() => {
+    setSelectedMarker(null);
+    setSelectedMarkerFromList(false);
+  }, [filteredPeople]);
 
   // Reverse geocode coordinates to get actual city names (for cases where city data doesn't match coordinates)
   // CRITICAL: We ALWAYS reverse geocode ALL coordinates to ensure popup shows the city where the pin actually is
@@ -615,30 +870,38 @@ export function MapView({
     return personWindows.find((tw) => new Date(tw.startDate) >= new Date());
   };
 
-  // Beautiful helper: open the list and glide directly to the selected fellow
+  // People to show in sidebar: when a location is selected, only that location; otherwise all filtered.
+  const sidebarPeople = useMemo(() => {
+    if (selectedMarker) return selectedMarker.people.map((p) => p.person);
+    return filteredPeople;
+  }, [selectedMarker, filteredPeople]);
+
   const openSidebarAndScrollToPerson = (personId: string) => {
     setSelectedPerson(personId);
     setIsSidebarOpen(true);
-
-    // Wait for the sidebar to render, then scroll smoothly to the card
     requestAnimationFrame(() => {
       const el = personRefs.current[personId];
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
 
+  const clearLocationSelection = () => {
+    setSelectedMarker(null);
+    setSelectedMarkerFromList(false);
+    setSelectedPerson(null);
+  };
 
-  // Shared people list content used in both desktop sidebar and mobile sheet
+  // Shared people list: card click = highlight + scroll; "More details" = open full profile modal.
   const peopleListContent = (
     <>
-      {filteredPeople.length === 0 ? (
+      {sidebarPeople.length === 0 ? (
         <p className="text-center text-gray-500 py-8 text-sm">
-          No people match your filters. Try changing search, year, or filter options.
+          {selectedMarker
+            ? "No people at this location."
+            : "No people match your filters. Try changing search, year, or filter options."}
         </p>
       ) : (
-        filteredPeople.map((person) => (
+        sidebarPeople.map((person) => (
           <div
             key={person.id}
             ref={(el) => {
@@ -649,14 +912,14 @@ export function MapView({
               person={person}
               nextTravel={getNextTravel(person.id)}
               onSelect={() => {
-                // Open the details modal and keep list/map in sync
+                const personMarker = markers.find((m) => m.people.some((p) => p.person.id === person.id));
+                if (personMarker) {
+                  setSelectedMarker(personMarker);
+                  setSelectedMarkerFromList(true);
+                }
                 onViewPersonDetails?.(person.id);
-                openSidebarAndScrollToPerson(person.id);
-                const personMarker = markers.find((m) =>
-                  m.people.some((p) => p.person.id === person.id)
-                );
-                if (personMarker) setSelectedMarker(personMarker);
               }}
+              onHighlight={() => openSidebarAndScrollToPerson(person.id)}
               isHighlighted={selectedPerson === person.id}
             />
           </div>
@@ -692,118 +955,26 @@ export function MapView({
               noWrap={false}
             />
             <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} />
-            <ZoomToMarker marker={selectedMarker} />
+            <ZoomToMarker marker={selectedMarker} onlyWhenFromList={selectedMarkerFromList} />
             <MapResizer isSidebarOpen={isSidebarOpen} />
-            <MarkerClusterGroup
-              maxClusterRadius={70}
-              zoomToBoundsOnClick={true}
-              spiderfyOnMaxZoom={true}
-              showCoverageOnHover={false}
-            >
-            {markers.map((marker, idx) => {
-              // Compare by coordinates to handle cases where multiple markers have same city name
-              const isSelected = selectedMarker && 
-                                Math.abs(selectedMarker.coordinates.lat - marker.coordinates.lat) < 0.001 &&
-                                Math.abs(selectedMarker.coordinates.lng - marker.coordinates.lng) < 0.001;
-              
-              // Extract unique role types present at this location
-              const roleTypes = new Set<RoleType>(
-                marker.people.map(p => p.person.roleType)
-              );
-              
-              const icon = createCustomIcon(marker.people.length, roleTypes, isSelected, foresightIcon);
-
-              return (
-                <Marker
-                  key={`${marker.coordinates.lat},${marker.coordinates.lng}-${idx}`}
-                  position={[marker.coordinates.lat, marker.coordinates.lng]}
-                  icon={icon}
-                  eventHandlers={{
-                    click: () => {
-                      if (isSelected) {
-                        setSelectedMarker(null);
-                        setSelectedPerson(null);
-                      } else {
-                        // Always show popup first: list everyone at this location.
-                        // User then taps a person to open their detail modal.
-                        setSelectedMarker(marker);
-                        setSelectedPerson(null);
-                      }
-                    },
-                  }}
-                >
-                  <Popup 
-                    className="custom-popup map-node-popup"
-                    autoPan={true}
-                    autoPanPadding={[24, 24]}
-                    keepInView={true}
-                  >
-                    <div className="map-node-popup__inner overflow-hidden bg-white">
-                      {/* Compact header: location + count — tight vertical rhythm */}
-                      <div className="px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100">
-                        <h4 
-                          className="font-semibold text-gray-900 text-sm leading-tight sm:text-base" 
-                          style={{ fontFamily: 'var(--font-heading)' }}
-                        >
-                          {marker.city}, {marker.country}
-                        </h4>
-                        <p className="text-xs text-gray-500 mt-0.5 leading-snug">
-                          {marker.people.length} {marker.people.length === 1 ? 'person' : 'people'} — click a name for profile
-                        </p>
-                      </div>
-                      {/* Compact people list: click a row to open that person’s profile modal */}
-                      <div className="max-h-52 overflow-y-auto overscroll-contain pt-px">
-                        {marker.people.map(({ person, travelWindow }) => (
-                          <button
-                            key={person.id}
-                            type="button"
-                            className="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1"
-                            onClick={() => {
-                              openSidebarAndScrollToPerson(person.id);
-                              onViewPersonDetails?.(person.id);
-                            }}
-                            aria-label={`View profile for ${person.fullName}`}
-                          >
-                            <span className="text-sm font-medium text-gray-900 truncate">{person.fullName}</span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0"
-                                style={{
-                                  background: getRoleGradient(person.roleType),
-                                  color: '#374151'
-                                }}
-                              >
-                                {person.roleType}
-                              </span>
-                              {person.isAlumni && (
-                                <span className="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600 shrink-0">
-                                  Alumni
-                                </span>
-                              )}
-                              {person.focusTags.slice(0, 3).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate"
-                                  title={tag}
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                              {travelWindow && (
-                                <span className="text-[11px] text-gray-500 shrink-0 truncate max-w-[90px]">
-                                  {new Date(travelWindow.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–{new Date(travelWindow.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-            </MarkerClusterGroup>
+            <ImperativeMarkerClusters
+              markers={markers}
+              foresightIcon={foresightIcon}
+              onMarkerClick={(marker) => {
+                setSelectedMarker(marker);
+                setSelectedMarkerFromList(false);
+                setSelectedPerson(null);
+                if (!isMobile) setIsSidebarOpen(true);
+              }}
+              onPersonClick={(personId) => {
+                setSelectedPerson(personId);
+                setIsSidebarOpen(true);
+                requestAnimationFrame(() => {
+                  const el = personRefs.current[personId];
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
+            />
           </MapContainer>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-2 px-4 text-center">
@@ -878,26 +1049,34 @@ export function MapView({
       {/* Fellows & Grantees List - desktop sidebar */}
       {!isMobile && isSidebarOpen && (
         <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
-          <div 
-            className="p-4 border-b border-gray-200 flex items-center justify-between relative"
-            style={{
-              background: 'linear-gradient(135deg, #fafafa 0%, #f9fafb 100%)',
-            }}
-          >
-            <div>
-              <h3 className="text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>
-                Fellows & Grantees
-              </h3>
-              <p className="text-sm text-gray-600">{filteredPeople.length} people</p>
+          <div className="p-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="text-gray-900 font-semibold truncate font-heading">
+                  {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {selectedMarker && (
+                  <button
+                    type="button"
+                    onClick={clearLocationSelection}
+                    className="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-1 rounded hover:bg-teal-50"
+                  >
+                    Show all
+                  </button>
+                )}
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900" onClick={() => setIsSidebarOpen(false)}>
+                  Hide list
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-gray-900 relative"
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Hide list
-            </Button>
+            {filters && onFiltersChange && defaultYear !== undefined && (
+              <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} />
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {peopleListContent}
@@ -908,26 +1087,34 @@ export function MapView({
       {/* Mobile: full-screen fellows sheet — below modals so detail modal appears on top */}
       {isMobile && isSidebarOpen && (
         <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_SIDEBAR }}>
-          <div 
-            className="px-6 py-4 border-b border-gray-200 flex items-center justify-between relative gap-3"
-            style={{
-              background: 'linear-gradient(135deg, #fafafa 0%, #f9fafb 100%)',
-            }}
-          >
-            <div className="flex-1 min-w-0">
-              <h3 className="text-gray-900 text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                Fellows & Grantees
-              </h3>
-              <p className="text-sm text-gray-600 mt-0.5">{filteredPeople.length} people</p>
+          <div className="px-4 pt-4 pb-3 border-b border-gray-200 space-y-3 bg-app-sidebar">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
+                  {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedMarker && (
+                  <button
+                    type="button"
+                    onClick={clearLocationSelection}
+                    className="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-1.5 rounded hover:bg-teal-50"
+                  >
+                    Show all
+                  </button>
+                )}
+                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 bg-white/80" onClick={() => setIsSidebarOpen(false)}>
+                  Back to map
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-gray-300 text-gray-700 bg-white/80 relative flex-shrink-0"
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              Back to map
-            </Button>
+            {filters && onFiltersChange && defaultYear !== undefined && (
+              <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} />
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {peopleListContent}

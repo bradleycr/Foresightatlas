@@ -37,7 +37,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { getRoleGradient } from "../styles/roleColors";
+import { cn } from "./ui/utils";
+import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel } from "../utils/cohortLabel";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
@@ -359,7 +360,7 @@ export function PersonDetailModal({
         onClick={onClose}
       >
         <div 
-          className={`person-detail-modal bg-white ${isMobile ? 'rounded-t-2xl rounded-b-none h-full w-full max-h-[100dvh]' : 'rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh]'} overflow-hidden flex flex-col relative`}
+          className={`person-detail-modal bg-[var(--pdm-surface)] ${isMobile ? 'rounded-t-xl rounded-b-none h-full w-full max-h-[100dvh]' : 'rounded-xl w-full max-h-[90vh] max-w-4xl lg:max-w-5xl shadow-xl border border-[var(--pdm-border)]'} overflow-hidden flex flex-col relative`}
           style={{ 
             zIndex: Z_INDEX_MODAL_CONTENT,
             paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : undefined,
@@ -367,491 +368,295 @@ export function PersonDetailModal({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Single scroll area — name, metadata, and all sections scroll as one */}
           <div 
             className="person-detail-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
             style={isMobile ? { paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' } : undefined}
           >
-            <div className="px-4 pt-4 pb-12 md:px-8 md:pt-6 md:pb-12">
-              {/* Toolbar — close, nav, edit at top of scroll */}
-              <div className={`flex items-center justify-end gap-2 ${isMobile ? 'mb-4' : 'mb-6'}`}>
-                {isAdmin && !isEditing && (
-                  <Button
-                    variant="outline"
-                    size={isMobile ? "default" : "sm"}
-                    onClick={handleEdit}
-                    className="border-gray-300 hover:bg-gray-50 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:px-3"
+            <div className="px-5 pt-5 pb-10 sm:px-8 lg:px-10 lg:pt-8 lg:pb-12">
+              {/* Toolbar: nav left, actions right */}
+              <div className="flex items-center justify-between gap-3 mb-8 sm:mb-10">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  {!isEditing && (hasPrevious || hasNext) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handlePrevious}
+                        disabled={!hasPrevious}
+                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0"
+                            aria-label="Previous person"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        disabled={!hasNext}
+                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0"
+                            aria-label="Next person"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {isAdmin && !isEditing && (
+                    <button type="button" onClick={handleEdit} className="person-detail-toolbar-btn flex min-h-[44px] sm:min-h-9 items-center gap-1.5 px-3 sm:px-3">
+                      <Edit className="h-4 w-4 sm:mr-0.5" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                  )}
+                  {isEditing && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving} className="person-detail-toolbar-btn border-[var(--pdm-border)] bg-[var(--pdm-surface)]">
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSavePerson} disabled={isSaving} className="bg-teal-600 hover:bg-teal-700 text-white">
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="person-detail-toolbar-btn-close flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-2.5"
+                    aria-label="Close"
                   >
-                    <Edit className="h-4 w-4 md:mr-1" />
-                    <span className="hidden md:inline">Edit</span>
-                  </Button>
-                )}
-                {isEditing && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleCancel}
-                      disabled={isSaving}
-                      className="border-gray-300 hover:bg-gray-50 min-h-[44px] md:min-h-0 px-4"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleSavePerson}
-                      disabled={isSaving}
-                      className="bg-teal-600 hover:bg-teal-700 min-h-[44px] md:min-h-0 px-4"
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save
-                    </Button>
-                  </>
-                )}
-                {!isEditing && (hasPrevious || hasNext) && (
-                  <div className="flex items-center gap-1 md:gap-2">
-                    <Button
-                      variant="outline"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handlePrevious}
-                      disabled={!hasPrevious}
-                      className="border-gray-300 hover:bg-gray-50 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0"
-                    >
-                      <ChevronLeft className="h-4 w-4 md:h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleNext}
-                      disabled={!hasNext}
-                      className="border-gray-300 hover:bg-gray-50 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0"
-                    >
-                      <ChevronRight className="h-4 w-4 md:h-4" />
-                    </Button>
-                  </div>
-                )}
-                <button
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-1.5 flex items-center justify-center"
-                  aria-label="Close"
-                >
-                  <X className="h-5 w-5 md:h-5" />
-                </button>
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
-              {/* Name */}
-              <div className={`${isMobile ? 'mb-4' : 'mb-5'}`}>
-                {isEditing && editingPerson ? (
-                  <Input
-                    value={editingPerson.fullName}
-                    onChange={(e) =>
-                      setEditingPerson({ ...editingPerson, fullName: e.target.value })
-                    }
-                    className="text-2xl md:text-3xl font-bold"
-                    placeholder="Full Name"
-                  />
-                ) : (
-                  <h2
-                    className="text-2xl md:text-3xl font-bold text-gray-900"
-                    style={{ fontFamily: "var(--font-heading)" }}
-                  >
-                    {displayPerson.fullName}
-                  </h2>
-                )}
-              </div>
-
-              {/* Metadata — role, cohort, focus tags; extra space below via globals .person-detail-content__head */}
-              <div className="person-detail-content__head space-y-4">
-                <div className="flex items-center gap-3 flex-wrap">
+              {/* Name + metadata block */}
+              <header className="person-detail-content__head mb-8 lg:mb-10">
+                <div className="mb-3 sm:mb-4">
+                  {isEditing && editingPerson ? (
+                    <Input
+                      value={editingPerson.fullName}
+                      onChange={(e) => setEditingPerson({ ...editingPerson, fullName: e.target.value })}
+                      className="text-xl sm:text-2xl lg:text-3xl font-bold border-gray-300"
+                      placeholder="Full Name"
+                    />
+                  ) : (
+                    <h2 className="person-detail-title">
+                      {displayPerson.fullName}
+                    </h2>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {isEditing && editingPerson ? (
                     <>
-                      <Select
-                        value={editingPerson.roleType}
-                        onValueChange={(value: RoleType) =>
-                          setEditingPerson({ ...editingPerson, roleType: value })
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
+                      <Select value={editingPerson.roleType} onValueChange={(v: RoleType) => setEditingPerson({ ...editingPerson, roleType: v })}>
+                        <SelectTrigger className="w-28 sm:w-32"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Fellow">Fellow</SelectItem>
                           <SelectItem value="Grantee">Grantee</SelectItem>
                           <SelectItem value="Prize Winner">Prize Winner</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input
-                        type="number"
-                        value={editingPerson.fellowshipCohortYear}
-                        onChange={(e) =>
-                          setEditingPerson({
-                            ...editingPerson,
-                            fellowshipCohortYear: parseInt(e.target.value) || 2024,
-                          })
-                        }
-                        className="w-24"
-                        placeholder="Start year"
-                      />
+                      <Input type="number" value={editingPerson.fellowshipCohortYear} onChange={(e) => setEditingPerson({ ...editingPerson, fellowshipCohortYear: parseInt(e.target.value) || 2024 })} className="w-20" placeholder="Year" />
                       <span className="text-gray-400">–</span>
-                      <Input
-                        type="number"
-                        placeholder="End (optional)"
-                        className="w-24"
-                        value={editingPerson.fellowshipEndYear ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value.trim();
-                          setEditingPerson({
-                            ...editingPerson,
-                            fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null,
-                          });
-                        }}
-                      />
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="isAlumni"
-                          checked={editingPerson.isAlumni}
-                          onChange={(e) =>
-                            setEditingPerson({ ...editingPerson, isAlumni: e.target.checked })
-                          }
-                          className="rounded"
-                        />
-                        <Label htmlFor="isAlumni" className="cursor-pointer text-sm">
-                          Alumni
-                        </Label>
-                      </div>
+                      <Input type="number" placeholder="End" className="w-20" value={editingPerson.fellowshipEndYear ?? ""} onChange={(e) => { const v = e.target.value.trim(); setEditingPerson({ ...editingPerson, fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null }); }} />
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
+                        <input type="checkbox" checked={editingPerson.isAlumni} onChange={(e) => setEditingPerson({ ...editingPerson, isAlumni: e.target.checked })} className="rounded" />
+                        Alumni
+                      </label>
                     </>
                   ) : (
                     <>
-                      <span
-                        className="text-sm px-3 py-1 rounded-full font-medium"
-                        style={{
-                          background: getRoleGradient(displayPerson.roleType),
-                          color: "#374151",
-                        }}
-                      >
+                      <span className={cn("person-detail-pill text-sm font-medium", getRolePillClass(displayPerson.roleType))}>
                         {displayPerson.roleType}
                       </span>
-                      <span className="text-sm text-gray-700">
-                        Cohort {getCohortLabel(displayPerson)}
-                      </span>
-                      {displayPerson.isAlumni && (
-                        <Badge variant="secondary" className="text-xs">
-                          Alumni
-                        </Badge>
-                      )}
+                      <span className="person-detail-pill person-detail-pill-muted">Cohort {getCohortLabel(displayPerson)}</span>
+                      {displayPerson.isAlumni && <Badge variant="secondary" className="person-detail-badge-pill text-xs">Alumni</Badge>}
                     </>
                   )}
                 </div>
                 {isEditing && editingPerson ? (
-                  <div>
-                    <Label htmlFor="focusTags" className="text-sm font-semibold text-gray-700 mb-2 block">
-                      Focus Tags (comma-separated)
-                    </Label>
+                  <div className="mt-4">
+                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Focus tags (comma-separated)</Label>
                     <Input
-                      id="focusTags"
                       value={editingPerson.focusTags.join(", ")}
-                      onChange={(e) =>
-                        setEditingPerson({
-                          ...editingPerson,
-                          focusTags: e.target.value
-                            .split(",")
-                            .map((tag) => tag.trim())
-                            .filter((tag) => tag.length > 0),
-                        })
-                      }
-                      placeholder="Secure AI, Longevity Biotechnology"
+                      onChange={(e) => setEditingPerson({ ...editingPerson, focusTags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
+                      placeholder="e.g. Longevity, AI"
                     />
                   </div>
                 ) : (
                   displayPerson.focusTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {displayPerson.focusTags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-sm">
-                          {tag}
-                        </Badge>
+                        <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal">{tag}</Badge>
                       ))}
                     </div>
                   )
                 )}
-              </div>
+              </header>
 
-              {/* Project — first content section */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700">Project</h3>
-              {isEditing && editingPerson ? (
-                <>
-                  <Input
-                    value={editingPerson.shortProjectTagline}
-                    onChange={(e) =>
-                      setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })
-                    }
-                    placeholder="Short project tagline"
-                    className="mb-3"
-                  />
-                  <Textarea
-                    value={editingPerson.expandedProjectDescription}
-                    onChange={(e) =>
-                      setEditingPerson({
-                        ...editingPerson,
-                        expandedProjectDescription: e.target.value,
-                      })
-                    }
-                    rows={4}
-                    placeholder="Expanded project description"
-                  />
-                  <Label className="text-sm font-semibold text-gray-700 mt-3 block">Affiliation / Institution</Label>
-                  <Input
-                    value={editingPerson.affiliationOrInstitution ?? ""}
-                    onChange={(e) =>
-                      setEditingPerson({
-                        ...editingPerson,
-                        affiliationOrInstitution: e.target.value.trim() || null,
-                      })
-                    }
-                    placeholder="University, company, or institution"
-                    className="mt-1"
-                  />
-                </>
-              ) : (
-                <>
-                  <p className="text-base text-gray-900 font-medium mb-3">
-                    {displayPerson.shortProjectTagline}
-                  </p>
-                  {displayPerson.expandedProjectDescription && (
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {displayPerson.expandedProjectDescription}
-                    </p>
-                  )}
-                  {(displayPerson.affiliationOrInstitution ?? "").trim() && (
-                    <p className="text-sm text-gray-500 mt-2">
-                      {displayPerson.affiliationOrInstitution}
-                    </p>
-                  )}
-                </>
-              )}
-            </section>
-
-            {/* Location & Primary Node */}
-            <section>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Location
-                  </h3>
+              {/* Main content: 2-col on desktop, single col on mobile */}
+              <div className="person-detail-grid grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,320px)] gap-8 lg:gap-10">
+                {/* Left: Project */}
+                <section className="person-detail-section space-y-3">
+                  <h3 className="person-detail-section-title">Project</h3>
                   {isEditing && editingPerson ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editingPerson.currentCity}
-                        onChange={(e) =>
-                          setEditingPerson({ ...editingPerson, currentCity: e.target.value })
-                        }
-                        placeholder="City"
-                      />
-                      <Input
-                        value={editingPerson.currentCountry}
-                        onChange={(e) =>
-                          setEditingPerson({ ...editingPerson, currentCountry: e.target.value })
-                        }
-                        placeholder="Country"
-                      />
+                    <div className="space-y-3">
+                      <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
+                      <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="Full description" />
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
+                        <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value.trim() || null })} placeholder="Institution or company" className="mt-1" />
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-900">
-                      {displayPerson.currentCity}, {displayPerson.currentCountry}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Primary Node</h3>
-                  {isEditing && editingPerson ? (
-                    <Select
-                      value={editingPerson.primaryNode}
-                      onValueChange={(value: PrimaryNode) =>
-                        setEditingPerson({ ...editingPerson, primaryNode: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Global">Global</SelectItem>
-                        <SelectItem value="Berlin Node">Berlin Node</SelectItem>
-                        <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
-                        <SelectItem value="Alumni">Alumni</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-gray-900">
-                      {displayPerson.primaryNode === "Alumni" ? "—" : getNodeLabel(displayPerson.primaryNode)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Travel & Residencies */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Travel & Residencies ({personTravelWindows.length})
-                </h3>
-                {isEditing && isAdmin && (
-                  <Button
-                    size="sm"
-                    onClick={handleAddTravelWindow}
-                    className="bg-teal-600 hover:bg-teal-700"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Travel Window
-                  </Button>
-                )}
-              </div>
-              {editingTravelWindow ? (
-                <TravelWindowEditForm
-                  travelWindow={editingTravelWindow}
-                  onChange={setEditingTravelWindow}
-                  onSave={handleSaveTravelWindow}
-                  onCancel={() => setEditingTravelWindow(null)}
-                  isSaving={isSaving}
-                />
-              ) : (
-                <div className="space-y-4">
-                  {personTravelWindows.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">No travel windows</p>
-                  ) : (
-                    personTravelWindows.map((tw) => (
-                      <div
-                        key={tw.id}
-                        className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4 mb-3">
-                          <div className="flex-1">
-                            <h4 className="text-base font-semibold text-gray-900 mb-1">
-                              {tw.title}
-                            </h4>
-                            <p className="text-sm text-gray-700">
-                              {tw.city}, {tw.country}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs flex-shrink-0">
-                              {tw.type}
-                            </Badge>
-                            {isEditing && isAdmin && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleEditTravelWindow(tw)}
-                                  className="h-7 w-7 p-0"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeleteTravelWindow(tw)}
-                                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </>
+                    <div className="space-y-2">
+                      {(() => {
+                        const tagline = (displayPerson.shortProjectTagline ?? "").trim();
+                        const expanded = (displayPerson.expandedProjectDescription ?? "").trim();
+                        const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
+                        const showTagline = tagline && !taglineIsPrefix;
+                        const showExpanded = expanded || tagline;
+                        return (
+                          <>
+                            {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
+                            {showExpanded && (
+                              <p className="person-detail-body leading-relaxed">
+                                {taglineIsPrefix ? expanded : (expanded || tagline)}
+                              </p>
                             )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDateRange(tw.startDate, tw.endDate)}</span>
-                        </div>
-                        {tw.notes && (
-                          <p className="text-sm text-gray-600 mt-3 italic">{tw.notes}</p>
-                        )}
+                            {(displayPerson.affiliationOrInstitution ?? "").trim() && (
+                              <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </section>
+
+                {/* Right: Location, Node, Contact — sidebar on desktop */}
+                <div className="person-detail-sidebar space-y-6 lg:space-y-7">
+                  <section className="person-detail-section">
+                    <h3 className="person-detail-section-title flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      Location
+                    </h3>
+                    {isEditing && editingPerson ? (
+                      <div className="space-y-2">
+                        <Input value={editingPerson.currentCity} onChange={(e) => setEditingPerson({ ...editingPerson, currentCity: e.target.value })} placeholder="City" />
+                        <Input value={editingPerson.currentCountry} onChange={(e) => setEditingPerson({ ...editingPerson, currentCountry: e.target.value })} placeholder="Country" />
                       </div>
-                    ))
+                    ) : (
+                      <p className="person-detail-body">{displayPerson.currentCity}, {displayPerson.currentCountry}</p>
+                    )}
+                  </section>
+                  <section className="person-detail-section">
+                    <h3 className="person-detail-section-title">Primary Node</h3>
+                    {isEditing && editingPerson ? (
+                      <Select value={editingPerson.primaryNode} onValueChange={(v: PrimaryNode) => setEditingPerson({ ...editingPerson, primaryNode: v })}>
+                        <SelectTrigger className="rounded-[var(--pdm-radius-sm)] border-[var(--pdm-border)] bg-[#fafafa]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Global">Global</SelectItem>
+                          <SelectItem value="Berlin Node">Berlin Node</SelectItem>
+                          <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
+                          <SelectItem value="Alumni">Alumni</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="person-detail-body">{displayPerson.primaryNode === "Alumni" ? "—" : getNodeLabel(displayPerson.primaryNode)}</p>
+                    )}
+                  </section>
+                  <section className="person-detail-section person-detail-divider">
+                    <h3 className="person-detail-section-title mb-3">Contact & Links</h3>
+                    {isEditing && editingPerson ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs text-gray-600">Contact</Label>
+                          <Input value={editingPerson.contactUrlOrHandle || ""} onChange={(e) => setEditingPerson({ ...editingPerson, contactUrlOrHandle: e.target.value || null })} placeholder="Email or @handle" className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600">Profile URL</Label>
+                          <Input type="url" value={editingPerson.profileUrl} onChange={(e) => setEditingPerson({ ...editingPerson, profileUrl: e.target.value })} placeholder="https://..." className="mt-1" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {displayPerson.contactUrlOrHandle && (
+                          <a
+                            href={displayPerson.contactUrlOrHandle.startsWith("@") ? `https://twitter.com/${displayPerson.contactUrlOrHandle.slice(1)}` : displayPerson.contactUrlOrHandle.startsWith("http") ? displayPerson.contactUrlOrHandle : `mailto:${displayPerson.contactUrlOrHandle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="person-detail-link-primary min-h-[44px] sm:min-h-[40px]"
+                          >
+                            {displayPerson.contactUrlOrHandle.includes("@") && !displayPerson.contactUrlOrHandle.startsWith("@") ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                            {displayPerson.contactUrlOrHandle.startsWith("@") ? displayPerson.contactUrlOrHandle : "Contact"}
+                          </a>
+                        )}
+                        <a
+                          href="https://foresight.org"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
+                        >
+                          <Globe className="h-4 w-4" />
+                          Foresight.org
+                        </a>
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </div>
+
+              {/* Travel — full width below grid */}
+              <section className="person-detail-section mt-8 lg:mt-10 person-detail-divider">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h3 className="person-detail-section-title flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    Travel & Residencies ({personTravelWindows.length})
+                  </h3>
+                  {isEditing && isAdmin && (
+                    <Button size="sm" onClick={handleAddTravelWindow} className="bg-teal-600 hover:bg-teal-700">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
                   )}
                 </div>
-              )}
-            </section>
-
-            {/* Contact — border then padding */}
-            <section 
-              className="border-t border-gray-200 pt-6 pb-8 md:pt-8 md:pb-8" 
-              style={isMobile ? { paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px) + 1rem)' } : undefined}
-            >
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact & Links</h3>
-              {isEditing && editingPerson ? (
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="contact">Contact/Handle</Label>
-                    <Input
-                      id="contact"
-                      value={editingPerson.contactUrlOrHandle || ""}
-                      onChange={(e) =>
-                        setEditingPerson({
-                          ...editingPerson,
-                          contactUrlOrHandle: e.target.value || null,
-                        })
-                      }
-                      placeholder="@username or email"
-                    />
+                {editingTravelWindow ? (
+                  <TravelWindowEditForm travelWindow={editingTravelWindow} onChange={setEditingTravelWindow} onSave={handleSaveTravelWindow} onCancel={() => setEditingTravelWindow(null)} isSaving={isSaving} />
+                ) : (
+                  <div className="space-y-3">
+                    {personTravelWindows.length === 0 ? (
+                      <p className="text-sm text-gray-500 italic">No travel windows</p>
+                    ) : (
+                      personTravelWindows.map((tw) => (
+                        <div key={tw.id} className="p-4 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-gray-900">{tw.title}</h4>
+                              <p className="text-sm text-gray-600 mt-0.5">{tw.city}, {tw.country}</p>
+                              <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                <Calendar className="h-3 w-3" />
+                                {formatDateRange(tw.startDate, tw.endDate)}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{tw.type}</Badge>
+                              {isEditing && isAdmin && (
+                                <>
+                                  <Button size="sm" variant="outline" onClick={() => handleEditTravelWindow(tw)} className="h-8 w-8 p-0"><Edit className="h-3 w-3" /></Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleDeleteTravelWindow(tw)} className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"><Trash2 className="h-3 w-3" /></Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {tw.notes && <p className="text-sm text-gray-600 mt-3 italic">{tw.notes}</p>}
+                        </div>
+                      ))
+                    )}
                   </div>
-                  <div>
-                    <Label htmlFor="profileUrl">Profile URL</Label>
-                    <Input
-                      id="profileUrl"
-                      type="url"
-                      value={editingPerson.profileUrl}
-                      onChange={(e) =>
-                        setEditingPerson({ ...editingPerson, profileUrl: e.target.value })
-                      }
-                      placeholder="https://foresight.org/fellow/..."
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {displayPerson.contactUrlOrHandle && (
-                    <a
-                      href={
-                        displayPerson.contactUrlOrHandle.startsWith("@")
-                          ? `https://twitter.com/${displayPerson.contactUrlOrHandle.slice(1)}`
-                          : displayPerson.contactUrlOrHandle.startsWith("http")
-                          ? displayPerson.contactUrlOrHandle
-                          : `mailto:${displayPerson.contactUrlOrHandle}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700"
-                    >
-                      {displayPerson.contactUrlOrHandle.includes("@") && 
-                       !displayPerson.contactUrlOrHandle.startsWith("@") ? (
-                        <Mail className="h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                      {displayPerson.contactUrlOrHandle.startsWith("@")
-                        ? displayPerson.contactUrlOrHandle
-                        : "Contact"}
-                    </a>
-                  )}
-                  <a
-                    href="https://foresight.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700"
-                  >
-                    <Globe className="h-4 w-4" />
-                    Foresight.org
-                  </a>
-                </div>
-              )}
-            </section>
+                )}
+              </section>
 
-              {/* Spacer for extra scrollable space */}
-              <div className="h-24 md:h-32" aria-hidden />
+              <div className="h-12 lg:h-16" aria-hidden />
             </div>
           </div>
         </div>

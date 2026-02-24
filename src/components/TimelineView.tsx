@@ -1034,7 +1034,7 @@ export function TimelineView({
                 {/* Day of week headers (Sun-Sat) - Beautiful horizontal row */}
                 <div className="flex border-b border-gray-200">
                   <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-300 flex-shrink-0 bg-white flex items-center">
-                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide font-heading">
                       {timelineViewMode === "person" ? "Person" : "Location"}
                     </h3>
                   </div>
@@ -1089,7 +1089,7 @@ export function TimelineView({
               <div className="flex">
                 {/* Column Header */}
                 <div className="w-32 sm:w-40 p-2 sm:p-3 border-r-2 border-gray-300 flex-shrink-0 bg-white">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide font-heading">
                     {timelineViewMode === "person" ? "Person" : "Location"}
                   </h3>
                 </div>
@@ -1466,7 +1466,7 @@ export function TimelineView({
               {/* Day of week headers (Sun-Sat) - Beautiful horizontal row */}
               <div className="flex border-b border-gray-200">
                 <div className="w-64 p-4 border-r-2 border-gray-300 bg-white flex items-center sticky left-0 z-30 shadow-sm">
-                  <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm font-heading">
                     {timelineViewMode === "person" ? "Person" : "Location"}
                   </h3>
                 </div>
@@ -1520,7 +1520,7 @@ export function TimelineView({
           ) : (
             <div className="flex">
               <div className="w-64 p-4 border-r-2 border-gray-300 bg-white sticky left-0 z-30 shadow-sm">
-                <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="text-gray-900 font-semibold uppercase tracking-wide text-sm font-heading">
                   {timelineViewMode === "person" ? "Person" : "Location"}
                 </h3>
               </div>

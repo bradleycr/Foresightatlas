@@ -14,11 +14,21 @@ export const ROLE_COLORS: Record<RoleType, { start: string; end: string }> = {
 
 /**
  * Primary gradient for a single role type.
- * Use this for pills, chips, and single-role elements.
+ * Prefer getRolePillClass() so styling stays in CSS; use this only when class isn't possible.
  */
 export const getRoleGradient = (role: RoleType): string => {
   const color = ROLE_COLORS[role];
   return `linear-gradient(135deg, ${color.start} 0%, ${color.end} 100%)`;
+};
+
+/** Tailwind-compatible class for role pills (single source of truth: globals.css .role-pill-*) */
+export const getRolePillClass = (role: RoleType): string => {
+  const map: Record<RoleType, string> = {
+    Fellow: "role-pill-fellow",
+    Grantee: "role-pill-grantee",
+    "Prize Winner": "role-pill-prize",
+  };
+  return map[role] ?? "role-pill-fellow";
 };
 
 
