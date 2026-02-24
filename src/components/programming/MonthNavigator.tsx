@@ -1,10 +1,9 @@
 /**
- * MonthNavigator — simple month filter.
- * All months look the same; only selected state changes. No extra styling.
+ * MonthNavigator — full-year calendar grid with density visualization.
+ * Replaces the cramped horizontal scroll strip with a spacious 4×3 grid
+ * (3×4 on small screens) that gives an at-a-glance view of the year.
  */
 
-import { useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../ui/utils";
 
 interface MonthNavigatorProps {
@@ -32,98 +31,105 @@ export function MonthNavigator({
   counts,
   onChange,
 }: MonthNavigatorProps) {
-  const stripRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (selected === null) return;
-    const strip = stripRef.current;
-    if (!strip) return;
-    const btn = strip.querySelector<HTMLButtonElement>(`[data-month="${selected}"]`);
-    btn?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-  }, [selected]);
-
-  const step = (dir: -1 | 1) => {
-    if (selected === null) onChange(dir === 1 ? 0 : 11);
-    else {
-      const next = selected + dir;
-      if (next >= 0 && next <= 11) onChange(next);
-    }
-  };
+  const peak = Math.max(...counts, 1);
+  const now = new Date();
+  const currentMonth = now.getFullYear() === year ? now.getMonth() : -1;
+  const totalEvents = counts.reduce((a, b) => a + b, 0);
 
   return (
     <div className="space-y-5">
+      {/* Header row */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          {year}
-        </span>
-        {selected !== null && (
-          <button
-            onClick={() => onChange(null)}
-            className="text-xs font-medium text-teal-600 hover:text-teal-800"
-          >
-            Show all upcoming
-          </button>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => step(-1)}
-          disabled={selected === 0}
-          aria-label="Previous month"
-          className={cn(
-            "flex-shrink-0 size-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500",
-          )}
-        >
-          <ChevronLeft className="size-4" />
-        </button>
-
-        <div
-          ref={stripRef}
-          className="flex-1 flex gap-2 overflow-x-auto scrollbar-none"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {MONTHS.map((_, i) => {
-            const on = selected === i;
-            return (
-              <button
-                key={SHORT[i]}
-                data-month={i}
-                onClick={() => onChange(on ? null : i)}
-                aria-pressed={on}
-                className={cn(
-                  "flex-shrink-0 rounded-lg border text-left transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500",
-                  "min-w-[4.5rem] min-h-[4rem] px-4 py-3.5 flex flex-col justify-center gap-0.5",
-                  on ? "month-nav-selected" : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50",
-                )}
-              >
-                <span className="text-xs font-medium">{SHORT[i]}</span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {counts[i]}
-                </span>
-              </button>
-            );
-          })}
+        <div className="flex items-baseline gap-3">
+          <span className="text-lg font-semibold text-gray-900 tabular-nums">{year}</span>
+          <span className="text-sm text-gray-400">{totalEvents} events</span>
         </div>
-
         <button
-          onClick={() => step(1)}
-          disabled={selected === 11}
-          aria-label="Next month"
+          onClick={() => onChange(null)}
           className={cn(
-            "flex-shrink-0 size-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500",
+            "text-sm font-medium px-3 py-1.5 rounded-lg transition-all",
+            selected === null
+              ? "bg-teal-50 text-teal-700"
+              : "text-teal-600 hover:bg-teal-50/60 hover:text-teal-700",
           )}
         >
-          <ChevronRight className="size-4" />
+          All upcoming
         </button>
       </div>
 
+      {/* Month grid: 4 columns on sm+, 3 on mobile */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5">
+        {MONTHS.map((_, i) => {
+          const isSelected = selected === i;
+          const isCurrent = i === currentMonth;
+          const hasEvents = counts[i] > 0;
+          const density = counts[i] / peak;
+
+          return (
+            <button
+              key={SHORT[i]}
+              onClick={() => onChange(isSelected ? null : i)}
+              aria-pressed={isSelected}
+              className={cn(
+                "relative rounded-xl px-3 py-3.5 flex flex-col items-center gap-2 transition-all duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1",
+                isSelected
+                  ? "bg-teal-600 text-white shadow-md shadow-teal-200/50 scale-[1.02]"
+                  : hasEvents
+                    ? "bg-white border border-gray-200 hover:border-teal-200 hover:shadow-sm hover:bg-teal-50/30"
+                    : "bg-gray-50/80 border border-gray-100 text-gray-400 hover:bg-gray-50",
+              )}
+            >
+              {/* Current month dot */}
+              {isCurrent && !isSelected && (
+                <div className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-teal-500" />
+              )}
+
+              <span className={cn(
+                "text-xs font-semibold tracking-wide",
+                isSelected ? "text-teal-100" : hasEvents ? "text-gray-500" : "text-gray-400",
+              )}>
+                {SHORT[i]}
+              </span>
+
+              {/* Event count */}
+              <span className={cn(
+                "text-xl font-bold tabular-nums leading-none",
+                isSelected
+                  ? "text-white"
+                  : hasEvents
+                    ? "text-gray-900"
+                    : "text-gray-300",
+              )}>
+                {counts[i]}
+              </span>
+
+              {/* Density bar */}
+              <div className={cn(
+                "w-full h-1 rounded-full overflow-hidden",
+                isSelected ? "bg-teal-500/40" : "bg-gray-100",
+              )}>
+                {hasEvents && (
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300",
+                      isSelected ? "bg-white/80" : "bg-teal-400",
+                    )}
+                    style={{ width: `${Math.max(density * 100, 12)}%` }}
+                  />
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected month label */}
       {selected !== null && (
-        <p className="text-sm text-gray-500 pt-1">
-          {MONTHS[selected]} · {counts[selected]} event{counts[selected] !== 1 ? "s" : ""}
+        <p className="text-sm text-gray-500">
+          <span className="font-medium text-gray-700">{MONTHS[selected]}</span>
+          {" · "}
+          {counts[selected]} event{counts[selected] !== 1 ? "s" : ""}
         </p>
       )}
     </div>

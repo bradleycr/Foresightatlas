@@ -1,10 +1,10 @@
 /**
- * Three-state RSVP toggle: Going · Interested · Can't go.
- * Tapping the active status deselects it (returns null).
- * Counts are shown inline when available.
+ * RSVPButtonGroup — clean, modern three-state toggle.
+ * Active states use soft fills with clear feedback.
+ * Tapping the active status deselects it.
  */
 
-import { Check, Star, Minus } from "lucide-react";
+import { Check, Star, X } from "lucide-react";
 import { RSVPStatus } from "../../types/events";
 import { cn } from "../ui/utils";
 
@@ -20,31 +20,29 @@ const CHOICES: {
   status: RSVPStatus;
   label: string;
   Icon: typeof Check;
-  active: string;
-  hover: string;
+  activeClasses: string;
+  hoverClasses: string;
 }[] = [
   {
     status: "going",
     label: "Going",
     Icon: Check,
-    active: "bg-emerald-50 border-emerald-300 text-emerald-700 shadow-sm",
-    hover:
-      "hover:bg-emerald-50/60 hover:border-emerald-200 hover:text-emerald-700",
+    activeClasses: "bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200",
+    hoverClasses: "hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700",
   },
   {
     status: "interested",
     label: "Interested",
     Icon: Star,
-    active: "bg-amber-50 border-amber-300 text-amber-700 shadow-sm",
-    hover:
-      "hover:bg-amber-50/60 hover:border-amber-200 hover:text-amber-700",
+    activeClasses: "bg-amber-500 border-amber-500 text-white shadow-sm shadow-amber-200",
+    hoverClasses: "hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",
   },
   {
     status: "not-going",
     label: "Can't go",
-    Icon: Minus,
-    active: "bg-gray-100 border-gray-300 text-gray-600 shadow-sm",
-    hover: "hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600",
+    Icon: X,
+    activeClasses: "bg-gray-500 border-gray-500 text-white shadow-sm",
+    hoverClasses: "hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600",
   },
 ];
 
@@ -56,14 +54,12 @@ export function RSVPButtonGroup({
   interestedCount,
 }: RSVPButtonGroupProps) {
   return (
-    <div className="flex flex-wrap gap-3" role="group" aria-label="RSVP">
-      {CHOICES.map(({ status, label, Icon, active, hover }) => {
+    <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP">
+      {CHOICES.map(({ status, label, Icon, activeClasses, hoverClasses }) => {
         const on = currentStatus === status;
         const count =
-          status === "going"
-            ? goingCount
-            : status === "interested"
-              ? interestedCount
+          status === "going" ? goingCount
+            : status === "interested" ? interestedCount
               : undefined;
 
         return (
@@ -73,18 +69,23 @@ export function RSVPButtonGroup({
             disabled={disabled}
             aria-pressed={on}
             className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-150",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-400",
+              "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium border transition-all duration-150",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-teal-400",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               on
-                ? active
-                : `border-gray-200 text-gray-500 bg-white ${hover}`,
+                ? activeClasses
+                : `border-gray-200 text-gray-500 bg-white ${hoverClasses}`,
             )}
           >
-            <Icon className="size-3.5" />
+            <Icon className={cn("size-3.5", on && "drop-shadow-sm")} />
             {label}
             {count !== undefined && count > 0 && (
-              <span className="text-xs opacity-80">({count})</span>
+              <span className={cn(
+                "text-xs tabular-nums ml-0.5",
+                on ? "text-white/80" : "text-gray-400",
+              )}>
+                {count}
+              </span>
             )}
           </button>
         );

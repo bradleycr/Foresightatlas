@@ -1,56 +1,57 @@
 /**
- * EventCard — matches the FellowCard visual language of the main app.
- * White card, subtle border, teal CTA, clean type hierarchy.
+ * EventCard — polished event display with clear visual hierarchy,
+ * color-coded type system, and integrated RSVP controls.
  */
 
 import { useState, useMemo } from "react";
-import { Calendar, MapPin, ChevronDown, Users } from "lucide-react";
+import { Calendar, MapPin, ChevronDown, Users, ExternalLink } from "lucide-react";
 import { NodeEvent, RSVPStatus, RSVPSummary } from "../../types/events";
 import { Person } from "../../types";
 import { RSVPButtonGroup } from "./RSVPButtonGroup";
 import { AttendanceAvatars } from "./AttendanceAvatars";
-import { Badge } from "../ui/badge";
-import { Card } from "../ui/card";
 import { cn } from "../ui/utils";
 
-/* ── type colours (left accent bar only) ────────────────────────────── */
+/* ── type styling system ────────────────────────────────────────────── */
 
-const TYPE_ACCENT: Record<string, string> = {
-  coworking:   "border-l-sky-400",
-  workshop:    "border-l-amber-400",
-  conference:  "border-l-indigo-400",
-  launch:      "border-l-teal-500",
-  "open-house":"border-l-violet-400",
-  demo:        "border-l-orange-400",
-  social:      "border-l-pink-400",
-  flagship:    "border-l-rose-400",
-  other:       "border-l-gray-300",
+const TYPE_CONFIG: Record<string, { accent: string; bg: string; text: string; dot: string }> = {
+  coworking:    { accent: "border-l-sky-400",    bg: "bg-sky-50",    text: "text-sky-700",    dot: "bg-sky-400" },
+  workshop:     { accent: "border-l-amber-400",  bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400" },
+  conference:   { accent: "border-l-indigo-400", bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-400" },
+  launch:       { accent: "border-l-teal-500",   bg: "bg-teal-50",   text: "text-teal-700",   dot: "bg-teal-500" },
+  "open-house": { accent: "border-l-violet-400", bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-400" },
+  demo:         { accent: "border-l-orange-400", bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-400" },
+  social:       { accent: "border-l-pink-400",   bg: "bg-pink-50",   text: "text-pink-700",   dot: "bg-pink-400" },
+  flagship:     { accent: "border-l-rose-400",   bg: "bg-rose-50",   text: "text-rose-700",   dot: "bg-rose-400" },
+  other:        { accent: "border-l-gray-300",   bg: "bg-gray-50",   text: "text-gray-600",   dot: "bg-gray-400" },
 };
 
-const TYPE_BADGE: Record<string, string> = {
-  coworking:   "bg-sky-50 text-sky-700 border-sky-200",
-  workshop:    "bg-amber-50 text-amber-700 border-amber-200",
-  conference:  "bg-indigo-50 text-indigo-700 border-indigo-200",
-  launch:      "bg-teal-50 text-teal-700 border-teal-200",
-  "open-house":"bg-violet-50 text-violet-700 border-violet-200",
-  demo:        "bg-orange-50 text-orange-700 border-orange-200",
-  social:      "bg-pink-50 text-pink-700 border-pink-200",
-  flagship:    "bg-rose-50 text-rose-700 border-rose-200",
-  other:       "bg-gray-50 text-gray-500 border-gray-200",
-};
+function getTypeConfig(type: string) {
+  return TYPE_CONFIG[type] ?? TYPE_CONFIG.other;
+}
 
-/* ── date helpers ────────────────────────────────────────────────────── */
+/* ── date formatting ────────────────────────────────────────────────── */
 
-function fmtDate(startAt: string, endAt: string): string {
+function formatEventDate(startAt: string, endAt: string) {
   const s = new Date(startAt);
   const e = new Date(endAt);
   const sameDay = s.toDateString() === e.toDateString();
-  const d: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
-  const t: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
+
+  const dayOpts: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
+  const timeOpts: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
+
+  const dateStr = s.toLocaleDateString("en-US", dayOpts);
+  const dayNum = s.getDate();
+  const month = s.toLocaleDateString("en-US", { month: "short" });
+  const weekday = s.toLocaleDateString("en-US", { weekday: "short" });
+
   if (sameDay) {
-    return `${s.toLocaleDateString("en-US", d)} · ${s.toLocaleTimeString("en-US", t)} – ${e.toLocaleTimeString("en-US", t)}`;
+    const startTime = s.toLocaleTimeString("en-US", timeOpts);
+    const endTime = e.toLocaleTimeString("en-US", timeOpts);
+    return { dateStr, timeStr: `${startTime} – ${endTime}`, dayNum, month, weekday, multiDay: false };
   }
-  return `${s.toLocaleDateString("en-US", d)} – ${e.toLocaleDateString("en-US", d)}`;
+
+  const endDateStr = e.toLocaleDateString("en-US", dayOpts);
+  return { dateStr, timeStr: endDateStr, dayNum, month, weekday, multiDay: true };
 }
 
 function typeLabel(t: string) {
@@ -79,10 +80,8 @@ export function EventCard({
 }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const accent = TYPE_ACCENT[event.type] ?? TYPE_ACCENT.other;
-  const badgeCls = TYPE_BADGE[event.type] ?? TYPE_BADGE.other;
-  const multiDay =
-    new Date(event.startAt).toDateString() !== new Date(event.endAt).toDateString();
+  const config = getTypeConfig(event.type);
+  const { dayNum, month, weekday, timeStr, multiDay } = formatEventDate(event.startAt, event.endAt);
 
   const goingPeople = useMemo(
     () => allPeople.filter((p) => rsvpSummary.goingPersonIds.includes(p.id)),
@@ -90,88 +89,123 @@ export function EventCard({
   );
 
   return (
-    <Card
+    <div
       className={cn(
-        "p-5 sm:p-6 border-l-4 transition-all hover:shadow-lg border border-gray-100 bg-app-card",
-        accent,
+        "bg-white rounded-xl border border-gray-100 border-l-4 overflow-hidden",
+        "hover:shadow-md hover:border-gray-200 transition-all duration-200",
+        config.accent,
       )}
     >
-      <div className="space-y-5">
-        {/* ── badges ──────────────────────────────────────────── */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Badge variant="outline" className={cn("text-xs font-medium", badgeCls)}>
-            {typeLabel(event.type)}
-          </Badge>
-          {event.visibility === "public" && (
-            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-              Public
-            </Badge>
-          )}
-          {multiDay && (
-            <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-200">
-              Multi-day
-            </Badge>
-          )}
-          {event.capacity !== null && (
-            <span className="text-xs text-gray-500 flex items-center gap-1.5">
-              <Users className="size-3.5" />
-              {event.capacity}
+      <div className="flex gap-0">
+        {/* Date column — visual anchor */}
+        <div className="hidden sm:flex flex-col items-center justify-start pt-6 px-5 flex-shrink-0 min-w-[72px]">
+          <span className="text-xs font-medium text-gray-400 uppercase">{weekday}</span>
+          <span className="text-2xl font-bold text-gray-900 leading-none mt-1">{dayNum}</span>
+          <span className="text-xs font-medium text-gray-400 uppercase mt-0.5">{month}</span>
+        </div>
+
+        {/* Content column */}
+        <div className="flex-1 p-5 sm:pl-0 sm:pr-6 sm:py-5 space-y-4">
+          {/* Top row: type badge + meta */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold",
+              config.bg, config.text,
+            )}>
+              <span className={cn("size-1.5 rounded-full", config.dot)} />
+              {typeLabel(event.type)}
             </span>
-          )}
-        </div>
-
-        {/* ── title ───────────────────────────────────────────── */}
-        <h3 className="text-gray-900 leading-snug mt-0.5 font-heading">
-          {event.title}
-        </h3>
-
-        {/* ── when & where ────────────────────────────────────── */}
-        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-0.5">
-          <span className="flex items-center gap-2 text-sm text-gray-600">
-            <Calendar className="size-4 text-gray-400 flex-shrink-0" />
-            {fmtDate(event.startAt, event.endAt)}
-          </span>
-          <span className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="size-4 text-gray-400 flex-shrink-0" />
-            {event.location}
-          </span>
-        </div>
-
-        {/* ── description ─────────────────────────────────────── */}
-        {event.description && (
-          <div className="space-y-2 mt-0.5">
-            <p className={cn("text-sm text-gray-700 leading-[1.6]", !expanded && "line-clamp-2")}>
-              {event.description}
-            </p>
-            {event.description.length > 100 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors py-0.5"
-              >
-                {expanded ? "Show less" : "Read more"}
-                <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} />
-              </button>
+            {event.visibility === "public" && (
+              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                Public
+              </span>
+            )}
+            {multiDay && (
+              <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-md">
+                Multi-day
+              </span>
+            )}
+            {event.capacity !== null && (
+              <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto">
+                <Users className="size-3.5" />
+                {event.capacity} spots
+              </span>
             )}
           </div>
-        )}
 
-        {/* ── RSVP + attendance ───────────────────────────────── */}
-        <div className="pt-5 mt-1 border-t border-gray-100 space-y-4">
-          {isAuthenticated && (
-            <RSVPButtonGroup
-              currentStatus={currentUserStatus}
-              onStatusChange={(s) => onRSVPChange(event.id, s)}
-              goingCount={rsvpSummary.going}
-              interestedCount={rsvpSummary.interested}
-            />
-          )}
-          {goingPeople.length > 0 && (
-            <div className="pt-1">
-              <AttendanceAvatars people={goingPeople} />
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-gray-900 leading-snug font-heading">
+            {event.title}
+          </h3>
+
+          {/* When & where — compact row */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-gray-500">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="size-3.5 text-gray-400" />
+              {/* Mobile shows inline date */}
+              <span className="sm:hidden">{new Date(event.startAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · </span>
+              {timeStr}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="size-3.5 text-gray-400" />
+              {event.location}
+            </span>
+            {event.externalLink && (
+              <a
+                href={event.externalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-medium"
+              >
+                <ExternalLink className="size-3.5" />
+                Details
+              </a>
+            )}
+          </div>
+
+          {/* Description */}
+          {event.description && (
+            <div>
+              <p className={cn(
+                "text-sm text-gray-600 leading-relaxed",
+                !expanded && "line-clamp-2",
+              )}>
+                {event.description}
+              </p>
+              {event.description.length > 120 && (
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                  {expanded ? "Show less" : "Read more"}
+                  <ChevronDown className={cn("size-3.5 transition-transform duration-200", expanded && "rotate-180")} />
+                </button>
+              )}
             </div>
           )}
+
+          {/* RSVP + attendance */}
+          <div className="pt-4 border-t border-gray-100 space-y-3">
+            {isAuthenticated ? (
+              <RSVPButtonGroup
+                currentStatus={currentUserStatus}
+                onStatusChange={(s) => onRSVPChange(event.id, s)}
+                goingCount={rsvpSummary.going}
+                interestedCount={rsvpSummary.interested}
+              />
+            ) : (
+              rsvpSummary.going === 0 && rsvpSummary.interested === 0 && (
+                <p className="text-xs text-gray-400 italic">
+                  Select your name above to RSVP
+                </p>
+              )
+            )}
+            {goingPeople.length > 0 && (
+              <AttendanceAvatars people={goingPeople} />
+            )}
+          </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

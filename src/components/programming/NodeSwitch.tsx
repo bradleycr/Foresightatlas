@@ -1,6 +1,6 @@
 /**
- * Pill-shaped toggle to switch the active node (Berlin / SF).
- * Mirrors a tab-bar pattern with keyboard support.
+ * NodeSwitch — translucent pill toggle for hero placement.
+ * Designed to sit on top of gradient backgrounds.
  */
 
 import { NodeSlug } from "../../types/events";
@@ -15,7 +15,7 @@ interface NodeSwitchProps {
 export function NodeSwitch({ activeNode, onChange }: NodeSwitchProps) {
   return (
     <div
-      className="inline-flex rounded-xl bg-gray-100 p-1 gap-1"
+      className="inline-flex rounded-full bg-white/15 backdrop-blur-sm p-1 gap-0.5 border border-white/20"
       role="tablist"
     >
       {NODES.map((node) => {
@@ -27,11 +27,11 @@ export function NodeSwitch({ activeNode, onChange }: NodeSwitchProps) {
             aria-selected={on}
             onClick={() => onChange(node.slug)}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400",
+              "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
               on
-                ? "bg-white shadow-sm text-gray-900"
-                : "text-gray-500 hover:text-gray-700 hover:bg-white/50",
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-white/80 hover:text-white hover:bg-white/10",
             )}
           >
             {node.city}

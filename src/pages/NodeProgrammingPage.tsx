@@ -1,16 +1,13 @@
 /**
- * Node Programming Page
+ * Node Programming Page — the events hub for each Foresight node.
  *
- * Visual language deliberately matches the main Fellows Map app:
- * white cards, subtle borders, teal CTA accents, same typography.
- *
- * Primary UX: the MonthNavigator strip is the main filter control.
- * Clicking a month shows all events in that month cleanly.
- * "Show all upcoming" resets to the next-30-days default.
+ * Redesigned with a branded hero, spacious calendar grid, elegant
+ * identity flow, and polished event cards. Optimised for both
+ * quick-glance browsing and deep RSVP interaction.
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { NodeSlug, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode } from "../data/nodes";
@@ -30,9 +27,13 @@ import { NodeSwitch } from "../components/programming/NodeSwitch";
 import { IdentityBanner } from "../components/programming/IdentityBanner";
 import { MonthNavigator } from "../components/programming/MonthNavigator";
 import { EventCard } from "../components/programming/EventCard";
-import { Button } from "../components/ui/button";
 
 const YEAR = 2026;
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 interface NodeProgrammingPageProps {
   initialNode: NodeSlug;
@@ -53,7 +54,6 @@ export function NodeProgrammingPage({
   const [identity, setIdentityState] = useState(() => getIdentity());
   const [rsvpTick, setRsvpTick] = useState(0);
 
-  /* null = upcoming/all; 0–11 = specific month */
   const [selectedMonth, setSelectedMonth] = useState<number | null>(() => {
     const now = new Date();
     return now.getFullYear() === YEAR ? now.getMonth() : 0;
@@ -63,7 +63,7 @@ export function NodeProgrammingPage({
   const allEvents = useMemo(() => getEventsByNode(activeNode), [activeNode]);
   const isAuthed = identity !== null;
 
-  /* ── counts per month (for the navigator strip) ───────────────── */
+  /* ── counts per month ─────────────────────────────────────────── */
   const monthlyCounts = useMemo(() => {
     const c = new Array(12).fill(0) as number[];
     for (const ev of allEvents) {
@@ -73,10 +73,9 @@ export function NodeProgrammingPage({
     return c;
   }, [allEvents]);
 
-  /* ── filtered events based on selected month ──────────────────── */
+  /* ── filtered events ──────────────────────────────────────────── */
   const filteredEvents = useMemo(() => {
     if (selectedMonth === null) {
-      /* "upcoming" — next 90 days */
       const now = Date.now();
       const cut = now + 90 * 24 * 60 * 60 * 1000;
       return allEvents.filter((e) => {
@@ -90,8 +89,7 @@ export function NodeProgrammingPage({
     });
   }, [allEvents, selectedMonth]);
 
-  /* ── identity ─────────────────────────────────────────────────── */
-
+  /* ── identity handlers ────────────────────────────────────────── */
   const handleIdentitySelect = useCallback((personId: string, fullName: string) => {
     persistIdentity(personId, fullName);
     setIdentityState({ personId, fullName, selectedAt: new Date().toISOString() });
@@ -102,8 +100,7 @@ export function NodeProgrammingPage({
     setIdentityState(null);
   }, []);
 
-  /* ── RSVP ─────────────────────────────────────────────────────── */
-
+  /* ── RSVP handlers ────────────────────────────────────────────── */
   const handleRSVPChange = useCallback(
     (eventId: string, status: RSVPStatus | null) => {
       if (!identity) return;
@@ -129,7 +126,6 @@ export function NodeProgrammingPage({
   );
 
   /* ── node switch ──────────────────────────────────────────────── */
-
   const handleNodeChange = useCallback(
     (slug: NodeSlug) => {
       setActiveNode(slug);
@@ -138,40 +134,48 @@ export function NodeProgrammingPage({
     [onNavigateNode],
   );
 
-  /* ── render ───────────────────────────────────────────────────── */
+  /* ── section label ────────────────────────────────────────────── */
+  const sectionLabel = selectedMonth === null
+    ? "Upcoming Events"
+    : `${MONTH_NAMES[selectedMonth]} Events`;
 
   const emptyState = filteredEvents.length === 0;
 
   return (
-    <div className="min-h-screen text-gray-900 bg-app-card">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* ── Hero section ──────────────────────────────────────── */}
+      <div className={`bg-gradient-to-br ${node.gradient} relative overflow-hidden`}>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-10 sm:pt-8 sm:pb-14 relative">
+          {/* Nav row */}
+          <div className="flex items-center justify-between gap-4 mb-8 sm:mb-10">
+            <button
+              onClick={onNavigateHome}
+              className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="size-4" />
+              <span className="hidden sm:inline">Back to map</span>
+            </button>
+            <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} />
+          </div>
 
-        {/* ── nav bar ─────────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-4 mb-10">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onNavigateHome}
-            className="text-gray-500 hover:text-gray-900 -ml-2 gap-2"
-          >
-            <ArrowLeft className="size-4" />
-            Back to map
-          </Button>
-          <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} />
+          {/* Title */}
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight font-heading">
+              {node.city} Programming
+            </h1>
+            <p className="text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
+              {node.description}
+            </p>
+          </div>
         </div>
+      </div>
 
-        {/* ── page heading ────────────────────────────────────── */}
-        <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-teal-600 mb-2">
-            {node.name}
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-semibold leading-tight text-gray-900 font-heading">
-            Programming
-          </h1>
-        </div>
+      {/* ── Main content ──────────────────────────────────────── */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
 
-        {/* ── month navigator ─────────────────────────────────── */}
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8 mb-10">
+        {/* Calendar card */}
+        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-5 sm:p-7 mb-8">
           <MonthNavigator
             selected={selectedMonth}
             year={YEAR}
@@ -180,8 +184,8 @@ export function NodeProgrammingPage({
           />
         </div>
 
-        {/* ── identity ────────────────────────────────────────── */}
-        <div className="mb-6">
+        {/* Identity strip */}
+        <div className="mb-8">
           <IdentityBanner
             identity={identity}
             people={people}
@@ -190,34 +194,36 @@ export function NodeProgrammingPage({
           />
         </div>
 
-        {/* Single RSVP hint when not signed in and there are events */}
-        {!isAuthed && !emptyState && (
-          <p className="text-sm text-gray-500 italic mb-8">
-            Select your name above to RSVP to events.
-          </p>
-        )}
+        {/* Section header */}
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">{sectionLabel}</h2>
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-sm text-gray-400 tabular-nums">
+            {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+          </span>
+        </div>
 
-        {/* ── event list ──────────────────────────────────────── */}
+        {/* Event list */}
         {emptyState ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
-            <Calendar className="size-9 text-gray-300 mx-auto mb-3" />
-            <p className="text-base font-medium text-gray-600">
+          <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
+            <Sparkles className="size-10 text-gray-200 mx-auto mb-4" />
+            <p className="text-base font-medium text-gray-500">
               {selectedMonth === null
                 ? "No upcoming events in the next 90 days"
-                : "No events this month"}
+                : `No events scheduled for ${MONTH_NAMES[selectedMonth]}`}
             </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-gray-400 mt-2">
               Try a different month or{" "}
               <button
                 onClick={() => setSelectedMonth(null)}
-                className="text-teal-600 hover:underline font-medium"
+                className="text-teal-600 hover:text-teal-700 font-medium hover:underline"
               >
-                show all upcoming
+                view all upcoming
               </button>
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {filteredEvents.map((ev) => (
               <EventCard
                 key={ev.id}
@@ -235,7 +241,7 @@ export function NodeProgrammingPage({
           </div>
         )}
 
-        <div className="h-16" aria-hidden />
+        <div className="h-20" aria-hidden />
       </div>
     </div>
   );
