@@ -4,7 +4,7 @@
 
 ### Overview
 
-Foresight Fellows Map & Timeline — a React + TypeScript SPA (Vite) that visualizes Foresight Institute fellows on an interactive Leaflet map. An optional Express API server serves the JSON flat-file database.
+Foresight Fellows Map & Timeline — a React + TypeScript SPA (Vite) that visualizes Foresight Institute fellows on an interactive Leaflet map, plus per-node Programming pages for event calendars. An optional Express API server serves the JSON flat-file database.
 
 ### Services
 
@@ -23,4 +23,6 @@ Foresight Fellows Map & Timeline — a React + TypeScript SPA (Vite) that visual
 - **CSS `@import` warning.** The build emits a PostCSS warning about `@import` order in the CSS. This is cosmetic and does not break the build.
 - **Timeline view is disabled.** The Timeline tab is marked "Coming soon" in the UI.
 - **Vite config port.** `vite.config.ts` sets the dev server to port 3000, not Vite's default 5173.
+- **SPA routes.** `/` = map, `/berlin` = Berlin Node Programming, `/sf` = SF Node Programming. Routing is base-path-aware for GitHub Pages.
+- **Google Sheets sync scripts.** `pnpm sync:sheet` and `pnpm migrate:sheet` exist but require a `GOOGLE_SERVICE_ACCOUNT_KEY` env var (see `.env.example`).
 - Standard dev commands are documented in `README.md`.
