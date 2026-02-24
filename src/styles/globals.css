@@ -1,7 +1,7 @@
-@custom-variant dark (&:is(.dark *));
-
 /* Import fonts - Arizona (serif) and Neue Haas Unica (sans-serif) alternatives */
 @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
   --font-size: 16px;
