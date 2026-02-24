@@ -29,10 +29,11 @@ To copy everything from `public/data/database.json` into the Google Sheet:
 3. **Run the migration** (one time):
 
    ```bash
-   cp .env.example .env.local
-   # Edit .env.local: set SPREADSHEET_ID and GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/key.json
+   # Option A: file path to key
+   GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/key.json pnpm run migrate:sheet
 
-   pnpm run migrate:sheet
+   # Option B: inline JSON (useful in CI/cloud)
+   GOOGLE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}' pnpm run migrate:sheet
    ```
 
 This creates the four tabs (if missing) and fills them from `database.json`.
@@ -76,7 +77,7 @@ To have each deploy use the latest sheet data:
 
 | Goal                         | Command / step |
 |-----------------------------|----------------|
-| Copy current JSON → Sheet   | `pnpm run migrate:sheet` (needs service account key in `GOOGLE_APPLICATION_CREDENTIALS`) |
+| Copy current JSON → Sheet   | `pnpm run migrate:sheet` (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`) |
 | Pull Sheet → JSON locally   | `pnpm run sync:sheet` (needs `GOOGLE_SHEETS_API_KEY`, sheet shared “Anyone can view”) |
 | Deploy with sheet data      | Add `GOOGLE_SHEETS_API_KEY` (and optionally `SPREADSHEET_ID`) in GitHub Actions secrets/vars |
 

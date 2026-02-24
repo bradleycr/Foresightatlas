@@ -24,5 +24,8 @@ Foresight Fellows Map & Timeline — a React + TypeScript SPA (Vite) that visual
 - **Timeline view is disabled.** The Timeline tab is marked "Coming soon" in the UI.
 - **Vite config port.** `vite.config.ts` sets the dev server to port 3000, not Vite's default 5173.
 - **SPA routes.** `/` = map, `/berlin` = Berlin Node Programming, `/sf` = SF Node Programming. Routing is base-path-aware for GitHub Pages.
-- **Google Sheets sync scripts.** `pnpm sync:sheet` and `pnpm migrate:sheet` exist but require a `GOOGLE_SERVICE_ACCOUNT_KEY` env var (see `.env.example`).
+- **Google Sheets database.** The app can use a Google Sheet as source of truth. See `docs/SHEETS_SYNC.md` for full details.
+  - `pnpm sync:sheet` — pulls Sheet → `database.json` (needs `GOOGLE_SHEETS_API_KEY`). Gracefully skips missing tabs.
+  - `pnpm migrate:sheet` — pushes `database.json` → Sheet (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`). Run once to populate the sheet.
+  - The deploy workflow (`.github/workflows/deploy.yml`) runs sync before build automatically.
 - Standard dev commands are documented in `README.md`.
