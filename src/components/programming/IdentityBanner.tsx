@@ -1,7 +1,6 @@
 /**
- * Identity selector — elegant inline picker that feels like part
- * of the page, not a separate auth gate. Signed-in state is minimal;
- * picker opens as a smooth dropdown with search.
+ * IdentityBanner — clean card matching the app's white-card design language.
+ * Dropdown is centered and properly positioned.
  */
 
 import { useState, useRef, useEffect } from "react";
@@ -43,22 +42,21 @@ export function IdentityBanner({ identity, people, onSelect, onClear }: Identity
         .slice(0, 8)
     : [];
 
-  /* ── signed-in state: compact strip ────────────────────────────── */
   if (identity) {
     return (
-      <div className="flex items-center gap-3 rounded-xl bg-white border border-gray-100 px-4 py-3 shadow-sm">
-        <div className="size-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <span className="text-xs font-bold text-white">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-5 py-3 flex items-center gap-3">
+        <div className="size-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-bold text-teal-700">
             {identity.fullName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
           </span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">{identity.fullName}</p>
-          <p className="text-xs text-gray-400">RSVP enabled</p>
+          <p className="text-xs text-gray-400">You can RSVP to events below</p>
         </div>
         <button
           onClick={onClear}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded-md hover:bg-gray-50"
+          className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-gray-50"
         >
           <LogOut className="size-3" />
           Switch
@@ -67,41 +65,36 @@ export function IdentityBanner({ identity, people, onSelect, onClear }: Identity
     );
   }
 
-  /* ── picker state ──────────────────────────────────────────────── */
   return (
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
+          "w-full flex items-center gap-3 rounded-xl border px-4 sm:px-5 py-3.5 text-left transition-all",
+          "bg-white shadow-sm",
           open
-            ? "bg-white border-teal-300 shadow-md shadow-teal-100/50 ring-2 ring-teal-100"
-            : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm",
+            ? "border-teal-300 ring-2 ring-teal-100"
+            : "border-gray-200 hover:border-gray-300",
         )}
       >
         <div className={cn(
-          "size-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors",
+          "size-8 rounded-full flex items-center justify-center flex-shrink-0",
           open ? "bg-teal-100" : "bg-gray-100",
         )}>
           <User className={cn("size-4", open ? "text-teal-600" : "text-gray-400")} />
         </div>
-        <span className={cn(
-          "flex-1 text-sm font-medium",
-          open ? "text-teal-700" : "text-gray-600",
-        )}>
+        <span className="flex-1 text-sm text-gray-500">
           Select your name to RSVP to events
         </span>
         <ChevronDown className={cn(
-          "size-4 text-gray-400 transition-transform duration-200",
+          "size-4 text-gray-400 transition-transform",
           open && "rotate-180 text-teal-500",
         )} />
       </button>
 
-      {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-gray-200 shadow-xl shadow-gray-200/40 z-50 overflow-hidden">
-          {/* Search input */}
-          <div className="p-3 border-b border-gray-100">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
+          <div className="p-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
               <input
@@ -109,43 +102,32 @@ export function IdentityBanner({ identity, people, onSelect, onClear }: Identity
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name…"
-                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                placeholder="Type your name…"
+                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent"
               />
             </div>
           </div>
 
-          {/* Results */}
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto border-t border-gray-100">
             {!search.trim() && (
-              <div className="px-4 py-6 text-center">
-                <p className="text-sm text-gray-400">Start typing to find yourself</p>
-              </div>
+              <p className="px-4 py-5 text-sm text-gray-400 text-center">Start typing to find yourself</p>
             )}
             {search.trim() && filtered.length === 0 && (
-              <div className="px-4 py-6 text-center">
-                <p className="text-sm text-gray-500">No matches for &ldquo;{search.trim()}&rdquo;</p>
-              </div>
+              <p className="px-4 py-5 text-sm text-gray-500 text-center">No matches for &ldquo;{search.trim()}&rdquo;</p>
             )}
             {filtered.map((person) => (
               <button
                 key={person.id}
-                onClick={() => {
-                  onSelect(person.id, person.fullName);
-                  setOpen(false);
-                  setSearch("");
-                }}
-                className="w-full text-left px-4 py-3 text-sm hover:bg-teal-50 transition-colors flex items-center gap-3 group border-b border-gray-50 last:border-0"
+                onClick={() => { onSelect(person.id, person.fullName); setOpen(false); setSearch(""); }}
+                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-50 last:border-0"
               >
-                <div className="size-7 rounded-full bg-gray-100 group-hover:bg-teal-100 flex items-center justify-center flex-shrink-0 transition-colors">
-                  <span className="text-[10px] font-bold text-gray-400 group-hover:text-teal-600 transition-colors">
+                <div className="size-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-gray-500">
                     {person.fullName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 group-hover:text-teal-700 transition-colors truncate">
-                    {person.fullName}
-                  </p>
+                  <p className="font-medium text-gray-800 truncate">{person.fullName}</p>
                   {person.currentCity && (
                     <p className="text-xs text-gray-400 truncate">{person.currentCity}</p>
                   )}

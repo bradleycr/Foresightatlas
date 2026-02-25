@@ -1,7 +1,5 @@
 /**
- * RSVPButtonGroup — clean, modern three-state toggle.
- * Active states use soft fills with clear feedback.
- * Tapping the active status deselects it.
+ * RSVPButtonGroup — pill-rounded toggles matching the app's badge style.
  */
 
 import { Check, Star, X } from "lucide-react";
@@ -20,29 +18,29 @@ const CHOICES: {
   status: RSVPStatus;
   label: string;
   Icon: typeof Check;
-  activeClasses: string;
-  hoverClasses: string;
+  on: string;
+  off: string;
 }[] = [
   {
     status: "going",
     label: "Going",
     Icon: Check,
-    activeClasses: "bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200",
-    hoverClasses: "hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700",
+    on: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    off: "hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700",
   },
   {
     status: "interested",
     label: "Interested",
     Icon: Star,
-    activeClasses: "bg-amber-500 border-amber-500 text-white shadow-sm shadow-amber-200",
-    hoverClasses: "hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",
+    on: "bg-amber-100 text-amber-700 border-amber-200",
+    off: "hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700",
   },
   {
     status: "not-going",
     label: "Can't go",
     Icon: X,
-    activeClasses: "bg-gray-500 border-gray-500 text-white shadow-sm",
-    hoverClasses: "hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600",
+    on: "bg-gray-100 text-gray-600 border-gray-300",
+    off: "hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600",
   },
 ];
 
@@ -55,8 +53,8 @@ export function RSVPButtonGroup({
 }: RSVPButtonGroupProps) {
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP">
-      {CHOICES.map(({ status, label, Icon, activeClasses, hoverClasses }) => {
-        const on = currentStatus === status;
+      {CHOICES.map(({ status, label, Icon, on, off }) => {
+        const active = currentStatus === status;
         const count =
           status === "going" ? goingCount
             : status === "interested" ? interestedCount
@@ -65,27 +63,22 @@ export function RSVPButtonGroup({
         return (
           <button
             key={status}
-            onClick={() => onStatusChange(on ? null : status)}
+            onClick={() => onStatusChange(active ? null : status)}
             disabled={disabled}
-            aria-pressed={on}
+            aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium border transition-all duration-150",
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-teal-400",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              on
-                ? activeClasses
-                : `border-gray-200 text-gray-500 bg-white ${hoverClasses}`,
+              active
+                ? on
+                : `border-gray-200 text-gray-500 bg-white ${off}`,
             )}
           >
-            <Icon className={cn("size-3.5", on && "drop-shadow-sm")} />
+            <Icon className="size-3" />
             {label}
             {count !== undefined && count > 0 && (
-              <span className={cn(
-                "text-xs tabular-nums ml-0.5",
-                on ? "text-white/80" : "text-gray-400",
-              )}>
-                {count}
-              </span>
+              <span className="text-xs opacity-70">{count}</span>
             )}
           </button>
         );

@@ -1,13 +1,13 @@
 /**
- * Node Programming Page — the events hub for each Foresight node.
+ * Node Programming Page — events hub for each Foresight node.
  *
- * Redesigned with a branded hero, spacious calendar grid, elegant
- * identity flow, and polished event cards. Optimised for both
- * quick-glance browsing and deep RSVP interaction.
+ * Design language matches the main Fellows Map: white cards with
+ * subtle borders/shadows, teal accents, gray-50 background,
+ * generous but consistent spacing.
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, Sparkles } from "lucide-react";
 import { NodeSlug, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode } from "../data/nodes";
@@ -68,7 +68,6 @@ export function NodeProgrammingPage({
   const allEvents = useMemo(() => getEventsByNode(activeNode), [activeNode]);
   const isAuthed = identity !== null;
 
-  /* ── counts per month ─────────────────────────────────────────── */
   const monthlyCounts = useMemo(() => {
     const c = new Array(12).fill(0) as number[];
     for (const ev of allEvents) {
@@ -78,7 +77,6 @@ export function NodeProgrammingPage({
     return c;
   }, [allEvents]);
 
-  /* ── filtered events ──────────────────────────────────────────── */
   const filteredEvents = useMemo(() => {
     if (selectedMonth === null) {
       const now = Date.now();
@@ -94,7 +92,6 @@ export function NodeProgrammingPage({
     });
   }, [allEvents, selectedMonth]);
 
-  /* ── identity handlers ────────────────────────────────────────── */
   const handleIdentitySelect = useCallback((personId: string, fullName: string) => {
     persistIdentity(personId, fullName);
     setIdentityState({ personId, fullName, selectedAt: new Date().toISOString() });
@@ -105,7 +102,6 @@ export function NodeProgrammingPage({
     setIdentityState(null);
   }, []);
 
-  /* ── RSVP handlers ────────────────────────────────────────────── */
   const handleRSVPChange = useCallback(
     (eventId: string, status: RSVPStatus | null) => {
       if (!identity) return;
@@ -130,7 +126,6 @@ export function NodeProgrammingPage({
     [identity, rsvpTick],
   );
 
-  /* ── node switch ──────────────────────────────────────────────── */
   const handleNodeChange = useCallback(
     (slug: NodeSlug) => {
       setActiveNode(slug);
@@ -139,48 +134,38 @@ export function NodeProgrammingPage({
     [onNavigateNode],
   );
 
-  /* ── section label ────────────────────────────────────────────── */
   const sectionLabel = selectedMonth === null
     ? "Upcoming Events"
     : `${MONTH_NAMES[selectedMonth]} Events`;
 
-  const emptyState = filteredEvents.length === 0;
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* ── Hero section ──────────────────────────────────────── */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
       <div className="relative overflow-hidden" style={{ background: NODE_HERO_GRADIENT[activeNode] }}>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-8 sm:pt-6 sm:pb-10 relative">
-          {/* Nav row */}
-          <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-6 sm:pt-5 sm:pb-8">
+          <div className="flex items-center justify-between gap-4 mb-5">
             <button
               onClick={onNavigateHome}
-              className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
             >
               <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Back to map</span>
+              Back to map
             </button>
             <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} />
           </div>
-
-          {/* Title */}
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-heading">
-              {node.city} Programming
-            </h1>
-            <p className="text-sm sm:text-base text-white/70 max-w-xl leading-relaxed">
-              {node.description}
-            </p>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-white tracking-tight mb-1">
+            {node.city} Programming
+          </h1>
+          <p className="text-sm text-white/60 max-w-lg">
+            {node.description}
+          </p>
         </div>
       </div>
 
-      {/* ── Main content ──────────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
-
-        {/* Calendar card */}
-        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-4 sm:p-5 mb-6">
+      {/* Content */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-4">
+        {/* Calendar */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
           <MonthNavigator
             selected={selectedMonth}
             year={YEAR}
@@ -189,46 +174,40 @@ export function NodeProgrammingPage({
           />
         </div>
 
-        {/* Identity strip */}
-        <div className="mb-6">
-          <IdentityBanner
-            identity={identity}
-            people={people}
-            onSelect={handleIdentitySelect}
-            onClear={handleIdentityClear}
-          />
-        </div>
+        {/* Identity */}
+        <IdentityBanner
+          identity={identity}
+          people={people}
+          onSelect={handleIdentitySelect}
+          onClear={handleIdentityClear}
+        />
 
         {/* Section header */}
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">{sectionLabel}</h2>
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-sm text-gray-400 tabular-nums">
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="text-sm font-semibold text-gray-900">{sectionLabel}</h2>
+          <span className="text-xs text-gray-400 tabular-nums">
             {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
           </span>
         </div>
 
-        {/* Event list */}
-        {emptyState ? (
-          <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-            <Sparkles className="size-10 text-gray-200 mx-auto mb-4" />
-            <p className="text-base font-medium text-gray-500">
+        {/* Events */}
+        {filteredEvents.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center">
+            <Sparkles className="size-8 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm font-medium text-gray-500">
               {selectedMonth === null
                 ? "No upcoming events in the next 90 days"
-                : `No events scheduled for ${MONTH_NAMES[selectedMonth]}`}
+                : `No events in ${MONTH_NAMES[selectedMonth]}`}
             </p>
-            <p className="text-sm text-gray-400 mt-2">
+            <p className="text-xs text-gray-400 mt-1.5">
               Try a different month or{" "}
-              <button
-                onClick={() => setSelectedMonth(null)}
-                className="text-teal-600 hover:text-teal-700 font-medium hover:underline"
-              >
+              <button onClick={() => setSelectedMonth(null)} className="text-teal-600 hover:underline font-medium">
                 view all upcoming
               </button>
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-3">
             {filteredEvents.map((ev) => (
               <EventCard
                 key={ev.id}
@@ -246,7 +225,7 @@ export function NodeProgrammingPage({
           </div>
         )}
 
-        <div className="h-20" aria-hidden />
+        <div className="h-10" />
       </div>
     </div>
   );

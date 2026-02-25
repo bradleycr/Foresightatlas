@@ -1,7 +1,6 @@
 /**
- * MonthNavigator — compact two-row month selector.
- * Takes up minimal vertical space while still showing the full year
- * at a glance with event counts and a selected-state highlight.
+ * MonthNavigator — compact 6×2 grid with clear selected state.
+ * Matches the app's white-card + teal-accent design language.
  */
 
 import { cn } from "../ui/utils";
@@ -26,30 +25,29 @@ export function MonthNavigator({
 }: MonthNavigatorProps) {
   const now = new Date();
   const currentMonth = now.getFullYear() === year ? now.getMonth() : -1;
+  const totalEvents = counts.reduce((a, b) => a + b, 0);
 
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-900 tabular-nums">{year}</span>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-semibold text-gray-900">{year}</span>
+          <span className="text-xs text-gray-400">{totalEvents} events</span>
+        </div>
         <button
           onClick={() => onChange(null)}
           className={cn(
             "text-xs font-medium px-2.5 py-1 rounded-md transition-all",
             selected === null
-              ? "bg-teal-50 text-teal-700"
-              : "text-teal-600 hover:bg-teal-50/60",
+              ? "bg-teal-100 text-teal-700"
+              : "text-teal-600 hover:bg-teal-50",
           )}
         >
           All upcoming
         </button>
       </div>
 
-      {/* Compact 6-column grid — always 2 rows */}
-      <div
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: "repeat(6, 1fr)" }}
-      >
+      <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
         {SHORT.map((label, i) => {
           const isSelected = selected === i;
           const isCurrent = i === currentMonth;
@@ -59,23 +57,21 @@ export function MonthNavigator({
             <button
               key={label}
               onClick={() => onChange(isSelected ? null : i)}
-              aria-pressed={isSelected}
               className={cn(
-                "relative rounded-lg py-2 px-1 text-center transition-all duration-150",
+                "relative rounded-lg py-2.5 px-1 text-center transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500",
                 isSelected
-                  ? "bg-teal-600 text-white shadow-sm"
-                  : hasEvents
-                    ? "bg-white hover:bg-teal-50 border border-gray-200 hover:border-teal-200"
-                    : "bg-gray-50 border border-transparent text-gray-400",
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : isCurrent
+                    ? "bg-teal-50 border border-teal-200"
+                    : hasEvents
+                      ? "bg-gray-50 hover:bg-gray-100 border border-transparent"
+                      : "bg-gray-50/50 border border-transparent text-gray-400",
               )}
             >
-              {isCurrent && !isSelected && (
-                <div className="absolute top-1 right-1 size-1 rounded-full bg-teal-500" />
-              )}
               <div className={cn(
                 "text-[11px] font-medium leading-none",
-                isSelected ? "text-teal-100" : hasEvents ? "text-gray-500" : "text-gray-400",
+                isSelected ? "text-gray-400" : isCurrent ? "text-teal-600" : "text-gray-500",
               )}>
                 {label}
               </div>
@@ -89,6 +85,12 @@ export function MonthNavigator({
           );
         })}
       </div>
+
+      {selected !== null && (
+        <p className="text-xs text-gray-400 mt-3">
+          <span className="text-gray-600 font-medium">{SHORT[selected]}</span> · {counts[selected]} event{counts[selected] !== 1 ? "s" : ""}
+        </p>
+      )}
     </div>
   );
 }
