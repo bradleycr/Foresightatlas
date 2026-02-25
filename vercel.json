@@ -1,0 +1,6 @@
+{
+  "buildCommand": "node scripts/sync-sheet-to-json.js && pnpm run build",
+  "outputDirectory": "build",
+  "framework": "vite",
+  "installCommand": "pnpm install"
+}

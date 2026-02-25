@@ -2,6 +2,10 @@
 
 The Foresight Map can use [this Google Sheet](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) as the source of truth. Data is synced **from** the sheet **to** `public/data/database.json` (at build time or when you run the sync script). The app always reads from that JSON file.
 
+## Why is the sheet still empty?
+
+The **API key** you added only lets the app **read** from the sheet. It does **not** write to it. To fill the sheet with your existing data (227 people, 21 travel windows), you must run the **one-time migration** (see below). That step uses a **Service Account** with write access, not the API key. Until you run `pnpm run migrate:sheet` once, the sheet stays empty and sync will have nothing to pull. Your current `public/data/database.json` is unchanged until you run `sync:sheet` — and if you run sync before migrating, it would overwrite the JSON with empty data, so do the migration first.
+
 ## Sheet structure
 
 The spreadsheet uses four tabs. Row 1 must be the header row; data starts at row 2.
@@ -82,3 +86,14 @@ To have each deploy use the latest sheet data:
 | Deploy with sheet data      | Add `GOOGLE_SHEETS_API_KEY` (and optionally `SPREADSHEET_ID`) in GitHub Actions secrets/vars |
 
 From then on, edit the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) sheet; the next sync (or deploy) will update the app data.
+
+---
+
+## Vercel deploy
+
+In **Project → Settings → Environment Variables** add:
+
+- `GOOGLE_SHEETS_API_KEY` — your Google API key (so each build can pull from the sheet).
+- Optionally `SPREADSHEET_ID` (defaults to the Foresight Map sheet ID if unset).
+
+The `vercel.json` build runs sync then build, so the deployed site will use the latest sheet data when the key is set.

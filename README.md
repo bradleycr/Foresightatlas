@@ -31,6 +31,20 @@ npm run dev        # Starts frontend on port 5173
 
 The app will be available at `http://localhost:5173`. The database is stored in `public/data/database.json`. You can use a **Google Sheet** as the source of truth and sync into that file — see [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md).
 
+## Deploy on Vercel
+
+This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
+
+1. Push your repo to GitHub and go to [vercel.com](https://vercel.com) → **Add New Project** → import the repo.
+2. Vercel will detect Vite from `vercel.json` / `package.json`. Use:
+   - **Build Command:** (leave default; `vercel.json` sets it to run sheet sync then `pnpm run build`)
+   - **Output Directory:** `build`
+   - **Install Command:** `pnpm install`
+3. Add environment variables (optional, for live sheet sync):
+   - `GOOGLE_SHEETS_API_KEY` — your Google API key
+   - `SPREADSHEET_ID` — optional; defaults to the Foresight Map sheet ID
+4. Deploy. The site will be a static SPA; the repo’s `public/data/database.json` is used unless the sheet env vars are set, in which case each build pulls from the Google Sheet.
+
 ## Tech stack
 
 - React with TypeScript
