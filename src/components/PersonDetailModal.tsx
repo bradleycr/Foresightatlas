@@ -9,12 +9,12 @@
  * Beautiful, modular design with elegant mobile styling and production-ready error handling.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle
+  Edit, Save, Trash2, Plus, XCircle, Users
 } from "lucide-react";
-import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType } from "../types";
+import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -53,14 +53,25 @@ import {
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 
+interface NavigationContext {
+  peopleIds: string[];
+  label: string;
+}
+
 interface PersonDetailModalProps {
   person: Person | null;
   travelWindows: TravelWindow[];
   allPeople: Person[];
+  /** When set, arrows cycle through this subset instead of allPeople. */
+  navigationContext?: NavigationContext | null;
+  /** Active filters — shown as context badges so the user knows what slice they're browsing. */
+  filters?: Filters;
   isOpen: boolean;
   isAdmin?: boolean;
   onClose: () => void;
   onNavigate?: (personId: string) => void;
+  /** Called when user clicks "Browse all" to widen navigation to the full filtered set. */
+  onExpandNavigation?: () => void;
   onDataUpdate?: () => Promise<void>;
 }
 
@@ -68,10 +79,13 @@ export function PersonDetailModal({
   person,
   travelWindows,
   allPeople,
+  navigationContext,
+  filters,
   isOpen,
   isAdmin = false,
   onClose,
   onNavigate,
+  onExpandNavigation,
   onDataUpdate,
 }: PersonDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -125,22 +139,41 @@ export function PersonDetailModal({
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-  // Find current person index for navigation
-  const currentIndex = allPeople.findIndex((p) => p.id === person.id);
+  // Resolve navigation list: scoped subset when a context is active, full filtered list otherwise
+  const navigationList = useMemo(() => {
+    if (!navigationContext) return allPeople;
+    const idSet = new Set(navigationContext.peopleIds);
+    return allPeople.filter((p) => idSet.has(p.id));
+  }, [allPeople, navigationContext]);
+
+  const currentIndex = navigationList.findIndex((p) => p.id === person.id);
   const hasPrevious = currentIndex > 0;
-  const hasNext = currentIndex < allPeople.length - 1;
+  const hasNext = currentIndex < navigationList.length - 1;
+  const isScoped = !!navigationContext;
 
   const handlePrevious = () => {
     if (hasPrevious && onNavigate && !isEditing) {
-      onNavigate(allPeople[currentIndex - 1].id);
+      onNavigate(navigationList[currentIndex - 1].id);
     }
   };
 
   const handleNext = () => {
     if (hasNext && onNavigate && !isEditing) {
-      onNavigate(allPeople[currentIndex + 1].id);
+      onNavigate(navigationList[currentIndex + 1].id);
     }
   };
+
+  // Human-readable summary of active filters for context display
+  const filterSummary = useMemo(() => {
+    if (!filters) return [];
+    const tags: string[] = [];
+    if (filters.year !== null) tags.push(`${filters.year}`);
+    if (filters.programs.length > 0) tags.push(...filters.programs);
+    if (filters.nodes.length > 0) tags.push(...filters.nodes.map(n => n.replace(" Node", "")));
+    if (filters.focusTags.length > 0) tags.push(...filters.focusTags.slice(0, 2));
+    if (filters.search) tags.push(`"${filters.search}"`);
+    return tags;
+  }, [filters]);
 
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
@@ -373,8 +406,8 @@ export function PersonDetailModal({
             style={isMobile ? { paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' } : undefined}
           >
             <div className="px-6 pt-6 pb-10 sm:px-8 sm:pt-8 lg:px-12 lg:pt-10 lg:pb-14">
-              {/* Toolbar: nav left, actions right */}
-              <div className="flex items-center justify-between gap-3 mb-8 sm:mb-10">
+              {/* Toolbar: nav + context left, actions right */}
+              <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5">
                 <div className="flex items-center gap-1 sm:gap-2">
                   {!isEditing && (hasPrevious || hasNext) && (
                     <>
@@ -383,7 +416,7 @@ export function PersonDetailModal({
                         onClick={handlePrevious}
                         disabled={!hasPrevious}
                         className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0"
-                            aria-label="Previous person"
+                        aria-label="Previous person"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
@@ -392,11 +425,16 @@ export function PersonDetailModal({
                         onClick={handleNext}
                         disabled={!hasNext}
                         className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0"
-                            aria-label="Next person"
+                        aria-label="Next person"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     </>
+                  )}
+                  {!isEditing && navigationList.length > 1 && currentIndex >= 0 && (
+                    <span className="text-xs text-[var(--pdm-text-muted)] tabular-nums ml-1">
+                      {currentIndex + 1} / {navigationList.length}
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -427,6 +465,46 @@ export function PersonDetailModal({
                   </button>
                 </div>
               </div>
+
+              {/* Navigation context bar — tells user what subset they're browsing */}
+              {!isEditing && (
+                <div className="flex flex-wrap items-center gap-2 mb-6 sm:mb-8">
+                  {isScoped && navigationContext ? (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100 font-medium">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {navigationContext.label}
+                      </span>
+                      {filterSummary.length > 0 && (
+                        <span className="text-[var(--pdm-text-muted)]">
+                          {filterSummary.join(" · ")}
+                        </span>
+                      )}
+                      {onExpandNavigation && allPeople.length > navigationList.length && (
+                        <button
+                          type="button"
+                          onClick={onExpandNavigation}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[var(--pdm-text-muted)] hover:text-[var(--pdm-text)] hover:bg-gray-100 transition-colors"
+                        >
+                          <Users className="h-3 w-3" />
+                          Browse all {allPeople.length}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    filterSummary.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--pdm-text-muted)]">
+                        {filterSummary.map((tag) => (
+                          <span key={tag} className="px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+                            {tag}
+                          </span>
+                        ))}
+                        <span className="ml-0.5">&middot; {navigationList.length} results</span>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
 
               {/* Name + metadata block */}
               <header className="person-detail-content__head mb-8 lg:mb-10">

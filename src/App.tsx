@@ -33,6 +33,11 @@ export default function App() {
 
   // Modal state
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  // Navigation context for the detail modal — scopes prev/next arrows to a meaningful subset
+  const [detailNavContext, setDetailNavContext] = useState<{
+    peopleIds: string[];
+    label: string;
+  } | null>(null);
 
   // Data state
   const [people, setPeople] = useState<Person[]>([]);
@@ -291,7 +296,10 @@ export default function App() {
             timeWindowStart={timeWindowStart}
             timeWindowEnd={timeWindowEnd}
             granularity={filters.granularity}
-            onViewPersonDetails={(id) => setSelectedPersonId(id)}
+            onViewPersonDetails={(id, context) => {
+              setSelectedPersonId(id);
+              setDetailNavContext(context ?? null);
+            }}
             filters={filters}
             onFiltersChange={setFilters}
             defaultYear={defaultCohortYear}
@@ -306,7 +314,10 @@ export default function App() {
             referenceDate={filters.referenceDate}
             cities={filters.cities}
             nodes={filters.nodes}
-            onViewPersonDetails={(id) => setSelectedPersonId(id)}
+            onViewPersonDetails={(id) => {
+              setSelectedPersonId(id);
+              setDetailNavContext(null);
+            }}
             onSwitchToMap={() => setActiveTab("map")}
           />
         )}
@@ -334,10 +345,13 @@ export default function App() {
         person={people.find((p) => p.id === selectedPersonId) || null}
         travelWindows={travelWindows}
         allPeople={filteredPeople}
+        navigationContext={detailNavContext}
+        filters={filters}
         isOpen={selectedPersonId !== null}
         isAdmin={false}
-        onClose={() => setSelectedPersonId(null)}
+        onClose={() => { setSelectedPersonId(null); setDetailNavContext(null); }}
         onNavigate={(id) => setSelectedPersonId(id)}
+        onExpandNavigation={() => setDetailNavContext(null)}
         onDataUpdate={loadData}
       />
 

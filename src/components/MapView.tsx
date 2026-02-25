@@ -19,7 +19,7 @@ interface MapViewProps {
   timeWindowStart: Date;
   timeWindowEnd: Date;
   granularity?: "Year" | "Month" | "Week";
-  onViewPersonDetails?: (personId: string) => void;
+  onViewPersonDetails?: (personId: string, context?: { peopleIds: string[]; label: string }) => void;
   /** Filters & setter so the sidebar can host inline quick-filters */
   filters?: Filters;
   onFiltersChange?: (f: Filters) => void;
@@ -917,7 +917,10 @@ export function MapView({
                   setSelectedMarker(personMarker);
                   setSelectedMarkerFromList(true);
                 }
-                onViewPersonDetails?.(person.id);
+                const navContext = selectedMarker
+                  ? { peopleIds: sidebarPeople.map(p => p.id), label: `${selectedMarker.city}, ${selectedMarker.country}` }
+                  : undefined;
+                onViewPersonDetails?.(person.id, navContext);
               }}
               onHighlight={() => openSidebarAndScrollToPerson(person.id)}
               isHighlighted={selectedPerson === person.id}
