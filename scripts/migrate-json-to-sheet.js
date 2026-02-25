@@ -17,6 +17,9 @@
  *   node scripts/migrate-json-to-sheet.js
  */
 
+require("dotenv").config({ path: ".env.local" });
+require("dotenv").config();
+
 const fs = require("fs").promises;
 const path = require("path");
 const { google } = require("googleapis");

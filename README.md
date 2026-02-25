@@ -38,7 +38,7 @@ This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
 1. Push your repo to GitHub and go to [vercel.com](https://vercel.com) → **Add New Project** → import the repo.
 2. Vercel will detect Vite from `vercel.json` / `package.json`. Use:
    - **Build Command:** (leave default; `vercel.json` sets it to run sheet sync then `pnpm run build`)
-   - **Output Directory:** `build`
+   - **Output Directory:** `dist`
    - **Install Command:** `pnpm install`
 3. Add environment variables (optional, for live sheet sync):
    - `GOOGLE_SHEETS_API_KEY` — your Google API key
