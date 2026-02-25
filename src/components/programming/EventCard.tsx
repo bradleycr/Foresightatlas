@@ -1,18 +1,31 @@
 /**
  * EventCard — mirrors the FellowCard visual language from the map page:
  * white card, subtle border + shadow, colored pill badges, generous spacing.
+ * Luma-pulled events: short teaser + prominent "View on Luma" CTA; full copy lives on Luma.
  */
 
 import { useState, useMemo } from "react";
-import { Calendar, MapPin, ChevronDown, Users, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, ChevronDown, Users, ExternalLink, Ticket } from "lucide-react";
 import { NodeEvent, RSVPStatus, RSVPSummary } from "../../types/events";
 import { Person } from "../../types";
 import { RSVPButtonGroup } from "./RSVPButtonGroup";
 import { AttendanceAvatars } from "./AttendanceAvatars";
+import { eventDescriptionTeaser } from "./eventDescription";
 import { cn } from "../ui/utils";
 
-/** Show "Read more" when description might wrap beyond two lines. */
+/** Show "Read more" when description might wrap beyond two lines (events without Luma link). */
 const READ_MORE_THRESHOLD = 80;
+
+/** True if the URL is a Luma event page. */
+function isLumaLink(href: string | null | undefined): boolean {
+  if (!href) return false;
+  try {
+    const u = new URL(href);
+    return u.hostname === "lu.ma" || u.hostname === "luma.com";
+  } catch {
+    return false;
+  }
+}
 
 const TYPE_BADGE: Record<string, { bg: string; text: string }> = {
   coworking:    { bg: "bg-sky-100",    text: "text-sky-700" },
@@ -117,45 +130,66 @@ export function EventCard({
         </span>
       </div>
 
-      {/* Description */}
-      {event.description && (
-        <div className="mb-4">
-          <p
-            className={cn(
-              "text-sm text-gray-600 leading-relaxed",
-              !expanded && "line-clamp-2",
-            )}
-          >
-            {event.description}
-          </p>
-          {event.description.length >= READ_MORE_THRESHOLD && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                setExpanded((prev) => !prev);
-              }}
-              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 rounded"
-            >
-              {expanded ? "Show less" : "Read more"}
-              <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* External registration link (e.g. Luma) — easy place to add event URL */}
+      {/* Primary CTA: Luma / external link — so people can go straight to the event page */}
       {event.externalLink && (
         <div className="mb-4">
           <a
             href={event.externalLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-xl font-medium transition-all",
+              "bg-teal-600 text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2",
+              "px-5 py-3 text-sm sm:text-base shadow-sm hover:shadow",
+            )}
           >
-            <ExternalLink className="size-4" />
-            Register on Luma
+            {isLumaLink(event.externalLink) ? (
+              <>
+                <Ticket className="size-4 sm:size-5 flex-shrink-0" />
+                View on Luma
+              </>
+            ) : (
+              <>
+                <ExternalLink className="size-4 sm:size-5 flex-shrink-0" />
+                Get tickets
+              </>
+            )}
           </a>
+        </div>
+      )}
+
+      {/* Description: when we have a Luma link, show only a short teaser; otherwise full text + Read more */}
+      {event.description && (
+        <div className="mb-4">
+          {event.externalLink ? (
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {eventDescriptionTeaser(event.description) || "See event page for details."}
+            </p>
+          ) : (
+            <>
+              <p
+                className={cn(
+                  "text-sm text-gray-600 leading-relaxed",
+                  !expanded && "line-clamp-2",
+                )}
+              >
+                {event.description}
+              </p>
+              {event.description.length >= READ_MORE_THRESHOLD && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setExpanded((prev) => !prev);
+                  }}
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 rounded"
+                >
+                  {expanded ? "Show less" : "Read more"}
+                  <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
 

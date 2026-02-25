@@ -16,7 +16,10 @@ The spreadsheet uses four tabs. Row 1 must be the header row; data starts at row
 | **TravelWindows** | Travel / residency / conference entries | id, personId, title, city, country, lat, lng, startDate, endDate, type, notes |
 | **Suggestions** | Pending location-update requests | id, personName, personEmailOrHandle, requestedChangeType, requestedPayload (JSON), createdAt, status |
 | **AdminUsers**  | Admin logins (if used)         | id, displayName, email, passwordPlaceholder |
+| **RSVPs**       | Event RSVPs (going / interested / not-going) | eventId, personId, fullName, status, createdAt, updatedAt |
 
+- **RSVPs**: Added by sync/migrate. The app reads via GET /api/rsvps and writes via POST /api/rsvps (Vercel serverless).
+- **Suggestions**: Users submit via the “Suggest an update” form; POST /api/suggestions appends to this tab (requires `GOOGLE_SERVICE_ACCOUNT_KEY` on Vercel).
 - **focusTags** and **requestedPayload** are stored as JSON strings (e.g. `["Secure AI","Neurotechnology"]`, `{"currentCity":"Berlin"}`).
 - **lat** / **lng** are numbers. **isAlumni** is `TRUE` / `FALSE` in the sheet.
 

@@ -28,6 +28,9 @@ import { NodeSwitch } from "../components/programming/NodeSwitch";
 import { IdentityBanner } from "../components/programming/IdentityBanner";
 import { MonthNavigator } from "../components/programming/MonthNavigator";
 import { EventCard } from "../components/programming/EventCard";
+import { ViewSwitcher, ProgrammingView } from "../components/programming/ViewSwitcher";
+import { CalendarMonthView } from "../components/programming/CalendarMonthView";
+import { cn } from "../components/ui/utils";
 
 const YEAR = 2026;
 
@@ -52,6 +55,7 @@ export function NodeProgrammingPage({
   onShowEventOnMap,
 }: NodeProgrammingPageProps) {
   const [activeNode, setActiveNode] = useState<NodeSlug>(initialNode);
+  const [activeView, setActiveView] = useState<ProgrammingView>("list");
   const [identity, setIdentityState] = useState(() => getIdentity());
   const [rsvpTick, setRsvpTick] = useState(0);
   const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
@@ -151,7 +155,10 @@ export function NodeProgrammingPage({
     <div className="min-h-screen bg-gray-50">
       {/* Page header — matches AppHeader: light gradient, border, compact spacing */}
       <header className="border-b border-gray-200 bg-app-header">
-        <div className="max-w-3xl mx-auto px-6 sm:px-8 py-4 sm:py-5">
+        <div className={cn(
+          "mx-auto px-6 sm:px-8 py-4 sm:py-5 transition-all",
+          activeView === "month" ? "max-w-6xl" : "max-w-3xl",
+        )}>
           <div className="flex items-center justify-between gap-4 mb-4">
             <button
               onClick={onNavigateHome}
@@ -172,65 +179,83 @@ export function NodeProgrammingPage({
       </header>
 
       {/* Content — Apple-style vertical rhythm: generous space between sections */}
-      <div className="max-w-3xl mx-auto px-6 sm:px-8 py-6 sm:py-8 space-y-8 sm:space-y-10">
-        {/* Calendar */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
-          <MonthNavigator
-            selected={selectedMonth}
-            year={YEAR}
-            counts={monthlyCounts}
-            onChange={setSelectedMonth}
+      <div className={cn(
+        "mx-auto px-6 sm:px-8 py-6 sm:py-8 space-y-8 sm:space-y-10",
+        activeView === "month" ? "max-w-6xl" : "max-w-3xl",
+      )}>
+        {/* View switcher + Identity row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <ViewSwitcher active={activeView} onChange={setActiveView} />
+          <IdentityBanner
+            identity={identity}
+            people={people}
+            onSelect={handleIdentitySelect}
+            onClear={handleIdentityClear}
           />
         </div>
 
-        {/* Identity */}
-        <IdentityBanner
-          identity={identity}
-          people={people}
-          onSelect={handleIdentitySelect}
-          onClear={handleIdentityClear}
-        />
-
-        {/* Section header — clear separation from RSVP above */}
-        <div className="flex items-center justify-between pt-2">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">{sectionLabel}</h2>
-          <span className="text-xs text-gray-400 tabular-nums">
-            {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-
-        {/* Events */}
-        {filteredEvents.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 sm:p-16 text-center">
-            <Sparkles className="size-8 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-500">
-              {selectedMonth === null
-                ? "No upcoming events in the next 90 days"
-                : `No events in ${MONTH_NAMES[selectedMonth]}`}
-            </p>
-            <p className="text-xs text-gray-400 mt-1.5">
-              Try a different month or{" "}
-              <button onClick={() => setSelectedMonth(null)} className="text-teal-600 hover:underline font-medium">
-                view all upcoming
-              </button>
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4 sm:space-y-5">
-            {filteredEvents.map((ev) => (
-              <EventCard
-                key={ev.id}
-                event={ev}
-                rsvpSummary={summaryOf(ev.id)}
-                currentUserStatus={userStatusOf(ev.id)}
-                onRSVPChange={handleRSVPChange}
-                onShowOnMap={onShowEventOnMap ? (id) => {
-                  onShowEventOnMap(id, getEventRSVPSummary(id).goingPersonIds);
-                } : undefined}
-                allPeople={people}
-                isAuthenticated={isAuthed}
+        {/* ── List view (original) ── */}
+        {activeView === "list" && (
+          <>
+            {/* Month navigator */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+              <MonthNavigator
+                selected={selectedMonth}
+                year={YEAR}
+                counts={monthlyCounts}
+                onChange={setSelectedMonth}
               />
-            ))}
+            </div>
+
+            {/* Section header */}
+            <div className="flex items-center justify-between pt-2">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">{sectionLabel}</h2>
+              <span className="text-xs text-gray-400 tabular-nums">
+                {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* Event cards */}
+            {filteredEvents.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 sm:p-16 text-center">
+                <Sparkles className="size-8 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm font-medium text-gray-500">
+                  {selectedMonth === null
+                    ? "No upcoming events in the next 90 days"
+                    : `No events in ${MONTH_NAMES[selectedMonth]}`}
+                </p>
+                <p className="text-xs text-gray-400 mt-1.5">
+                  Try a different month or{" "}
+                  <button onClick={() => setSelectedMonth(null)} className="text-teal-600 hover:underline font-medium">
+                    view all upcoming
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 sm:space-y-5">
+                {filteredEvents.map((ev) => (
+                  <EventCard
+                    key={ev.id}
+                    event={ev}
+                    rsvpSummary={summaryOf(ev.id)}
+                    currentUserStatus={userStatusOf(ev.id)}
+                    onRSVPChange={handleRSVPChange}
+                    onShowOnMap={onShowEventOnMap ? (id) => {
+                      onShowEventOnMap(id, getEventRSVPSummary(id).goingPersonIds);
+                    } : undefined}
+                    allPeople={people}
+                    isAuthenticated={isAuthed}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Month calendar view ── */}
+        {activeView === "month" && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 md:p-8">
+            <CalendarMonthView events={allEvents} year={YEAR} initialMonth={selectedMonth} />
           </div>
         )}
 

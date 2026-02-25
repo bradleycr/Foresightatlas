@@ -93,33 +93,42 @@ export function IdentityBanner({ identity, people, onSelect, onClear }: Identity
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-          <div className="p-3">
+        <div
+          className="absolute top-full left-0 right-0 z-50 mt-3 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden"
+          style={{ minHeight: "120px" }}
+        >
+          {/* Search row — single clear block so it never overlaps the trigger */}
+          <div className="p-3 border-b border-gray-100 bg-gray-50/50">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
               <input
                 ref={inputRef}
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Type your name…"
-                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent"
+                className="w-full pl-9 pr-4 py-3 text-sm rounded-xl border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent placeholder:text-gray-400"
               />
             </div>
           </div>
 
-          <div className="max-h-56 overflow-y-auto border-t border-gray-100">
+          {/* Results / hint — clearly secondary, not a second input */}
+          <div className="max-h-56 overflow-y-auto bg-white">
             {!search.trim() && (
-              <p className="px-4 py-5 text-sm text-gray-400 text-center">Start typing to find yourself</p>
+              <p className="px-4 py-4 text-sm text-gray-400 text-center font-normal">
+                Start typing to find yourself
+              </p>
             )}
             {search.trim() && filtered.length === 0 && (
-              <p className="px-4 py-5 text-sm text-gray-500 text-center">No matches for &ldquo;{search.trim()}&rdquo;</p>
+              <p className="px-4 py-4 text-sm text-gray-500 text-center">
+                No matches for &ldquo;{search.trim()}&rdquo;
+              </p>
             )}
             {filtered.map((person) => (
               <button
                 key={person.id}
                 onClick={() => { onSelect(person.id, person.fullName); setOpen(false); setSearch(""); }}
-                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-50 last:border-0"
+                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors flex items-center gap-3 border-t border-gray-50 first:border-t-0"
               >
                 <div className="size-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                   <span className="text-[10px] font-bold text-gray-500">

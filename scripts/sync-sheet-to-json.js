@@ -25,6 +25,7 @@ const {
   TRAVEL_WINDOWS_HEADERS,
   SUGGESTIONS_HEADERS,
   ADMIN_USERS_HEADERS,
+  RSVPS_HEADERS,
 } = require("./sheet-schema.js");
 
 const SPREADSHEET_ID =
@@ -123,6 +124,19 @@ function rowToAdminUser(row) {
   };
 }
 
+function rowToRSVP(row) {
+  const get = (i) => (row[i] != null ? String(row[i]).trim() : "");
+  const idx = (name) => RSVPS_HEADERS.indexOf(name);
+  return {
+    eventId: get(idx("eventId")),
+    personId: get(idx("personId")),
+    fullName: get(idx("fullName")),
+    status: get(idx("status")) || "going",
+    createdAt: get(idx("createdAt")),
+    updatedAt: get(idx("updatedAt")),
+  };
+}
+
 function rowsToObjects(rows, headers, rowToEntity) {
   if (!rows || rows.length < 2) return [];
   const [headerRow, ...dataRows] = rows;
@@ -136,6 +150,21 @@ function rowsToObjects(rows, headers, rowToEntity) {
       return rowToEntity(ordered);
     })
     .filter((e) => e && (e.id != null && e.id !== ""));
+}
+
+function rowsToRSVPs(rows) {
+  if (!rows || rows.length < 2) return [];
+  const [headerRow, ...dataRows] = rows;
+  const colIndex = {};
+  RSVPS_HEADERS.forEach((h, i) => {
+    colIndex[h] = headerRow[i] === h ? i : headerRow.findIndex((c) => String(c).trim() === h);
+  });
+  return dataRows
+    .map((row) => {
+      const ordered = RSVPS_HEADERS.map((h) => row[colIndex[h]]);
+      return rowToRSVP(ordered);
+    })
+    .filter((e) => e && e.eventId && e.personId);
 }
 
 async function fetchSheetRange(sheets, sheetName, range) {
@@ -168,11 +197,12 @@ async function main() {
 
   console.log("Fetching sheet:", SPREADSHEET_ID);
 
-  const [peopleRows, twRows, suggestionsRows, adminRows] = await Promise.all([
+  const [peopleRows, twRows, suggestionsRows, adminRows, rsvpsRows] = await Promise.all([
     fetchSheetRange(sheets, SHEET_NAMES.PEOPLE, "A:Q"),
     fetchSheetRange(sheets, SHEET_NAMES.TRAVEL_WINDOWS, "A:K"),
     fetchSheetRange(sheets, SHEET_NAMES.SUGGESTIONS, "A:G"),
     fetchSheetRange(sheets, SHEET_NAMES.ADMIN_USERS, "A:D"),
+    fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:F"),
   ]);
 
   const people = rowsToObjects(peopleRows, PEOPLE_HEADERS, (row) => rowToPerson(row));
@@ -185,12 +215,14 @@ async function main() {
   const adminUsers = rowsToObjects(adminRows, ADMIN_USERS_HEADERS, (row) =>
     rowToAdminUser(row)
   );
+  const rsvps = rowsToRSVPs(rsvpsRows);
 
   const database = {
     people,
     travelWindows,
     suggestions,
     adminUsers,
+    rsvps,
   };
 
   // Fallback: if sheet has no people, don't overwrite — keep committed JSON so deploy has data
@@ -206,7 +238,7 @@ async function main() {
   await fs.writeFile(outPath, JSON.stringify(database, null, 2), "utf8");
 
   console.log(
-    `Wrote ${outPath}: ${people.length} people, ${travelWindows.length} travel windows, ${suggestions.length} suggestions, ${adminUsers.length} admin users.`
+    `Wrote ${outPath}: ${people.length} people, ${travelWindows.length} travel windows, ${suggestions.length} suggestions, ${adminUsers.length} admin users, ${rsvps.length} RSVPs.`
   );
 }
 

@@ -37,6 +37,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [personSearchQuery, setPersonSearchQuery] = useState("");
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -225,8 +226,9 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
     handleSubmitWithData(formData);
   };
 
-  const handleSubmitWithData = (data: typeof formData) => {
-    // Build payload based on change type
+  const handleSubmitWithData = async (data: typeof formData) => {
+    setSubmitError(null);
+    // Build payload
     let payload: any = {};
 
     if (data.changeType === "New entry") {
@@ -259,11 +261,23 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
       personEmailOrHandle: data.personEmailOrHandle,
       requestedChangeType: data.changeType,
       requestedPayload: payload,
-      // createdAt and status will be set in App.tsx
     };
 
-    onSubmit(suggestion);
-    setSubmitted(true);
+    try {
+      const res = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(suggestion),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || res.statusText || "Failed to submit");
+      }
+      onSubmit(suggestion);
+      setSubmitted(true);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "Failed to submit suggestion");
+    }
   };
 
   if (submitted) {
@@ -782,6 +796,9 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
           )}
 
           {/* Actions */}
+          {submitError && (
+            <p className="text-sm text-red-600 px-1">{submitError}</p>
+          )}
           <div className="flex gap-3 pt-4 border-t border-gray-200 flex-shrink-0">
             <Button
               type="button"
