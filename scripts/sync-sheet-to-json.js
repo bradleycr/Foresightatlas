@@ -193,6 +193,14 @@ async function main() {
     adminUsers,
   };
 
+  // Fallback: if sheet has no people, don't overwrite — keep committed JSON so deploy has data
+  if (people.length === 0) {
+    console.log(
+      "Sheet has no people (empty or missing People tab); keeping existing public/data/database.json."
+    );
+    return;
+  }
+
   const outPath = path.join(__dirname, "../public/data/database.json");
   await fs.mkdir(path.dirname(outPath), { recursive: true });
   await fs.writeFile(outPath, JSON.stringify(database, null, 2), "utf8");
@@ -203,6 +211,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
-  process.exit(1);
+  console.error("Sync failed (will use existing database.json):", err.message);
+  process.exit(0); // Don't fail build — fall back to committed JSON
 });
