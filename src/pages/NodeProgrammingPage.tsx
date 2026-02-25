@@ -6,8 +6,8 @@
  * generous but consistent spacing.
  */
 
-import { useState, useMemo, useCallback } from "react";
-import { ArrowLeft, Calendar, Sparkles } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { NodeSlug, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode } from "../data/nodes";
@@ -22,6 +22,7 @@ import {
   removeRSVP,
   getRSVP,
   getEventRSVPSummary,
+  fetchRSVPsFromAPI,
 } from "../services/rsvp";
 import { NodeSwitch } from "../components/programming/NodeSwitch";
 import { IdentityBanner } from "../components/programming/IdentityBanner";
@@ -34,11 +35,6 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-const NODE_HERO_GRADIENT: Record<NodeSlug, string> = {
-  berlin: "linear-gradient(135deg, #2563eb, #4f46e5)",
-  sf: "linear-gradient(135deg, #f59e0b, #ea580c)",
-};
 
 interface NodeProgrammingPageProps {
   initialNode: NodeSlug;
@@ -58,6 +54,10 @@ export function NodeProgrammingPage({
   const [activeNode, setActiveNode] = useState<NodeSlug>(initialNode);
   const [identity, setIdentityState] = useState(() => getIdentity());
   const [rsvpTick, setRsvpTick] = useState(0);
+
+  useEffect(() => {
+    fetchRSVPsFromAPI().then(() => setRsvpTick((t) => t + 1));
+  }, []);
 
   const [selectedMonth, setSelectedMonth] = useState<number | null>(() => {
     const now = new Date();
@@ -105,8 +105,11 @@ export function NodeProgrammingPage({
   const handleRSVPChange = useCallback(
     (eventId: string, status: RSVPStatus | null) => {
       if (!identity) return;
-      if (status === null) removeRSVP(eventId, identity.personId);
-      else setRSVP(eventId, identity.personId, status);
+      if (status === null) {
+        removeRSVP(eventId, identity.personId);
+      } else {
+        void setRSVP(eventId, identity.personId, status, identity.fullName);
+      }
       setRsvpTick((t) => t + 1);
     },
     [identity],
@@ -140,30 +143,30 @@ export function NodeProgrammingPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
-      <div className="relative overflow-hidden" style={{ background: NODE_HERO_GRADIENT[activeNode] }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-6 sm:pt-5 sm:pb-8">
-          <div className="flex items-center justify-between gap-4 mb-5">
+      {/* Page header — matches AppHeader: light gradient, border, compact spacing */}
+      <header className="border-b border-gray-200 bg-app-header">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
             <button
               onClick={onNavigateHome}
-              className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="size-4" />
               Back to map
             </button>
-            <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} />
+            <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} variant="light" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-white tracking-tight mb-1">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-0.5">
             {node.city} Programming
           </h1>
-          <p className="text-sm text-white/60 max-w-lg">
+          <p className="text-sm text-gray-600 max-w-lg">
             {node.description}
           </p>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-4">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4">
         {/* Calendar */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
           <MonthNavigator

@@ -61,7 +61,7 @@ export function MonthNavigator({
                 "relative rounded-lg py-2.5 px-1 text-center transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500",
                 isSelected
-                  ? "bg-gray-900 text-white shadow-sm"
+                  ? "bg-teal-100 border border-teal-200 text-teal-900 shadow-sm"
                   : isCurrent
                     ? "bg-teal-50 border border-teal-200"
                     : hasEvents
@@ -71,13 +71,13 @@ export function MonthNavigator({
             >
               <div className={cn(
                 "text-[11px] font-medium leading-none",
-                isSelected ? "text-gray-400" : isCurrent ? "text-teal-600" : "text-gray-500",
+                isSelected ? "text-teal-700" : isCurrent ? "text-teal-600" : "text-gray-500",
               )}>
                 {label}
               </div>
               <div className={cn(
                 "text-sm font-bold leading-none mt-1 tabular-nums",
-                isSelected ? "text-white" : hasEvents ? "text-gray-900" : "text-gray-300",
+                isSelected ? "text-teal-800" : hasEvents ? "text-gray-900" : "text-gray-300",
               )}>
                 {counts[i]}
               </div>
