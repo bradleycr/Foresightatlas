@@ -8,10 +8,10 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
-import { NodeSlug, RSVPStatus } from "../types/events";
+import { NodeSlug, NodeEvent, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode } from "../data/nodes";
-import { getEventsByNode } from "../data/events";
+import { getEventsByNode, loadEvents } from "../data/events";
 import {
   getIdentity,
   setIdentity as persistIdentity,
@@ -54,9 +54,11 @@ export function NodeProgrammingPage({
   const [activeNode, setActiveNode] = useState<NodeSlug>(initialNode);
   const [identity, setIdentityState] = useState(() => getIdentity());
   const [rsvpTick, setRsvpTick] = useState(0);
+  const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
 
   useEffect(() => {
     fetchRSVPsFromAPI().then(() => setRsvpTick((t) => t + 1));
+    loadEvents().then(setDynamicEvents);
   }, []);
 
   const [selectedMonth, setSelectedMonth] = useState<number | null>(() => {
@@ -65,7 +67,11 @@ export function NodeProgrammingPage({
   });
 
   const node = getNode(activeNode)!;
-  const allEvents = useMemo(() => getEventsByNode(activeNode), [activeNode]);
+  const allEvents = useMemo(() => {
+    const source = dynamicEvents ?? getEventsByNode(activeNode);
+    if (dynamicEvents) return source.filter((e) => e.nodeSlug === activeNode);
+    return source;
+  }, [activeNode, dynamicEvents]);
   const isAuthed = identity !== null;
 
   const monthlyCounts = useMemo(() => {
@@ -145,8 +151,8 @@ export function NodeProgrammingPage({
     <div className="min-h-screen bg-gray-50">
       {/* Page header — matches AppHeader: light gradient, border, compact spacing */}
       <header className="border-b border-gray-200 bg-app-header">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-4 mb-3">
+        <div className="max-w-3xl mx-auto px-6 sm:px-8 py-4 sm:py-5">
+          <div className="flex items-center justify-between gap-4 mb-4">
             <button
               onClick={onNavigateHome}
               className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
@@ -156,19 +162,19 @@ export function NodeProgrammingPage({
             </button>
             <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} variant="light" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-0.5">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-1 sm:mb-1.5">
             {node.city} Programming
           </h1>
-          <p className="text-sm text-gray-600 max-w-lg">
+          <p className="text-sm text-gray-600 max-w-lg leading-relaxed">
             {node.description}
           </p>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4">
+      {/* Content — Apple-style vertical rhythm: generous space between sections */}
+      <div className="max-w-3xl mx-auto px-6 sm:px-8 py-6 sm:py-8 space-y-8 sm:space-y-10">
         {/* Calendar */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
           <MonthNavigator
             selected={selectedMonth}
             year={YEAR}
@@ -185,9 +191,9 @@ export function NodeProgrammingPage({
           onClear={handleIdentityClear}
         />
 
-        {/* Section header */}
+        {/* Section header — clear separation from RSVP above */}
         <div className="flex items-center justify-between pt-2">
-          <h2 className="text-sm font-semibold text-gray-900">{sectionLabel}</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">{sectionLabel}</h2>
           <span className="text-xs text-gray-400 tabular-nums">
             {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
           </span>
@@ -195,7 +201,7 @@ export function NodeProgrammingPage({
 
         {/* Events */}
         {filteredEvents.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 sm:p-16 text-center">
             <Sparkles className="size-8 text-gray-300 mx-auto mb-3" />
             <p className="text-sm font-medium text-gray-500">
               {selectedMonth === null
@@ -210,7 +216,7 @@ export function NodeProgrammingPage({
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4 sm:space-y-5">
             {filteredEvents.map((ev) => (
               <EventCard
                 key={ev.id}
@@ -228,7 +234,7 @@ export function NodeProgrammingPage({
           </div>
         )}
 
-        <div className="h-10" />
+        <div className="h-12 sm:h-16" aria-hidden />
       </div>
     </div>
   );

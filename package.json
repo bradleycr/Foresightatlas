@@ -67,6 +67,8 @@
         "dev:all": "concurrently \"npm run dev:api\" \"npm run dev\"",
         "build": "vite build",
         "sync:sheet": "node scripts/sync-sheet-to-json.js",
+        "sync:events": "node scripts/sync-events.js",
+        "sync:all": "node scripts/sync-sheet-to-json.js && node scripts/sync-events.js",
         "migrate:sheet": "node scripts/migrate-json-to-sheet.js"
     },
     "pnpm": {

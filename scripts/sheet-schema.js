@@ -11,6 +11,8 @@ const SHEET_NAMES = {
   TRAVEL_WINDOWS: "TravelWindows",
   SUGGESTIONS: "Suggestions",
   ADMIN_USERS: "AdminUsers",
+  RSVPS: "RSVPs",
+  EVENTS: "Events",
 };
 
 const PEOPLE_HEADERS = [
@@ -59,10 +61,38 @@ const SUGGESTIONS_HEADERS = [
 
 const ADMIN_USERS_HEADERS = ["id", "displayName", "email", "passwordPlaceholder"];
 
+const RSVPS_HEADERS = [
+  "eventId",
+  "personId",
+  "fullName",
+  "status",
+  "createdAt",
+  "updatedAt",
+];
+
+const EVENTS_HEADERS = [
+  "id",
+  "nodeSlug",
+  "title",
+  "description",
+  "location",
+  "startAt",
+  "endAt",
+  "type",
+  "tags",
+  "visibility",
+  "capacity",
+  "externalLink",
+  "recurrenceGroupId",
+  "lumaEventId",
+];
+
 module.exports = {
   SHEET_NAMES,
   PEOPLE_HEADERS,
   TRAVEL_WINDOWS_HEADERS,
   SUGGESTIONS_HEADERS,
   ADMIN_USERS_HEADERS,
+  RSVPS_HEADERS,
+  EVENTS_HEADERS,
 };

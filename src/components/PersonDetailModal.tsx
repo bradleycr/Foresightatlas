@@ -372,7 +372,7 @@ export function PersonDetailModal({
             className="person-detail-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
             style={isMobile ? { paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' } : undefined}
           >
-            <div className="px-5 pt-5 pb-10 sm:px-8 lg:px-10 lg:pt-8 lg:pb-12">
+            <div className="px-6 pt-6 pb-10 sm:px-8 sm:pt-8 lg:px-12 lg:pt-10 lg:pb-14">
               {/* Toolbar: nav left, actions right */}
               <div className="flex items-center justify-between gap-3 mb-8 sm:mb-10">
                 <div className="flex items-center gap-1 sm:gap-2">
@@ -628,7 +628,7 @@ export function PersonDetailModal({
                       <p className="text-sm text-gray-500 italic">No travel windows</p>
                     ) : (
                       personTravelWindows.map((tw) => (
-                        <div key={tw.id} className="p-4 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors">
+                        <div key={tw.id} className="p-5 sm:p-6 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <h4 className="font-semibold text-gray-900">{tw.title}</h4>
@@ -706,7 +706,7 @@ function TravelWindowEditForm({
   isSaving,
 }: TravelWindowEditFormProps) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4 space-y-4 border border-gray-200">
+    <div className="bg-gray-50 rounded-lg p-5 sm:p-6 space-y-4 border border-gray-200">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="twTitle">Title *</Label>

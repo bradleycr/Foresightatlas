@@ -70,7 +70,7 @@ const BERLIN_SPECIALS: NodeEvent[] = [
     tags: ["open-house", "community"],
     visibility: "public",
     capacity: 50,
-    externalLink: null,
+    externalLink: "https://luma.com/foresightinstitute",
     recurrenceGroupId: null,
   },
   {
@@ -153,16 +153,48 @@ function sfDemoDays(): NodeEvent[] {
 /* ── public API ──────────────────────────────────────────────────────── */
 
 let _cache: NodeEvent[] | null = null;
+let _dynamicLoaded = false;
+
+/**
+ * Try loading events from /data/events.json (produced by sync-events.js).
+ * Falls back to hardcoded seed events if the JSON doesn't exist yet.
+ */
+export async function loadEvents(): Promise<NodeEvent[]> {
+  if (_dynamicLoaded && _cache) return _cache;
+
+  try {
+    const basePath = (import.meta as any).env?.BASE_URL ?? "/";
+    const res = await fetch(`${basePath}data/events.json`);
+    if (res.ok) {
+      const json: NodeEvent[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        _cache = json.sort(
+          (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+        );
+        _dynamicLoaded = true;
+        return _cache;
+      }
+    }
+  } catch {
+    // JSON not available — use seed data
+  }
+
+  return getAllEvents();
+}
+
+function getSeedEvents(): NodeEvent[] {
+  return [
+    ...BERLIN_SPECIALS,
+    ...berlinWeeklyCoworking(),
+    ...sfDemoDays(),
+  ].sort(
+    (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+  );
+}
 
 export function getAllEvents(): NodeEvent[] {
   if (!_cache) {
-    _cache = [
-      ...BERLIN_SPECIALS,
-      ...berlinWeeklyCoworking(),
-      ...sfDemoDays(),
-    ].sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
-    );
+    _cache = getSeedEvents();
   }
   return _cache;
 }

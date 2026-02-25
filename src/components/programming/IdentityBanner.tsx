@@ -44,7 +44,7 @@ export function IdentityBanner({ identity, people, onSelect, onClear }: Identity
 
   if (identity) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-5 py-3 flex items-center gap-3">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 sm:px-6 py-4 sm:py-5 flex items-center gap-3">
         <div className="size-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
           <span className="text-xs font-bold text-teal-700">
             {identity.fullName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
@@ -70,7 +70,7 @@ export function IdentityBanner({ identity, people, onSelect, onClear }: Identity
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "w-full flex items-center gap-3 rounded-xl border px-4 sm:px-5 py-3.5 text-left transition-all",
+          "w-full flex items-center gap-3 rounded-2xl border px-5 sm:px-6 py-4 sm:py-5 text-left transition-all",
           "bg-white shadow-sm",
           open
             ? "border-teal-300 ring-2 ring-teal-100"
