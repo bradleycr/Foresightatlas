@@ -35,6 +35,11 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const NODE_HERO_GRADIENT: Record<NodeSlug, string> = {
+  berlin: "linear-gradient(135deg, #2563eb, #4f46e5)",
+  sf: "linear-gradient(135deg, #f59e0b, #ea580c)",
+};
+
 interface NodeProgrammingPageProps {
   initialNode: NodeSlug;
   people: Person[];
@@ -144,11 +149,11 @@ export function NodeProgrammingPage({
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* ── Hero section ──────────────────────────────────────── */}
-      <div className={`bg-gradient-to-br ${node.gradient} relative overflow-hidden`}>
+      <div className="relative overflow-hidden" style={{ background: NODE_HERO_GRADIENT[activeNode] }}>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-10 sm:pt-8 sm:pb-14 relative">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-8 sm:pt-6 sm:pb-10 relative">
           {/* Nav row */}
-          <div className="flex items-center justify-between gap-4 mb-8 sm:mb-10">
+          <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
             <button
               onClick={onNavigateHome}
               className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
@@ -160,11 +165,11 @@ export function NodeProgrammingPage({
           </div>
 
           {/* Title */}
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight font-heading">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-heading">
               {node.city} Programming
             </h1>
-            <p className="text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-white/70 max-w-xl leading-relaxed">
               {node.description}
             </p>
           </div>
@@ -175,7 +180,7 @@ export function NodeProgrammingPage({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
 
         {/* Calendar card */}
-        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-5 sm:p-7 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-4 sm:p-5 mb-6">
           <MonthNavigator
             selected={selectedMonth}
             year={YEAR}
@@ -185,7 +190,7 @@ export function NodeProgrammingPage({
         </div>
 
         {/* Identity strip */}
-        <div className="mb-8">
+        <div className="mb-6">
           <IdentityBanner
             identity={identity}
             people={people}
