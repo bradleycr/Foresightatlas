@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
-import { Z_INDEX_SIDEBAR, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 
 interface AppHeaderProps {
   /** Current route path: "/", "/berlin", "/sf" */
@@ -30,9 +30,7 @@ export function AppHeader({
 
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf";
-  const subtext = isMapRoute
-    ? "Tracking our global network of Fellows, Grantees, and prize winners"
-    : "A tool to help you connect to other fellows, grantees, and Nodes";
+  const subtext = "A tool to help you connect to other fellows, grantees, and nodees";
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -64,7 +62,7 @@ export function AppHeader({
   return (
     <header
       className="border-b border-gray-200 relative bg-app-header"
-      style={{ zIndex: Z_INDEX_SIDEBAR + 100 }}
+      style={{ zIndex: Z_INDEX_HEADER_NAV }}
     >
       <div className="px-4 md:px-8 py-4 md:py-5">
         <div className="flex flex-nowrap items-center justify-between gap-3 min-h-0">
@@ -85,7 +83,7 @@ export function AppHeader({
               <h1 className="text-gray-900 text-sm md:text-xl font-heading truncate">
                 Fellows and Grantees Map & Programming
               </h1>
-              <p className="text-xs md:text-sm text-gray-600 hidden sm:block truncate">
+              <p className="text-xs md:text-sm text-gray-600 truncate">
                 {subtext}
               </p>
             </div>
@@ -182,14 +180,14 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Mobile menu overlay + panel — fixed, full viewport, always on-screen */}
+      {/* Mobile menu — same pattern as desktop dropdown: inline, fixed overlay/panel so it draws above map */}
       {mobileMenuOpen && (
         <>
           <div
             role="presentation"
             aria-hidden
             onClick={closeMobileMenu}
-            className="fixed inset-0 bg-black/40 transition-opacity md:hidden"
+            className="fixed inset-0 bg-black/40 md:hidden"
             style={{ zIndex: Z_INDEX_MODAL_BACKDROP }}
           />
           <div
@@ -223,10 +221,10 @@ export function AppHeader({
                       onTabChange("map");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
                       isMapRoute
-                        ? "bg-violet-100 text-violet-900"
-                        : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-violet-100 text-violet-900 border-violet-200"
+                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     Map
@@ -243,10 +241,10 @@ export function AppHeader({
                       navigate("/berlin");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
                       route === "/berlin"
-                        ? "bg-violet-100 text-violet-900"
-                        : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-violet-100 text-violet-900 border-violet-200"
+                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     Berlin Programming
@@ -258,10 +256,10 @@ export function AppHeader({
                       navigate("/sf");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
                       route === "/sf"
-                        ? "bg-violet-100 text-violet-900"
-                        : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-violet-100 text-violet-900 border-violet-200"
+                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     SF Programming
@@ -274,7 +272,7 @@ export function AppHeader({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={closeMobileMenu}
-                      className="block w-full text-left px-4 py-3.5 rounded-xl text-base font-medium text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                      className="block w-full text-left px-4 py-3.5 rounded-xl text-base font-medium text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                     >
                       Suggest an update
                     </a>
