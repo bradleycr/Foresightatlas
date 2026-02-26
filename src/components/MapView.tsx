@@ -11,7 +11,7 @@ import { List, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
-import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
@@ -1082,7 +1082,7 @@ export function MapView({
           </div>
         )}
 
-        {/* Sidebar toggle - always visible, prominent button in top-right of map */}
+        {/* Sidebar toggle - always visible, prominent button in top-right of map — above header/menus */}
         {!isMobile && (
           <div 
             className="absolute top-4 right-4 pointer-events-auto"
@@ -1123,7 +1123,7 @@ export function MapView({
         )}
       </div>
 
-      {/* Mobile: open list button - positioned top-right to avoid zoom controls */}
+      {/* Mobile: open list button - above header/hamburger so always tappable */}
       {isMobile && !isSidebarOpen && (
         <div 
           className="absolute pointer-events-auto" 
@@ -1186,36 +1186,42 @@ export function MapView({
         </div>
       )}
 
-      {/* Mobile: full-screen fellows sheet — below modals so detail modal appears on top */}
+      {/* Mobile: full-screen fellows sheet — above header/hamburger so list is on top */}
       {isMobile && isSidebarOpen && (
-        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl min-h-0" style={{ zIndex: Z_INDEX_SIDEBAR }}>
-          {/* Single scrollable area: title + filters + list so month row and all controls are reachable */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-            <div className="px-4 pt-4 pb-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                    {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {selectedMarker && (
-                    <button
-                      type="button"
-                      onClick={clearLocationSelection}
-                      className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50"
-                    >
-                      Show all
-                    </button>
-                  )}
-                  <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 bg-white/80" onClick={() => setIsSidebarOpen(false)}>
-                    Back to map
-                  </Button>
-                </div>
+        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl min-h-0" style={{ zIndex: Z_INDEX_MOBILE_SIDEBAR_SHEET }}>
+          {/* Sticky header: always visible so "Back to map" is always reachable without scrolling */}
+          <header
+            className="shrink-0 px-4 pt-4 pb-3 border-b border-gray-200 bg-app-sidebar"
+            style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 0px) + 1rem)" }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
+                  {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                </p>
               </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedMarker && (
+                  <button
+                    type="button"
+                    onClick={clearLocationSelection}
+                    className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50"
+                  >
+                    Show all
+                  </button>
+                )}
+                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 bg-white/80" onClick={() => setIsSidebarOpen(false)}>
+                  Back to map
+                </Button>
+              </div>
+            </div>
+          </header>
+          {/* Scrollable area: filters + list only — header stays fixed above */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+            <div className="px-4 pt-3 pb-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
               {filters && onFiltersChange && defaultYear !== undefined && (
                 <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} expanded={filtersExpanded} onExpandedChange={setFiltersExpanded} />
               )}

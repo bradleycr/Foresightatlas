@@ -278,6 +278,24 @@ html {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Header desktop nav pills (Map + Programming) — visible from 768px up */
+.header-desktop-nav {
+  display: none !important;
+}
+@media (min-width: 768px) {
+  .header-desktop-nav {
+    display: flex !important;
+  }
+  .header-mobile-nav {
+    display: none !important;
+  }
+}
+
 /*
  * ── App design tokens (single source of truth) ─────────────────────────────
  * Use these classes instead of inline styles so styling stays consistent.

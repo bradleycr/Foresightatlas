@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { AppHeader } from "./components/AppHeader";
+import { AppFooter } from "./components/AppFooter";
 import { MapView } from "./components/MapView";
 import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
@@ -352,6 +353,8 @@ export default function App() {
         />
 
         {mainContent}
+
+        <AppFooter />
       </div>
 
       <PersonDetailModal

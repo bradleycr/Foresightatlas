@@ -26,6 +26,8 @@ export const Z_INDEX_TOOLTIP = 200;
 export const Z_INDEX_HEADER = 1000;
 export const Z_INDEX_SIDEBAR = 1100;
 export const Z_INDEX_MAP_CONTROLS = 1200;
+/** Full-screen mobile sidebar sheet — must sit above app header so "Back to map" is tappable */
+export const Z_INDEX_MOBILE_SIDEBAR_SHEET = 1300;
 
 // Modals and overlays (must be highest)
 export const Z_INDEX_MODAL_BACKDROP = 10000;

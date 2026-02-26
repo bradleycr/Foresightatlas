@@ -28,7 +28,6 @@ import {
   setAPIRsvpsFromBuild,
 } from "../services/rsvp";
 import { getRsvps } from "../services/database";
-import { NodeSwitch } from "../components/programming/NodeSwitch";
 import { IdentityBanner } from "../components/programming/IdentityBanner";
 import { MonthNavigator } from "../components/programming/MonthNavigator";
 import { EventCard } from "../components/programming/EventCard";
@@ -65,6 +64,10 @@ export function NodeProgrammingPage({
   const [identity, setIdentityState] = useState(() => getIdentity());
   const [rsvpTick, setRsvpTick] = useState(0);
   const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
+
+  useEffect(() => {
+    setActiveNode(initialNode);
+  }, [initialNode]);
 
   useEffect(() => {
     (async () => {
@@ -147,14 +150,6 @@ export function NodeProgrammingPage({
     [identity, rsvpTick],
   );
 
-  const handleNodeChange = useCallback(
-    (slug: NodeSlug) => {
-      setActiveNode(slug);
-      onNavigateNode(slug);
-    },
-    [onNavigateNode],
-  );
-
   const sectionLabel = selectedMonth === null
     ? "Upcoming Events"
     : `${MONTH_NAMES[selectedMonth]} Events`;
@@ -179,11 +174,11 @@ export function NodeProgrammingPage({
   } as React.CSSProperties;
 
   return (
-    <div className={`bg-gray-50 flex flex-col ${showPageHeader ? "min-h-screen" : "flex-1 min-h-0 overflow-auto"}`}>
+    <div className={`bg-gray-50 flex flex-col ${showPageHeader ? "min-h-screen" : "flex-1 min-h-0 overflow-auto w-full min-w-0"}`}>
       {showPageHeader ? (
         /* Full page header with "Back to map" — standalone route */
         <header className="border-b border-gray-200 flex-shrink-0" style={headerStyle}>
-          <div className="mx-auto max-w-3xl px-6 sm:px-8 py-4 sm:py-5">
+          <div className="w-full max-w-3xl mx-auto px-6 sm:px-8 py-4 sm:py-5">
             <div className="flex items-center justify-between gap-4 mb-4">
               <button
                 onClick={onNavigateHome}
@@ -192,7 +187,6 @@ export function NodeProgrammingPage({
                 <ArrowLeft className="size-4" />
                 Back to map
               </button>
-              <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} variant="light" />
             </div>
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-1 sm:mb-1.5">
               {node.city} Programming
@@ -203,26 +197,22 @@ export function NodeProgrammingPage({
           </div>
         </header>
       ) : (
-        /* Subhead only — global AppHeader is shown above */
+        /* Subhead only — global AppHeader is shown above; node switch is in header dropdown */
         <div className="border-b border-gray-200 flex-shrink-0" style={headerStyle}>
-          <div className="mx-auto max-w-3xl px-6 sm:px-8 py-4 sm:py-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-1 sm:mb-1.5">
-                  {node.city} Programming
-                </h1>
-                <p className="text-sm text-gray-600 max-w-lg leading-relaxed">
-                  {node.description}
-                </p>
-              </div>
-              <NodeSwitch activeNode={activeNode} onChange={handleNodeChange} variant="light" />
-            </div>
+          <div className="w-full max-w-3xl mx-auto px-6 sm:px-8 py-4 sm:py-5">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight mb-1 sm:mb-1.5">
+              {node.city} Programming
+            </h1>
+            <p className="text-sm text-gray-600 max-w-lg leading-relaxed">
+              {node.description}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Content */}
-      <div className="mx-auto max-w-3xl px-6 sm:px-8 py-6 sm:py-8 space-y-8 sm:space-y-10">
+      {/* Content — stable width so layout doesn’t jump when switching months or nodes */}
+      <div className="w-full min-w-0">
+        <div className="w-full max-w-3xl mx-auto px-6 sm:px-8 py-6 sm:py-8 space-y-8 sm:space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
           <IdentityBanner
             identity={identity}
@@ -300,6 +290,7 @@ export function NodeProgrammingPage({
         )}
 
         <div className="h-12 sm:h-16" aria-hidden />
+        </div>
       </div>
     </div>
   );
