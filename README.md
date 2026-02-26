@@ -1,6 +1,6 @@
-# Foresight Fellows Map & Timeline
+# Grantees and Fellows Map and Programming
 
-A web app for visualizing where Foresight Institute fellows, grantees, and prize winners are located and where they're traveling. Built for the Foresight community to see who's where and when.
+A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they're traveling. Built for the Foresight community to see who's where and when.
 
 ## What it does
 
@@ -15,21 +15,21 @@ Anyone can browse the map and timeline, filter by program type, focus area, or l
 
 You'll need Node.js installed. The app uses a simple Express server for the database (JSON file).
 
-**Environment variables (optional):** For a new environment or integrations (e.g. Supabase), copy `.env.example` to `.env.local` and set any values you need. The app runs without env vars using the default API server and local JSON data.
+**Environment variables (optional):** For a new environment or integrations (e.g. Google Sheets), copy `.env.example` to `.env.local` and set any values you need. The app runs without env vars using the default API server and local JSON data.
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start both the API server and frontend
-npm run dev:all
+pnpm dev:all
 
 # Or run them separately:
-npm run dev:api    # Starts server on port 3001
-npm run dev        # Starts frontend on port 5173
+pnpm dev:api    # Starts server on port 3001
+pnpm dev        # Starts frontend on port 3000
 ```
 
-The app will be available at `http://localhost:5173`. The database is stored in `public/data/database.json`. You can use a **Google Sheet** as the source of truth and sync into that file — see [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md).
+The app will be available at `http://localhost:3000`. The database is stored in `public/data/database.json`. You can use a **Google Sheet** as the source of truth and sync into that file — see [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md).
 
 ## Deploy on Vercel
 
@@ -82,7 +82,7 @@ public/data/
 
 The app tracks three main things:
 
-**People** (fellows, grantees, prize winners):
+**People** (grantees, fellows, prize winners):
 - Basic info: name, role type, cohort year, focus areas
 - Location: home base and current city/country with coordinates
 - Project: tagline and description
@@ -110,7 +110,7 @@ To add an admin user, add them to the `adminUsers` array in `public/data/databas
 
 ## Backend integration
 
-Right now it uses a JSON file with an Express server. The code is set up to swap this out for a real database. See `src/INTEGRATION.md` for details on connecting to Supabase or another backend.
+Right now it uses a JSON file with an optional Express server. The code is set up to swap this out for a real database. See `src/INTEGRATION.md` for details on connecting to Supabase or another backend.
 
 All database operations go through `src/services/database.ts`, so you only need to update that file when switching backends.
 

@@ -1,6 +1,6 @@
-# Foresight Fellows Map & Timeline
+# Grantees and Fellows Map and Programming
 
-A web app for visualizing where Foresight Institute fellows, grantees, and prize winners are located and where they're traveling.
+A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they're traveling.
 
 ## Overview
 
