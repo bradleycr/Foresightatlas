@@ -30,7 +30,7 @@ export function AppHeader({
 
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf";
-  const subtext = "A tool to help you connect to other fellows, grantees, and nodees";
+  const subtext = "A tool to help you connect to other grantees, fellows and nodees";
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -81,7 +81,7 @@ export function AppHeader({
             </button>
             <div className="border-l border-gray-300 pl-3 md:pl-4 min-w-0">
               <h1 className="text-gray-900 text-sm md:text-xl font-heading truncate">
-                Fellows and Grantees Map & Programming
+                Grantees and Fellows Map and Programming
               </h1>
               <p className="text-xs md:text-sm text-gray-600 truncate">
                 {subtext}
@@ -227,13 +227,8 @@ export function AppHeader({
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
-                    Map
+                    Foresight map
                   </button>
-                </li>
-                <li className="pt-4 mt-2 border-t border-gray-100">
-                  <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Node programming
-                  </p>
                 </li>
                 <li>
                   <button
@@ -247,7 +242,7 @@ export function AppHeader({
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
-                    Berlin Programming
+                    Berlin programming
                   </button>
                 </li>
                 <li>
@@ -262,7 +257,7 @@ export function AppHeader({
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
-                    SF Programming
+                    SF programming
                   </button>
                 </li>
                 {suggestFormUrl && (

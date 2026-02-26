@@ -21,7 +21,7 @@ export function AppFooter() {
           <span className="text-gray-300" aria-hidden>
             ·
           </span>
-          <span>Fellows and Grantees Map & Programming</span>
+          <span>Grantees and Fellows Map and Programming</span>
           <span className="text-gray-300" aria-hidden>
             ·
           </span>

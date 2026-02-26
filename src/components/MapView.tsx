@@ -55,15 +55,20 @@ const getCoordinateKey = (coords: { lat: number; lng: number }): string => {
 
 // When filters change, reset to a fixed fully-zoomed-out world view so the user always
 // sees the whole map (Americas on the left, Asia on the right). No fit-to-pins — user zooms/pans as they like.
+// On mobile only, when the filtered set is small we fit the view to those markers so the user doesn't have to hunt.
 const WORLD_VIEW_CENTER: [number, number] = [20, 0]; // Africa/Atlantic in middle, US left, Tokyo right
 const WORLD_VIEW_ZOOM = 2; // Default + max zoom-out (two steps in from full world so not overly zoomed out)
+/** On mobile, fit map to markers when there are this many or fewer (avoids scrolling to find grantees / event RSVPs). */
+const MOBILE_FIT_MARKERS_THRESHOLD = 50;
 
 function FitBounds({
   markers,
   skipIfMarkerSelected,
+  isMobile = false,
 }: {
   markers: MarkerData[];
   skipIfMarkerSelected?: boolean;
+  isMobile?: boolean;
 }) {
   const map = useMap();
 
@@ -75,20 +80,38 @@ function FitBounds({
     map.options.maxBounds = worldBounds;
     map.options.maxBoundsViscosity = 1.0;
     map.options.worldCopyJump = true;
-    map.setMinZoom(WORLD_VIEW_ZOOM); // Max zoom-out = same as default (two steps in from full world)
+    map.setMinZoom(WORLD_VIEW_ZOOM);
     map.invalidateSize();
 
-    // Apply world view after a short delay so we run after any other component's initial view setup
+    // Mobile: when only a few markers (e.g. grantees or event RSVPs), center on them so the user doesn't have to scroll.
+    const shouldFitToMarkers =
+      isMobile &&
+      markers.length > 0 &&
+      markers.length <= MOBILE_FIT_MARKERS_THRESHOLD;
+
+    if (shouldFitToMarkers) {
+      const points = markers.map((m) => [m.coordinates.lat, m.coordinates.lng] as [number, number]);
+      const bounds = L.latLngBounds(points);
+      const padding: [number, number] = [48, 48];
+      const maxZoom = 14;
+      if (points.length === 1) {
+        map.setView(points[0], Math.min(10, maxZoom), { animate: false });
+      } else {
+        map.fitBounds(bounds, { padding, maxZoom, animate: false });
+      }
+      const t = setTimeout(() => map.invalidateSize(), 100);
+      return () => clearTimeout(t);
+    }
+
+    // Default: world view
     const applyWorldView = () => {
       map.invalidateSize();
       map.setView(WORLD_VIEW_CENTER, WORLD_VIEW_ZOOM, { animate: false });
     };
-
     applyWorldView();
-    // Re-apply after layout so nothing (e.g. MapContainer initial state) overrides us
     const t = setTimeout(applyWorldView, 100);
     return () => clearTimeout(t);
-  }, [map, markers, skipIfMarkerSelected]);
+  }, [map, markers, skipIfMarkerSelected, isMobile]);
 
   return null;
 }
@@ -1051,7 +1074,7 @@ export function MapView({
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               noWrap={false}
             />
-            <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} />
+            <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} isMobile={isMobile} />
             <ZoomToMarker marker={selectedMarker} onlyWhenFromList={selectedMarkerFromList} />
             <MapResizer isSidebarOpen={isSidebarOpen} />
             <ImperativeMarkerClusters
