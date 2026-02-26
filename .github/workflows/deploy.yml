@@ -1,9 +1,7 @@
 name: Deploy to GitHub Pages
 
+# Dormant: we deploy via Vercel. Run this workflow manually from the Actions tab if you want to publish to GitHub Pages.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

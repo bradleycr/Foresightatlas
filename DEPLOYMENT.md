@@ -1,6 +1,14 @@
-# GitHub Pages Deployment Guide
+# Deployment
 
-This project is configured for automatic deployment to GitHub Pages using GitHub Actions.
+**Primary deploy: Vercel.** Push to `main` and Vercel builds and deploys. Configure env vars (e.g. `GOOGLE_SHEETS_API_KEY`, `LUMA_API_KEY`) in the Vercel project if you use sheet/events sync.
+
+**GitHub Pages (dormant).** The workflow `.github/workflows/deploy.yml` is set to run only **manually** (`workflow_dispatch`), so pushes to `main` no longer deploy to GitHub Pages. To use Pages again: edit the workflow and add back `on: push: branches: [main]`, then enable Pages in repo Settings → Pages → Source: GitHub Actions.
+
+---
+
+# GitHub Pages (optional / dormant)
+
+This project can deploy to GitHub Pages using the workflow below. It does **not** run on push; run it manually from the Actions tab if needed.
 
 ## Quick Setup with GitHub CLI
 

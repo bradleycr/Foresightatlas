@@ -36,5 +36,4 @@
   - `pnpm sync:sheet` — Sheet → `database.json` (needs `GOOGLE_SHEETS_API_KEY`). Skips missing tabs.
   - `pnpm migrate:sheet` — `database.json` → Sheet (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`). One-time populate.
   - Deploy workflow runs sync before build when configured.
-- **Events.** Programming pages use `public/data/events.json` (from Sheet + Luma). See `docs/LUMA_INTEGRATION.md`.
-- General dev commands: `README.md`.
+- **Deploy.** **Vercel** is the primary deploy target (push to `main` → Vercel builds and deploys). **GitHub Pages** is dormant: the workflow (`.github/workflows/deploy.yml`) runs only on `workflow_dispatch` (manual from the Actions tab); re-enable push trigger if you want to use Pages again.
