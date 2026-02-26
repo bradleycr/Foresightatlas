@@ -18,6 +18,9 @@ interface InlineFiltersProps {
   onFiltersChange: (filters: Filters) => void;
   defaultYear: number;
   resultCount: number;
+  /** Controlled expand/collapse of the filter section (e.g. collapse when user selects from map). */
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 const FOCUS_AREAS = [
@@ -32,8 +35,14 @@ const FOCUS_AREAS = [
 
 const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
 
-export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCount }: InlineFiltersProps) {
-  const [expanded, setExpanded] = useState(false);
+export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCount, expanded: controlledExpanded, onExpandedChange }: InlineFiltersProps) {
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const isControlled = controlledExpanded !== undefined;
+  const expanded = isControlled ? controlledExpanded : internalExpanded;
+  const setExpanded = (value: boolean) => {
+    if (isControlled) onExpandedChange?.(value);
+    else setInternalExpanded(value);
+  };
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear + 2 - 2017 }, (_, i) => 2017 + i);
   const activeToggle = activeMultiGradient;
@@ -47,7 +56,13 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
     const next = filters.focusTags.includes(t) ? filters.focusTags.filter((x) => x !== t) : [...filters.focusTags, t];
     onFiltersChange({ ...filters, focusTags: next });
   };
-  const setYear = (y: number | null) => onFiltersChange({ ...filters, year: y });
+  const setYear = (y: number | null) => {
+    if (y !== null && y !== currentYear) {
+      onFiltersChange({ ...filters, year: y, granularity: "Year" });
+    } else {
+      onFiltersChange({ ...filters, year: y });
+    }
+  };
 
   const activeCount = filters.programs.length + filters.focusTags.length + (filters.year !== defaultYear ? 1 : 0);
 
@@ -128,6 +143,38 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
               </TogglePill>
             ))}
           </QuickRow>
+
+          {/* Month (current year only) — see where people will be in a given month */}
+          {filters.year === currentYear && (
+            <QuickRow label="View by month">
+              <TogglePill
+                active={filters.granularity === "Year"}
+                activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
+                onClick={() => onFiltersChange({ ...filters, granularity: "Year" })}
+              >
+                Whole year
+              </TogglePill>
+              {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, i) => {
+                const isActive = filters.granularity === "Month" && filters.referenceDate && new Date(filters.referenceDate).getMonth() === i;
+                return (
+                  <TogglePill
+                    key={month}
+                    active={isActive}
+                    activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
+                    onClick={() =>
+                      onFiltersChange({
+                        ...filters,
+                        granularity: "Month",
+                        referenceDate: new Date(currentYear, i, 1).toISOString(),
+                      })
+                    }
+                  >
+                    {month}
+                  </TogglePill>
+                );
+              })}
+            </QuickRow>
+          )}
         </div>
       )}
     </div>
@@ -158,8 +205,13 @@ function TogglePill({
 }) {
   return (
     <Badge
+      variant={active ? "default" : "outline"}
       onClick={onClick}
-      className={`cursor-pointer transition-all text-[11px] px-2 py-0.5 ${active ? "text-gray-900 shadow-sm border-white/50" : "text-gray-600 hover:text-gray-900 border-gray-200"}`}
+      className={`cursor-pointer transition-all text-[11px] px-2 py-0.5 ${
+        active
+          ? "text-gray-900 shadow-sm border-white/50"
+          : "bg-neutral-100 border-neutral-200 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 hover:border-neutral-300"
+      }`}
       style={active ? activeStyle : undefined}
     >
       {children}

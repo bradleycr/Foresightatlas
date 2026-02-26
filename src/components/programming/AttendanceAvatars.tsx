@@ -5,6 +5,7 @@
 
 import { Person } from "../../types";
 import { cn } from "../ui/utils";
+import { getRoleGradient } from "../../styles/roleColors";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +18,7 @@ interface AttendanceAvatarsProps {
   maxShow?: number;
   label?: string;
   size?: "sm" | "md";
+  onPersonClick?: (personId: string) => void;
 }
 
 function initials(name: string): string {
@@ -28,28 +30,12 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-const PALETTE = [
-  "bg-blue-100 text-blue-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-purple-100 text-purple-700",
-  "bg-amber-100 text-amber-700",
-  "bg-rose-100 text-rose-700",
-  "bg-cyan-100 text-cyan-700",
-  "bg-indigo-100 text-indigo-700",
-  "bg-teal-100 text-teal-700",
-];
-
-function colorFor(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
-  return PALETTE[Math.abs(h) % PALETTE.length];
-}
-
 export function AttendanceAvatars({
   people,
   maxShow = 5,
   label = "going",
   size = "sm",
+  onPersonClick,
 }: AttendanceAvatarsProps) {
   if (people.length === 0) return null;
 
@@ -65,17 +51,55 @@ export function AttendanceAvatars({
             <Tooltip key={p.id}>
               <TooltipTrigger asChild>
                 <div
+                  role={onPersonClick ? "button" : undefined}
+                  tabIndex={onPersonClick ? 0 : undefined}
+                  onClick={onPersonClick ? () => onPersonClick(p.id) : undefined}
+                  onKeyDown={
+                    onPersonClick
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onPersonClick(p.id);
+                          }
+                        }
+                      : undefined
+                  }
+                  aria-label={onPersonClick ? `View profile for ${p.fullName}` : p.fullName}
                   className={cn(
-                    "rounded-full flex items-center justify-center font-semibold ring-2 ring-white cursor-default",
+                    "rounded-full flex items-center justify-center font-semibold select-none",
+                    "ring-2 ring-white/90 shadow-sm border border-white/80",
+                    "text-gray-900",
+                    onPersonClick
+                      ? "cursor-pointer hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-1 transition-transform"
+                      : "cursor-default",
                     sz,
-                    colorFor(p.id),
                   )}
+                  style={{
+                    background: getRoleGradient(p.roleType),
+                    textShadow: "0 0 1px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.08)",
+                  }}
                 >
                   {initials(p.fullName)}
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                {p.fullName}
+              <TooltipContent side="top" theme="light" className="text-xs">
+                <div className="flex flex-col gap-0.5">
+                  {onPersonClick ? (
+                    <button
+                      type="button"
+                      onClick={() => onPersonClick(p.id)}
+                      className="text-left font-semibold text-gray-700"
+                    >
+                      {p.fullName}
+                    </button>
+                  ) : (
+                    <span className="font-semibold text-gray-700">{p.fullName}</span>
+                  )}
+                  <span className="text-[11px] text-gray-500">{p.roleType}</span>
+                  {onPersonClick && (
+                    <span className="text-[11px] text-gray-500">View profile</span>
+                  )}
+                </div>
               </TooltipContent>
             </Tooltip>
           ))}

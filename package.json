@@ -69,7 +69,10 @@
         "sync:sheet": "node scripts/sync-sheet-to-json.js",
         "sync:events": "node scripts/sync-events.js",
         "sync:all": "node scripts/sync-sheet-to-json.js && node scripts/sync-events.js",
-        "migrate:sheet": "node scripts/migrate-json-to-sheet.js"
+        "migrate:sheet": "node scripts/migrate-json-to-sheet.js",
+        "export:sheet": "node scripts/export-database-to-csv.js",
+        "export:sheet:sample": "node scripts/export-database-to-csv.js --sample",
+        "test:sheet-roundtrip": "node scripts/test-sheet-roundtrip.js"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

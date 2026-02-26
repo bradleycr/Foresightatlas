@@ -1,17 +1,22 @@
 /**
  * EventCard — mirrors the FellowCard visual language from the map page:
- * white card, subtle border + shadow, colored pill badges, generous spacing.
+ * white card, subtle border + shadow, coloured pill badges, generous spacing.
+ *
+ * The CTA button and text links use the per-node NodeColorTheme so Berlin
+ * gets violet–rose accents and SF gets amber–sky accents — no hardcoded teal.
  */
 
 import { useState, useMemo } from "react";
-import { Calendar, MapPin, ChevronDown, Users, ExternalLink } from "lucide-react";
-import { NodeEvent, RSVPStatus, RSVPSummary } from "../../types/events";
+import { Calendar, MapPin, ChevronDown, Users, ExternalLink, Ticket } from "lucide-react";
+import { NodeEvent, NodeColorTheme, RSVPStatus, RSVPSummary } from "../../types/events";
 import { Person } from "../../types";
 import { RSVPButtonGroup } from "./RSVPButtonGroup";
 import { AttendanceAvatars } from "./AttendanceAvatars";
+import { eventDescriptionTeaser } from "./eventDescription";
 import { cn } from "../ui/utils";
+import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
 
-/** Show "Read more" when description might wrap beyond two lines. */
+/** Show "Read more" when description might wrap beyond two lines (events without Luma link). */
 const READ_MORE_THRESHOLD = 80;
 
 const TYPE_BADGE: Record<string, { bg: string; text: string }> = {
@@ -57,10 +62,12 @@ interface EventCardProps {
   event: NodeEvent;
   rsvpSummary: RSVPSummary;
   currentUserStatus: RSVPStatus | null;
-  onRSVPChange: (eventId: string, status: RSVPStatus | null) => void;
+  onRSVPChange: (eventId: string, status: RSVPStatus | null, eventTitle?: string) => void;
   onShowOnMap?: (eventId: string) => void;
   allPeople: Person[];
   isAuthenticated: boolean;
+  onPersonClick?: (personId: string) => void;
+  theme: NodeColorTheme;
 }
 
 export function EventCard({
@@ -70,10 +77,14 @@ export function EventCard({
   onRSVPChange,
   allPeople,
   isAuthenticated,
+  onPersonClick,
+  theme,
 }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const badge = badgeStyle(event.type);
   const { date, time } = formatTime(event.startAt, event.endAt);
+  const externalLink = normalizeExternalUrl(event.externalLink);
+  const isLumaEvent = isLumaUrl(externalLink);
 
   const goingPeople = useMemo(
     () => allPeople.filter((p) => rsvpSummary.goingPersonIds.includes(p.id)),
@@ -82,13 +93,13 @@ export function EventCard({
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 sm:p-7">
-      {/* Badges row */}
+      {/* Badges row — comfortable padding so text isn’t cramped */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
-        <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", badge.bg, badge.text)}>
+        <span className={cn("px-3 py-1.5 rounded-full text-xs font-semibold", badge.bg, badge.text)}>
           {typeLabel(event.type)}
         </span>
         {event.visibility === "public" && (
-          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
             Public
           </span>
         )}
@@ -117,45 +128,72 @@ export function EventCard({
         </span>
       </div>
 
-      {/* Description */}
-      {event.description && (
-        <div className="mb-4">
-          <p
+      {/* Primary CTA: Luma / external link — so people can go straight to the event page */}
+      {externalLink && (
+        <div className="mb-4 mt-1">
+          <a
+            href={externalLink}
+            target="_blank"
+            rel="noopener noreferrer"
             className={cn(
-              "text-sm text-gray-600 leading-relaxed",
-              !expanded && "line-clamp-2",
+              "inline-flex items-center justify-center gap-2.5 rounded-xl font-medium transition-all",
+              "px-6 py-3.5 min-w-[11rem] text-sm sm:text-base",
+              "focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow",
+              theme.ctaBg, theme.ctaText, `border ${theme.ctaBorder}`,
+              theme.ctaHover, theme.ctaFocusRing,
             )}
           >
-            {event.description}
-          </p>
-          {event.description.length >= READ_MORE_THRESHOLD && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                setExpanded((prev) => !prev);
-              }}
-              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 rounded"
-            >
-              {expanded ? "Show less" : "Read more"}
-              <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
-            </button>
-          )}
+            {isLumaEvent ? (
+              <>
+                <Ticket className="size-4 sm:size-5 flex-shrink-0" />
+                View on Luma
+              </>
+            ) : (
+              <>
+                <ExternalLink className="size-4 sm:size-5 flex-shrink-0" />
+                Get tickets
+              </>
+            )}
+          </a>
         </div>
       )}
 
-      {/* External registration link (e.g. Luma) — easy place to add event URL */}
-      {event.externalLink && (
+      {/* Description: when we have a Luma link, show only a short teaser; otherwise full text + Read more */}
+      {event.description && (
         <div className="mb-4">
-          <a
-            href={event.externalLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors"
-          >
-            <ExternalLink className="size-4" />
-            Register on Luma
-          </a>
+          {externalLink ? (
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {eventDescriptionTeaser(event.description) || "See event page for details."}
+            </p>
+          ) : (
+            <>
+              <p
+                className={cn(
+                  "text-sm text-gray-600 leading-relaxed",
+                  !expanded && "line-clamp-2",
+                )}
+              >
+                {event.description}
+              </p>
+              {event.description.length >= READ_MORE_THRESHOLD && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setExpanded((prev) => !prev);
+                  }}
+                  className={cn(
+                    "mt-2 inline-flex items-center gap-1 text-sm font-medium rounded",
+                    "focus:outline-none focus:ring-2 focus:ring-offset-1",
+                    theme.linkText, theme.linkHover, theme.ctaFocusRing,
+                  )}
+                >
+                  {expanded ? "Show less" : "Read more"}
+                  <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -165,14 +203,13 @@ export function EventCard({
           {isAuthenticated && (
             <RSVPButtonGroup
               currentStatus={currentUserStatus}
-              onStatusChange={(s) => onRSVPChange(event.id, s)}
+              onStatusChange={(s) => onRSVPChange(event.id, s, event.title)}
               goingCount={rsvpSummary.going}
               interestedCount={rsvpSummary.interested}
+              theme={theme}
             />
           )}
-          {goingPeople.length > 0 && (
-            <AttendanceAvatars people={goingPeople} />
-          )}
+          {goingPeople.length > 0 && <AttendanceAvatars people={goingPeople} onPersonClick={onPersonClick} />}
         </div>
       )}
     </div>

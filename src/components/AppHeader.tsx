@@ -4,20 +4,30 @@ import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import { Z_INDEX_SIDEBAR } from "../constants/zIndex";
 
 interface AppHeaderProps {
+  /** Current route path: "/", "/berlin", "/sf" */
+  route: string;
+  /** Navigate to a path (updates history and scroll) */
+  navigate: (path: string) => void;
   activeTab: "map" | "timeline";
   onTabChange: (tab: "map" | "timeline") => void;
   suggestFormUrl?: string;
-  onNavigateNode?: (slug: string) => void;
 }
 
 export function AppHeader({
+  route,
+  navigate,
   activeTab,
   onTabChange,
   suggestFormUrl,
-  onNavigateNode,
 }: AppHeaderProps) {
   const [nodeMenuOpen, setNodeMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const isMapRoute = route === "/";
+  const isProgrammingRoute = route === "/berlin" || route === "/sf";
+  const subtext = isMapRoute
+    ? "Tracking our global network of Fellows, Grantees, and prize winners"
+    : "A tool to help you connect to other fellows, grantees, and Nodes";
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -40,10 +50,10 @@ export function AppHeader({
             <img src={foresightLogo} alt="Foresight Institute" className="h-9 md:h-12" />
             <div className="border-l border-gray-300 pl-3 md:pl-4">
               <h1 className="text-gray-900 text-sm md:text-xl font-heading">
-                Fellows and Grantees Map & Timeline
+                Fellows and Grantees Map & Programming
               </h1>
               <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
-                Tracking our global network of Fellows, Grantees, and prize winners
+                {subtext}
               </p>
             </div>
           </div>
@@ -51,9 +61,12 @@ export function AppHeader({
           <div className="flex items-center gap-3 md:gap-4">
             <div className="flex gap-1 sm:gap-2">
               <button
-                onClick={() => onTabChange("map")}
+                onClick={() => {
+                  navigate("/");
+                  if (isMapRoute) onTabChange("map");
+                }}
                 className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
-                  activeTab === "map"
+                  isMapRoute
                     ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent"
                 }`}
@@ -66,9 +79,11 @@ export function AppHeader({
                 <button
                   onClick={() => setNodeMenuOpen(!nodeMenuOpen)}
                   className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border inline-flex items-center gap-1.5 ${
-                    nodeMenuOpen
-                      ? "text-gray-900 bg-gray-100 border-gray-200"
-                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    isProgrammingRoute && !nodeMenuOpen
+                      ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
+                      : nodeMenuOpen
+                        ? "text-gray-900 bg-gray-100 border-gray-200"
+                        : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
                   <span className="hidden sm:inline">Programming</span>
@@ -88,7 +103,7 @@ export function AppHeader({
                   >
                     <button
                       onClick={() => {
-                        onNavigateNode?.("berlin");
+                        navigate("/berlin");
                         setNodeMenuOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
@@ -97,7 +112,7 @@ export function AppHeader({
                     </button>
                     <button
                       onClick={() => {
-                        onNavigateNode?.("sf");
+                        navigate("/sf");
                         setNodeMenuOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"

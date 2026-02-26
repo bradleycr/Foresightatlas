@@ -29,6 +29,7 @@ const {
   TRAVEL_WINDOWS_HEADERS,
   SUGGESTIONS_HEADERS,
   ADMIN_USERS_HEADERS,
+  RSVPS_HEADERS,
 } = require("./sheet-schema.js");
 
 const SPREADSHEET_ID =
@@ -106,6 +107,7 @@ async function ensureSheets(sheets) {
     SHEET_NAMES.TRAVEL_WINDOWS,
     SHEET_NAMES.SUGGESTIONS,
     SHEET_NAMES.ADMIN_USERS,
+    SHEET_NAMES.RSVPS,
   ];
   const missing = required.filter((t) => !existing.includes(t));
   if (missing.length === 0) return;
@@ -166,6 +168,7 @@ async function main() {
   const travelWindows = database.travelWindows || [];
   const suggestions = database.suggestions || [];
   const adminUsers = database.adminUsers || [];
+  const rsvps = database.rsvps || [];
 
   await ensureSheets(sheets);
 
@@ -193,9 +196,24 @@ async function main() {
     ADMIN_USERS_HEADERS,
     adminUsers.map(adminUserToRow)
   );
+  const rsvpToRow = (r) => [
+    r.eventId ?? "",
+    r.eventTitle ?? "",
+    r.personId ?? "",
+    r.fullName ?? "",
+    r.status ?? "going",
+    r.createdAt ?? "",
+    r.updatedAt ?? "",
+  ];
+  await writeSheet(
+    sheets,
+    SHEET_NAMES.RSVPS,
+    RSVPS_HEADERS,
+    rsvps.map(rsvpToRow)
+  );
 
   console.log(
-    `Migrated to sheet ${SPREADSHEET_ID}: ${people.length} people, ${travelWindows.length} travel windows, ${suggestions.length} suggestions, ${adminUsers.length} admin users.`
+    `Migrated to sheet ${SPREADSHEET_ID}: ${people.length} people, ${travelWindows.length} travel windows, ${suggestions.length} suggestions, ${adminUsers.length} admin users, ${rsvps.length} RSVPs.`
   );
 }
 

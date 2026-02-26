@@ -293,8 +293,9 @@ const ToggleBadge: React.FC<{
   children: React.ReactNode;
 }> = ({ active, activeStyle, onClick, children }) => (
   <Badge
+    variant={active ? "default" : "outline"}
     onClick={onClick}
-    className={`cursor-pointer transition-all ${active ? "text-gray-900 shadow-sm border-white/50" : "text-gray-600 hover:text-gray-900 border-gray-200"}`}
+    className={`cursor-pointer transition-all ${active ? "text-gray-900 shadow-sm border-white/50" : "bg-neutral-100 border-neutral-200 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 hover:border-neutral-300"}`}
     style={active ? activeStyle : undefined}
   >
     {children}

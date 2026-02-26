@@ -63,6 +63,7 @@ const ADMIN_USERS_HEADERS = ["id", "displayName", "email", "passwordPlaceholder"
 
 const RSVPS_HEADERS = [
   "eventId",
+  "eventTitle",
   "personId",
   "fullName",
   "status",

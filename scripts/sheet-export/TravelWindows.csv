@@ -1,0 +1,22 @@
+id,personId,title,city,country,lat,lng,startDate,endDate,type,notes
+tw1,p1,AI Safety Summit,London,UK,51.5074,-0.1278,2025-12-15,2025-12-20,Conference,Presenting research on interpretable AI systems
+tw2,p1,Research collaboration,Berlin,Germany,52.52,13.405,2026-02-01,2026-03-15,Residency,Collaborating with Berlin Node on AI alignment
+tw3,p2,Neurotechnology workshop,San Francisco,USA,37.7749,-122.4194,2026-01-10,2026-01-17,Workshop,Bay Area Node BCI workshop
+tw4,p2,Conference presentation,Tokyo,Japan,35.6762,139.6503,2026-04-05,2026-04-10,Conference,International Neurotechnology Conference
+tw5,p3,Space tech collaboration,Houston,USA,29.7604,-95.3698,2025-12-01,2026-01-31,Residency,NASA collaboration on space nanomaterials
+tw6,p3,ESA meeting,Paris,France,48.8566,2.3522,2026-03-10,2026-03-14,Visit,European Space Agency partnership discussions
+tw7,p4,MIT research visit,Boston,USA,42.3601,-71.0589,2025-09-01,2026-06-30,Residency,Visiting researcher at MIT Aging Lab
+tw8,p4,Longevity conference,San Francisco,USA,37.7749,-122.4194,2026-05-20,2026-05-23,Conference,Longevity Summit Bay Area
+tw9,p5,Neurofeedback workshop series,Berlin,Germany,52.52,13.405,2026-01-15,2026-02-15,Workshop,Teaching neurofeedback techniques at Berlin Node
+tw10,p5,Prize ceremony,San Francisco,USA,37.7749,-122.4194,2025-11-28,2025-12-02,Other,Foresight Existential Hope Prize ceremony
+tw11,p6,Nanotech symposium,Singapore,Singapore,1.3521,103.8198,2026-02-20,2026-02-25,Conference,Asia-Pacific Nanotechnology Symposium
+tw12,p6,Research collaboration,San Francisco,USA,37.7749,-122.4194,2026-06-01,2026-07-31,Residency,Bay Area Node nanorobotics research
+tw13,p7,Mars habitat testing,Reykjavik,Iceland,64.1466,-21.9426,2026-03-01,2026-04-15,Other,Mars analog habitat field testing
+tw14,p7,Space settlement workshop,Berlin,Germany,52.52,13.405,2026-05-10,2026-05-17,Workshop,Berlin Node space technology workshop
+tw15,p8,AI safety research,San Francisco,USA,37.7749,-122.4194,2025-12-10,2026-02-28,Residency,Bay Area Node AI alignment research
+tw16,p8,Neural-AI workshop,Berlin,Germany,52.52,13.405,2026-04-01,2026-04-14,Workshop,Cross-node neuroscience and AI collaboration
+tw21,p8,Berlin research residency,Berlin,Germany,52.52,13.405,2026-05-01,2026-05-31,Residency,Extended research collaboration at Berlin Node
+tw17,p9,Bay Area residency,San Francisco,USA,37.7749,-122.4194,2025-06-01,2026-05-31,Residency,One-year residency at Bay Area Node
+tw18,p9,Longevity summit,Dublin,Ireland,53.3498,-6.2603,2026-03-15,2026-03-20,Conference,European Longevity Summit
+tw19,p10,Berlin Node residency,Berlin,Germany,52.52,13.405,2025-10-01,2026-03-31,Residency,Six-month AI safety residency at Berlin Node
+tw20,p10,Cooperative AI summit,Geneva,Switzerland,46.2044,6.1432,2026-04-20,2026-04-25,Conference,UN Global AI Cooperation Summit

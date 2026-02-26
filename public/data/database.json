@@ -5,12 +5,12 @@
       "fullName": "Dr. Sarah Chen",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI",
         "Existential Hope"
       ],
-      "homeBaseCity": "San Francisco",
-      "homeBaseCountry": "USA",
       "currentCity": "San Francisco",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -29,12 +29,12 @@
       "fullName": "Marcus Weber",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology",
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Berlin",
-      "homeBaseCountry": "Germany",
       "currentCity": "Berlin",
       "currentCountry": "Germany",
       "currentCoordinates": {
@@ -53,12 +53,12 @@
       "fullName": "Yuki Tanaka",
       "roleType": "Grantee",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology",
         "Space"
       ],
-      "homeBaseCity": "Tokyo",
-      "homeBaseCountry": "Japan",
       "currentCity": "Tokyo",
       "currentCountry": "Japan",
       "currentCoordinates": {
@@ -77,12 +77,12 @@
       "fullName": "Dr. Amara Okafor",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology",
         "Secure AI"
       ],
-      "homeBaseCity": "Lagos",
-      "homeBaseCountry": "Nigeria",
       "currentCity": "Boston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -101,12 +101,12 @@
       "fullName": "Elena Rodriguez",
       "roleType": "Prize Winner",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology",
         "Existential Hope"
       ],
-      "homeBaseCity": "Barcelona",
-      "homeBaseCountry": "Spain",
       "currentCity": "Barcelona",
       "currentCountry": "Spain",
       "currentCoordinates": {
@@ -125,12 +125,12 @@
       "fullName": "Dr. Rajesh Patel",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology",
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Mumbai",
-      "homeBaseCountry": "India",
       "currentCity": "Mumbai",
       "currentCountry": "India",
       "currentCoordinates": {
@@ -149,12 +149,12 @@
       "fullName": "Sophie Dubois",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space",
         "Existential Hope"
       ],
-      "homeBaseCity": "Paris",
-      "homeBaseCountry": "France",
       "currentCity": "Paris",
       "currentCountry": "France",
       "currentCoordinates": {
@@ -173,12 +173,12 @@
       "fullName": "Alex Kim",
       "roleType": "Grantee",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI",
         "Neurotechnology"
       ],
-      "homeBaseCity": "Seoul",
-      "homeBaseCountry": "South Korea",
       "currentCity": "Seoul",
       "currentCountry": "South Korea",
       "currentCoordinates": {
@@ -197,12 +197,12 @@
       "fullName": "Dr. Liam O'Connor",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology",
         "Nanotechnology"
       ],
-      "homeBaseCity": "Dublin",
-      "homeBaseCountry": "Ireland",
       "currentCity": "San Francisco",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -221,12 +221,12 @@
       "fullName": "Maya Gupta",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI",
         "Existential Hope"
       ],
-      "homeBaseCity": "Bangalore",
-      "homeBaseCountry": "India",
       "currentCity": "Berlin",
       "currentCountry": "Germany",
       "currentCoordinates": {
@@ -245,11 +245,11 @@
       "fullName": "Ivan Seah",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Singapore",
-      "homeBaseCountry": "Singapore",
       "currentCity": "Singapore",
       "currentCountry": "Singapore",
       "currentCoordinates": {
@@ -268,11 +268,11 @@
       "fullName": "Yelena Budovskaya",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "South San Francisco",
-      "homeBaseCountry": "USA",
       "currentCity": "South San Francisco",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -291,11 +291,11 @@
       "fullName": "J. Sarkar",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -314,11 +314,11 @@
       "fullName": "Dr. Huanyu \"Larry\" Cheng",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "State College",
-      "homeBaseCountry": "USA",
       "currentCity": "State College",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -337,11 +337,11 @@
       "fullName": "Ye He",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -360,11 +360,11 @@
       "fullName": "Dr. Yuxuan Lu",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -383,11 +383,11 @@
       "fullName": "William E. Halal",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Washington",
-      "homeBaseCountry": "USA",
       "currentCity": "Washington",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -406,11 +406,11 @@
       "fullName": "Cosmo Mielke",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -429,11 +429,11 @@
       "fullName": "Berhane Temelso",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -452,11 +452,11 @@
       "fullName": "Kimberly Hamad-Schifferli",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -475,11 +475,11 @@
       "fullName": "Nell Watson",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Zurich",
-      "homeBaseCountry": "Switzerland",
       "currentCity": "Zurich",
       "currentCountry": "Switzerland",
       "currentCoordinates": {
@@ -498,11 +498,11 @@
       "fullName": "Chuyang Cheng",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Beijing",
-      "homeBaseCountry": "China",
       "currentCity": "Beijing",
       "currentCountry": "China",
       "currentCoordinates": {
@@ -521,11 +521,11 @@
       "fullName": "Jonathan Barnes",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "St. Louis",
-      "homeBaseCountry": "USA",
       "currentCity": "St. Louis",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -544,11 +544,11 @@
       "fullName": "Eva-Maria Strauch",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Seattle",
-      "homeBaseCountry": "USA",
       "currentCity": "Seattle",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -567,11 +567,11 @@
       "fullName": "Christopher Wilmer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Pittsburgh",
-      "homeBaseCountry": "USA",
       "currentCity": "Pittsburgh",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -590,11 +590,11 @@
       "fullName": "Michael Skuhersky",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -613,11 +613,11 @@
       "fullName": "Eric Hinterman",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -636,11 +636,11 @@
       "fullName": "Melissa Dumartin",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -659,11 +659,11 @@
       "fullName": "Andres Ochoa",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -682,11 +682,11 @@
       "fullName": "Grigory Tikhomirov",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -705,11 +705,11 @@
       "fullName": "Peter Scheyer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -728,11 +728,11 @@
       "fullName": "Roman V. Yampolskiy",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -751,11 +751,11 @@
       "fullName": "Ryan Carey",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -774,11 +774,11 @@
       "fullName": "Jane Lippencott",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -797,11 +797,11 @@
       "fullName": "Damien Sluysmans",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -820,11 +820,11 @@
       "fullName": "Sergei Kalinin",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Oak Ridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Oak Ridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -843,11 +843,11 @@
       "fullName": "Nusrat Jahan M. Sanghamitra",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -866,11 +866,11 @@
       "fullName": "Bharath Ramsundar",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2018,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -889,11 +889,11 @@
       "fullName": "Patrick Mellor",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2019,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -912,11 +912,11 @@
       "fullName": "Durham Smith",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2019,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -935,11 +935,11 @@
       "fullName": "Michael M. Lerch",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2019,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -958,11 +958,11 @@
       "fullName": "TJ Brunette",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2019,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -981,11 +981,11 @@
       "fullName": "Alevtina Evgrafova",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1004,11 +1004,11 @@
       "fullName": "Tony Lai",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1027,11 +1027,11 @@
       "fullName": "Daniel Bojar",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1050,11 +1050,11 @@
       "fullName": "Tessa Alexanian",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1073,11 +1073,11 @@
       "fullName": "Daniel Elton",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1096,11 +1096,11 @@
       "fullName": "Felix Andreas Faber",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1119,11 +1119,11 @@
       "fullName": "Caroline Jeanmaire",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Berkeley",
-      "homeBaseCountry": "USA",
       "currentCity": "Berkeley",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -1142,11 +1142,11 @@
       "fullName": "Jeffrey Ladish",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1165,11 +1165,11 @@
       "fullName": "Matthew R. Ryder",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1188,11 +1188,11 @@
       "fullName": "Giuliana Rotola",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2020,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1211,11 +1211,11 @@
       "fullName": "Jazear Brooks",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1234,11 +1234,11 @@
       "fullName": "Maxim Ziatdinov",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Oak Ridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Oak Ridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -1257,11 +1257,11 @@
       "fullName": "Phoebe Tickell",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1280,11 +1280,11 @@
       "fullName": "Christine Webber",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1303,11 +1303,11 @@
       "fullName": "Thomas Schroeder",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Raleigh",
-      "homeBaseCountry": "USA",
       "currentCity": "Raleigh",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -1326,11 +1326,11 @@
       "fullName": "Stephen Malina",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1349,11 +1349,11 @@
       "fullName": "David Manheim",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1372,11 +1372,11 @@
       "fullName": "Primavera De Filippi",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1395,11 +1395,11 @@
       "fullName": "Yip Fai Tsei",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1418,11 +1418,11 @@
       "fullName": "Zhu Xiaohu",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1441,11 +1441,11 @@
       "fullName": "JJ Ben-Joseph",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1464,11 +1464,11 @@
       "fullName": "Kate Sills",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1487,11 +1487,11 @@
       "fullName": "Joscha Bach",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Berlin",
-      "homeBaseCountry": "Germany",
       "currentCity": "Berlin",
       "currentCountry": "Germany",
       "currentCoordinates": {
@@ -1510,11 +1510,11 @@
       "fullName": "Jessica V. Lamb",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1533,11 +1533,11 @@
       "fullName": "James Arthur Cooper",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Reading",
-      "homeBaseCountry": "UK",
       "currentCity": "Reading",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -1556,11 +1556,11 @@
       "fullName": "Liang Feng",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Durham",
-      "homeBaseCountry": "USA",
       "currentCity": "Durham",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -1579,11 +1579,11 @@
       "fullName": "Qiu Yunyan",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Singapore",
-      "homeBaseCountry": "Singapore",
       "currentCity": "Singapore",
       "currentCountry": "Singapore",
       "currentCoordinates": {
@@ -1602,11 +1602,11 @@
       "fullName": "Matthew McAteer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1625,11 +1625,11 @@
       "fullName": "Alexander Fedintsev",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1648,11 +1648,11 @@
       "fullName": "Yuri Deigin",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1671,11 +1671,11 @@
       "fullName": "Tatyana Dobreva",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1694,11 +1694,11 @@
       "fullName": "Cody Rasmussen-Ivey",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1717,11 +1717,11 @@
       "fullName": "Nora Khaldi",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1740,11 +1740,11 @@
       "fullName": "Delphine Larrieu",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1763,11 +1763,11 @@
       "fullName": "Tinka Vidovic",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1786,11 +1786,11 @@
       "fullName": "Mac Davis",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1809,11 +1809,11 @@
       "fullName": "Juanita Matthews",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Boston",
-      "homeBaseCountry": "USA",
       "currentCity": "Boston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -1832,11 +1832,11 @@
       "fullName": "Nikolina Lauc",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1855,11 +1855,11 @@
       "fullName": "Maryna Polyakova",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1878,11 +1878,11 @@
       "fullName": "Zvonimir Vrselja",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1901,11 +1901,11 @@
       "fullName": "Bradley English",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1924,11 +1924,11 @@
       "fullName": "Iosif Gershteyn",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1947,11 +1947,11 @@
       "fullName": "Nikola T. Markov",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "San Francisco",
-      "homeBaseCountry": "USA",
       "currentCity": "San Francisco",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -1970,11 +1970,11 @@
       "fullName": "Kai Micah Mills",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -1993,11 +1993,11 @@
       "fullName": "Romain Fontaine",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2016,11 +2016,11 @@
       "fullName": "TJ (Tushant Jha)",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2039,11 +2039,11 @@
       "fullName": "Jamie Joyce",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2062,11 +2062,11 @@
       "fullName": "Ales Flidr",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2085,11 +2085,11 @@
       "fullName": "Joshua Tan",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2108,11 +2108,11 @@
       "fullName": "Matjaz Leonardis",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2131,11 +2131,11 @@
       "fullName": "Ben Garfinkel",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2154,11 +2154,11 @@
       "fullName": "Rosie Campbell",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2177,11 +2177,11 @@
       "fullName": "Philipp Koellinger",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2200,11 +2200,11 @@
       "fullName": "George Kaissis",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Munich",
-      "homeBaseCountry": "Germany",
       "currentCity": "Munich",
       "currentCountry": "Germany",
       "currentCoordinates": {
@@ -2223,11 +2223,11 @@
       "fullName": "Ying Tong",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2246,11 +2246,11 @@
       "fullName": "Dionis Minev",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2269,11 +2269,11 @@
       "fullName": "Stefan Borsley",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2292,11 +2292,11 @@
       "fullName": "Simon Krause",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2315,11 +2315,11 @@
       "fullName": "Ambika Somasundar",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2338,11 +2338,11 @@
       "fullName": "David August",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2361,11 +2361,11 @@
       "fullName": "Giulio Ragazzon",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Strasbourg",
-      "homeBaseCountry": "France",
       "currentCity": "Strasbourg",
       "currentCountry": "France",
       "currentCoordinates": {
@@ -2384,11 +2384,11 @@
       "fullName": "Kunyu Wang",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "College Station",
-      "homeBaseCountry": "USA",
       "currentCity": "College Station",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2407,11 +2407,11 @@
       "fullName": "Yuanning Feng",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Evanston",
-      "homeBaseCountry": "USA",
       "currentCity": "Evanston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2430,11 +2430,11 @@
       "fullName": "Dusan Kolarski",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2453,11 +2453,11 @@
       "fullName": "Charlie McTernan",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Austin",
-      "homeBaseCountry": "USA",
       "currentCity": "Austin",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2476,11 +2476,11 @@
       "fullName": "Yanguang Zhou",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Hong Kong",
-      "homeBaseCountry": "China",
       "currentCity": "Hong Kong",
       "currentCountry": "China",
       "currentCoordinates": {
@@ -2499,11 +2499,11 @@
       "fullName": "Austin M. Evans",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2522,11 +2522,11 @@
       "fullName": "Victor Garcia Lopez",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Houston",
-      "homeBaseCountry": "USA",
       "currentCity": "Houston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2545,11 +2545,11 @@
       "fullName": "Larissa von Krbek",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Bonn",
-      "homeBaseCountry": "Germany",
       "currentCity": "Bonn",
       "currentCountry": "Germany",
       "currentCoordinates": {
@@ -2568,11 +2568,11 @@
       "fullName": "Amanat Ali",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "New York",
-      "homeBaseCountry": "USA",
       "currentCity": "New York",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2591,11 +2591,11 @@
       "fullName": "Ben Alexander",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2614,11 +2614,11 @@
       "fullName": "Varun Dwaraka",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2637,11 +2637,11 @@
       "fullName": "Adrian Matysek",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2660,11 +2660,11 @@
       "fullName": "Barry Bentley",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Cardiff",
-      "homeBaseCountry": "UK",
       "currentCity": "Cardiff",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -2674,7 +2674,7 @@
       "primaryNode": "Global",
       "profileUrl": "",
       "contactUrlOrHandle": "bbentley@cantab.net",
-      "shortProjectTagline": "Reader at Cardiff Metropolitan University. Fulbright Scholar at Harvard Medical School. Research on ",
+      "shortProjectTagline": "Reader at Cardiff Metropolitan University. Fulbright Scholar at Harvard Medical School. Research on",
       "expandedProjectDescription": "Reader at Cardiff Metropolitan University. Fulbright Scholar at Harvard Medical School. Research on biopreservation.",
       "isAlumni": true
     },
@@ -2683,11 +2683,11 @@
       "fullName": "David Boyer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Los Angeles",
-      "homeBaseCountry": "USA",
       "currentCity": "Los Angeles",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2706,11 +2706,11 @@
       "fullName": "Timothy Vu",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2729,11 +2729,11 @@
       "fullName": "Mike Sinn",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2752,11 +2752,11 @@
       "fullName": "Jordan Baechle",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2775,11 +2775,11 @@
       "fullName": "Rico Meinl",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2798,11 +2798,11 @@
       "fullName": "Guido Putignano",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Zurich",
-      "homeBaseCountry": "Switzerland",
       "currentCity": "Zurich",
       "currentCountry": "Switzerland",
       "currentCoordinates": {
@@ -2821,11 +2821,11 @@
       "fullName": "Xinru Wang",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Seattle",
-      "homeBaseCountry": "USA",
       "currentCity": "Seattle",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2844,11 +2844,11 @@
       "fullName": "Kelvin Yu",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2867,11 +2867,11 @@
       "fullName": "Ross Gruetzemacher",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2890,11 +2890,11 @@
       "fullName": "Bulelani Jili",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -2913,11 +2913,11 @@
       "fullName": "Sofya Lebedeva",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2936,11 +2936,11 @@
       "fullName": "Jacob Swett",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Oxford",
-      "homeBaseCountry": "UK",
       "currentCity": "Oxford",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -2959,11 +2959,11 @@
       "fullName": "Dr. Mariam Elgabry",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -2982,11 +2982,11 @@
       "fullName": "Raiany Romanni",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3005,11 +3005,11 @@
       "fullName": "Theo Knopfer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3028,11 +3028,11 @@
       "fullName": "Aaron Mayer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3051,11 +3051,11 @@
       "fullName": "Peter Hrosso",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3074,11 +3074,11 @@
       "fullName": "Lewis Hammond",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3097,11 +3097,11 @@
       "fullName": "Shady El Damaty",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3120,11 +3120,11 @@
       "fullName": "Mikayla",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3143,11 +3143,11 @@
       "fullName": "Dan Schwarz",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3166,11 +3166,11 @@
       "fullName": "Laura Minquini",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3189,11 +3189,11 @@
       "fullName": "Natasha Asmi",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3212,11 +3212,11 @@
       "fullName": "Ala Shaabana",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3235,11 +3235,11 @@
       "fullName": "Pranjali Awasthi",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3258,11 +3258,11 @@
       "fullName": "Ghada",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Storrs",
-      "homeBaseCountry": "USA",
       "currentCity": "Storrs",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3281,11 +3281,11 @@
       "fullName": "Jonathan Passerat-Palmbach",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "London",
-      "homeBaseCountry": "UK",
       "currentCity": "London",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -3304,11 +3304,11 @@
       "fullName": "Morgan Livingston",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3327,11 +3327,11 @@
       "fullName": "Sonakshi Mishra",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3350,11 +3350,11 @@
       "fullName": "Anastasia Ershova",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3373,11 +3373,11 @@
       "fullName": "Stacy Copp",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Irvine",
-      "homeBaseCountry": "USA",
       "currentCity": "Irvine",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3396,11 +3396,11 @@
       "fullName": "Yansong Ren",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3419,11 +3419,11 @@
       "fullName": "Stephane Redon",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3442,11 +3442,11 @@
       "fullName": "Khalid Salaita",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Atlanta",
-      "homeBaseCountry": "USA",
       "currentCity": "Atlanta",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3465,11 +3465,11 @@
       "fullName": "Iqbal Utama",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Evanston",
-      "homeBaseCountry": "USA",
       "currentCity": "Evanston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3488,11 +3488,11 @@
       "fullName": "Erik Benson",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Stockholm",
-      "homeBaseCountry": "Sweden",
       "currentCity": "Stockholm",
       "currentCountry": "Sweden",
       "currentCoordinates": {
@@ -3511,11 +3511,11 @@
       "fullName": "Marco Ovalle",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Groningen",
-      "homeBaseCountry": "Netherlands",
       "currentCity": "Groningen",
       "currentCountry": "Netherlands",
       "currentCoordinates": {
@@ -3534,11 +3534,11 @@
       "fullName": "Haichao Wu",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3557,11 +3557,11 @@
       "fullName": "Elena Meirzadeh",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Rehovot",
-      "homeBaseCountry": "Israel",
       "currentCity": "Rehovot",
       "currentCountry": "Israel",
       "currentCoordinates": {
@@ -3580,11 +3580,11 @@
       "fullName": "Zoe Ashbridge",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3603,11 +3603,11 @@
       "fullName": "Irene Regeni",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Leiden",
-      "homeBaseCountry": "Netherlands",
       "currentCity": "Leiden",
       "currentCountry": "Netherlands",
       "currentCoordinates": {
@@ -3626,11 +3626,11 @@
       "fullName": "Michael Matthies",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Tempe",
-      "homeBaseCountry": "USA",
       "currentCity": "Tempe",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3649,11 +3649,11 @@
       "fullName": "Pavi Dhiman",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3672,11 +3672,11 @@
       "fullName": "James Seale",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Evanston",
-      "homeBaseCountry": "USA",
       "currentCity": "Evanston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3695,11 +3695,11 @@
       "fullName": "Cedric Schaack",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3718,11 +3718,11 @@
       "fullName": "Shucong Li",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3741,11 +3741,11 @@
       "fullName": "Stephen Fielden",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Birmingham",
-      "homeBaseCountry": "UK",
       "currentCity": "Birmingham",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -3764,11 +3764,11 @@
       "fullName": "Maxime Ledent",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Liège",
-      "homeBaseCountry": "Belgium",
       "currentCity": "Liège",
       "currentCountry": "Belgium",
       "currentCoordinates": {
@@ -3787,11 +3787,11 @@
       "fullName": "Akash Band",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3810,11 +3810,11 @@
       "fullName": "Alia Abbas",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3833,11 +3833,11 @@
       "fullName": "Abhishek Sharma",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Glasgow",
-      "homeBaseCountry": "UK",
       "currentCity": "Glasgow",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -3856,11 +3856,11 @@
       "fullName": "Andy Matuschak",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3879,11 +3879,11 @@
       "fullName": "Lin Du",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Philadelphia",
-      "homeBaseCountry": "USA",
       "currentCity": "Philadelphia",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3902,11 +3902,11 @@
       "fullName": "Monika Shpokayte",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -3925,11 +3925,11 @@
       "fullName": "Sabrina Singh",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Los Angeles",
-      "homeBaseCountry": "USA",
       "currentCity": "Los Angeles",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3948,11 +3948,11 @@
       "fullName": "Murat Can Işik",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Philadelphia",
-      "homeBaseCountry": "USA",
       "currentCity": "Philadelphia",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -3971,11 +3971,11 @@
       "fullName": "Renaud Jolivet",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Maastricht",
-      "homeBaseCountry": "Netherlands",
       "currentCity": "Maastricht",
       "currentCountry": "Netherlands",
       "currentCoordinates": {
@@ -3994,11 +3994,11 @@
       "fullName": "Logan Collins",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4017,11 +4017,11 @@
       "fullName": "Danielle Fong",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4040,11 +4040,11 @@
       "fullName": "Nathan Johnson",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4063,11 +4063,11 @@
       "fullName": "Meera Singhal",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4086,11 +4086,11 @@
       "fullName": "Konstantinos Konstantinidis",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4109,11 +4109,11 @@
       "fullName": "Louis Kokkinis",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4132,11 +4132,11 @@
       "fullName": "Patrick Finley",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4155,11 +4155,11 @@
       "fullName": "Ekaterina Ilin",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4178,11 +4178,11 @@
       "fullName": "Aleksandr Zhukhovitskiy",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4201,11 +4201,11 @@
       "fullName": "Tomas Gesino",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4224,11 +4224,11 @@
       "fullName": "Kevin Lalli",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4247,11 +4247,11 @@
       "fullName": "Elena Sergeeva",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4270,11 +4270,11 @@
       "fullName": "Sruthi Sivakumar",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Pittsburgh",
-      "homeBaseCountry": "USA",
       "currentCity": "Pittsburgh",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4293,11 +4293,11 @@
       "fullName": "Michael Florea",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4316,11 +4316,11 @@
       "fullName": "Herbert Fountain",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Ithaca",
-      "homeBaseCountry": "USA",
       "currentCity": "Ithaca",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4339,11 +4339,11 @@
       "fullName": "Mahdi Moqri",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Stanford",
-      "homeBaseCountry": "USA",
       "currentCity": "Stanford",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4362,11 +4362,11 @@
       "fullName": "Roman Bauer",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "Guildford",
-      "homeBaseCountry": "UK",
       "currentCity": "Guildford",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -4385,11 +4385,11 @@
       "fullName": "Sara LaHue",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Longevity Biotechnology"
       ],
-      "homeBaseCity": "San Francisco",
-      "homeBaseCountry": "USA",
       "currentCity": "San Francisco",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4408,11 +4408,11 @@
       "fullName": "Rachel Freedman",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Berkeley",
-      "homeBaseCountry": "USA",
       "currentCity": "Berkeley",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4431,11 +4431,11 @@
       "fullName": "Dima Usynin",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "London",
-      "homeBaseCountry": "UK",
       "currentCity": "London",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -4454,11 +4454,11 @@
       "fullName": "Abhishek Singh",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4477,11 +4477,11 @@
       "fullName": "Lisa Thiergart",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Berkeley",
-      "homeBaseCountry": "USA",
       "currentCity": "Berkeley",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4500,11 +4500,11 @@
       "fullName": "Nora Ammann",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4523,11 +4523,11 @@
       "fullName": "Scott Emmons",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Berkeley",
-      "homeBaseCountry": "USA",
       "currentCity": "Berkeley",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4546,11 +4546,11 @@
       "fullName": "Niccolò Zanichelli",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Secure AI"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4569,11 +4569,11 @@
       "fullName": "Thomas Sebastian",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Lexington",
-      "homeBaseCountry": "USA",
       "currentCity": "Lexington",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4592,11 +4592,11 @@
       "fullName": "Oluseun Taiwo",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4615,11 +4615,11 @@
       "fullName": "Hooman Reza Nezhad",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Waterloo",
-      "homeBaseCountry": "Canada",
       "currentCity": "Waterloo",
       "currentCountry": "Canada",
       "currentCoordinates": {
@@ -4638,11 +4638,11 @@
       "fullName": "Sam Jardine",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "London",
-      "homeBaseCountry": "UK",
       "currentCity": "London",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -4661,11 +4661,11 @@
       "fullName": "Ekaterina Seltikova",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4684,11 +4684,11 @@
       "fullName": "Alex Gilbert",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4707,11 +4707,11 @@
       "fullName": "Priyank Dubey",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Space"
       ],
-      "homeBaseCity": "Munich",
-      "homeBaseCountry": "Germany",
       "currentCity": "Munich",
       "currentCountry": "Germany",
       "currentCoordinates": {
@@ -4730,11 +4730,11 @@
       "fullName": "Jason Hausenloy",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Singapore",
-      "homeBaseCountry": "Singapore",
       "currentCity": "Singapore",
       "currentCountry": "Singapore",
       "currentCoordinates": {
@@ -4753,11 +4753,11 @@
       "fullName": "Alexander Briand",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4776,11 +4776,11 @@
       "fullName": "Abduljawad Kourabi",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Hamilton",
-      "homeBaseCountry": "Canada",
       "currentCity": "Hamilton",
       "currentCountry": "Canada",
       "currentCoordinates": {
@@ -4799,11 +4799,11 @@
       "fullName": "Megan Cansfield",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Washington",
-      "homeBaseCountry": "USA",
       "currentCity": "Washington",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4822,11 +4822,11 @@
       "fullName": "Simeon Campos",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4845,11 +4845,11 @@
       "fullName": "Amanda Ngo",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -4868,11 +4868,11 @@
       "fullName": "Jelena Luketina",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Oxford",
-      "homeBaseCountry": "UK",
       "currentCity": "Oxford",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -4891,11 +4891,11 @@
       "fullName": "Bear Häon",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Existential Hope"
       ],
-      "homeBaseCity": "Berkeley",
-      "homeBaseCountry": "USA",
       "currentCity": "Berkeley",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4914,11 +4914,11 @@
       "fullName": "Samuel Nellessen",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Nijmegen",
-      "homeBaseCountry": "Netherlands",
       "currentCity": "Nijmegen",
       "currentCountry": "Netherlands",
       "currentCoordinates": {
@@ -4937,11 +4937,11 @@
       "fullName": "Ariel Zeleznikow-Johnston",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Melbourne",
-      "homeBaseCountry": "Australia",
       "currentCity": "Melbourne",
       "currentCountry": "Australia",
       "currentCoordinates": {
@@ -4960,11 +4960,11 @@
       "fullName": "Viraj Chhajed",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Los Angeles",
-      "homeBaseCountry": "USA",
       "currentCity": "Los Angeles",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -4983,11 +4983,11 @@
       "fullName": "Claire Short",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -5006,11 +5006,11 @@
       "fullName": "Zan Huang",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -5029,11 +5029,11 @@
       "fullName": "Andrew Payne",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -5052,11 +5052,11 @@
       "fullName": "Bogdan-Ionut Cirstea",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Neurotechnology"
       ],
-      "homeBaseCity": "Global",
-      "homeBaseCountry": "Global",
       "currentCity": "Global",
       "currentCountry": "Global",
       "currentCoordinates": {
@@ -5075,11 +5075,11 @@
       "fullName": "Matteo Guareschi",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Pasadena",
-      "homeBaseCountry": "USA",
       "currentCity": "Pasadena",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -5098,11 +5098,11 @@
       "fullName": "Siyuan \"Stella\" Wang",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -5121,11 +5121,11 @@
       "fullName": "Benjamin Roberts",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Padua",
-      "homeBaseCountry": "Italy",
       "currentCity": "Padua",
       "currentCountry": "Italy",
       "currentCoordinates": {
@@ -5144,11 +5144,11 @@
       "fullName": "Chris Wintersinger",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Cambridge",
-      "homeBaseCountry": "USA",
       "currentCity": "Cambridge",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -5167,11 +5167,11 @@
       "fullName": "Shuntaro Amano",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Strasbourg",
-      "homeBaseCountry": "France",
       "currentCity": "Strasbourg",
       "currentCountry": "France",
       "currentCoordinates": {
@@ -5190,11 +5190,11 @@
       "fullName": "Emanuele Penocchio",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Evanston",
-      "homeBaseCountry": "USA",
       "currentCity": "Evanston",
       "currentCountry": "USA",
       "currentCoordinates": {
@@ -5213,11 +5213,11 @@
       "fullName": "Martin Power",
       "roleType": "Fellow",
       "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
       "focusTags": [
         "Nanotechnology"
       ],
-      "homeBaseCity": "Manchester",
-      "homeBaseCountry": "UK",
       "currentCity": "Manchester",
       "currentCountry": "UK",
       "currentCoordinates": {
@@ -5243,8 +5243,8 @@
         "lat": 51.5074,
         "lng": -0.1278
       },
-      "startDate": "2025-12-15",
-      "endDate": "2025-12-20",
+      "startDate": "46006",
+      "endDate": "46011",
       "type": "Conference",
       "notes": "Presenting research on interpretable AI systems"
     },
@@ -5258,8 +5258,8 @@
         "lat": 52.52,
         "lng": 13.405
       },
-      "startDate": "2026-02-01",
-      "endDate": "2026-03-15",
+      "startDate": "46054",
+      "endDate": "46096",
       "type": "Residency",
       "notes": "Collaborating with Berlin Node on AI alignment"
     },
@@ -5273,8 +5273,8 @@
         "lat": 37.7749,
         "lng": -122.4194
       },
-      "startDate": "2026-01-10",
-      "endDate": "2026-01-17",
+      "startDate": "46032",
+      "endDate": "46039",
       "type": "Workshop",
       "notes": "Bay Area Node BCI workshop"
     },
@@ -5288,8 +5288,8 @@
         "lat": 35.6762,
         "lng": 139.6503
       },
-      "startDate": "2026-04-05",
-      "endDate": "2026-04-10",
+      "startDate": "46117",
+      "endDate": "46122",
       "type": "Conference",
       "notes": "International Neurotechnology Conference"
     },
@@ -5303,8 +5303,8 @@
         "lat": 29.7604,
         "lng": -95.3698
       },
-      "startDate": "2025-12-01",
-      "endDate": "2026-01-31",
+      "startDate": "45992",
+      "endDate": "46053",
       "type": "Residency",
       "notes": "NASA collaboration on space nanomaterials"
     },
@@ -5318,8 +5318,8 @@
         "lat": 48.8566,
         "lng": 2.3522
       },
-      "startDate": "2026-03-10",
-      "endDate": "2026-03-14",
+      "startDate": "46091",
+      "endDate": "46095",
       "type": "Visit",
       "notes": "European Space Agency partnership discussions"
     },
@@ -5333,8 +5333,8 @@
         "lat": 42.3601,
         "lng": -71.0589
       },
-      "startDate": "2025-09-01",
-      "endDate": "2026-06-30",
+      "startDate": "45901",
+      "endDate": "46203",
       "type": "Residency",
       "notes": "Visiting researcher at MIT Aging Lab"
     },
@@ -5348,8 +5348,8 @@
         "lat": 37.7749,
         "lng": -122.4194
       },
-      "startDate": "2026-05-20",
-      "endDate": "2026-05-23",
+      "startDate": "46162",
+      "endDate": "46165",
       "type": "Conference",
       "notes": "Longevity Summit Bay Area"
     },
@@ -5363,8 +5363,8 @@
         "lat": 52.52,
         "lng": 13.405
       },
-      "startDate": "2026-01-15",
-      "endDate": "2026-02-15",
+      "startDate": "46037",
+      "endDate": "46068",
       "type": "Workshop",
       "notes": "Teaching neurofeedback techniques at Berlin Node"
     },
@@ -5378,8 +5378,8 @@
         "lat": 37.7749,
         "lng": -122.4194
       },
-      "startDate": "2025-11-28",
-      "endDate": "2025-12-02",
+      "startDate": "45989",
+      "endDate": "45993",
       "type": "Other",
       "notes": "Foresight Existential Hope Prize ceremony"
     },
@@ -5393,8 +5393,8 @@
         "lat": 1.3521,
         "lng": 103.8198
       },
-      "startDate": "2026-02-20",
-      "endDate": "2026-02-25",
+      "startDate": "46073",
+      "endDate": "46078",
       "type": "Conference",
       "notes": "Asia-Pacific Nanotechnology Symposium"
     },
@@ -5408,8 +5408,8 @@
         "lat": 37.7749,
         "lng": -122.4194
       },
-      "startDate": "2026-06-01",
-      "endDate": "2026-07-31",
+      "startDate": "46174",
+      "endDate": "46234",
       "type": "Residency",
       "notes": "Bay Area Node nanorobotics research"
     },
@@ -5423,8 +5423,8 @@
         "lat": 64.1466,
         "lng": -21.9426
       },
-      "startDate": "2026-03-01",
-      "endDate": "2026-04-15",
+      "startDate": "46082",
+      "endDate": "46127",
       "type": "Other",
       "notes": "Mars analog habitat field testing"
     },
@@ -5438,8 +5438,8 @@
         "lat": 52.52,
         "lng": 13.405
       },
-      "startDate": "2026-05-10",
-      "endDate": "2026-05-17",
+      "startDate": "46152",
+      "endDate": "46159",
       "type": "Workshop",
       "notes": "Berlin Node space technology workshop"
     },
@@ -5453,8 +5453,8 @@
         "lat": 37.7749,
         "lng": -122.4194
       },
-      "startDate": "2025-12-10",
-      "endDate": "2026-02-28",
+      "startDate": "46001",
+      "endDate": "46081",
       "type": "Residency",
       "notes": "Bay Area Node AI alignment research"
     },
@@ -5468,8 +5468,8 @@
         "lat": 52.52,
         "lng": 13.405
       },
-      "startDate": "2026-04-01",
-      "endDate": "2026-04-14",
+      "startDate": "46113",
+      "endDate": "46126",
       "type": "Workshop",
       "notes": "Cross-node neuroscience and AI collaboration"
     },
@@ -5483,8 +5483,8 @@
         "lat": 52.52,
         "lng": 13.405
       },
-      "startDate": "2026-05-01",
-      "endDate": "2026-05-31",
+      "startDate": "46143",
+      "endDate": "46173",
       "type": "Residency",
       "notes": "Extended research collaboration at Berlin Node"
     },
@@ -5498,8 +5498,8 @@
         "lat": 37.7749,
         "lng": -122.4194
       },
-      "startDate": "2025-06-01",
-      "endDate": "2026-05-31",
+      "startDate": "45809",
+      "endDate": "46173",
       "type": "Residency",
       "notes": "One-year residency at Bay Area Node"
     },
@@ -5513,8 +5513,8 @@
         "lat": 53.3498,
         "lng": -6.2603
       },
-      "startDate": "2026-03-15",
-      "endDate": "2026-03-20",
+      "startDate": "46096",
+      "endDate": "46101",
       "type": "Conference",
       "notes": "European Longevity Summit"
     },
@@ -5528,8 +5528,8 @@
         "lat": 52.52,
         "lng": 13.405
       },
-      "startDate": "2025-10-01",
-      "endDate": "2026-03-31",
+      "startDate": "45931",
+      "endDate": "46112",
       "type": "Residency",
       "notes": "Six-month AI safety residency at Berlin Node"
     },
@@ -5543,8 +5543,8 @@
         "lat": 46.2044,
         "lng": 6.1432
       },
-      "startDate": "2026-04-20",
-      "endDate": "2026-04-25",
+      "startDate": "46132",
+      "endDate": "46137",
       "type": "Conference",
       "notes": "UN Global AI Cooperation Summit"
     }
@@ -5557,5 +5557,6 @@
       "email": "admin@foresight.org",
       "passwordPlaceholder": "admin123"
     }
-  ]
+  ],
+  "rsvps": []
 }

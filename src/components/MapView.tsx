@@ -2,6 +2,9 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L, { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType, Filters } from "../types";
+import type { NodeEvent } from "../types/events";
+import { getPersonRSVPs } from "../services/rsvp";
+import { getNode } from "../data/nodes";
 import { FellowCard } from "./FellowCard";
 import { InlineFilters } from "./InlineFilters";
 import { List, X } from "lucide-react";
@@ -9,7 +12,7 @@ import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
-import { reverseGeocode } from "../services/geocoding";
+import { reverseGeocode, geocodeCity } from "../services/geocoding";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -19,6 +22,8 @@ interface MapViewProps {
   timeWindowStart: Date;
   timeWindowEnd: Date;
   granularity?: "Year" | "Month" | "Week";
+  /** Loaded events (from loadEvents) for showing RSVP-based locations in month/week view; null until loaded. */
+  events?: NodeEvent[] | null;
   onViewPersonDetails?: (personId: string, context?: { peopleIds: string[]; label: string }) => void;
   /** Filters & setter so the sidebar can host inline quick-filters */
   filters?: Filters;
@@ -33,6 +38,7 @@ interface MarkerData {
   people: Array<{
     person: Person;
     travelWindow?: TravelWindow;
+    event?: NodeEvent;
   }>;
 }
 
@@ -47,99 +53,41 @@ const getCoordinateKey = (coords: { lat: number; lng: number }): string => {
   return `${roundedLat},${roundedLng}`;
 };
 
-// Component to fit map bounds to markers
-function FitBounds({ markers, skipIfMarkerSelected }: { markers: MarkerData[]; skipIfMarkerSelected?: boolean }) {
+// When filters change, reset to a fixed fully-zoomed-out world view so the user always
+// sees the whole map (Americas on the left, Asia on the right). No fit-to-pins — user zooms/pans as they like.
+const WORLD_VIEW_CENTER: [number, number] = [20, 0]; // Africa/Atlantic in middle, US left, Tokyo right
+const WORLD_VIEW_ZOOM = 2; // Default + max zoom-out (two steps in from full world so not overly zoomed out)
+
+function FitBounds({
+  markers,
+  skipIfMarkerSelected,
+}: {
+  markers: MarkerData[];
+  skipIfMarkerSelected?: boolean;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    // Skip fitting bounds if a marker is selected (user is interacting with map)
-    if (skipIfMarkerSelected) {
-      return;
-    }
-    // Set max bounds to prevent grey blank areas
+    if (skipIfMarkerSelected) return;
+
     const worldBounds = new LatLngBounds([[-85, -180], [85, 180]]);
     map.setMaxBounds(worldBounds);
     map.options.maxBounds = worldBounds;
-    map.options.maxBoundsViscosity = 1.0; // Prevent panning outside bounds
-    map.options.worldCopyJump = true; // Allow world copy jump to prevent gray areas
-    
-    // Ensure minimum zoom level to prevent over-zooming and grey areas
-    map.setMinZoom(2.5);
-    
-    // If current zoom is below minimum, set it to minimum
-    if (map.getZoom() < 2.5) {
-      map.setZoom(2.5);
-    }
-    
-    // Ensure map fits properly to prevent gray edges
+    map.options.maxBoundsViscosity = 1.0;
+    map.options.worldCopyJump = true;
+    map.setMinZoom(WORLD_VIEW_ZOOM); // Max zoom-out = same as default (two steps in from full world)
     map.invalidateSize();
 
-    if (markers.length === 0) {
-      // Set default view to show California when no markers
-      map.setView([30, -120], 2.0);
-      return;
-    }
-
-    // Wait for map to be fully initialized before fitting bounds
-    const fitBoundsToMarkers = () => {
-      // Ensure map knows its container size
+    // Apply world view after a short delay so we run after any other component's initial view setup
+    const applyWorldView = () => {
       map.invalidateSize();
-      
-      if (markers.length === 1) {
-        const zoom = Math.max(6, 2.5); // Ensure never below minimum
-        map.setView([markers[0].coordinates.lat, markers[0].coordinates.lng], zoom);
-        return;
-      }
-
-      const bounds = new LatLngBounds(
-        markers.map((m) => [m.coordinates.lat, m.coordinates.lng])
-      );
-      
-      // Use viewport-based padding for better results
-      // Calculate padding as percentage of viewport for responsive behavior
-      const container = map.getContainer();
-      const containerHeight = container?.offsetHeight || 600;
-      const containerWidth = container?.offsetWidth || 800;
-      
-      // Use 15% padding on all sides for nice breathing room
-      const paddingTop = Math.round(containerHeight * 0.15);
-      const paddingBottom = Math.round(containerHeight * 0.15);
-      const paddingLeft = Math.round(containerWidth * 0.15);
-      const paddingRight = Math.round(containerWidth * 0.15);
-      
-      // Also set a reasonable maxZoom to prevent over-zooming when markers are close
-      map.fitBounds(bounds, {
-        paddingTopLeft: [paddingLeft, paddingTop],
-        paddingBottomRight: [paddingRight, paddingBottom],
-        maxZoom: 12,
-        animate: false,
-      });
-      
-      // Ensure zoom never goes below minimum after fitBounds
-      setTimeout(() => {
-        if (map.getZoom() < 2.5) {
-          map.setZoom(2.5);
-        }
-        // Double-check bounds are correct
-        map.invalidateSize();
-      }, 150);
+      map.setView(WORLD_VIEW_CENTER, WORLD_VIEW_ZOOM, { animate: false });
     };
 
-    // Wait for map to be ready - use multiple attempts to ensure it works
-    const attemptFit = () => {
-      const container = map.getContainer();
-      if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
-        fitBoundsToMarkers();
-      } else {
-        // Retry if container not ready
-        setTimeout(attemptFit, 50);
-      }
-    };
-    
-    // Start attempting after a short delay
-    const timer = setTimeout(attemptFit, 150);
-    
-    return () => clearTimeout(timer);
+    applyWorldView();
+    // Re-apply after layout so nothing (e.g. MapContainer initial state) overrides us
+    const t = setTimeout(applyWorldView, 100);
+    return () => clearTimeout(t);
   }, [map, markers, skipIfMarkerSelected]);
 
   return null;
@@ -207,11 +155,11 @@ const createRoleBasedBadgeBackground = (roleTypes: Set<RoleType>): string => {
   }
   if (roles.length === 2) {
     const [a, b] = roles.map((r) => ROLE_COLORS[r].end);
-    return `conic-gradient(${a} 0deg 180deg, ${b} 180deg 360deg)`;
+    return `conic-gradient(from 0deg, ${a} 0deg 180deg, ${b} 180deg 360deg)`;
   }
   // Three types: thirds
   const [a, b, c] = roles.map((r) => ROLE_COLORS[r].end);
-  return `conic-gradient(${a} 0deg 120deg, ${b} 120deg 240deg, ${c} 240deg 360deg)`;
+  return `conic-gradient(from 0deg, ${a} 0deg 120deg, ${b} 120deg 240deg, ${c} 240deg 360deg)`;
 };
 
 // Create custom icon for markers with badge (moved outside component)
@@ -247,7 +195,8 @@ const createCustomIcon = (
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         font-weight: 600;
         font-size: ${isSelected ? '12px' : '10px'};
-        color: #374151;
+        color: #fff;
+        text-shadow: 0 0 1px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
       ">
         ${count}
       </div>
@@ -276,7 +225,7 @@ function buildPopupHtml(marker: MarkerData): string {
   const n = marker.people.length;
   const peopleWord = n === 1 ? "person" : "people";
   const rows = marker.people
-    .map(({ person, travelWindow }) => {
+    .map(({ person, travelWindow, event }) => {
       const name = escapeHtml(person.fullName);
       const roleGradient = getRoleGradient(person.roleType);
       const roleStyle = `background:${roleGradient};color:#374151`;
@@ -290,6 +239,9 @@ function buildPopupHtml(marker: MarkerData): string {
         `<span class="text-[11px] text-gray-500 shrink-0 truncate max-w-[90px]">${escapeHtml(
           `${new Date(travelWindow.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${new Date(travelWindow.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
         )}</span>`;
+      const eventLabel =
+        event &&
+        `<span class="text-[11px] text-teal-600 shrink-0 truncate max-w-[120px]" title="${escapeHtml(event.title)}">${escapeHtml(event.title)} · ${escapeHtml(new Date(event.startAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}</span>`;
       return `<button type="button" class="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1 cursor-pointer" data-person-id="${escapeHtml(person.id)}">
         <span class="text-sm font-medium text-gray-900 truncate">${name}</span>
         <div class="flex items-center gap-1.5 flex-wrap">
@@ -297,6 +249,7 @@ function buildPopupHtml(marker: MarkerData): string {
           ${alumni}
           ${focusTags}
           ${travel || ""}
+          ${eventLabel || ""}
         </div>
       </button>`;
     })
@@ -313,6 +266,8 @@ function buildPopupHtml(marker: MarkerData): string {
 /**
  * Renders markers inside a Leaflet MarkerClusterGroup (imperative) so we get
  * clustering when zoomed out without relying on the broken React wrapper context.
+ * When there is exactly one marker, we add it directly to the map so it always shows
+ * (MarkerClusterGroup is known to fail to render a single isolated marker).
  */
 function ImperativeMarkerClusters({
   markers,
@@ -331,6 +286,73 @@ function ImperativeMarkerClusters({
 
   useEffect(() => {
     if (!map || markers.length === 0) return;
+
+    type MarkerWithRoles = L.Marker & { __roleTypes?: Set<RoleType>; __markerData?: MarkerData };
+
+    // Single marker: add directly to map so it always shows (MarkerClusterGroup can fail to render one)
+    if (markers.length === 1) {
+      const marker = markers[0];
+      const roleTypes = new Set<RoleType>(marker.people.map((p) => p.person.roleType));
+      const icon = createCustomIcon(marker.people.length, roleTypes, false, foresightIcon);
+      const latLng: L.LatLngExpression = [marker.coordinates.lat, marker.coordinates.lng];
+      const content = document.createElement("div");
+      content.innerHTML = buildPopupHtml(marker);
+      const leafletMarker = L.marker(latLng, { icon }).bindPopup(content, {
+        className: "custom-popup map-node-popup",
+        autoPan: true,
+        autoPanPadding: L.point(24, 48),
+        offset: L.point(0, 10),
+      }) as MarkerWithRoles;
+      leafletMarker.__roleTypes = roleTypes;
+      leafletMarker.__markerData = marker;
+
+      const MIN_ZOOM = 10;
+      const prefersHover = typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
+      let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+      const scheduleClose = () => { closeTimeout = setTimeout(() => { leafletMarker.closePopup(); closeTimeout = null; }, 280); };
+      const cancelClose = () => { if (closeTimeout) { clearTimeout(closeTimeout); closeTimeout = null; } };
+
+      if (prefersHover) {
+        leafletMarker.on("mouseover", () => { if (map.getZoom() >= MIN_ZOOM) { leafletMarker.openPopup(); onMarkerClick(marker); } });
+        leafletMarker.on("mouseout", scheduleClose);
+      }
+      leafletMarker.on("click", () => {
+        cancelClose();
+        map.flyTo([marker.coordinates.lat, marker.coordinates.lng], Math.max(MIN_ZOOM, map.getZoom()), { duration: 0.3 });
+        leafletMarker.openPopup();
+        onMarkerClick(marker);
+      });
+      leafletMarker.on("popupopen", () => {
+        const popupContent = leafletMarker.getPopup()?.getContent();
+        if (popupContent && typeof popupContent !== "string") {
+          const el = popupContent as HTMLElement;
+          const handler = (e: Event) => {
+            const target = (e.target as HTMLElement).closest("[data-person-id]");
+            if (target) {
+              const id = (target as HTMLElement).getAttribute("data-person-id");
+              if (id) onPersonClickRef.current(id);
+            }
+          };
+          el.addEventListener("click", handler);
+          leafletMarker.once("popupclose", () => el.removeEventListener("click", handler));
+        }
+        if (prefersHover) {
+          const popupEl = leafletMarker.getPopup()?.getElement();
+          if (popupEl) {
+            popupEl.addEventListener("mouseenter", cancelClose);
+            popupEl.addEventListener("mouseleave", scheduleClose);
+            leafletMarker.once("popupclose", () => {
+              popupEl.removeEventListener("mouseenter", cancelClose);
+              popupEl.removeEventListener("mouseleave", scheduleClose);
+            });
+          }
+        }
+      });
+
+      map.addLayer(leafletMarker);
+      return () => { map.removeLayer(leafletMarker); };
+    }
+
     const ClusterGroup = (L as unknown as { markerClusterGroup: (o?: object) => L.LayerGroup }).markerClusterGroup;
     if (typeof ClusterGroup !== "function") return;
 
@@ -348,10 +370,16 @@ function ImperativeMarkerClusters({
         const count = cluster.getChildCount();
         const background = createRoleBasedBadgeBackground(allRoles);
         const roles = ROLE_ORDER.filter((r) => allRoles.has(r));
-        const innerColor = roles.length ? ROLE_COLORS[roles[0]].end : "#6d28d9";
+        // Multi-role: one circle only (gradient on outer), inner just centers the number
+        // so we don't draw the same conic-gradient twice (avoids doubled jagged edges).
+        const innerStyle =
+          roles.length >= 2
+            ? "background:transparent;color:#fff;text-shadow:0 0 1px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25)"
+            : `background:${roles.length ? ROLE_COLORS[roles[0]].end : "#6d28d9"};color:#fff;text-shadow:0 0 1px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)`;
         const sizeClass = count < 10 ? "small" : count < 100 ? "medium" : "large";
+        const outerStyle = `background:${background};border:2px solid white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);overflow:hidden;transform:translateZ(0)`;
         return L.divIcon({
-          html: `<div class="marker-cluster-role-outer" style="background:${background};border:2px solid white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2)"><div class="marker-cluster-role-inner" style="background:${innerColor};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px">${count}</div></div>`,
+          html: `<div class="marker-cluster-role-outer" style="${outerStyle}"><div class="marker-cluster-role-inner" style="${innerStyle};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">${count}</div></div>`,
           className: `marker-cluster marker-cluster-${sizeClass} marker-cluster-role`,
           iconSize: L.point(40, 40),
           iconAnchor: L.point(20, 20),
@@ -505,6 +533,7 @@ export function MapView({
   timeWindowStart,
   timeWindowEnd,
   granularity = "Year",
+  events,
   onViewPersonDetails,
   filters,
   onFiltersChange,
@@ -515,10 +544,14 @@ export function MapView({
   /** When true, selection came from the list (sidebar); when false, from map click. Used so we only fly to marker when selecting from list. */
   const [selectedMarkerFromList, setSelectedMarkerFromList] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  /** Filter section expanded state; collapse when user selects a map node so the person list is visible. */
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const isMobile = useIsMobile();
   
   // Cache for reverse geocoded city names (coordinates -> city, country)
   const [geocodedCities, setGeocodedCities] = useState<Map<string, { city: string; country: string }>>(new Map());
+  /** Forward-geocoded coords for people who have city+country but lat/lng missing (0,0). Key = person id. */
+  const [forwardGeocodedCoordinates, setForwardGeocodedCoordinates] = useState<Map<string, { lat: number; lng: number }>>(new Map());
 
   // Keep refs to each person card so we can scroll them into view
   const personRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -665,6 +698,37 @@ export function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredPeople, filteredTravelWindows, granularity, timeWindowStart, timeWindowEnd]); // Don't include geocodedCities to avoid infinite loop
 
+  // Forward geocode: people with city+country but missing coordinates (0,0) so they still appear on the map
+  useEffect(() => {
+    const toGeocode = filteredPeople.filter(
+      (p) =>
+        granularity === "Year" &&
+        p.currentCity?.trim() &&
+        p.currentCountry?.trim() &&
+        p.currentCoordinates.lat === 0 &&
+        p.currentCoordinates.lng === 0 &&
+        !forwardGeocodedCoordinates.has(p.id)
+    );
+    if (toGeocode.length === 0) return;
+
+    let cancelled = false;
+    const run = async () => {
+      const next = new Map(forwardGeocodedCoordinates);
+      for (let i = 0; i < toGeocode.length; i++) {
+        if (cancelled) return;
+        if (i > 0) await new Promise((r) => setTimeout(r, 1100));
+        const person = toGeocode[i];
+        const result = await geocodeCity(person.currentCity, person.currentCountry);
+        if (result && !cancelled) next.set(person.id, { lat: result.lat, lng: result.lng });
+      }
+      if (!cancelled && next.size !== forwardGeocodedCoordinates.size) {
+        setForwardGeocodedCoordinates(next);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [filteredPeople, granularity, forwardGeocodedCoordinates]);
+
   // Calculate markers based on current time window and granularity
   const markers = useMemo(() => {
     // Use coordinate-based keys to group markers by actual location, not city name
@@ -674,12 +738,17 @@ export function MapView({
     filteredPeople.forEach((person) => {
       // For Year view: Show current location. For Month/Week: Show where they are (trip if in range, else current location).
       if (granularity === "Year") {
-        // Year view: Show current location only
-        const coordinates = person.currentCoordinates;
+        // Year view: Show current location only (or forward-geocoded location when lat/lng missing)
         const city = person.currentCity;
         const country = person.currentCountry;
-        if (!city || !country || coordinates.lat === 0 || coordinates.lng === 0) return;
-        
+        if (!city || !country) return;
+
+        const rawCoords = person.currentCoordinates;
+        const hasValidCoords = rawCoords.lat !== 0 || rawCoords.lng !== 0;
+        const forwardCoords = forwardGeocodedCoordinates.get(person.id);
+        const coordinates = hasValidCoords ? rawCoords : forwardCoords ?? null;
+        if (!coordinates) return;
+
         const coordKey = getCoordinateKey(coordinates);
         const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
         const geocoded = geocodedCities.get(geocodeKey);
@@ -858,8 +927,33 @@ export function MapView({
       }
     });
 
+    // Month/Week view: add locations from event RSVPs (going) when event falls in time window
+    if (granularity !== "Year" && events?.length) {
+      filteredPeople.forEach((person) => {
+        const goingRsvps = getPersonRSVPs(person.id).filter((r) => r.status === "going");
+        goingRsvps.forEach((r) => {
+          const event = events.find((e) => e.id === r.eventId);
+          if (!event) return;
+          const eventStart = new Date(event.startAt);
+          if (eventStart < timeWindowStart || eventStart > timeWindowEnd) return;
+          const node = getNode(event.nodeSlug);
+          if (!node || (node.coordinates.lat === 0 && node.coordinates.lng === 0)) return;
+          const coordKey = getCoordinateKey(node.coordinates);
+          if (!markerMap.has(coordKey)) {
+            markerMap.set(coordKey, {
+              city: node.city,
+              country: node.country,
+              coordinates: node.coordinates,
+              people: [],
+            });
+          }
+          markerMap.get(coordKey)!.people.push({ person, event });
+        });
+      });
+    }
+
     return Array.from(markerMap.values());
-  }, [filteredPeople, filteredTravelWindows, timeWindowStart, timeWindowEnd, granularity, geocodedCities]);
+  }, [filteredPeople, filteredTravelWindows, timeWindowStart, timeWindowEnd, granularity, geocodedCities, forwardGeocodedCoordinates, events]);
 
   // Get next travel window for each person
   const getNextTravel = (personId: string): TravelWindow | undefined => {
@@ -937,9 +1031,9 @@ export function MapView({
       <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100">
         {markers.length > 0 ? (
           <MapContainer
-            center={[30, -120]}
-            zoom={2.0}
-            minZoom={2.5}
+            center={WORLD_VIEW_CENTER}
+            zoom={WORLD_VIEW_ZOOM}
+            minZoom={WORLD_VIEW_ZOOM}
             maxZoom={18}
             maxBounds={[[-85, -180], [85, 180]]}
             maxBoundsViscosity={1.0}
@@ -967,10 +1061,12 @@ export function MapView({
                 setSelectedMarker(marker);
                 setSelectedMarkerFromList(false);
                 setSelectedPerson(null);
+                setFiltersExpanded(false); // Collapse filter section so the person list is visible
                 if (!isMobile) setIsSidebarOpen(true);
               }}
               onPersonClick={(personId) => {
                 setSelectedPerson(personId);
+                setFiltersExpanded(false);
                 setIsSidebarOpen(true);
                 requestAnimationFrame(() => {
                   const el = personRefs.current[personId];
@@ -1051,76 +1147,82 @@ export function MapView({
 
       {/* Fellows & Grantees List - desktop sidebar */}
       {!isMobile && isSidebarOpen && (
-        <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
-          <div className="p-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="text-gray-900 font-semibold truncate font-heading">
-                  {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
-                </p>
+        <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none min-h-0 relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
+          {/* Single scrollable area: title + filters + list so month row and all controls are reachable */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+            <div className="p-4 pb-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-gray-900 font-semibold truncate font-heading">
+                    {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {selectedMarker && (
+                    <button
+                      type="button"
+                      onClick={clearLocationSelection}
+                      className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50"
+                    >
+                      Show all
+                    </button>
+                  )}
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900" onClick={() => setIsSidebarOpen(false)}>
+                    Hide list
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                {selectedMarker && (
-                  <button
-                    type="button"
-                    onClick={clearLocationSelection}
-                    className="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-1 rounded hover:bg-teal-50"
-                  >
-                    Show all
-                  </button>
-                )}
-                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900" onClick={() => setIsSidebarOpen(false)}>
-                  Hide list
-                </Button>
-              </div>
+              {filters && onFiltersChange && defaultYear !== undefined && (
+                <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} expanded={filtersExpanded} onExpandedChange={setFiltersExpanded} />
+              )}
             </div>
-            {filters && onFiltersChange && defaultYear !== undefined && (
-              <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} />
-            )}
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {peopleListContent}
+            <div className="p-4 space-y-3">
+              {peopleListContent}
+            </div>
           </div>
         </div>
       )}
 
       {/* Mobile: full-screen fellows sheet — below modals so detail modal appears on top */}
       {isMobile && isSidebarOpen && (
-        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl" style={{ zIndex: Z_INDEX_SIDEBAR }}>
-          <div className="px-4 pt-4 pb-3 border-b border-gray-200 space-y-3 bg-app-sidebar">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                  {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
-                </p>
+        <div className="fixed inset-0 bg-white flex flex-col shadow-2xl min-h-0" style={{ zIndex: Z_INDEX_SIDEBAR }}>
+          {/* Single scrollable area: title + filters + list so month row and all controls are reachable */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+            <div className="px-4 pt-4 pb-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
+                    {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {selectedMarker && (
+                    <button
+                      type="button"
+                      onClick={clearLocationSelection}
+                      className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50"
+                    >
+                      Show all
+                    </button>
+                  )}
+                  <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 bg-white/80" onClick={() => setIsSidebarOpen(false)}>
+                    Back to map
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {selectedMarker && (
-                  <button
-                    type="button"
-                    onClick={clearLocationSelection}
-                    className="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-1.5 rounded hover:bg-teal-50"
-                  >
-                    Show all
-                  </button>
-                )}
-                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 bg-white/80" onClick={() => setIsSidebarOpen(false)}>
-                  Back to map
-                </Button>
-              </div>
+              {filters && onFiltersChange && defaultYear !== undefined && (
+                <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} expanded={filtersExpanded} onExpandedChange={setFiltersExpanded} />
+              )}
             </div>
-            {filters && onFiltersChange && defaultYear !== undefined && (
-              <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} />
-            )}
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {peopleListContent}
+            <div className="p-4 space-y-3">
+              {peopleListContent}
+            </div>
           </div>
         </div>
       )}

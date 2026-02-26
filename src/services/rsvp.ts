@@ -53,7 +53,7 @@ function mergeIntoStore(store: Store, records: RSVPRecord[]): void {
     if (!store[r.eventId]) store[r.eventId] = {};
     const existing = store[r.eventId][r.personId];
     if (!existing || new Date(r.updatedAt) > new Date(existing.updatedAt)) {
-      store[r.eventId][r.personId] = r;
+      store[r.eventId][r.personId] = { ...r, fullName: r.fullName ?? existing?.fullName, eventTitle: r.eventTitle ?? existing?.eventTitle };
     }
   }
 }
@@ -74,6 +74,7 @@ export async function setRSVP(
   personId: string,
   status: RSVPStatus,
   fullName?: string,
+  eventTitle?: string,
 ): Promise<RSVPRecord> {
   const now = new Date().toISOString();
   const store = loadLocal();
@@ -85,6 +86,8 @@ export async function setRSVP(
     status,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
+    fullName: fullName ?? existing?.fullName,
+    eventTitle: eventTitle ?? existing?.eventTitle,
   };
   store[eventId][personId] = record;
   saveLocal(store);
@@ -93,10 +96,10 @@ export async function setRSVP(
     const res = await fetch(`${API_BASE}/api/rsvps`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId, personId, fullName, status }),
+      body: JSON.stringify({ eventId, personId, fullName, status, eventTitle }),
     });
     if (res.ok) {
-      const created = await res.json();
+      const created = (await res.json()) as RSVPRecord;
       apiRsvps = apiRsvps.filter((r) => !(r.eventId === eventId && r.personId === personId));
       apiRsvps.push(created);
     }

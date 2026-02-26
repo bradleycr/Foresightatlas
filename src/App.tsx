@@ -6,6 +6,8 @@ import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getAllPeople, getAllTravelWindows } from "./services/database";
+import { loadEvents } from "./data/events";
+import type { NodeEvent } from "./types/events";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
@@ -42,6 +44,7 @@ export default function App() {
   // Data state
   const [people, setPeople] = useState<Person[]>([]);
   const [travelWindows, setTravelWindows] = useState<TravelWindow[]>([]);
+  const [events, setEvents] = useState<NodeEvent[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,12 +95,14 @@ export default function App() {
     try {
       setIsLoading(true);
       setError(null);
-      const [peopleData, travelWindowsData] = await Promise.all([
+      const [peopleData, travelWindowsData, eventsData] = await Promise.all([
         getAllPeople(),
         getAllTravelWindows(),
+        loadEvents(),
       ]);
       setPeople(peopleData);
       setTravelWindows(travelWindowsData);
+      setEvents(eventsData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load data";
       setError(errorMessage);
@@ -134,7 +139,8 @@ export default function App() {
       // Alumni are implicitly included when their cohort year range overlaps.
       if (filters.year !== null) {
         const start = person.fellowshipCohortYear;
-        const end = person.fellowshipEndYear ?? filters.year;
+        // Ongoing (no end year) = active through current calendar year only, not the selected filter year
+        const end = person.fellowshipEndYear ?? new Date().getFullYear();
         if (filters.year < start || filters.year > end) return false;
       }
 
@@ -261,18 +267,23 @@ export default function App() {
 
   // ── Views ──────────────────────────────────────────────────────────
 
-  const homeView = (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <AppHeader
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-          setMapFilterIds(null);
-        }}
-        suggestFormUrl={SUGGEST_FORM_URL}
-        onNavigateNode={(slug) => navigate(`/${slug}`)}
-      />
+  const isProgrammingRoute = route === "/berlin" || route === "/sf";
 
+  const mainContent = isProgrammingRoute ? (
+    <NodeProgrammingPage
+      initialNode={(route === "/berlin" ? "berlin" : "sf") as NodeSlug}
+      people={people}
+      onNavigateHome={() => navigate("/")}
+      onNavigateNode={(slug) => navigate(`/${slug}`)}
+      onShowEventOnMap={handleShowEventOnMap}
+      onViewPersonDetails={(id, context) => {
+        setSelectedPersonId(id);
+        setDetailNavContext(context);
+      }}
+      showPageHeader={false}
+    />
+  ) : (
+    <>
       {/* Event filter banner — shown when returning from programming page */}
       {mapFilterIds && (
         <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between gap-3">
@@ -296,6 +307,7 @@ export default function App() {
             timeWindowStart={timeWindowStart}
             timeWindowEnd={timeWindowEnd}
             granularity={filters.granularity}
+            events={events}
             onViewPersonDetails={(id, context) => {
               setSelectedPersonId(id);
               setDetailNavContext(context ?? null);
@@ -322,28 +334,30 @@ export default function App() {
           />
         )}
       </div>
-    </div>
+    </>
   );
-
-  const nodeSlug = route === "/berlin" ? "berlin" : route === "/sf" ? "sf" : null;
-
-  const programmingView = nodeSlug ? (
-    <NodeProgrammingPage
-      initialNode={nodeSlug as NodeSlug}
-      people={people}
-      onNavigateHome={() => navigate("/")}
-      onNavigateNode={(slug) => navigate(`/${slug}`)}
-      onShowEventOnMap={handleShowEventOnMap}
-    />
-  ) : null;
 
   return (
     <>
-      {programmingView ?? homeView}
+      <div className="h-screen flex flex-col bg-gray-50">
+        <AppHeader
+          route={route}
+          navigate={navigate}
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setMapFilterIds(null);
+          }}
+          suggestFormUrl={SUGGEST_FORM_URL}
+        />
+
+        {mainContent}
+      </div>
 
       <PersonDetailModal
         person={people.find((p) => p.id === selectedPersonId) || null}
         travelWindows={travelWindows}
+        events={events}
         allPeople={filteredPeople}
         navigationContext={detailNavContext}
         filters={filters}

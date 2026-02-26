@@ -12,9 +12,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle, Users
+  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
+import type { NodeEvent } from "../types/events";
+import { getPersonRSVPs } from "../services/rsvp";
+import { getNode } from "../data/nodes";
+import { buildFullPath } from "../utils/router";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -61,6 +65,8 @@ interface NavigationContext {
 interface PersonDetailModalProps {
   person: Person | null;
   travelWindows: TravelWindow[];
+  /** Events list (from loadEvents) for resolving RSVP event details; null until loaded. */
+  events?: NodeEvent[] | null;
   allPeople: Person[];
   /** When set, arrows cycle through this subset instead of allPeople. */
   navigationContext?: NavigationContext | null;
@@ -78,6 +84,7 @@ interface PersonDetailModalProps {
 export function PersonDetailModal({
   person,
   travelWindows,
+  events = null,
   allPeople,
   navigationContext,
   filters,
@@ -130,6 +137,26 @@ export function PersonDetailModal({
     }
   }, [person, travelWindows]);
 
+  // Resolve navigation list: scoped subset when a context is active, full filtered list otherwise
+  // Must be called unconditionally (before any early return) to satisfy Rules of Hooks.
+  const navigationList = useMemo(() => {
+    if (!navigationContext) return allPeople;
+    const idSet = new Set(navigationContext.peopleIds);
+    return allPeople.filter((p) => idSet.has(p.id));
+  }, [allPeople, navigationContext]);
+
+  // Human-readable summary of active filters for context display
+  const filterSummary = useMemo(() => {
+    if (!filters) return [];
+    const tags: string[] = [];
+    if (filters.year !== null) tags.push(`${filters.year}`);
+    if (filters.programs.length > 0) tags.push(...filters.programs);
+    if (filters.nodes.length > 0) tags.push(...filters.nodes.map(n => n.replace(" Node", "")));
+    if (filters.focusTags.length > 0) tags.push(...filters.focusTags.slice(0, 2));
+    if (filters.search) tags.push(`"${filters.search}"`);
+    return tags;
+  }, [filters]);
+
   if (!isOpen || !person) return null;
 
   // Get travel windows for this person, sorted by start date
@@ -138,13 +165,6 @@ export function PersonDetailModal({
     : travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-  // Resolve navigation list: scoped subset when a context is active, full filtered list otherwise
-  const navigationList = useMemo(() => {
-    if (!navigationContext) return allPeople;
-    const idSet = new Set(navigationContext.peopleIds);
-    return allPeople.filter((p) => idSet.has(p.id));
-  }, [allPeople, navigationContext]);
 
   const currentIndex = navigationList.findIndex((p) => p.id === person.id);
   const hasPrevious = currentIndex > 0;
@@ -162,18 +182,6 @@ export function PersonDetailModal({
       onNavigate(navigationList[currentIndex + 1].id);
     }
   };
-
-  // Human-readable summary of active filters for context display
-  const filterSummary = useMemo(() => {
-    if (!filters) return [];
-    const tags: string[] = [];
-    if (filters.year !== null) tags.push(`${filters.year}`);
-    if (filters.programs.length > 0) tags.push(...filters.programs);
-    if (filters.nodes.length > 0) tags.push(...filters.nodes.map(n => n.replace(" Node", "")));
-    if (filters.focusTags.length > 0) tags.push(...filters.focusTags.slice(0, 2));
-    if (filters.search) tags.push(`"${filters.search}"`);
-    return tags;
-  }, [filters]);
 
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
@@ -380,6 +388,14 @@ export function PersonDetailModal({
 
   const displayPerson = isEditing && editingPerson ? editingPerson : person;
 
+  // Whether the person has any project content worth showing a project section for
+  const hasProject = !!(
+    isEditing ||
+    (displayPerson.shortProjectTagline ?? "").trim() ||
+    (displayPerson.expandedProjectDescription ?? "").trim() ||
+    (displayPerson.affiliationOrInstitution ?? "").trim()
+  );
+
   return (
     <>
       <div 
@@ -405,9 +421,16 @@ export function PersonDetailModal({
             className="person-detail-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
             style={isMobile ? { paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' } : undefined}
           >
-            <div className="px-6 pt-6 pb-10 sm:px-8 sm:pt-8 lg:px-12 lg:pt-10 lg:pb-14">
+            {/* Generous padding on all sides — never flush to edges; respect safe area on mobile */}
+            <div 
+              className="px-6 pt-6 pb-10 sm:px-8 sm:pt-7 sm:pb-12 lg:px-12 lg:pt-10 lg:pb-16"
+              style={isMobile ? {
+                paddingLeft: 'max(1.5rem, env(safe-area-inset-left, 0px) + 1rem)',
+                paddingRight: 'max(1.5rem, env(safe-area-inset-right, 0px) + 1rem)',
+              } : undefined}
+            >
               {/* Toolbar: nav + context left, actions right */}
-              <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5">
+              <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4">
                 <div className="flex items-center gap-1 sm:gap-2">
                   {!isEditing && (hasPrevious || hasNext) && (
                     <>
@@ -468,10 +491,10 @@ export function PersonDetailModal({
 
               {/* Navigation context bar — tells user what subset they're browsing */}
               {!isEditing && (
-                <div className="flex flex-wrap items-center gap-2 mb-6 sm:mb-8">
+                <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-5">
                   {isScoped && navigationContext ? (
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100 font-medium">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100 font-medium">
                         <MapPin className="h-3 w-3 shrink-0" />
                         {navigationContext.label}
                       </span>
@@ -484,7 +507,7 @@ export function PersonDetailModal({
                         <button
                           type="button"
                           onClick={onExpandNavigation}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[var(--pdm-text-muted)] hover:text-[var(--pdm-text)] hover:bg-gray-100 transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[var(--pdm-text-muted)] hover:text-[var(--pdm-text)] hover:bg-gray-100 transition-colors"
                         >
                           <Users className="h-3 w-3" />
                           Browse all {allPeople.length}
@@ -495,7 +518,7 @@ export function PersonDetailModal({
                     filterSummary.length > 0 && (
                       <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--pdm-text-muted)]">
                         {filterSummary.map((tag) => (
-                          <span key={tag} className="px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+                          <span key={tag} className="px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
                             {tag}
                           </span>
                         ))}
@@ -507,7 +530,7 @@ export function PersonDetailModal({
               )}
 
               {/* Name + metadata block */}
-              <header className="person-detail-content__head mb-8 lg:mb-10">
+              <header className="person-detail-content__head">
                 <div className="mb-3 sm:mb-4">
                   {isEditing && editingPerson ? (
                     <Input
@@ -522,7 +545,7 @@ export function PersonDetailModal({
                     </h2>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   {isEditing && editingPerson ? (
                     <>
                       <Select value={editingPerson.roleType} onValueChange={(v: RoleType) => setEditingPerson({ ...editingPerson, roleType: v })}>
@@ -562,7 +585,7 @@ export function PersonDetailModal({
                   </div>
                 ) : (
                   displayPerson.focusTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-2.5 mt-3 sm:mt-4">
                       {displayPerson.focusTags.map((tag) => (
                         <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal">{tag}</Badge>
                       ))}
@@ -571,80 +594,109 @@ export function PersonDetailModal({
                 )}
               </header>
 
-              {/* Main content: 2-col on desktop, single col on mobile */}
-              <div className="person-detail-grid grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,320px)] gap-8 lg:gap-10">
-                {/* Left: Project */}
-                <section className="person-detail-section space-y-3">
-                  <h3 className="person-detail-section-title">Project</h3>
-                  {isEditing && editingPerson ? (
-                    <div className="space-y-3">
-                      <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
-                      <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="Full description" />
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
-                        <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value.trim() || null })} placeholder="Institution or company" className="mt-1" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {(() => {
-                        const tagline = (displayPerson.shortProjectTagline ?? "").trim();
-                        const expanded = (displayPerson.expandedProjectDescription ?? "").trim();
-                        const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
-                        const showTagline = tagline && !taglineIsPrefix;
-                        const showExpanded = expanded || tagline;
-                        return (
-                          <>
-                            {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
-                            {showExpanded && (
-                              <p className="person-detail-body leading-relaxed">
-                                {taglineIsPrefix ? expanded : (expanded || tagline)}
-                              </p>
-                            )}
-                            {(displayPerson.affiliationOrInstitution ?? "").trim() && (
-                              <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </section>
-
-                {/* Right: Location, Node, Contact — sidebar on desktop */}
-                <div className="person-detail-sidebar space-y-6 lg:space-y-7">
-                  <section className="person-detail-section">
-                    <h3 className="person-detail-section-title flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" />
-                      Location
-                    </h3>
+              {/* Main content: 2-col from md (tablet) up, single col on mobile.
+                  When project is absent the sidebar spans full width — no ghost left column. */}
+              <div className={cn(
+                "person-detail-grid grid grid-cols-1 gap-6 md:gap-8 lg:gap-10",
+                hasProject && "md:grid-cols-[1fr_minmax(0,280px)]"
+              )}>
+                {/* Left: Project — only rendered when content exists, or admin is in edit mode */}
+                {hasProject && (
+                  <section className="person-detail-section space-y-2">
+                    <h3 className="person-detail-section-title">Project</h3>
                     {isEditing && editingPerson ? (
+                      <div className="space-y-3">
+                        <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
+                        <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="Full description" />
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
+                          <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value.trim() || null })} placeholder="Institution or company" className="mt-1" />
+                        </div>
+                      </div>
+                    ) : (
                       <div className="space-y-2">
-                        <Input value={editingPerson.currentCity} onChange={(e) => setEditingPerson({ ...editingPerson, currentCity: e.target.value })} placeholder="City" />
-                        <Input value={editingPerson.currentCountry} onChange={(e) => setEditingPerson({ ...editingPerson, currentCountry: e.target.value })} placeholder="Country" />
+                        {(() => {
+                          const tagline = (displayPerson.shortProjectTagline ?? "").trim();
+                          const expanded = (displayPerson.expandedProjectDescription ?? "").trim();
+                          const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
+                          const showTagline = tagline && !taglineIsPrefix;
+                          const showExpanded = expanded || tagline;
+                          return (
+                            <>
+                              {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
+                              {showExpanded && (
+                                <p className="person-detail-body leading-relaxed">
+                                  {taglineIsPrefix ? expanded : (expanded || tagline)}
+                                </p>
+                              )}
+                              {(displayPerson.affiliationOrInstitution ?? "").trim() && (
+                                <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
-                    ) : (
-                      <p className="person-detail-body">{displayPerson.currentCity}, {displayPerson.currentCountry}</p>
                     )}
                   </section>
-                  <section className="person-detail-section">
-                    <h3 className="person-detail-section-title">Primary Node</h3>
-                    {isEditing && editingPerson ? (
-                      <Select value={editingPerson.primaryNode} onValueChange={(v: PrimaryNode) => setEditingPerson({ ...editingPerson, primaryNode: v })}>
-                        <SelectTrigger className="rounded-[var(--pdm-radius-sm)] border-[var(--pdm-border)] bg-[#fafafa]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Global">Global</SelectItem>
-                          <SelectItem value="Berlin Node">Berlin Node</SelectItem>
-                          <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
-                          <SelectItem value="Alumni">Alumni</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="person-detail-body">{displayPerson.primaryNode === "Alumni" ? "—" : getNodeLabel(displayPerson.primaryNode)}</p>
-                    )}
-                  </section>
+                )}
+
+                {/* Right sidebar: meta + contact */}
+                <div className="person-detail-sidebar space-y-5">
+
+                  {/* Location + Node — compact paired meta in read mode, full fields in edit */}
+                  {isEditing && editingPerson ? (
+                    <>
+                      <section className="person-detail-section">
+                        <h3 className="person-detail-section-title flex items-center gap-1.5">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          Location
+                        </h3>
+                        <div className="space-y-2">
+                          <Input value={editingPerson.currentCity} onChange={(e) => setEditingPerson({ ...editingPerson, currentCity: e.target.value })} placeholder="City" />
+                          <Input value={editingPerson.currentCountry} onChange={(e) => setEditingPerson({ ...editingPerson, currentCountry: e.target.value })} placeholder="Country" />
+                        </div>
+                      </section>
+                      <section className="person-detail-section">
+                        <h3 className="person-detail-section-title">Primary Node</h3>
+                        <Select value={editingPerson.primaryNode} onValueChange={(v: PrimaryNode) => setEditingPerson({ ...editingPerson, primaryNode: v })}>
+                          <SelectTrigger className="rounded-[var(--pdm-radius-sm)] border-[var(--pdm-border)] bg-[#fafafa]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Global">Global</SelectItem>
+                            <SelectItem value="Berlin Node">Berlin Node</SelectItem>
+                            <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
+                            <SelectItem value="Alumni">Alumni</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </section>
+                    </>
+                  ) : (
+                    /* Side-by-side on mobile (where sidebar stacks below project),
+                       stacked in the actual sidebar column at md+ */
+                    <section className="person-detail-section">
+                      <div className="person-detail-meta-grid">
+                        <div>
+                          <h3 className="person-detail-section-title flex items-center gap-1.5">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            Location
+                          </h3>
+                          <p className="person-detail-body">
+                            {displayPerson.currentCity}, {displayPerson.currentCountry}
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="person-detail-section-title">Node</h3>
+                          <p className="person-detail-body">
+                            {displayPerson.primaryNode === "Alumni"
+                              ? "—"
+                              : getNodeLabel(displayPerson.primaryNode)}
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
                   <section className="person-detail-section person-detail-divider">
-                    <h3 className="person-detail-section-title mb-3">Contact & Links</h3>
+                    <h3 className="person-detail-section-title">Contact & Links</h3>
                     {isEditing && editingPerson ? (
                       <div className="space-y-3">
                         <div>
@@ -685,7 +737,7 @@ export function PersonDetailModal({
               </div>
 
               {/* Travel — full width below grid */}
-              <section className="person-detail-section mt-8 lg:mt-10 person-detail-divider">
+              <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <h3 className="person-detail-section-title flex items-center gap-2">
                     <Calendar className="h-3.5 w-3.5 shrink-0" />
@@ -706,7 +758,7 @@ export function PersonDetailModal({
                       <p className="text-sm text-gray-500 italic">No travel windows</p>
                     ) : (
                       personTravelWindows.map((tw) => (
-                        <div key={tw.id} className="p-5 sm:p-6 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors">
+                        <div key={tw.id} className="p-4 sm:p-5 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <h4 className="font-semibold text-gray-900">{tw.title}</h4>
@@ -734,7 +786,10 @@ export function PersonDetailModal({
                 )}
               </section>
 
-              <div className="h-12 lg:h-16" aria-hidden />
+              {/* Event RSVPs — where they're going (events they're attending at nodes) */}
+              {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
+
+              <div className="h-8 lg:h-10" aria-hidden />
             </div>
           </div>
         </div>
@@ -764,6 +819,67 @@ export function PersonDetailModal({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+/**
+ * Renders the "Event RSVPs" block for the person detail: events they're attending (going)
+ * with location (node city) and date. Only shows when events are loaded and person has at least one going RSVP.
+ */
+function PersonEventRSVPs({ personId, events }: { personId: string; events: NodeEvent[] | null | undefined }) {
+  const goingRsvps = useMemo(() => getPersonRSVPs(personId).filter((r) => r.status === "going"), [personId]);
+  const resolved = useMemo(() => {
+    if (!events?.length) return [];
+    return goingRsvps
+      .map((r) => {
+        const event = events.find((e) => e.id === r.eventId);
+        return event ? { rsvp: r, event } : null;
+      })
+      .filter((x): x is { rsvp: typeof goingRsvps[0]; event: NodeEvent } => x !== null)
+      .sort((a, b) => new Date(a.event.startAt).getTime() - new Date(b.event.startAt).getTime());
+  }, [goingRsvps, events]);
+
+  if (resolved.length === 0) return null;
+
+  return (
+    <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
+      <h3 className="person-detail-section-title flex items-center gap-2 mb-4">
+        <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+        Event RSVPs — Where they&apos;ll be ({resolved.length})
+      </h3>
+      <div className="space-y-3">
+        {resolved.map(({ event }) => {
+          const node = getNode(event.nodeSlug);
+          const nodeLabel = node ? `${node.city}, ${node.country}` : event.location;
+          const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          const nodePath = `/${event.nodeSlug}`;
+          return (
+            <a
+              key={event.id}
+              href={buildFullPath(nodePath)}
+              className="block p-4 sm:p-5 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-teal-50/80 hover:border-teal-200 transition-colors group"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-teal-800">{event.title}</h4>
+                  <p className="text-sm text-gray-600 mt-0.5">{nodeLabel}</p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                    <CalendarDays className="h-3 w-3" />
+                    {dateStr}
+                  </div>
+                </div>
+                <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-teal-600 shrink-0" />
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

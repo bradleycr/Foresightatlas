@@ -50,6 +50,18 @@ function slugify(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+/**
+ * Luma's `event.url` can be either a slug ("abcd1234") or full URL.
+ * Normalize both shapes to a valid public event URL.
+ */
+function normalizeLumaEventUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^(lu\.ma|luma\.com)\//i.test(raw)) return `https://${raw}`;
+  return `https://lu.ma/${raw.replace(/^\/+/, "")}`;
+}
+
 /** Map a Luma event type string to our EventType enum. */
 function mapLumaType(lumaEvent) {
   const name = (lumaEvent.name || "").toLowerCase();
@@ -191,7 +203,7 @@ async function fetchLumaEvents() {
 
   return allEvents.map((ev) => ({
     _lumaApiId: ev.api_id,
-    _lumaUrl: ev.url ? `https://lu.ma/${ev.url}` : null,
+    _lumaUrl: normalizeLumaEventUrl(ev.url),
     id: `luma-${ev.api_id}`,
     nodeSlug: guessNode(ev),
     title: ev.name || "Untitled Event",
@@ -206,7 +218,7 @@ async function fetchLumaEvents() {
     tags: [],
     visibility: ev.visibility === "public" ? "public" : "internal",
     capacity: ev.max_capacity || null,
-    externalLink: ev.url ? `https://lu.ma/${ev.url}` : null,
+    externalLink: normalizeLumaEventUrl(ev.url),
     recurrenceGroupId: ev.recurrence_id || null,
   }));
 }

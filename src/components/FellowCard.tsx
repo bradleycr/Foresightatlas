@@ -63,8 +63,8 @@ export function FellowCard({
           <div className="min-w-0 flex-1">
             <h3 className="text-gray-900 font-heading">{person.fullName}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span
-                className={cn("text-xs px-2 py-0.5 rounded-full font-medium", getRolePillClass(person.roleType))}
+                <span
+                className={cn("text-xs px-3 py-1.5 rounded-full font-medium", getRolePillClass(person.roleType))}
               >
                 {person.roleType}
               </span>
@@ -134,7 +134,7 @@ export function FellowCard({
               e.stopPropagation();
               onSelect?.();
             }}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-md px-1 py-0.5 -ml-1 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-md px-2 py-1 -ml-1 transition-colors"
             aria-label={`More details about ${person.fullName}`}
           >
             More details

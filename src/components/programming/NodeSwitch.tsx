@@ -1,21 +1,25 @@
 /**
- * NodeSwitch — pill toggle for node selection.
- * Light variant matches app header (teal/gray); dark variant for gradient heroes.
+ * NodeSwitch — pill toggle for switching between Foresight nodes.
+ *
+ * The active tab in light mode picks up its accent from the active node's
+ * NodeColorTheme so the pill always harmonises with the pastel page header.
+ * The dark variant is for gradient hero use and stays white-on-frosted.
  */
 
 import { NodeSlug } from "../../types/events";
-import { NODES } from "../../data/nodes";
+import { NODES, getNode } from "../../data/nodes";
 import { cn } from "../ui/utils";
 
 interface NodeSwitchProps {
   activeNode: NodeSlug;
   onChange: (node: NodeSlug) => void;
-  /** "light" = on white/gray header (default); "dark" = on gradient hero */
+  /** "light" = on white/pastel header (default); "dark" = on gradient hero */
   variant?: "light" | "dark";
 }
 
 export function NodeSwitch({ activeNode, onChange, variant = "light" }: NodeSwitchProps) {
   const isLight = variant === "light";
+  const activeTheme = getNode(activeNode)?.theme;
 
   return (
     <div
@@ -38,9 +42,9 @@ export function NodeSwitch({ activeNode, onChange, variant = "light" }: NodeSwit
             className={cn(
               "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
               isLight
-                ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
+                ? cn("focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1", activeTheme?.focusRing)
                 : "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
-              on && isLight && "bg-teal-100 text-teal-800 shadow-sm border border-teal-200/80",
+              on && isLight && cn(activeTheme?.monthSelected, "shadow-sm"),
               on && !isLight && "bg-white text-gray-900 shadow-sm",
               !on && isLight && "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent",
               !on && !isLight && "text-white/80 hover:text-white hover:bg-white/10",

@@ -1,9 +1,13 @@
 /**
- * RSVPButtonGroup — pill-rounded toggles matching the app's badge style.
+ * RSVPButtonGroup — pill-rounded RSVP toggles.
+ *
+ * Active states (going/interested/can't-go) are semantically coloured regardless
+ * of node. Only the keyboard-focus ring inherits the node's pastel theme so
+ * the overall palette stays cohesive.
  */
 
 import { Check, Star, X } from "lucide-react";
-import { RSVPStatus } from "../../types/events";
+import { RSVPStatus, NodeColorTheme } from "../../types/events";
 import { cn } from "../ui/utils";
 
 interface RSVPButtonGroupProps {
@@ -12,6 +16,7 @@ interface RSVPButtonGroupProps {
   disabled?: boolean;
   goingCount?: number;
   interestedCount?: number;
+  theme?: NodeColorTheme;
 }
 
 const CHOICES: {
@@ -50,6 +55,7 @@ export function RSVPButtonGroup({
   disabled = false,
   goingCount,
   interestedCount,
+  theme,
 }: RSVPButtonGroupProps) {
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP">
@@ -67,8 +73,8 @@ export function RSVPButtonGroup({
             disabled={disabled}
             aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-teal-400",
+              "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold border transition-all",
+              cn("focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1", theme?.focusRing ?? "focus-visible:ring-gray-400"),
               "disabled:opacity-50 disabled:cursor-not-allowed",
               active
                 ? on

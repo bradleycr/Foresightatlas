@@ -1,0 +1,228 @@
+id,fullName,roleType,fellowshipCohortYear,fellowshipEndYear,affiliationOrInstitution,focusTags,currentCity,currentCountry,lat,lng,primaryNode,profileUrl,contactUrlOrHandle,shortProjectTagline,expandedProjectDescription,isAlumni
+p1,Dr. Sarah Chen,Fellow,2023,,,"[""Secure AI"",""Existential Hope""]",San Francisco,USA,37.7749,-122.4194,Bay Area Node,https://foresight.org/fellow/sarah-chen,@sarahchen,Building interpretable AI systems for alignment research,"Working on novel approaches to AI interpretability that make neural networks more transparent and understandable. The research focuses on developing tools that allow researchers to peer inside AI systems and understand their decision-making processes, which is critical for ensuring AI safety and alignment with human values.",FALSE
+p2,Marcus Weber,Fellow,2024,,,"[""Neurotechnology"",""Longevity Biotechnology""]",Berlin,Germany,52.52,13.405,Berlin Node,https://foresight.org/fellow/marcus-weber,marcus.weber@email.com,Developing brain-computer interfaces for cognitive enhancement,Leading research on non-invasive BCIs that can augment human cognitive capabilities. Current work involves developing novel electrode designs and signal processing algorithms that can decode neural activity with unprecedented precision. The long-term goal is to create accessible tools that enhance human cognition and treat neurological conditions.,FALSE
+p3,Yuki Tanaka,Grantee,2023,,,"[""Nanotechnology"",""Space""]",Tokyo,Japan,35.6762,139.6503,Global,https://foresight.org/grantee/yuki-tanaka,,Self-assembling nanomaterials for space infrastructure,Researching programmable matter that can self-assemble in zero-gravity environments. This work combines nanotechnology with space engineering to develop materials that could revolutionize space construction. The project explores how molecular-scale robots could build large structures in orbit without human intervention.,FALSE
+p4,Dr. Amara Okafor,Fellow,2022,,,"[""Longevity Biotechnology"",""Secure AI""]",Boston,USA,42.3601,-71.0589,Global,https://foresight.org/fellow/amara-okafor,@amaraokafor,AI-driven drug discovery for age-related diseases,"Combining machine learning with molecular biology to accelerate the discovery of longevity therapeutics. The research uses AI models to predict which compounds will extend healthy lifespan in model organisms, then validates the most promising candidates in the lab. This work aims to compress decades of traditional drug discovery into months.",FALSE
+p5,Elena Rodriguez,Prize Winner,2024,,,"[""Neurotechnology"",""Existential Hope""]",Barcelona,Spain,41.3851,2.1734,Global,https://foresight.org/prize-winner/elena-rodriguez,elena@neurotech.es,Democratizing access to neurofeedback technology,"Building low-cost, open-source neurofeedback devices that can help people optimize their mental health and cognitive performance. Won the Foresight Existential Hope Prize for work on making advanced neurotechnology accessible to underserved communities worldwide. The project combines hardware design, software development, and community education.",FALSE
+p6,Dr. Rajesh Patel,Fellow,2023,,,"[""Nanotechnology"",""Longevity Biotechnology""]",Mumbai,India,19.076,72.8777,Global,https://foresight.org/fellow/rajesh-patel,@rajeshpatel,Nanorobots for targeted cellular repair,"Designing molecular machines that can navigate the human body and repair cellular damage at the nanoscale. This work sits at the intersection of nanotechnology and longevity research, aiming to develop interventions that could reverse aging at the cellular level. Current focus is on prototype nanodevices for mitochondrial repair.",FALSE
+p7,Sophie Dubois,Fellow,2024,,,"[""Space"",""Existential Hope""]",Paris,France,48.8566,2.3522,Global,https://foresight.org/fellow/sophie-dubois,sophie.dubois@esa.int,Developing closed-loop life support for Mars colonies,"Working on regenerative life support systems that could sustain human settlements on Mars. The research focuses on creating self-sustaining ecosystems that recycle air, water, and nutrients with minimal external inputs. This work is critical for making long-term space habitation viable and represents a concrete step toward humanity becoming a multi-planetary species.",FALSE
+p8,Alex Kim,Grantee,2024,,,"[""Secure AI"",""Neurotechnology""]",Seoul,South Korea,37.5665,126.978,Global,https://foresight.org/grantee/alex-kim,@alexkim,Neural alignment techniques for safe AI systems,"Researching how insights from neuroscience can inform AI safety strategies. The work explores parallels between human value learning and AI alignment, developing techniques that could help AI systems learn and maintain human values more robustly. This interdisciplinary approach combines cognitive neuroscience, machine learning, and ethics.",FALSE
+p9,Dr. Liam O'Connor,Fellow,2022,,,"[""Longevity Biotechnology"",""Nanotechnology""]",San Francisco,USA,37.7749,-122.4194,Bay Area Node,https://foresight.org/fellow/liam-oconnor,liam@longevitylab.org,Senolytic therapies using targeted nanoparticles,"Developing next-generation senolytic drugs that use nanoparticle delivery systems to specifically target and eliminate senescent cells. These zombie cells accumulate with age and contribute to many age-related diseases. The research aims to create safer, more effective senolytics that could significantly extend healthy lifespan.",FALSE
+p10,Maya Gupta,Fellow,2024,,,"[""Secure AI"",""Existential Hope""]",Berlin,Germany,52.52,13.405,Berlin Node,https://foresight.org/fellow/maya-gupta,@mayagupta,Cooperative AI frameworks for global coordination,"Building AI systems designed for cooperation and coordination at scale. The research addresses how AI can help humanity solve global coordination problems, from climate change to pandemic response. This work combines game theory, multi-agent systems, and mechanism design to create AI that helps humans cooperate more effectively.",FALSE
+p11,Ivan Seah,Fellow,2020,,,"[""Existential Hope""]",Singapore,Singapore,1.2966,103.7764,Global,,ivanseah@nus.edu.sg,,,TRUE
+p12,Yelena Budovskaya,Fellow,2020,,,"[""Longevity Biotechnology""]",South San Francisco,USA,37.6547,-122.4077,Global,,yelena@trumelabs.com,Co-founded TruMe Inc - developed TruAge epigenetic test. Built virus detection tech at Xnsion LLC. N,Co-founded TruMe Inc - developed TruAge epigenetic test. Built virus detection tech at Xnsion LLC. Now at Genentech doing informatics.,TRUE
+p13,J. Sarkar,Fellow,2020,,,"[""Existential Hope""]",Global,Global,0,0,Global,,jsarkar@rethink64.com,,,TRUE
+p14,"Dr. Huanyu ""Larry"" Cheng",Fellow,2020,,,"[""Existential Hope""]",State College,USA,40.7982,-77.8599,Global,,huanyu.cheng@psu.edu,Professor at Penn State Materials Science,Professor at Penn State Materials Science,TRUE
+p15,Ye He,Fellow,2020,,,"[""Existential Hope""]",Global,Global,0,0,Global,,yhe1@gc.cuny.edu,,,TRUE
+p16,Dr. Yuxuan Lu,Fellow,2020,,,"[""Existential Hope""]",Global,Global,0,0,Global,,dr.yuxuan.lu@gmail.com,,,TRUE
+p17,William E. Halal,Fellow,2020,,,"[""Existential Hope""]",Washington,USA,38.9072,-77.0369,Global,,halal@gwu.edu,,,TRUE
+p18,Cosmo Mielke,Fellow,2017,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,clinton.mielke@gmail.com,,,TRUE
+p19,Berhane Temelso,Fellow,2017,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p20,Kimberly Hamad-Schifferli,Fellow,2017,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,kimberly.hamad.schifferli@gmail.com,,,TRUE
+p21,Nell Watson,Fellow,2017,,,"[""Secure AI""]",Zurich,Switzerland,47.3769,8.5417,Global,,,"AI ethics expert. IEEE Ethics Maestro, Chair of ECPAIS Transparency Experts Focus Group.","AI ethics expert. IEEE Ethics Maestro, Chair of ECPAIS Transparency Experts Focus Group.",TRUE
+p22,Chuyang Cheng,Fellow,2017,,,"[""Nanotechnology""]",Beijing,China,39.9042,116.4074,Global,,ccy.pku@gmail.com,,,TRUE
+p23,Jonathan Barnes,Fellow,2017,,,"[""Nanotechnology""]",St. Louis,USA,38.6488,-90.3108,Global,,jcbarnes@wustl.edu,,,TRUE
+p24,Eva-Maria Strauch,Fellow,2017,,,"[""Nanotechnology""]",Seattle,USA,47.6553,-122.3035,Global,,evas01@uw.edu,,,TRUE
+p25,Christopher Wilmer,Fellow,2017,,,"[""Nanotechnology""]",Pittsburgh,USA,40.4406,-79.9959,Global,,WILMER@pitt.edu,,,TRUE
+p26,Michael Skuhersky,Fellow,2017,,,"[""Neurotechnology""]",Cambridge,USA,42.3601,-71.0942,Global,,vex@mit.edu,"PhD student at MIT, focusing on neural circuit structure and function.","PhD student at MIT, focusing on neural circuit structure and function.",TRUE
+p27,Eric Hinterman,Fellow,2017,,,"[""Space""]",Global,Global,0,0,Global,,,,,TRUE
+p28,Melissa Dumartin,Fellow,2018,,,"[""Existential Hope""]",Global,Global,0,0,Global,,melissa.dumartin@gmail.com,,,TRUE
+p29,Andres Ochoa,Fellow,2018,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,swordfish1313@hotmail.com,,,TRUE
+p30,Grigory Tikhomirov,Fellow,2018,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p31,Peter Scheyer,Fellow,2018,,,"[""Secure AI""]",Global,Global,0,0,Global,,,,,TRUE
+p32,Roman V. Yampolskiy,Fellow,2018,,,"[""Secure AI""]",Global,Global,0,0,Global,,,,,TRUE
+p33,Ryan Carey,Fellow,2018,,,"[""Secure AI""]",Global,Global,0,0,Global,,ry.duff@gmail.com,,,TRUE
+p34,Jane Lippencott,Fellow,2018,,,"[""Secure AI""]",Global,Global,0,0,Global,,janelippencott@gmail.com,,,TRUE
+p35,Damien Sluysmans,Fellow,2018,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,dsluysmans@gmail.com,,,TRUE
+p36,Sergei Kalinin,Fellow,2018,,,"[""Nanotechnology""]",Oak Ridge,USA,35.9311,-84.31,Global,,sergei2@ornl.gov,,,TRUE
+p37,Nusrat Jahan M. Sanghamitra,Fellow,2018,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,nusrat@cycaonco.com,,,TRUE
+p38,Bharath Ramsundar,Fellow,2018,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,bharat.ramsundar@gmail.com,,,TRUE
+p39,Patrick Mellor,Fellow,2019,,,"[""Existential Hope""]",Global,Global,0,0,Global,,,,,TRUE
+p40,Durham Smith,Fellow,2019,,,"[""Secure AI""]",Global,Global,0,0,Global,,durham.smith@gmail.com,,,TRUE
+p41,Michael M. Lerch,Fellow,2019,,,"[""Nanotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,mlerch@g.harvard.edu,,,TRUE
+p42,TJ Brunette,Fellow,2019,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p43,Alevtina Evgrafova,Fellow,2020,,,"[""Existential Hope""]",Global,Global,0,0,Global,,alevtina.evgrafova@gmail.com,,,TRUE
+p44,Tony Lai,Fellow,2020,,,"[""Existential Hope""]",Global,Global,0,0,Global,,tony@legal.io,,,TRUE
+p45,Daniel Bojar,Fellow,2020,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,daniel@bojar.net,,,TRUE
+p46,Tessa Alexanian,Fellow,2020,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,hello@tessa.fyi,,,TRUE
+p47,Daniel Elton,Fellow,2020,,,"[""Secure AI""]",Global,Global,0,0,Global,,delton17@gmail.com,,,TRUE
+p48,Felix Andreas Faber,Fellow,2020,,,"[""Secure AI""]",Global,Global,0,0,Global,,faber.felix1@gmail.com,,,TRUE
+p49,Caroline Jeanmaire,Fellow,2020,,,"[""Secure AI""]",Berkeley,USA,37.8716,-122.2727,Global,,jeanmaire.caroline@gmail.com,Director of Strategic Research at Center for Human-Compatible AI. AI Policy Researcher at The Future,Director of Strategic Research at Center for Human-Compatible AI. AI Policy Researcher at The Future Society.,TRUE
+p50,Jeffrey Ladish,Fellow,2020,,,"[""Secure AI""]",Global,Global,0,0,Global,,jeff.ladish@gmail.com,,,TRUE
+p51,Matthew R. Ryder,Fellow,2020,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,matthew.r.ryder@outlook.com,,,TRUE
+p52,Giuliana Rotola,Fellow,2020,,,"[""Space""]",Global,Global,0,0,Global,,giuliana.rotola@community.isunet.edu,,,TRUE
+p53,Jazear Brooks,Fellow,2021,,,"[""Existential Hope""]",Global,Global,0,0,Global,,jazear.brooks@gmail.com,,,TRUE
+p54,Maxim Ziatdinov,Fellow,2021,,,"[""Existential Hope""]",Oak Ridge,USA,35.9311,-84.31,Global,,ziatdinovma@ornl.gov,,,TRUE
+p55,Phoebe Tickell,Fellow,2021,,,"[""Existential Hope""]",Global,Global,0,0,Global,,phoebe.tickell@gmail.com,,,TRUE
+p56,Christine Webber,Fellow,2021,,,"[""Existential Hope""]",Global,Global,0,0,Global,,cwebber@dustycloud.org,,,TRUE
+p57,Thomas Schroeder,Fellow,2021,,,"[""Longevity Biotechnology""]",Raleigh,USA,35.7872,-78.6705,Global,,tomschro@gmail.com,"Assistant Professor at NC State in Textile Engineering. Research on polymers, transport processes, a","Assistant Professor at NC State in Textile Engineering. Research on polymers, transport processes, and phase changes.",TRUE
+p58,Stephen Malina,Fellow,2021,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,stephenmalina@gmail.com,,,TRUE
+p59,David Manheim,Fellow,2021,,,"[""Existential Hope""]",Global,Global,0,0,Global,,davidmanheim@gmail.com,,,TRUE
+p60,Primavera De Filippi,Fellow,2021,,,"[""Existential Hope""]",Global,Global,0,0,Global,,pdefilippi@gmail.com,,,TRUE
+p61,Yip Fai Tsei,Fellow,2021,,,"[""Existential Hope""]",Global,Global,0,0,Global,,tseyipfai@gmail.com,,,TRUE
+p62,Zhu Xiaohu,Fellow,2021,,,"[""Secure AI""]",Global,Global,0,0,Global,,xhzhu.nju@gmail.com,,,TRUE
+p63,JJ Ben-Joseph,Fellow,2021,,,"[""Secure AI""]",Global,Global,0,0,Global,,,,,TRUE
+p64,Kate Sills,Fellow,2021,,,"[""Secure AI""]",Global,Global,0,0,Global,,kate@agoric.com,,,TRUE
+p65,Joscha Bach,Fellow,2021,,,"[""Secure AI""]",Berlin,Germany,52.52,13.405,Global,,jbach@uos.de,,,TRUE
+p66,Jessica V. Lamb,Fellow,2021,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,jessica.v.lamb@outlook.com,,,TRUE
+p67,James Arthur Cooper,Fellow,2021,,,"[""Nanotechnology""]",Reading,UK,51.4414,-0.9418,Global,,jamesarthurcooper@gmail.com,,,TRUE
+p68,Liang Feng,Fellow,2021,,,"[""Nanotechnology""]",Durham,USA,36.0014,-78.9382,Global,,liang.feng@duke.edu,,,TRUE
+p69,Qiu Yunyan,Fellow,2021,,,"[""Nanotechnology""]",Singapore,Singapore,1.2966,103.7764,Global,,yunyanq@nus.edu.sg,,,TRUE
+p70,Matthew McAteer,Fellow,2022,,,"[""Existential Hope""]",Global,Global,0,0,Global,,matthewmcateer0@gmail.com,,,TRUE
+p71,Alexander Fedintsev,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,alexanderfedintsev@gmail.com,,,TRUE
+p72,Yuri Deigin,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,ydeigin@gmail.com,,,TRUE
+p73,Tatyana Dobreva,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,tatyana@imyoo.health,"CEO & Co-Founder of ImYoo, autoimmune flare study platform.","CEO & Co-Founder of ImYoo, autoimmune flare study platform.",TRUE
+p74,Cody Rasmussen-Ivey,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,cody.ivey@gmail.com,,,TRUE
+p75,Nora Khaldi,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,nora@nuritas.com,,,TRUE
+p76,Delphine Larrieu,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p77,Tinka Vidovic,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p78,Mac Davis,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,admin@minicircle.io,,,TRUE
+p79,Juanita Matthews,Fellow,2022,,,"[""Longevity Biotechnology""]",Boston,USA,42.4075,-71.119,Global,,juanita.mathews@tufts.edu,,,TRUE
+p80,Nikolina Lauc,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,nikolina@glycanage.com,,,TRUE
+p81,Maryna Polyakova,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,polyakovamaryna@gmail.com,,,TRUE
+p82,Zvonimir Vrselja,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p83,Bradley English,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,brad.w.english@gmail.com,,,TRUE
+p84,Iosif Gershteyn,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,iosifmg@gmail.com,,,TRUE
+p85,Nikola T. Markov,Fellow,2022,,,"[""Longevity Biotechnology""]",San Francisco,USA,37.7749,-122.4194,Global,,markovokean@gmail.com,Bioinformatics scientist at The Buck Institute for Research on Aging.,Bioinformatics scientist at The Buck Institute for Research on Aging.,TRUE
+p86,Kai Micah Mills,Fellow,2022,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,kai@cryopets.com,,,TRUE
+p87,Romain Fontaine,Fellow,2022,,,"[""Existential Hope""]",Global,Global,0,0,Global,,romain.fonteyne.rf@gmail.com,,,TRUE
+p88,TJ (Tushant Jha),Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,particle.mania@gmail.com,,,TRUE
+p89,Jamie Joyce,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,jamie@societylibrary.com,,,TRUE
+p90,Ales Flidr,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,ales.flidr93@gmail.com,,,TRUE
+p91,Joshua Tan,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,joshua.z.tan@gmail.com,,,TRUE
+p92,Matjaz Leonardis,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,sidranoel.zajtam@gmail.com,,,TRUE
+p93,Ben Garfinkel,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,benmgarfinkel@gmail.com,,,TRUE
+p94,Rosie Campbell,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,rosiekcampbell@gmail.com,Former OpenAI. Working on Public AI with Joshua Tan.,Former OpenAI. Working on Public AI with Joshua Tan.,TRUE
+p95,Philipp Koellinger,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,philipp@desci.com,,,TRUE
+p96,George Kaissis,Fellow,2022,,,"[""Secure AI""]",Munich,Germany,48.1497,11.5679,Global,,g.kaissis@tum.de,,,TRUE
+p97,Ying Tong,Fellow,2022,,,"[""Secure AI""]",Global,Global,0,0,Global,,,,,TRUE
+p98,Dionis Minev,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p99,Stefan Borsley,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,stefan.borsley@googlemail.com,,,TRUE
+p100,Simon Krause,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,s.krause@fkf.mpg.de,,,TRUE
+p101,Ambika Somasundar,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,ambika92@gmail.com,,,TRUE
+p102,David August,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p103,Giulio Ragazzon,Fellow,2022,,,"[""Nanotechnology""]",Strasbourg,France,48.5734,7.7521,Global,,ragazzon@unistra.fr,,,TRUE
+p104,Kunyu Wang,Fellow,2022,,,"[""Nanotechnology""]",College Station,USA,30.6187,-96.3365,Global,,wangkunyu@tamu.edu,,,TRUE
+p105,Yuanning Feng,Fellow,2022,,,"[""Nanotechnology""]",Evanston,USA,42.0565,-87.6753,Global,,yuanningfeng2021@u.northwestern.edu,,,TRUE
+p106,Dusan Kolarski,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,d.kolarski@gmail.com,,,TRUE
+p107,Charlie McTernan,Fellow,2022,,,"[""Nanotechnology""]",Austin,USA,30.2849,-97.7341,Global,,evans@utexas.edu,,,TRUE
+p108,Yanguang Zhou,Fellow,2022,,,"[""Nanotechnology""]",Hong Kong,China,22.3193,114.1694,Global,,maeygzhou@ust.hk,,,TRUE
+p109,Austin M. Evans,Fellow,2022,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,AustinMichaelEvans@gmail.com,,,TRUE
+p110,Victor Garcia Lopez,Fellow,2022,,,"[""Nanotechnology""]",Houston,USA,29.7174,-95.4018,Global,,victorgb2009@gmail.com,,,TRUE
+p111,Larissa von Krbek,Fellow,2022,,,"[""Nanotechnology""]",Bonn,Germany,50.7339,7.0998,Global,,larissa.vonkrbek@uni-bonn.de,,,TRUE
+p112,Amanat Ali,Fellow,2023,,,"[""Longevity Biotechnology""]",New York,USA,40.7128,-74.006,Global,,amanat.ali@einsteinmed.edu,,,TRUE
+p113,Ben Alexander,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p114,Varun Dwaraka,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,varun@trudiagnostic.com,,,TRUE
+p115,Adrian Matysek,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,adrianmatysek1@gmail.com,,,TRUE
+p116,Barry Bentley,Fellow,2023,,,"[""Longevity Biotechnology""]",Cardiff,UK,51.4816,-3.1791,Global,,bbentley@cantab.net,Reader at Cardiff Metropolitan University. Fulbright Scholar at Harvard Medical School. Research on ,Reader at Cardiff Metropolitan University. Fulbright Scholar at Harvard Medical School. Research on biopreservation.,TRUE
+p117,David Boyer,Fellow,2023,,,"[""Longevity Biotechnology""]",Los Angeles,USA,34.0689,-118.4452,Global,,davboyer@g.ucla.edu,,,TRUE
+p118,Timothy Vu,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,timothyqvu@gmail.com,,,TRUE
+p119,Mike Sinn,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,m@crowdsourcingcures.org,,,TRUE
+p120,Jordan Baechle,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,jordanbaechle@gmail.com,,,TRUE
+p121,Rico Meinl,Fellow,2023,,,"[""Longevity Biotechnology""]",Global,Global,0,0,Global,,rmeinl97@gmail.com,,,TRUE
+p122,Guido Putignano,Fellow,2023,,,"[""Longevity Biotechnology""]",Zurich,Switzerland,47.3769,8.5417,Global,,guido.putignano@gmail.com,Research at Harvard and MIT. Working on AI for cell therapies.,Research at Harvard and MIT. Working on AI for cell therapies.,TRUE
+p123,Xinru Wang,Fellow,2023,,,"[""Longevity Biotechnology""]",Seattle,USA,47.6553,-122.3035,Global,,xinruw7@uw.edu,,,TRUE
+p124,Kelvin Yu,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,kelvin.yu.personal@gmail.com,,,TRUE
+p125,Ross Gruetzemacher,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,rossgritz@gmail.com,,,TRUE
+p126,Bulelani Jili,Fellow,2023,,,"[""Existential Hope""]",Cambridge,USA,42.377,-71.1167,Global,,bulelanijili@g.harvard.edu,,,TRUE
+p127,Sofya Lebedeva,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,sofya.m.lebedeva@gmail.com,,,TRUE
+p128,Jacob Swett,Fellow,2023,,,"[""Existential Hope""]",Oxford,UK,51.752,-1.2577,Global,,Jacob.Swett@blueprintbiosecurity.org,Executive Director and founder of Blueprint Biosecurity. PhD in Nanotechnology from Oxford.,Executive Director and founder of Blueprint Biosecurity. PhD in Nanotechnology from Oxford.,TRUE
+p129,Dr. Mariam Elgabry,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,mariam@bronic.co,,,TRUE
+p130,Raiany Romanni,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,raianyromanni@gmail.com,,,TRUE
+p131,Theo Knopfer,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,,,,TRUE
+p132,Aaron Mayer,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,,,,TRUE
+p133,Peter Hrosso,Fellow,2023,,,"[""Existential Hope""]",Global,Global,0,0,Global,,,,,TRUE
+p134,Lewis Hammond,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,lewis.hammond@cooperativeai.org,,,TRUE
+p135,Shady El Damaty,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,shady@opscientia.com,,,TRUE
+p136,Mikayla,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,mikayla.c.maki@gmail.com,,,TRUE
+p137,Dan Schwarz,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,danielschwarz26@gmail.com,,,TRUE
+p138,Laura Minquini,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,laura@athenadao.co,,,TRUE
+p139,Natasha Asmi,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,natashaaasmi@gmail.com,,,TRUE
+p140,Ala Shaabana,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,shaabana@gmail.com,,,TRUE
+p141,Pranjali Awasthi,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,pranjali@delv.ai,,,TRUE
+p142,Ghada,Fellow,2023,,,"[""Secure AI""]",Storrs,USA,41.8084,-72.2495,Global,,ghada@uconn.edu,,,TRUE
+p143,Jonathan Passerat-Palmbach,Fellow,2023,,,"[""Secure AI""]",London,UK,51.4988,-0.1749,Global,,j.passerat-palmbach@imperial.ac.uk,,,TRUE
+p144,Morgan Livingston,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,morganauroralivingston@gmail.com,RAND scholar,RAND scholar,TRUE
+p145,Sonakshi Mishra,Fellow,2023,,,"[""Secure AI""]",Global,Global,0,0,Global,,sonakshimishra29@gmail.com,,,TRUE
+p146,Anastasia Ershova,Fellow,2023,,,"[""Nanotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,aershova@g.harvard.edu,,,TRUE
+p147,Stacy Copp,Fellow,2023,,,"[""Nanotechnology""]",Irvine,USA,33.6405,-117.8443,Global,,stacy.copp@uci.edu,,,TRUE
+p148,Yansong Ren,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p149,Stephane Redon,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,stephane.redon@oneangstrom.com,,,TRUE
+p150,Khalid Salaita,Fellow,2023,,,"[""Nanotechnology""]",Atlanta,USA,33.7925,-84.3235,Global,,k.salaita@emory.edu,,,TRUE
+p151,Iqbal Utama,Fellow,2023,,,"[""Nanotechnology""]",Evanston,USA,42.0565,-87.6753,Global,,mibutama@northwestern.edu,,,TRUE
+p152,Erik Benson,Fellow,2023,,,"[""Nanotechnology""]",Stockholm,Sweden,59.3498,18.0268,Global,,erikjonbenson@gmail.com,Assistant Professor at Karolinska Institute. DNA nanotech research.,Assistant Professor at Karolinska Institute. DNA nanotech research.,TRUE
+p153,Marco Ovalle,Fellow,2023,,,"[""Nanotechnology""]",Groningen,Netherlands,53.2194,6.5665,Global,,m.a.ovalle.martinez@rug.nl,,,TRUE
+p154,Haichao Wu,Fellow,2023,,,"[""Nanotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,haichaowu@g.harvard.edu,,,TRUE
+p155,Elena Meirzadeh,Fellow,2023,,,"[""Nanotechnology""]",Rehovot,Israel,31.9046,34.8077,Global,,elena.meirzadeh@weizmann.ac.il,,,TRUE
+p156,Zoe Ashbridge,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,,,,TRUE
+p157,Irene Regeni,Fellow,2023,,,"[""Nanotechnology""]",Leiden,Netherlands,52.1601,4.497,Global,,i.regeni@lic.leidenuniv.nl,,,TRUE
+p158,Michael Matthies,Fellow,2023,,,"[""Nanotechnology""]",Tempe,USA,33.4242,-111.9281,Global,,m.matthies@asu.edu,,,TRUE
+p159,Pavi Dhiman,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,pavidhiman22@gmail.com,,,TRUE
+p160,James Seale,Fellow,2023,,,"[""Nanotechnology""]",Evanston,USA,42.0565,-87.6753,Global,,jamesseale2024@u.northwestern.edu,Applying for postdocs in protein engineering.,Applying for postdocs in protein engineering.,TRUE
+p161,Cedric Schaack,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,cedricschaack@hotmail.com,,,TRUE
+p162,Shucong Li,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,shucongli0@gmail.com,,,TRUE
+p163,Stephen Fielden,Fellow,2023,,,"[""Nanotechnology""]",Birmingham,UK,52.4862,-1.8904,Global,,s.fielden@bham.ac.uk,,,TRUE
+p164,Maxime Ledent,Fellow,2023,,,"[""Nanotechnology""]",Liège,Belgium,50.6326,5.5797,Global,,m.ledent@uliege.be,,,TRUE
+p165,Akash Band,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,akashapatel2006@gmail.com,Founder & CTO at OptX Labs,Founder & CTO at OptX Labs,TRUE
+p166,Alia Abbas,Fellow,2023,,,"[""Nanotechnology""]",Global,Global,0,0,Global,,thealiaabbas@gmail.com,,,TRUE
+p167,Abhishek Sharma,Fellow,2023,,,"[""Nanotechnology""]",Glasgow,UK,55.8724,-4.29,Global,,abhishek.sharma@glasgow.ac.uk,,,TRUE
+p168,Andy Matuschak,Fellow,2023,,,"[""Neurotechnology""]",Global,Global,0,0,Global,,andy@andymatuschak.org,,,TRUE
+p169,Lin Du,Fellow,2023,,,"[""Neurotechnology""]",Philadelphia,USA,39.9522,-75.1932,Global,,dulin.upenn@gmail.com,,,TRUE
+p170,Monika Shpokayte,Fellow,2023,,,"[""Neurotechnology""]",Global,Global,0,0,Global,,mshpokayte@cognitotx.com,,,TRUE
+p171,Sabrina Singh,Fellow,2023,,,"[""Neurotechnology""]",Los Angeles,USA,34.0522,-118.2437,Global,,sabrinaasingh@hotmail.com,Working on ultrasound-based neurotechnologies at Forest Neurotech.,Working on ultrasound-based neurotechnologies at Forest Neurotech.,TRUE
+p172,Murat Can Işik,Fellow,2023,,,"[""Neurotechnology""]",Philadelphia,USA,39.9566,-75.1899,Global,,mci38@drexel.edu,,,TRUE
+p173,Renaud Jolivet,Fellow,2023,,,"[""Neurotechnology""]",Maastricht,Netherlands,50.8514,5.6909,Global,,r.jolivet@maastrichtuniversity.nl,,,TRUE
+p174,Logan Collins,Fellow,2023,,,"[""Neurotechnology""]",Global,Global,0,0,Global,,logan.phospholipid@aol.com,,,TRUE
+p175,Danielle Fong,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,daniellefong@daniellefong.com,,,TRUE
+p176,Nathan Johnson,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,nathan.johnson@spacecourtfoundation.org,,,TRUE
+p177,Meera Singhal,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,me190507@gmail.com,,,TRUE
+p178,Konstantinos Konstantinidis,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,koskons@yahoo.gr,,,TRUE
+p179,Louis Kokkinis,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,louis.kokkinis@gmail.com,,,TRUE
+p180,Patrick Finley,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,patrick@landerchallenge.space,,,TRUE
+p181,Ekaterina Ilin,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,ekaterina.ilin@posteo.de,,,TRUE
+p182,Aleksandr Zhukhovitskiy,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,alexzhuk@email.unc.edu,,,TRUE
+p183,Tomas Gesino,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,gesino.tomas@gmail.com,,,TRUE
+p184,Kevin Lalli,Fellow,2023,,,"[""Space""]",Global,Global,0,0,Global,,,,,TRUE
+p185,Elena Sergeeva,Fellow,2024,,,"[""Longevity Biotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,elenagen.sergeeva@gmail.com,"Co-founder, Tiamat Labs; Scientist at Tufts and Harvard","Co-founder, Tiamat Labs; Scientist at Tufts and Harvard",TRUE
+p186,Sruthi Sivakumar,Fellow,2024,,,"[""Longevity Biotechnology""]",Pittsburgh,USA,40.4406,-79.9959,Global,,sruthisivakumar.pitt@gmail.com,Computational biology scientist working to extend healthy human lifespan by 10 years.,Computational biology scientist working to extend healthy human lifespan by 10 years.,TRUE
+p187,Michael Florea,Fellow,2024,,,"[""Longevity Biotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,michael@oldenlabs.com,"Co-founder/CEO of Olden Labs. Building automation, AI and genetic engineering tools for aging resear","Co-founder/CEO of Olden Labs. Building automation, AI and genetic engineering tools for aging research.",TRUE
+p188,Herbert Fountain,Fellow,2024,,,"[""Longevity Biotechnology""]",Ithaca,USA,42.4534,-76.4735,Global,,hdf25@cornell.edu,PhD student at Cornell developing next generation anti-aging therapies and senescent cell diagnostic,PhD student at Cornell developing next generation anti-aging therapies and senescent cell diagnostics.,TRUE
+p189,Mahdi Moqri,Fellow,2024,,,"[""Longevity Biotechnology""]",Stanford,USA,37.4275,-122.1697,Global,,moqri@stanford.edu,Research Fellow at Harvard (Gladyshev Lab) and Stanford (Snyder Lab). Leading Biomarkers of Aging Co,Research Fellow at Harvard (Gladyshev Lab) and Stanford (Snyder Lab). Leading Biomarkers of Aging Consortium.,TRUE
+p190,Roman Bauer,Fellow,2024,,,"[""Longevity Biotechnology""]",Guildford,UK,51.2362,-0.5704,Global,,r.bauer@surrey.ac.uk,Assistant Professor at University of Surrey. Leads BioDynaMo collaboration for computational biology,Assistant Professor at University of Surrey. Leads BioDynaMo collaboration for computational biology.,TRUE
+p191,Sara LaHue,Fellow,2024,,,"[""Longevity Biotechnology""]",San Francisco,USA,37.7631,-122.4586,Global,,sara.lahue@ucsf.edu,"Assistant Professor of Neurology at UCSF, Visiting Scientist at Buck Institute.","Assistant Professor of Neurology at UCSF, Visiting Scientist at Buck Institute.",TRUE
+p192,Rachel Freedman,Fellow,2024,,,"[""Secure AI""]",Berkeley,USA,37.8716,-122.2727,Global,,rachel.freedman@berkeley.edu,PhD student at Center for Human-Compatible AI at UC Berkeley. Research on reward learning and interp,PhD student at Center for Human-Compatible AI at UC Berkeley. Research on reward learning and interpretability.,TRUE
+p193,Dima Usynin,Fellow,2024,,,"[""Secure AI""]",London,UK,51.4988,-0.1749,Global,,,PhD student at Imperial College London and TUM. Research on adversarial influence in collaborative M,PhD student at Imperial College London and TUM. Research on adversarial influence in collaborative ML.,TRUE
+p194,Abhishek Singh,Fellow,2024,,,"[""Secure AI""]",Cambridge,USA,42.3601,-71.0942,Global,,abhi24@media.mit.edu,5th year PhD student at MIT Media Lab. Research on self-organization and decentralization of ML algo,5th year PhD student at MIT Media Lab. Research on self-organization and decentralization of ML algorithms.,TRUE
+p195,Lisa Thiergart,Fellow,2024,,,"[""Secure AI""]",Berkeley,USA,37.8716,-122.2727,Global,,lisa.thiergart@gmail.com,Research manager at MIRI. Worked on activation engineering at SERI MATS.,Research manager at MIRI. Worked on activation engineering at SERI MATS.,TRUE
+p196,Nora Ammann,Fellow,2024,,,"[""Secure AI""]",Global,Global,0,0,Global,,nora@pibbss.ai,"Co-founder and head of PIBBSS. Research on AI risk, governance and alignment.","Co-founder and head of PIBBSS. Research on AI risk, governance and alignment.",TRUE
+p197,Scott Emmons,Fellow,2024,,,"[""Secure AI""]",Berkeley,USA,37.8716,-122.2727,Global,,scott@scottemmons.com,"PhD student at UC Berkeley. Cofounded far.ai, a 501(c)3 research nonprofit.","PhD student at UC Berkeley. Cofounded far.ai, a 501(c)3 research nonprofit.",TRUE
+p198,Niccolò Zanichelli,Fellow,2024,,,"[""Secure AI""]",Global,Global,0,0,Global,,niccolo.zanichelli@gmail.com,AI researcher working at the intersection of ML and biology.,AI researcher working at the intersection of ML and biology.,TRUE
+p199,Thomas Sebastian,Fellow,2024,,,"[""Space""]",Lexington,USA,42.4584,-71.2653,Global,,thomas.sebastian@ll.mit.edu,Senior staff member at MIT Lincoln Laboratory. Led first flight of ion-propelled aircraft.,Senior staff member at MIT Lincoln Laboratory. Led first flight of ion-propelled aircraft.,TRUE
+p200,Oluseun Taiwo,Fellow,2024,,,"[""Space""]",Global,Global,0,0,Global,,oluseun.taiwo@additivespacetech.com,Co-Founder and CEO of Additive Space Technologies. Former Rocket Lab and Virgin Orbit engineer.,Co-Founder and CEO of Additive Space Technologies. Former Rocket Lab and Virgin Orbit engineer.,TRUE
+p201,Hooman Reza Nezhad,Fellow,2024,,,"[""Space""]",Waterloo,Canada,43.4643,-80.5204,Global,,hooman.re.nezhad@gmail.com,High school senior developing resource utilization technologies at University of Waterloo for Mars e,High school senior developing resource utilization technologies at University of Waterloo for Mars exploration.,TRUE
+p202,Sam Jardine,Fellow,2024,,,"[""Space""]",London,UK,51.5074,-0.1278,Global,,sammercury@hotmail.co.uk,"Head of Research at London Politica. Expert in frontier geopolitics, space, Arctic, Antarctic.","Head of Research at London Politica. Expert in frontier geopolitics, space, Arctic, Antarctic.",TRUE
+p203,Ekaterina Seltikova,Fellow,2024,,,"[""Space""]",Global,Global,0,0,Global,,ekaterina.seltikova@gmail.com,Physicist leading lunar exploration projects. Founded Space Beyond Borders nonprofit.,Physicist leading lunar exploration projects. Founded Space Beyond Borders nonprofit.,TRUE
+p204,Alex Gilbert,Fellow,2024,,,"[""Space""]",Global,Global,0,0,Global,,alex.gilbert@powerandresources.com,Expert in space mining and nuclear innovation. PhD student at Colorado School of Mines.,Expert in space mining and nuclear innovation. PhD student at Colorado School of Mines.,TRUE
+p205,Priyank Dubey,Fellow,2024,,,"[""Space""]",Munich,Germany,48.1497,11.5679,Global,,,BS-MS student in Physics and CS. Research on spacecraft attitude control and quantum computing.,BS-MS student in Physics and CS. Research on spacecraft attitude control and quantum computing.,TRUE
+p206,Jason Hausenloy,Fellow,2024,,,"[""Existential Hope""]",Singapore,Singapore,1.3521,103.8198,Global,,jasonhausenloy@gmail.com,High-school student and independent AI governance researcher. Former visiting fellow at UN Universit,High-school student and independent AI governance researcher. Former visiting fellow at UN University.,TRUE
+p207,Alexander Briand,Fellow,2024,,,"[""Existential Hope""]",Global,Global,0,0,Global,,alexanderbriands@gmail.com,,,TRUE
+p208,Abduljawad Kourabi,Fellow,2024,,,"[""Existential Hope""]",Hamilton,Canada,43.2609,-79.9192,Global,,ajkourabi@gmail.com,Engineering student at McMaster. Interned at Schmidt Futures and Convergent Research.,Engineering student at McMaster. Interned at Schmidt Futures and Convergent Research.,TRUE
+p209,Megan Cansfield,Fellow,2024,,,"[""Existential Hope""]",Washington,USA,38.9072,-77.0369,Global,,megan.cansfield@gmail.com,Policy analyst at DHS. 8 years experience in geopolitics. MA from Peking University.,Policy analyst at DHS. 8 years experience in geopolitics. MA from Peking University.,TRUE
+p210,Simeon Campos,Fellow,2024,,,"[""Existential Hope""]",Global,Global,0,0,Global,,campos.simeon@gmail.com,President and founder of SaferAI. Working on AI auditing and risk management standards.,President and founder of SaferAI. Working on AI auditing and risk management standards.,TRUE
+p211,Amanda Ngo,Fellow,2024,,,"[""Existential Hope""]",Global,Global,0,0,Global,,amanda.mai.ngo@gmail.com,Previously at Ought building Elicit. Working on AI for flourishing future.,Previously at Ought building Elicit. Working on AI for flourishing future.,TRUE
+p212,Jelena Luketina,Fellow,2024,,,"[""Existential Hope""]",Oxford,UK,51.752,-1.2577,Global,,jelena.luketina@gmail.com,Deep RL PhD student at University of Oxford. Research on frontier model evaluations.,Deep RL PhD student at University of Oxford. Research on frontier model evaluations.,TRUE
+p213,Bear Häon,Fellow,2024,,,"[""Existential Hope""]",Berkeley,USA,37.8716,-122.2727,Global,,bear.haon@berkeley.edu,Master of Development Engineering at UC Berkeley. 2023 Schmidt Futures Quad Fellow.,Master of Development Engineering at UC Berkeley. 2023 Schmidt Futures Quad Fellow.,TRUE
+p214,Samuel Nellessen,Fellow,2024,,,"[""Neurotechnology""]",Nijmegen,Netherlands,51.8126,5.8372,Global,,samuelgerrit.nellessen@gmail.com,AI student at Radboud University. Research on making AI safer through interdisciplinary study.,AI student at Radboud University. Research on making AI safer through interdisciplinary study.,TRUE
+p215,Ariel Zeleznikow-Johnston,Fellow,2024,,,"[""Neurotechnology""]",Melbourne,Australia,-37.9105,145.1362,Global,,arielzj.phd@gmail.com,Neuroscientist at Monash University. PhD from University of Melbourne.,Neuroscientist at Monash University. PhD from University of Melbourne.,TRUE
+p216,Viraj Chhajed,Fellow,2024,,,"[""Neurotechnology""]",Los Angeles,USA,34.0689,-118.4452,Global,,virajcz@ucla.edu,EE+CS Student at UCLA. Researching Computational Neuroscience at Levin Lab.,EE+CS Student at UCLA. Researching Computational Neuroscience at Levin Lab.,TRUE
+p217,Claire Short,Fellow,2024,,,"[""Neurotechnology""]",Global,Global,0,0,Global,,claireshort4@gmail.com,AI safety researcher and founder of Athena mentorship program for women in AI safety.,AI safety researcher and founder of Athena mentorship program for women in AI safety.,TRUE
+p218,Zan Huang,Fellow,2024,,,"[""Neurotechnology""]",Global,Global,0,0,Global,,zanh@umich.edu,Musical composer and AI scientist. Co-Founder of Myelin Neurotech. 1517 Medici Grant Recipient.,Musical composer and AI scientist. Co-Founder of Myelin Neurotech. 1517 Medici Grant Recipient.,TRUE
+p219,Andrew Payne,Fellow,2024,,,"[""Neurotechnology""]",Cambridge,USA,42.3601,-71.0942,Global,,andrew@e11.bio,Co-founder at E11 Bio developing tools for scalable brain circuit mapping. PhD at MIT with Ed Boyden,Co-founder at E11 Bio developing tools for scalable brain circuit mapping. PhD at MIT with Ed Boyden.,TRUE
+p220,Bogdan-Ionut Cirstea,Fellow,2024,,,"[""Neurotechnology""]",Global,Global,0,0,Global,,cirstea.bogdanionut@gmail.com,Independent AI safety researcher. Research on automating AI alignment and deep learning/neuroscience,Independent AI safety researcher. Research on automating AI alignment and deep learning/neuroscience intersection.,TRUE
+p221,Matteo Guareschi,Fellow,2024,,,"[""Nanotechnology""]",Pasadena,USA,34.1377,-118.1253,Global,,mmguar@caltech.edu,Graduate Student at Caltech with Dr. Paul Rothemund. Working on protein motors and DNA nanorobots.,Graduate Student at Caltech with Dr. Paul Rothemund. Working on protein motors and DNA nanorobots.,TRUE
+p222,"Siyuan ""Stella"" Wang",Fellow,2024,,,"[""Nanotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,siyuan.wang@wyss.harvard.edu,Research on repurposing biological machinery for nanometer-scale control.,Research on repurposing biological machinery for nanometer-scale control.,TRUE
+p223,Benjamin Roberts,Fellow,2024,,,"[""Nanotechnology""]",Padua,Italy,45.4064,11.8768,Global,,benjamin.roberts@unipd.it,Postdoc at University of Padua. PhD from Manchester on chemically fuelled molecular motors.,Postdoc at University of Padua. PhD from Manchester on chemically fuelled molecular motors.,TRUE
+p224,Chris Wintersinger,Fellow,2024,,,"[""Nanotechnology""]",Cambridge,USA,42.377,-71.1167,Global,,info@spec.tech,Biological engineer with PhD from Harvard. Working on synthetic biology and climate sustainability.,Biological engineer with PhD from Harvard. Working on synthetic biology and climate sustainability.,TRUE
+p225,Shuntaro Amano,Fellow,2024,,,"[""Nanotechnology""]",Strasbourg,France,48.5734,7.7521,Global,,samano@unistra.fr,Postdoc at University of Strasbourg. PhD from University of Manchester on synthetic molecular machin,Postdoc at University of Strasbourg. PhD from University of Manchester on synthetic molecular machines.,TRUE
+p226,Emanuele Penocchio,Fellow,2024,,,"[""Nanotechnology""]",Evanston,USA,42.0565,-87.6753,Global,,emanuele.penocchio@northwestern.edu,Postdoc at Northwestern. PhD in Physics on nonequilibrium thermodynamics of chemical reaction networ,Postdoc at Northwestern. PhD in Physics on nonequilibrium thermodynamics of chemical reaction networks.,TRUE
+p227,Martin Power,Fellow,2024,,,"[""Nanotechnology""]",Manchester,UK,53.4668,-2.2339,Global,,,PhD student in Prof. David Leigh group at University of Manchester. Research on molecular machines.,PhD student in Prof. David Leigh group at University of Manchester. Research on molecular machines.,TRUE

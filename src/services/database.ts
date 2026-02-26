@@ -7,6 +7,7 @@
  */
 
 import { Person, TravelWindow, LocationSuggestion, AdminUser, RoleType } from "../types";
+import type { RSVPRecord } from "../types/events";
 
 /** Cached database so we only fetch the static file once per session. */
 let cachedDatabase: {
@@ -14,6 +15,7 @@ let cachedDatabase: {
   travelWindows: TravelWindow[];
   suggestions: LocationSuggestion[];
   adminUsers: AdminUser[];
+  rsvps?: RSVPRecord[];
 } | null = null;
 
 async function fetchDatabase() {
@@ -67,6 +69,12 @@ export async function getAllSuggestions(): Promise<LocationSuggestion[]> {
 
 export async function getAdminUsers(): Promise<AdminUser[]> {
   return [];
+}
+
+/** RSVPs from the built database.json (synced from sheet at build time). Use for static deploy when no /api/rsvps. */
+export async function getRsvps(): Promise<RSVPRecord[]> {
+  const db = await fetchDatabase();
+  return db.rsvps ?? [];
 }
 
 // ── Write operations (no-ops in static mode) ─────────────────────────
