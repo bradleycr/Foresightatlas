@@ -201,26 +201,30 @@ async function fetchLumaEvents() {
 
   console.log(`  Fetched ${allEvents.length} events from Luma.`);
 
-  return allEvents.map((ev) => ({
-    _lumaApiId: ev.api_id,
-    _lumaUrl: normalizeLumaEventUrl(ev.url),
-    id: `luma-${ev.api_id}`,
-    nodeSlug: guessNode(ev),
-    title: ev.name || "Untitled Event",
-    description: (ev.description_md || ev.description || "").trim(),
-    location: ev.geo_address_info?.full_address
-      || ev.geo_address_info?.city
-      || ev.meeting_url
-      || "TBA",
-    startAt: ev.start_at,
-    endAt: ev.end_at,
-    type: mapLumaType(ev),
-    tags: [],
-    visibility: ev.visibility === "public" ? "public" : "internal",
-    capacity: ev.max_capacity || null,
-    externalLink: normalizeLumaEventUrl(ev.url),
-    recurrenceGroupId: ev.recurrence_id || null,
-  }));
+  return allEvents.map((ev) => {
+    const urlLink = normalizeLumaEventUrl(ev.url);
+    const externalLink = urlLink || (ev.api_id ? `https://lu.ma/e/${ev.api_id}` : null);
+    return {
+      _lumaApiId: ev.api_id,
+      _lumaUrl: urlLink || externalLink,
+      id: `luma-${ev.api_id}`,
+      nodeSlug: guessNode(ev),
+      title: ev.name || "Untitled Event",
+      description: (ev.description_md || ev.description || "").trim(),
+      location: ev.geo_address_info?.full_address
+        || ev.geo_address_info?.city
+        || ev.meeting_url
+        || "TBA",
+      startAt: ev.start_at,
+      endAt: ev.end_at,
+      type: mapLumaType(ev),
+      tags: [],
+      visibility: ev.visibility === "public" ? "public" : "internal",
+      capacity: ev.max_capacity || null,
+      externalLink,
+      recurrenceGroupId: ev.recurrence_id || null,
+    };
+  });
 }
 
 /* ── merge + deduplicate ─────────────────────────────────────────────── */

@@ -6,24 +6,24 @@
  * gets violet–rose accents and SF gets amber–sky accents — no hardcoded teal.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Calendar, MapPin, ChevronDown, Users, ExternalLink, Ticket } from "lucide-react";
 import { NodeEvent, NodeColorTheme, RSVPStatus, RSVPSummary } from "../../types/events";
 import { Person } from "../../types";
 import { RSVPButtonGroup } from "./RSVPButtonGroup";
 import { AttendanceAvatars } from "./AttendanceAvatars";
-import { eventDescriptionTeaser } from "./eventDescription";
 import { cn } from "../ui/utils";
 import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
+import { badgeGradient } from "../../styles/gradients";
 
-/** Show "Read more" when description might wrap beyond two lines (events without Luma link). */
-const READ_MORE_THRESHOLD = 80;
+/** Only show "Read more" when the description is actually clamped (has overflow). */
+const READ_MORE_MIN_LENGTH = 60;
 
-const TYPE_BADGE: Record<string, { bg: string; text: string }> = {
+const TYPE_BADGE: Record<string, { bg: string; text: string; gradient?: boolean }> = {
   coworking:    { bg: "bg-sky-100",    text: "text-sky-700" },
   workshop:     { bg: "bg-amber-100",  text: "text-amber-700" },
   conference:   { bg: "bg-indigo-100", text: "text-indigo-700" },
-  launch:       { bg: "bg-teal-100",   text: "text-teal-700" },
+  launch:       { bg: "", text: "text-gray-800", gradient: true },
   "open-house": { bg: "bg-violet-100", text: "text-violet-700" },
   demo:         { bg: "bg-orange-100", text: "text-orange-700" },
   social:       { bg: "bg-pink-100",   text: "text-pink-700" },
@@ -81,6 +81,8 @@ export function EventCard({
   theme,
 }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [isClamped, setIsClamped] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
   const badge = badgeStyle(event.type);
   const { date, time } = formatTime(event.startAt, event.endAt);
   const externalLink = normalizeExternalUrl(event.externalLink);
@@ -91,13 +93,36 @@ export function EventCard({
     [allPeople, rsvpSummary.goingPersonIds],
   );
 
+  useEffect(() => {
+    if (!event.description || event.description.length < READ_MORE_MIN_LENGTH) {
+      setIsClamped(false);
+      return;
+    }
+    const el = descriptionRef.current;
+    if (!el) return;
+    const check = () => setIsClamped(el.scrollHeight > el.clientHeight);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [event.description, expanded]);
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 sm:p-7">
+    <div className="relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 sm:p-7 overflow-hidden">
+      {isLumaEvent && (
+        <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: badgeGradient }} aria-hidden />
+      )}
       {/* Badges row — comfortable padding so text isn’t cramped */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
-        <span className={cn("px-3 py-1.5 rounded-full text-xs font-semibold", badge.bg, badge.text)}>
+        <span className={cn("px-3 py-1.5 rounded-full text-xs font-semibold", !badge.gradient && badge.bg, badge.text)} style={badge.gradient ? { background: badgeGradient } : undefined}>
           {typeLabel(event.type)}
         </span>
+        {isLumaEvent && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+            <Ticket className="size-3.5" />
+            On Luma
+          </span>
+        )}
         {event.visibility === "public" && (
           <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
             Public
@@ -158,42 +183,37 @@ export function EventCard({
         </div>
       )}
 
-      {/* Description: when we have a Luma link, show only a short teaser; otherwise full text + Read more */}
+      {/* Description: always show full text in-app with Read more when long; external CTA is separate */}
       {event.description && (
         <div className="mb-4">
-          {externalLink ? (
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {eventDescriptionTeaser(event.description) || "See event page for details."}
+          <>
+            <p
+              ref={descriptionRef}
+              className={cn(
+                "text-sm text-gray-600 leading-relaxed",
+                !expanded && "line-clamp-2",
+              )}
+            >
+              {event.description}
             </p>
-          ) : (
-            <>
-              <p
+            {(isClamped || expanded) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setExpanded((prev) => !prev);
+                }}
                 className={cn(
-                  "text-sm text-gray-600 leading-relaxed",
-                  !expanded && "line-clamp-2",
+                  "mt-2 inline-flex items-center gap-1 text-sm font-medium rounded",
+                  "focus:outline-none focus:ring-2 focus:ring-offset-1",
+                  theme.linkText, theme.linkHover, theme.ctaFocusRing,
                 )}
               >
-                {event.description}
-              </p>
-              {event.description.length >= READ_MORE_THRESHOLD && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setExpanded((prev) => !prev);
-                  }}
-                  className={cn(
-                    "mt-2 inline-flex items-center gap-1 text-sm font-medium rounded",
-                    "focus:outline-none focus:ring-2 focus:ring-offset-1",
-                    theme.linkText, theme.linkHover, theme.ctaFocusRing,
-                  )}
-                >
-                  {expanded ? "Show less" : "Read more"}
-                  <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
-                </button>
-              )}
-            </>
-          )}
+                {expanded ? "Show less" : "Read more"}
+                <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
+              </button>
+            )}
+          </>
         </div>
       )}
 

@@ -2,10 +2,12 @@
 
 Events on the Programming pages come from **two sources**, merged at build time:
 
-1. **Google Sheet "Events" tab** — for manual / internal entries you manage yourself
+1. **Google Sheet "Events" tab** — for manual / internal entries you manage yourself  
 2. **Luma API** — pulls public events from [luma.com/foresightinstitute](https://luma.com/foresightinstitute)
 
 If the same event exists in both (linked via `lumaEventId`), Luma data wins for title, description, times, location, and link. No duplicates.
+
+**Where does the data actually come from?** See [docs/EVENTS_SOURCE.md](EVENTS_SOURCE.md) for the full picture (including fallback seed data in code).
 
 ---
 
