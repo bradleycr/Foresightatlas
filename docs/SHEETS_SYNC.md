@@ -1,6 +1,6 @@
 # Using Google Sheets as the database
 
-The Google Sheet is the **source of truth**. Every deploy (Vercel or GitHub Pages) runs **sync** (sheet → `public/data/database.json`) before build, so the live site always reflects the sheet. Edit People, Travel Windows, Suggestions, and RSVPs in the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) sheet; the next deploy will pick them up.
+The Google Sheet is the **source of truth**. At runtime the app does **not** use a static `database.json`: it always loads data via **GET /api/database**, which reads from the Google Sheet. Deploy (Vercel or GitHub Pages) can optionally run a sync (sheet → `public/data/database.json`) before build for static export; the live app uses the API and sheet. Edit People, Travel Windows, Suggestions, and RSVPs in the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) sheet; the app and next deploy will reflect changes.
 
 ## Get data to paste into the sheet
 
@@ -47,7 +47,8 @@ The spreadsheet uses four tabs. Row 1 must be the header row; data starts at row
 
 | Tab            | Purpose        | Key columns |
 |----------------|----------------|-------------|
-| **People**     | Fellows, grantees, prize winners | id, fullName, roleType, fellowshipCohortYear, currentCity, currentCountry, lat, lng, primaryNode, focusTags (JSON array), … |
+| **People**     | Fellows, grantees, prize winners | id, fullName, roleType, fellowshipCohortYear, currentCity, currentCountry, lat, lng, primaryNode, focusTags (JSON array), contactUrlOrHandle, shortProjectTagline, expandedProjectDescription, … |
+| **RealData**   | Canonical people source (same columns as People) | Same as People. Sync and the API read from **RealData**; the legacy **People** tab can be used to backfill Real Data (see below). |
 | **TravelWindows** | Travel / residency / conference entries | id, personId, title, city, country, lat, lng, startDate, endDate, type, notes |
 | **Suggestions** | Pending location-update requests | id, personName, personEmailOrHandle, requestedChangeType, requestedPayload (JSON), createdAt, status |
 | **AdminUsers**  | Admin logins (if used)         | id, displayName, email, passwordPlaceholder |
@@ -82,6 +83,54 @@ This creates the four tabs (if missing) and fills them from `database.json`.
 
 ---
 
+## Backfill Real Data from the People tab
+
+If the **People** tab has focus tags, contact/email, or project taglines that **Real Data** is missing, you can copy those fields into Real Data in one shot (matched by full name):
+
+```bash
+# Requires write access (service account). Updates only empty fields in Real Data.
+GOOGLE_SERVICE_ACCOUNT_KEY='...' pnpm run merge:people
+```
+
+This reads the People tab and the Real Data tab, matches rows by `fullName`, and for each Real Data row fills in **focusTags**, **contactUrlOrHandle**, **shortProjectTagline**, and **expandedProjectDescription** when they are empty. Run once after migrating or when you’ve been maintaining the legacy People tab.
+
+---
+
+## Geocode the sheet (city → lat/lng)
+
+The map needs **lat/lng** for each person with a city. You can fill those in the sheet once so the app doesn’t have to geocode on every load:
+
+1. **Run the geocode script** (writes lat/lng into the Real Data tab for every row that has a city but no coordinates):
+
+   ```bash
+   pnpm run geocode:sheet
+   ```
+
+   Requires a **service account** (write access). Uses Nominatim (1 request/sec). When it finishes, the **sheet** has coordinates for everyone with a city.
+
+2. **So the map shows them right away**, the app must load data that includes those coordinates. Use one of these:
+
+   - **Preferred: use the sheet as the data source**  
+     Set `USE_SHEET_AS_DATABASE=true` and run the API (`pnpm dev:api` or your deploy). The app will request `/api/database`, which reads from the sheet, so every load gets the latest coordinates. No extra step after geocoding.
+
+   - **Or: update the static JSON**  
+     If you’re not using the API (e.g. local static file or deploy that doesn’t use the sheet at runtime), run **sync** after geocoding so `public/data/database.json` has the new coordinates, then reload (or redeploy):
+
+     ```bash
+     pnpm run sync:sheet
+     ```
+
+   - **One command (geocode + sync):**  
+     To geocode the sheet and then refresh `database.json` in one go (needs both service account and `GOOGLE_SHEETS_API_KEY`):
+
+     ```bash
+     pnpm run geocode:sheet:and-sync
+     ```
+
+After that, the map should show everyone with a city as soon as the app loads. New people who add their city in their profile get geocoded on save (server writes lat/lng to the sheet), so they appear on the next load without running the script again.
+
+---
+
 ## Ongoing: sync sheet → app (for builds and local dev)
 
 To pull the latest sheet data into `public/data/database.json`:
@@ -104,6 +153,17 @@ If `GOOGLE_SHEETS_API_KEY` is not set, `sync:sheet` does nothing and does not ov
 
 ---
 
+## Live sheet as source of truth (no sync step)
+
+To have the **app read directly from the Google Sheet** (default when the API is used):
+
+1. Run the **API server** (e.g. `pnpm dev:api` or your deployed backend).
+2. Set **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY** (and optionally **SPREADSHEET_ID**) so the server can read the sheet.
+
+**GET /api/database** returns data live from the sheet. The frontend calls only `/api/database` (no fallback to `/data/database.json`). Profile saves (member directory) write to the sheet via the API, so edits from the app and the sheet stay in sync.
+
+---
+
 ## GitHub Pages deploy
 
 To have each deploy use the latest sheet data:
@@ -120,7 +180,10 @@ To have each deploy use the latest sheet data:
 | Goal                         | Command / step |
 |-----------------------------|----------------|
 | Copy current JSON → Sheet   | `pnpm run migrate:sheet` (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`) |
+| Backfill Real Data from People | `pnpm run merge:people` (needs service account; copies focus tags, contact, taglines where missing) |
+| Geocode sheet (city → lat/lng) | `pnpm run geocode:sheet` (needs service account; fills coordinates for everyone with a city) |
 | Pull Sheet → JSON locally   | `pnpm run sync:sheet` (needs `GOOGLE_SHEETS_API_KEY`, sheet shared “Anyone can view”) |
+| App reads sheet live       | Run API with sheet credentials; GET /api/database reads from the sheet (no database.json) |
 | Deploy with sheet data      | Add `GOOGLE_SHEETS_API_KEY` (and optionally `SPREADSHEET_ID`) in GitHub Actions secrets/vars |
 
 From then on, edit the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) sheet; the next sync (or deploy) will update the app data.
@@ -135,3 +198,14 @@ In **Project → Settings → Environment Variables** add:
 - Optionally `SPREADSHEET_ID` (defaults to the Foresight Map sheet ID if unset).
 
 The `vercel.json` build runs sync then build, so the deployed site will use the latest sheet data when the key is set.
+
+### Use the sheet live on Vercel (no sync step)
+
+The deployed app reads data directly from the Google Sheet via GET /api/database (no static database.json at runtime):
+
+1. In **Vercel → Your Project → Settings → Environment Variables**, add:
+   - **GOOGLE_SHEETS_API_KEY** (or **GOOGLE_SERVICE_ACCOUNT_KEY**).
+   - Optionally **SPREADSHEET_ID** (defaults to the Foresight Map sheet ID if unset).
+
+2. Redeploy. The api/database.js handler returns data from the sheet. The frontend does not fall back to database.json; the sheet is the only source of truth.
+

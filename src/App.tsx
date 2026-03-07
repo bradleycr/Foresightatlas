@@ -14,12 +14,21 @@ import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
   buildFullPath,
   consumeRedirectPath,
 } from "./utils/router";
+import {
+  clearIdentity,
+  getIdentity,
+  setIdentity as persistIdentity,
+  updateIdentity as persistIdentityUpdates,
+  type Identity,
+} from "./services/identity";
+import { authenticateDirectoryMember } from "./services/memberAuth";
 
 /**
  * Replace with a real Google Form (or similar) URL when ready.
@@ -48,9 +57,11 @@ export default function App() {
   const [events, setEvents] = useState<NodeEvent[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [identity, setIdentityState] = useState<Identity | null>(() => getIdentity());
 
   // Filter state
   const today = useMemo(() => new Date(), []);
+  const currentCalendarYear = today.getFullYear();
   const [filters, setFilters] = useState<Filters>({
     search: "",
     programs: [],
@@ -58,12 +69,11 @@ export default function App() {
     nodes: [],
     cities: [],
     showAlumni: true,
-    year: today.getFullYear(),
+    year: null,
     granularity: "Year",
     referenceDate: today.toISOString(),
     timelineViewMode: "location",
   });
-  const [hasInitializedFilters, setHasInitializedFilters] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -82,7 +92,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/profile"];
     const current = getRoutePath();
     if (!knownRoutes.includes(current)) {
       window.history.replaceState({}, "", buildFullPath("/"));
@@ -115,35 +125,35 @@ export default function App() {
 
   // ── Derived state ──────────────────────────────────────────────────
 
-  const defaultCohortYear = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    if (people.length === 0) return currentYear;
-    const nonAlumni = people.filter((p) => !p.isAlumni);
-    const source = nonAlumni.length > 0 ? nonAlumni : people;
-    return source.reduce((max, p) => {
-      const end = p.fellowshipEndYear ?? p.fellowshipCohortYear;
-      return Math.max(max, p.fellowshipCohortYear ?? 0, end ?? 0);
-    }, source[0]?.fellowshipCohortYear ?? currentYear);
-  }, [people]);
-
   useEffect(() => {
-    if (hasInitializedFilters || people.length === 0) return;
-    setFilters((prev) => ({ ...prev, year: defaultCohortYear }));
-    setHasInitializedFilters(true);
-  }, [defaultCohortYear, hasInitializedFilters, people.length]);
+    if (!identity) return;
+    const latestPerson = people.find((person) => person.id === identity.personId);
+    if (!latestPerson) return;
+    if (latestPerson.fullName === identity.fullName) return;
+
+    const nextIdentity = persistIdentityUpdates({ fullName: latestPerson.fullName });
+    setIdentityState(nextIdentity);
+  }, [identity, people]);
 
   // ── Filter logic ───────────────────────────────────────────────────
 
   const filteredPeople = useMemo(() => {
-    return people.filter((person) => {
-      // Year-based filtering: if a year is selected, only show people active in that year.
-      // Alumni are implicitly included when their cohort year range overlaps.
-      if (filters.year !== null) {
-        const start = person.fellowshipCohortYear;
-        // Ongoing (no end year) = active through current calendar year only, not the selected filter year
-        const end = person.fellowshipEndYear ?? new Date().getFullYear();
-        if (filters.year < start || filters.year > end) return false;
-      }
+    const matched = people.filter((person) => {
+      const effectiveYear = filters.year ?? currentCalendarYear;
+      const cohortYear = person.fellowshipCohortYear;
+      const endYear = person.fellowshipEndYear;
+      // Year filter = exact cohort: "2026" means only people whose cohort year IS 2026.
+      // Unknown cohort (0) shows only for "All time", not when a specific year is selected.
+      const matchesYearFilter =
+        filters.year === null
+          ? true
+          : cohortYear > 0 && cohortYear === filters.year;
+      const isCurrentEcosystemMember =
+        endYear === null || endYear >= effectiveYear;
+
+      if (!matchesYearFilter) return false;
+
+      if (!filters.showAlumni && !isCurrentEcosystemMember) return false;
 
       if (filters.search) {
         const q = filters.search.toLowerCase();
@@ -167,7 +177,9 @@ export default function App() {
 
       return true;
     });
-  }, [people, travelWindows, filters]);
+
+    return matched.sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [people, travelWindows, filters, currentCalendarYear]);
 
   const filteredTravelWindows = useMemo(() => {
     const ids = new Set(filteredPeople.map((p) => p.id));
@@ -236,12 +248,74 @@ export default function App() {
   // ── Navigation ─────────────────────────────────────────────────────
 
   const navigate = useCallback((path: string) => {
-    if (path === route) return;
+    const pathname = path.includes("?") ? path.slice(0, path.indexOf("?")) : path;
+    if (pathname === route) return;
     const fullPath = buildFullPath(path);
     window.history.pushState({}, "", fullPath);
-    setRoute(path);
+    setRoute(pathname || "/");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [route]);
+
+  const handleIdentityClear = useCallback(() => {
+    clearIdentity();
+    setIdentityState(null);
+    if (route === "/profile") {
+      navigate("/");
+    }
+  }, [navigate, route]);
+
+  const handleDirectorySignIn = useCallback(
+    async (username: string, password: string) => {
+      try {
+        const result = await authenticateDirectoryMember(username, password);
+        persistIdentity({
+          personId: result.person.id,
+          fullName: result.person.fullName,
+          token: result.auth.token,
+          expiresAt: result.auth.expiresAt,
+          mustChangePassword: result.auth.mustChangePassword,
+        });
+        setIdentityState(getIdentity());
+        return { ok: true as const };
+      } catch (error) {
+        return {
+          ok: false as const,
+          error: error instanceof Error ? error.message : "Sign-in failed.",
+        };
+      }
+    },
+    [],
+  );
+
+  const handleProfileSaved = useCallback((
+    updatedPerson: Person,
+    auth?: { token: string; expiresAt: string; mustChangePassword: boolean },
+  ) => {
+    setPeople((current) => {
+      const idx = current.findIndex((p) => p.id === updatedPerson.id);
+      if (idx >= 0) {
+        return current.map((p) => (p.id === updatedPerson.id ? updatedPerson : p));
+      }
+      return [...current, updatedPerson];
+    });
+
+    if (identity?.personId === updatedPerson.id) {
+      const nextIdentity = persistIdentityUpdates({
+        fullName: updatedPerson.fullName,
+        ...(auth ?? {}),
+      });
+      setIdentityState(nextIdentity);
+    } else if (auth) {
+      persistIdentity({
+        personId: updatedPerson.id,
+        fullName: updatedPerson.fullName,
+        token: auth.token,
+        expiresAt: auth.expiresAt,
+        mustChangePassword: auth.mustChangePassword,
+      });
+      setIdentityState(getIdentity());
+    }
+  }, [identity]);
 
   /**
    * When "Show on map" is tapped on the programming page, navigate
@@ -269,11 +343,19 @@ export default function App() {
   // ── Views ──────────────────────────────────────────────────────────
 
   const isProgrammingRoute = route === "/berlin" || route === "/sf";
+  const isProfileRoute = route === "/profile";
+  const profileCreateMode =
+    isProfileRoute &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("new") === "1";
+  const signedInPerson =
+    identity ? people.find((person) => person.id === identity.personId) ?? null : null;
 
   const mainContent = isProgrammingRoute ? (
     <NodeProgrammingPage
       initialNode={(route === "/berlin" ? "berlin" : "sf") as NodeSlug}
       people={people}
+      identity={identity}
       onNavigateHome={() => navigate("/")}
       onNavigateNode={(slug) => navigate(`/${slug}`)}
       onShowEventOnMap={handleShowEventOnMap}
@@ -282,6 +364,19 @@ export default function App() {
         setDetailNavContext(context);
       }}
       showPageHeader={false}
+    />
+  ) : isProfileRoute ? (
+    <ProfilePage
+      identity={identity}
+      people={people}
+      person={signedInPerson}
+      createMode={profileCreateMode}
+      onNavigateHome={() => navigate("/")}
+      onSignIn={handleDirectorySignIn}
+      onSignOut={handleIdentityClear}
+      onProfileSaved={handleProfileSaved}
+      onExitCreateMode={() => navigate("/profile")}
+      onAddYourself={() => navigate("/profile?new=1")}
     />
   ) : (
     <>
@@ -315,7 +410,7 @@ export default function App() {
             }}
             filters={filters}
             onFiltersChange={setFilters}
-            defaultYear={defaultCohortYear}
+            defaultYear={today.getFullYear()}
           />
         ) : (
           <TimelineView
@@ -340,11 +435,22 @@ export default function App() {
 
   return (
     <>
-      <div className="h-screen flex flex-col bg-gray-50">
+      <div
+        className="h-screen flex flex-col bg-gray-50 min-h-[100dvh]"
+        style={{
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+        }}
+      >
         <AppHeader
           route={route}
           navigate={navigate}
           activeTab={activeTab}
+          people={people}
+          identity={identity}
+          onOpenProfile={() => navigate("/profile")}
+          onSignIn={handleDirectorySignIn}
+          onSignOut={handleIdentityClear}
           onTabChange={(tab) => {
             setActiveTab(tab);
             setMapFilterIds(null);
@@ -373,9 +479,13 @@ export default function App() {
       />
 
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: Z_INDEX_LOADING }}>
-          <div className="bg-white rounded-lg p-6 shadow-lg">
-            <p className="text-gray-900 font-medium">Loading data...</p>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center"
+          style={{ zIndex: Z_INDEX_LOADING, position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <div className="bg-white rounded-lg p-6 shadow-lg" style={{ background: "#fff", borderRadius: "0.5rem", padding: "1.5rem", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}>
+            <p className="text-gray-900 font-medium" style={{ color: "#111", fontWeight: 500 }}>Loading data…</p>
+            <p className="text-sm text-gray-500 mt-2" style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>Reading from local data. If this sticks, open DevTools (Mac: Cmd+Option+J) and check the Console.</p>
           </div>
         </div>
       )}

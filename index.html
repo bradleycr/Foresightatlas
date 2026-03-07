@@ -3,13 +3,46 @@
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Foresight Fellows Map & Programming</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+      <meta name="theme-color" content="#f9fafb" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      <title>Grantees and Fellows Map and Programming</title>
       <link rel="icon" type="image/png" href="./favicon.png" />
     </head>
 
     <body class="bg-gray-50">
-      <div id="root"></div>
+      <div id="root" style="min-height: 100vh; background: #f9fafb; padding: 1rem; font-family: system-ui;">
+        <p style="color: #374151;">Loading app…</p>
+      </div>
+      <script>
+        window.__bootError = null;
+        window.__showBootError = function(msg, detail) {
+          var root = document.getElementById("root");
+          if (!root || window.__bootError) return;
+          window.__bootError = true;
+          root.innerHTML = '<div style="min-height: 100vh; background: #fef2f2; padding: 1.5rem; font-family: system-ui; color: #991b1b;">' +
+            '<h1 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">App failed to start</h1>' +
+            '<p style="margin-bottom: 0.5rem;">' + (msg || "Unknown error") + '</p>' +
+            (detail ? '<pre style="font-size: 0.75rem; overflow: auto; background: #fee2e2; padding: 0.75rem; border-radius: 0.5rem; white-space: pre-wrap;">' + detail + '</pre>' : '') +
+            '</div>';
+        };
+        window.onerror = function(message, source, lineno, colno, error) {
+          window.__showBootError(message, (error && error.stack) || source + ":" + lineno + ":" + colno);
+          return false;
+        };
+        window.addEventListener("unhandledrejection", function(e) {
+          window.__showBootError("Unhandled error", e.reason && (e.reason.message || String(e.reason)));
+        });
+        setTimeout(function() {
+          if (!window.__bootError && document.getElementById("root") && document.getElementById("root").innerText.indexOf("Loading app") !== -1) {
+            window.__showBootError(
+              "The app is still loading. The script may not have loaded.",
+              "Make sure you opened http://localhost:3000 and the dev server is running (pnpm dev). If you did, check the browser console for errors."
+            );
+          }
+        }, 8000);
+      </script>
       <script type="module" src="/src/main.tsx"></script>
     </body>
   </html>

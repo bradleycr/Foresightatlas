@@ -3,7 +3,7 @@
  * white card, subtle border + shadow, coloured pill badges, generous spacing.
  *
  * The CTA button and text links use the per-node NodeColorTheme so Berlin
- * gets violet–rose accents and SF gets amber–sky accents — no hardcoded teal.
+ * gets indigo–rose accents and SF gets amber–sky accents — no hardcoded teal.
  */
 
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -15,16 +15,18 @@ import { AttendanceAvatars } from "./AttendanceAvatars";
 import { cn } from "../ui/utils";
 import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
 import { badgeGradient } from "../../styles/gradients";
+import { formatEventDescriptionToHtml } from "./eventDescription";
 
-/** Only show "Read more" when the description is actually clamped (has overflow). */
+/** Show "Read more" when description is clamped (overflow) or when it's long enough that it likely wraps (fallback for HTML content). */
 const READ_MORE_MIN_LENGTH = 60;
+const READ_MORE_LENGTH_FALLBACK = 160;
 
 const TYPE_BADGE: Record<string, { bg: string; text: string; gradient?: boolean }> = {
   coworking:    { bg: "bg-sky-100",    text: "text-sky-700" },
   workshop:     { bg: "bg-amber-100",  text: "text-amber-700" },
   conference:   { bg: "bg-indigo-100", text: "text-indigo-700" },
   launch:       { bg: "", text: "text-gray-800", gradient: true },
-  "open-house": { bg: "bg-violet-100", text: "text-violet-700" },
+  "open-house": { bg: "bg-indigo-100", text: "text-indigo-700" },
   demo:         { bg: "bg-orange-100", text: "text-orange-700" },
   social:       { bg: "bg-pink-100",   text: "text-pink-700" },
   flagship:     { bg: "bg-rose-100",   text: "text-rose-700" },
@@ -82,16 +84,30 @@ export function EventCard({
 }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
-  const descriptionRef = useRef<HTMLParagraphElement>(null);
+  const descriptionRef = useRef<HTMLDivElement>(null);
   const badge = badgeStyle(event.type);
   const { date, time } = formatTime(event.startAt, event.endAt);
   const externalLink = normalizeExternalUrl(event.externalLink);
   const isLumaEvent = isLumaUrl(externalLink);
 
+  const showReadMore =
+    event.description &&
+    event.description.length >= READ_MORE_MIN_LENGTH &&
+    (isClamped || expanded || event.description.length >= READ_MORE_LENGTH_FALLBACK);
+
   const goingPeople = useMemo(
     () => allPeople.filter((p) => rsvpSummary.goingPersonIds.includes(p.id)),
     [allPeople, rsvpSummary.goingPersonIds],
   );
+  const interestedPeople = useMemo(
+    () => allPeople.filter((p) => rsvpSummary.interestedPersonIds.includes(p.id)),
+    [allPeople, rsvpSummary.interestedPersonIds],
+  );
+
+  const showRsvpSection =
+    isAuthenticated ||
+    rsvpSummary.going > 0 ||
+    rsvpSummary.interested > 0;
 
   useEffect(() => {
     if (!event.description || event.description.length < READ_MORE_MIN_LENGTH) {
@@ -102,13 +118,23 @@ export function EventCard({
     if (!el) return;
     const check = () => setIsClamped(el.scrollHeight > el.clientHeight);
     check();
+    let rafId = 0;
+    let timeoutId = 0;
+    rafId = requestAnimationFrame(() => {
+      check();
+      timeoutId = window.setTimeout(check, 150);
+    });
     const ro = new ResizeObserver(check);
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+      ro.disconnect();
+    };
   }, [event.description, expanded]);
 
   return (
-    <div className="relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 sm:p-7 overflow-hidden">
+    <div className="relative bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition-shadow p-6 sm:p-7 overflow-hidden">
       {isLumaEvent && (
         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: badgeGradient }} aria-hidden />
       )}
@@ -183,20 +209,20 @@ export function EventCard({
         </div>
       )}
 
-      {/* Description: always show full text in-app with Read more when long; external CTA is separate */}
+      {/* Description: truncate with max-height when collapsed so Read more / Show less works (line-clamp fails with inner <p>). */}
       {event.description && (
         <div className="mb-4">
-          <>
-            <p
-              ref={descriptionRef}
-              className={cn(
-                "text-sm text-gray-600 leading-relaxed",
-                !expanded && "line-clamp-2",
-              )}
-            >
-              {event.description}
-            </p>
-            {(isClamped || expanded) && (
+          <div
+            ref={descriptionRef}
+            className="text-sm text-gray-600 leading-relaxed event-card-description"
+            style={
+              !expanded
+                ? { maxHeight: "4.5rem", overflow: "hidden" }
+                : undefined
+            }
+            dangerouslySetInnerHTML={{ __html: formatEventDescriptionToHtml(event.description) }}
+          />
+            {showReadMore && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -213,12 +239,11 @@ export function EventCard({
                 <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
               </button>
             )}
-          </>
         </div>
       )}
 
-      {/* RSVP section */}
-      {(isAuthenticated || goingPeople.length > 0) && (
+      {/* RSVP section: show when user is signed in or anyone has gone or is interested */}
+      {showRsvpSection && (
         <div className="pt-4 mt-1 border-t border-gray-100 space-y-3">
           {isAuthenticated && (
             <RSVPButtonGroup
@@ -229,7 +254,24 @@ export function EventCard({
               theme={theme}
             />
           )}
+          {(rsvpSummary.going > 0 || rsvpSummary.interested > 0) && (
+            <p className="text-xs text-gray-500">
+              {rsvpSummary.going > 0 && (
+                <span>{rsvpSummary.going} going</span>
+              )}
+              {rsvpSummary.going > 0 && rsvpSummary.interested > 0 && " · "}
+              {rsvpSummary.interested > 0 && (
+                <span>{rsvpSummary.interested} interested</span>
+              )}
+            </p>
+          )}
           {goingPeople.length > 0 && <AttendanceAvatars people={goingPeople} onPersonClick={onPersonClick} />}
+          {interestedPeople.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-500">Interested:</span>
+              <AttendanceAvatars people={interestedPeople} onPersonClick={onPersonClick} />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -70,7 +70,7 @@ const TYPE_STYLES: Record<
     text: "text-cyan-900",
   },
   Conference: {
-    bg: "from-indigo-50/80 via-indigo-100/70 to-purple-100/70",
+    bg: "from-indigo-50/80 via-indigo-100/70 to-pink-100/70",
     border: "border-indigo-200",
     text: "text-indigo-900",
   },

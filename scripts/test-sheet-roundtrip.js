@@ -1,19 +1,16 @@
 #!/usr/bin/env node
 /**
- * Test: write all people (and related) data to the Google Sheet, then sync back
- * and verify. Proves the sheet read/write pipeline works.
+ * Safer sheet roundtrip verification.
  *
- * Requires: GOOGLE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS
- * (same as migrate:sheet). Sheet must be shared with the service account as Editor.
- * For sync back: GOOGLE_SHEETS_API_KEY and sheet shared "Anyone with the link can view".
+ * Instead of overwriting the full sheet, this script:
+ * 1. Backs up `public/data/database.json`
+ * 2. Loads one canonical RealData profile row
+ * 3. Writes a temporary profile change through `saveProfile()`
+ * 4. Runs `sync:sheet`
+ * 5. Verifies the updated record round-trips back into `database.json`
+ * 6. Restores the original profile row and local JSON
  *
- * Run: pnpm run test:sheet-roundtrip
- *
- * 1. Backs up public/data/database.json
- * 2. Runs migrate (database.json → sheet)
- * 3. Runs sync (sheet → database.json)
- * 4. Verifies people/travelWindows counts and sample ids
- * 5. Restores backup (so your repo stays in pre-test state)
+ * This proves the profile writeback path works without clobbering the entire sheet.
  */
 
 require("dotenv").config({ path: ".env.local" });
@@ -22,6 +19,8 @@ require("dotenv").config();
 const fs = require("fs").promises;
 const path = require("path");
 const { execSync } = require("child_process");
+const { loadRealDataRecords } = require("../server/realdata-store");
+const { saveProfile } = require("../server/profile-store");
 
 const DB_PATH = path.join(__dirname, "../public/data/database.json");
 const BACKUP_PATH = path.join(__dirname, "../public/data/database.json.bak");
@@ -51,54 +50,86 @@ async function main() {
 
   const raw = await fs.readFile(DB_PATH, "utf8");
   const before = JSON.parse(raw);
-  const peopleCount = (before.people || []).length;
-  const travelWindowsCount = (before.travelWindows || []).length;
-  const firstPersonId = before.people?.[0]?.id;
-  const lastPersonId = before.people?.[before.people?.length - 1]?.id;
+
+  const loaded = await loadRealDataRecords({ write: true });
+  const idCounts = new Map();
+  loaded.records.forEach((record) => {
+    const id = String(record.person.id || "").trim();
+    if (!id) return;
+    idCounts.set(id, (idCounts.get(id) || 0) + 1);
+  });
+
+  const target = loaded.records.find((record) => {
+    const id = String(record.person.id || "").trim();
+    return id && idCounts.get(id) === 1 && record.person.fullName;
+  });
+  if (!target) {
+    throw new Error("Could not find a uniquely identifiable RealData row to use for roundtrip testing.");
+  }
+
+  const originalPerson = { ...target.person };
+  const originalTagline = originalPerson.shortProjectTagline;
+  const marker = `[roundtrip ${Date.now()}]`;
+  const updatedPerson = {
+    ...originalPerson,
+    shortProjectTagline: originalTagline
+      ? `${originalTagline} ${marker}`.trim()
+      : marker,
+  };
+  const authContext = {
+    personId: originalPerson.id,
+    fullName: originalPerson.fullName,
+    mustChangePassword: false,
+  };
 
   console.log("Backing up database.json …");
   await fs.writeFile(BACKUP_PATH, raw, "utf8");
 
-  console.log("Step 1: Writing to sheet (migrate:sheet) …");
-  execSync("pnpm run migrate:sheet", {
-    stdio: "inherit",
-    cwd: path.join(__dirname, ".."),
-    env: process.env,
-  });
+  try {
+    console.log(`Step 1: Writing temporary profile update for ${originalPerson.fullName} …`);
+    await saveProfile(updatedPerson, authContext);
 
-  console.log("Step 2: Syncing sheet → database.json …");
-  execSync("pnpm run sync:sheet", {
-    stdio: "inherit",
-    cwd: path.join(__dirname, ".."),
-    env: process.env,
-  });
+    console.log("Step 2: Syncing sheet → database.json …");
+    execSync("pnpm run sync:sheet", {
+      stdio: "inherit",
+      cwd: path.join(__dirname, ".."),
+      env: process.env,
+    });
 
-  const afterRaw = await fs.readFile(DB_PATH, "utf8");
-  const after = JSON.parse(afterRaw);
-  const afterPeopleCount = (after.people || []).length;
-  const afterTwCount = (after.travelWindows || []).length;
+    const afterRaw = await fs.readFile(DB_PATH, "utf8");
+    const after = JSON.parse(afterRaw);
+    const afterPeopleCount = (after.people || []).length;
+    const syncedPerson = (after.people || []).find((person) => person.id === originalPerson.id);
 
-  console.log("Step 3: Verifying round-trip …");
-  const ok =
-    afterPeopleCount === peopleCount &&
-    afterTwCount === travelWindowsCount &&
-    after.people?.[0]?.id === firstPersonId &&
-    after.people?.[after.people.length - 1]?.id === lastPersonId;
+    console.log("Step 3: Verifying round-trip …");
+    const ok =
+      afterPeopleCount === loaded.records.length &&
+      syncedPerson &&
+      syncedPerson.shortProjectTagline === updatedPerson.shortProjectTagline;
 
-  console.log("Restoring database.json from backup …");
-  await fs.writeFile(DB_PATH, raw, "utf8");
-  await fs.unlink(BACKUP_PATH).catch(() => {});
+    if (!ok) {
+      console.error("\nRound-trip check failed:");
+      console.error(`  People: expected ${loaded.records.length}, got ${afterPeopleCount}`);
+      console.error(
+        `  Synced tagline: expected ${updatedPerson.shortProjectTagline}, got ${syncedPerson?.shortProjectTagline}`,
+      );
+      process.exitCode = 1;
+    } else {
+      console.log(
+        `\nSuccess: profile writeback for ${originalPerson.id} round-tripped through RealData and back into database.json.`,
+      );
+    }
+  } finally {
+    console.log("Restoring original profile row …");
+    await saveProfile(originalPerson, authContext).catch((error) => {
+      console.error("Failed to restore original RealData row:", error);
+      process.exitCode = 1;
+    });
 
-  if (!ok) {
-    console.error("\nRound-trip check failed:");
-    console.error(`  People: expected ${peopleCount}, got ${afterPeopleCount}`);
-    console.error(`  Travel windows: expected ${travelWindowsCount}, got ${afterTwCount}`);
-    console.error(`  First id: expected ${firstPersonId}, got ${after.people?.[0]?.id}`);
-    console.error(`  Last id: expected ${lastPersonId}, got ${after.people?.[after.people?.length - 1]?.id}`);
-    process.exit(1);
+    console.log("Restoring database.json from backup …");
+    await fs.writeFile(DB_PATH, raw, "utf8");
+    await fs.unlink(BACKUP_PATH).catch(() => {});
   }
-
-  console.log(`\nSuccess: ${peopleCount} people and ${travelWindowsCount} travel windows wrote to the sheet and synced back.`);
 }
 
 main().catch((err) => {

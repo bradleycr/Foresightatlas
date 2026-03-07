@@ -3,38 +3,38 @@
  * Extend this array when new nodes come online.
  *
  * Colour palettes mirror the map sidebar's pastel-gradient language:
- *  • Berlin → deep violet → soft rose   (richer, European dusk)
+ *  • Berlin → indigo → soft rose   (softer, European dusk — no strong purple)
  *  • SF     → warm amber  → open sky    (brighter, West-Coast noon)
  */
 
 import { ForesightNode, NodeColorTheme, NodeSlug } from "../types/events";
 
 const BERLIN_THEME: NodeColorTheme = {
-  headerGradient: "linear-gradient(135deg, rgba(221,214,254,0.45) 0%, rgba(251,207,232,0.45) 100%)",
+  headerGradient: "linear-gradient(135deg, rgba(224,231,255,0.5) 0%, rgba(251,207,232,0.45) 100%)",
 
-  monthSelected:      "bg-violet-100 border border-violet-200 text-violet-900 shadow-sm",
-  monthSelectedLabel: "text-violet-700",
-  monthSelectedCount: "text-violet-800",
-  monthCurrent:       "bg-violet-50 border border-violet-200",
-  monthCurrentLabel:  "text-violet-500",
-  allUpcomingActive:  "bg-violet-100 text-violet-700",
-  allUpcomingIdle:    "text-violet-600 hover:bg-violet-50",
-  focusRing:          "focus-visible:ring-violet-500",
+  monthSelected:      "bg-indigo-100 border border-indigo-200 text-indigo-900 shadow-sm",
+  monthSelectedLabel: "text-indigo-700",
+  monthSelectedCount: "text-indigo-800",
+  monthCurrent:       "bg-indigo-50 border border-indigo-200",
+  monthCurrentLabel:  "text-indigo-500",
+  allUpcomingActive:  "bg-indigo-100 text-indigo-700",
+  allUpcomingIdle:    "text-indigo-600 hover:bg-indigo-50",
+  focusRing:          "focus-visible:ring-indigo-500",
 
-  avatarActiveBg:    "bg-violet-100",
-  avatarActiveText:  "text-violet-700",
-  triggerOpenBorder: "border-violet-300",
-  triggerOpenRing:   "ring-violet-100",
-  chevronActive:     "text-violet-500",
-  searchFocusRing:   "focus-within:ring-violet-400",
+  avatarActiveBg:    "bg-indigo-100",
+  avatarActiveText:  "text-indigo-700",
+  triggerOpenBorder: "border-indigo-300",
+  triggerOpenRing:   "ring-indigo-100",
+  chevronActive:     "text-indigo-500",
+  searchFocusRing:   "focus-within:ring-indigo-400",
 
-  ctaBg:        "bg-violet-50",
-  ctaText:      "text-violet-700",
-  ctaBorder:    "border-violet-200",
-  ctaHover:     "hover:bg-violet-100",
-  ctaFocusRing: "focus:ring-violet-500",
-  linkText:     "text-violet-600",
-  linkHover:    "hover:text-violet-700",
+  ctaBg:        "bg-indigo-50",
+  ctaText:      "text-indigo-700",
+  ctaBorder:    "border-indigo-200",
+  ctaHover:     "hover:bg-indigo-100",
+  ctaFocusRing: "focus:ring-indigo-500",
+  linkText:     "text-indigo-600",
+  linkHover:    "hover:text-indigo-700",
 };
 
 const SF_THEME: NodeColorTheme = {
@@ -74,8 +74,8 @@ export const NODES: ForesightNode[] = [
     coordinates: { lat: 52.52, lng: 13.405 },
     timezone: "Europe/Berlin",
     description: "Foresight's European node.",
-    gradient: "from-violet-500 to-pink-400",
-    accent: "text-violet-600",
+    gradient: "from-indigo-500 to-pink-400",
+    accent: "text-indigo-600",
     theme: BERLIN_THEME,
   },
   {

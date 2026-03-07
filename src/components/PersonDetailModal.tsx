@@ -12,11 +12,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays
+  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays, MapPinCheck
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
 import { getPersonRSVPs } from "../services/rsvp";
+import { getPersonCheckIns } from "../services/checkin";
 import { getNode } from "../data/nodes";
 import { buildFullPath } from "../utils/router";
 import { Badge } from "./ui/badge";
@@ -56,6 +57,17 @@ import {
 } from "../services/database";
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
+
+/** Cohort years 2017–current plus 0 for Unknown. */
+const COHORT_YEAR_OPTIONS: number[] = (() => {
+  const current = new Date().getFullYear();
+  const years: number[] = [0];
+  for (let y = 2017; y <= current; y++) years.push(y);
+  return years;
+})();
+
+/** Location-only nodes; alumni is a separate program-status field. */
+const LOCATION_NODE_OPTIONS: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node"];
 
 interface NavigationContext {
   peopleIds: string[];
@@ -221,27 +233,30 @@ export function PersonDetailModal({
         toast.error("Full name is required");
         return;
       }
-      if (!editingPerson.currentCity.trim() || !editingPerson.currentCountry.trim()) {
-        toast.error("Current city and country are required");
+      if (!editingPerson.currentCity.trim()) {
+        toast.error("City is required for the map");
         return;
       }
 
-      // Geocode current location if coordinates are missing or zero
+      // Geocode when coordinates missing (city is enough; country optional)
       let personToSave = { ...editingPerson };
       if (
-        (personToSave.currentCoordinates.lat === 0 &&
-          personToSave.currentCoordinates.lng === 0) ||
-        (!personToSave.currentCity || !personToSave.currentCountry)
+        personToSave.currentCoordinates.lat === 0 &&
+        personToSave.currentCoordinates.lng === 0 &&
+        personToSave.currentCity.trim()
       ) {
         const geocodeResult = await geocodeCity(
           personToSave.currentCity,
-          personToSave.currentCountry
+          personToSave.currentCountry || undefined
         );
         if (geocodeResult) {
           personToSave.currentCoordinates = {
             lat: geocodeResult.lat,
             lng: geocodeResult.lng,
           };
+          if (!personToSave.currentCountry?.trim() && geocodeResult.country) {
+            personToSave.currentCountry = geocodeResult.country;
+          }
         }
       }
 
@@ -423,7 +438,7 @@ export function PersonDetailModal({
           >
             {/* Generous padding on all sides — never flush to edges; respect safe area on mobile */}
             <div 
-              className="px-6 pt-6 pb-10 sm:px-8 sm:pt-7 sm:pb-12 lg:px-12 lg:pt-10 lg:pb-16"
+              className="px-6 pt-6 pb-10 sm:px-8 sm:pt-7 sm:pb-12 lg:px-12 lg:pt-10 lg:pb-16 break-words min-w-0"
               style={isMobile ? {
                 paddingLeft: 'max(1.5rem, env(safe-area-inset-left, 0px) + 1rem)',
                 paddingRight: 'max(1.5rem, env(safe-area-inset-right, 0px) + 1rem)',
@@ -552,17 +567,30 @@ export function PersonDetailModal({
                         <SelectTrigger className="w-28 sm:w-32"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Fellow">Fellow</SelectItem>
+                          <SelectItem value="Senior Fellow">Senior Fellow</SelectItem>
                           <SelectItem value="Grantee">Grantee</SelectItem>
                           <SelectItem value="Prize Winner">Prize Winner</SelectItem>
+                          <SelectItem value="Nodee">Nodee</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input type="number" value={editingPerson.fellowshipCohortYear} onChange={(e) => setEditingPerson({ ...editingPerson, fellowshipCohortYear: parseInt(e.target.value) || 2024 })} className="w-20" placeholder="Year" />
+                      <Select value={String(editingPerson.fellowshipCohortYear)} onValueChange={(v) => setEditingPerson({ ...editingPerson, fellowshipCohortYear: v === "0" ? 0 : parseInt(v, 10) || 0 })}>
+                        <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Unknown</SelectItem>
+                          {COHORT_YEAR_OPTIONS.filter((y) => y !== 0).map((y) => (
+                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <span className="text-gray-400">–</span>
                       <Input type="number" placeholder="End" className="w-20" value={editingPerson.fellowshipEndYear ?? ""} onChange={(e) => { const v = e.target.value.trim(); setEditingPerson({ ...editingPerson, fellowshipEndYear: v === "" ? null : parseInt(v, 10) || null }); }} />
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
-                        <input type="checkbox" checked={editingPerson.isAlumni} onChange={(e) => setEditingPerson({ ...editingPerson, isAlumni: e.target.checked })} className="rounded" />
-                        Alumni
-                      </label>
+                      <Select value={editingPerson.isAlumni ? "Alumni" : "Current"} onValueChange={(v) => setEditingPerson({ ...editingPerson, isAlumni: v === "Alumni" })}>
+                        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Current">Current</SelectItem>
+                          <SelectItem value="Alumni">Alumni</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </>
                   ) : (
                     <>
@@ -576,11 +604,11 @@ export function PersonDetailModal({
                 </div>
                 {isEditing && editingPerson ? (
                   <div className="mt-4">
-                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Focus tags (comma-separated)</Label>
+                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Focus tags (comma-separated; spaces within a tag are kept)</Label>
                     <Input
                       value={editingPerson.focusTags.join(", ")}
                       onChange={(e) => setEditingPerson({ ...editingPerson, focusTags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
-                      placeholder="e.g. Longevity, AI"
+                      placeholder="e.g. Longevity Biotechnology, Secure AI"
                     />
                   </div>
                 ) : (
@@ -620,14 +648,12 @@ export function PersonDetailModal({
                           const expanded = (displayPerson.expandedProjectDescription ?? "").trim();
                           const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
                           const showTagline = tagline && !taglineIsPrefix;
-                          const showExpanded = expanded || tagline;
+                          const showExpandedOnly = expanded.length > 0;
                           return (
                             <>
                               {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
-                              {showExpanded && (
-                                <p className="person-detail-body leading-relaxed">
-                                  {taglineIsPrefix ? expanded : (expanded || tagline)}
-                                </p>
+                              {showExpandedOnly && (
+                                <p className="person-detail-body leading-relaxed">{expanded}</p>
                               )}
                               {(displayPerson.affiliationOrInstitution ?? "").trim() && (
                                 <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
@@ -652,19 +678,18 @@ export function PersonDetailModal({
                           Location
                         </h3>
                         <div className="space-y-2">
-                          <Input value={editingPerson.currentCity} onChange={(e) => setEditingPerson({ ...editingPerson, currentCity: e.target.value })} placeholder="City" />
-                          <Input value={editingPerson.currentCountry} onChange={(e) => setEditingPerson({ ...editingPerson, currentCountry: e.target.value })} placeholder="Country" />
+                          <Input value={editingPerson.currentCity} onChange={(e) => setEditingPerson({ ...editingPerson, currentCity: e.target.value })} placeholder="City (used for map pin)" />
+                          <Input value={editingPerson.currentCountry} onChange={(e) => setEditingPerson({ ...editingPerson, currentCountry: e.target.value })} placeholder="Country (optional)" />
                         </div>
                       </section>
                       <section className="person-detail-section">
-                        <h3 className="person-detail-section-title">Primary Node</h3>
-                        <Select value={editingPerson.primaryNode} onValueChange={(v: PrimaryNode) => setEditingPerson({ ...editingPerson, primaryNode: v })}>
+                        <h3 className="person-detail-section-title">Primary Node (location)</h3>
+                        <Select value={editingPerson.primaryNode === "Alumni" ? "Global" : editingPerson.primaryNode} onValueChange={(v: PrimaryNode) => setEditingPerson({ ...editingPerson, primaryNode: v })}>
                           <SelectTrigger className="rounded-[var(--pdm-radius-sm)] border-[var(--pdm-border)] bg-[#fafafa]"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Global">Global</SelectItem>
-                            <SelectItem value="Berlin Node">Berlin Node</SelectItem>
-                            <SelectItem value="Bay Area Node">Bay Area Node</SelectItem>
-                            <SelectItem value="Alumni">Alumni</SelectItem>
+                            {LOCATION_NODE_OPTIONS.map((n) => (
+                              <SelectItem key={n} value={n}>{n}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </section>
@@ -680,7 +705,7 @@ export function PersonDetailModal({
                             Location
                           </h3>
                           <p className="person-detail-body">
-                            {displayPerson.currentCity}, {displayPerson.currentCountry}
+                            {[displayPerson.currentCity, displayPerson.currentCountry].filter(Boolean).join(", ") || "—"}
                           </p>
                         </div>
                         <div>
@@ -691,17 +716,23 @@ export function PersonDetailModal({
                               : getNodeLabel(displayPerson.primaryNode)}
                           </p>
                         </div>
+                        <div>
+                          <h3 className="person-detail-section-title">Program status</h3>
+                          <p className="person-detail-body">
+                            {displayPerson.isAlumni ? "Alumni" : "Current participant"}
+                          </p>
+                        </div>
                       </div>
                     </section>
                   )}
 
                   <section className="person-detail-section person-detail-divider">
-                    <h3 className="person-detail-section-title">Contact & Links</h3>
+                    <h3 className="person-detail-section-title">How to contact</h3>
                     {isEditing && editingPerson ? (
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-xs text-gray-600">Contact</Label>
-                          <Input value={editingPerson.contactUrlOrHandle || ""} onChange={(e) => setEditingPerson({ ...editingPerson, contactUrlOrHandle: e.target.value || null })} placeholder="Email or @handle" className="mt-1" />
+                          <Label className="text-xs text-gray-600">Email, URL, or LinkedIn</Label>
+                          <Input value={editingPerson.contactUrlOrHandle || ""} onChange={(e) => setEditingPerson({ ...editingPerson, contactUrlOrHandle: e.target.value || null })} placeholder="you@example.com, https://linkedin.com/in/you, or profile URL" className="mt-1" />
                         </div>
                         <div>
                           <Label className="text-xs text-gray-600">Profile URL</Label>
@@ -718,7 +749,13 @@ export function PersonDetailModal({
                             className="person-detail-link-primary min-h-[44px] sm:min-h-[40px]"
                           >
                             {displayPerson.contactUrlOrHandle.includes("@") && !displayPerson.contactUrlOrHandle.startsWith("@") ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-                            {displayPerson.contactUrlOrHandle.startsWith("@") ? displayPerson.contactUrlOrHandle : "Contact"}
+                            {displayPerson.contactUrlOrHandle.startsWith("@")
+                              ? displayPerson.contactUrlOrHandle
+                              : displayPerson.contactUrlOrHandle.includes("linkedin.com")
+                                ? "LinkedIn"
+                                : displayPerson.contactUrlOrHandle.length > 40
+                                  ? displayPerson.contactUrlOrHandle.slice(0, 37) + "..."
+                                  : displayPerson.contactUrlOrHandle}
                           </a>
                         )}
                         <a
@@ -788,6 +825,9 @@ export function PersonDetailModal({
 
               {/* Event RSVPs — where they're going (events they're attending at nodes) */}
               {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
+
+              {/* Node check-in schedule — upcoming days they plan to be at a node */}
+              {!isEditing && <PersonCheckIns personId={person.id} />}
 
               <div className="h-8 lg:h-10" aria-hidden />
             </div>
@@ -1013,5 +1053,59 @@ function TravelWindowEditForm({
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Renders upcoming node check-ins for a person — days they've checked in
+ * or plan to attend, grouped by node with date + type badge.
+ */
+function PersonCheckIns({ personId }: { personId: string }) {
+  const checkIns = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return getPersonCheckIns(personId).filter((c) => c.date >= today);
+  }, [personId]);
+
+  if (checkIns.length === 0) return null;
+
+  return (
+    <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
+      <h3 className="person-detail-section-title flex items-center gap-2 mb-4">
+        <MapPinCheck className="h-3.5 w-3.5 shrink-0" />
+        At the Node ({checkIns.length} day{checkIns.length !== 1 ? "s" : ""})
+      </h3>
+      <div className="space-y-2">
+        {checkIns.map((c) => {
+          const node = getNode(c.nodeSlug);
+          const dateStr = new Date(c.date + "T12:00:00").toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+          const isToday = c.date === new Date().toISOString().slice(0, 10);
+          return (
+            <div
+              key={`${c.nodeSlug}-${c.date}`}
+              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl border border-gray-200 bg-gray-50/60"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">
+                  {node?.city ?? c.nodeSlug}
+                  {isToday && (
+                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-teal-600">
+                      Today
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
+              </div>
+              <Badge variant="outline" className="text-xs capitalize">
+                {c.type === "checkin" ? "Checked in" : "Planned"}
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

@@ -37,7 +37,7 @@ const FOCUS_AREAS = [
   "Other",
 ];
 
-const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+const PROGRAMS: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner", "Nodee"];
 const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node"];
 
 export function FiltersBar({
@@ -111,7 +111,7 @@ export function FiltersBar({
       nodes: [],
       cities: [],
       showAlumni: true,
-      year: defaultYear,
+      year: null,
       granularity: "Year",
       referenceDate: new Date().toISOString(),
     });
@@ -123,7 +123,8 @@ export function FiltersBar({
     filters.focusTags.length > 0 ||
     filters.nodes.length > 0 ||
     filters.cities.length > 0 ||
-    filters.year !== defaultYear;
+    !filters.showAlumni ||
+    filters.year !== null;
 
   // Count active non-search filters for badge
   const activeFilterCount =
@@ -131,7 +132,8 @@ export function FiltersBar({
     filters.focusTags.length +
     filters.nodes.length +
     filters.cities.length +
-    (filters.year !== defaultYear ? 1 : 0);
+    (filters.year !== null ? 1 : 0) +
+    (filters.showAlumni ? 0 : 1);
 
   return (
     <div className="border-b border-gray-200 bg-white relative">
@@ -153,7 +155,7 @@ export function FiltersBar({
             onClick={() => setIsCollapsed(!isCollapsed)}
             variant="outline"
             size="sm"
-            className="border-gray-300 text-gray-700 hover:bg-gray-50 relative"
+            className="min-h-[44px] touch-manipulation border-gray-300 text-gray-700 hover:bg-gray-50 relative sm:min-h-9"
           >
             {isCollapsed ? (
               <>
@@ -172,8 +174,8 @@ export function FiltersBar({
               </span>
             )}
           </Button>
-          {hasActiveFilters && (
-            <Button onClick={clearAllFilters} variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+            {hasActiveFilters && (
+            <Button onClick={clearAllFilters} variant="outline" size="sm" className="min-h-[44px] touch-manipulation border-gray-300 text-gray-700 hover:bg-gray-50 sm:min-h-9">
               <X className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Clear</span>
             </Button>
@@ -216,9 +218,19 @@ export function FiltersBar({
             </FilterSection>
 
             {/* Year */}
-            <FilterSection label="Year">
+            <FilterSection label="Community">
+              <ToggleBadge active={filters.showAlumni} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, showAlumni: true })}>
+                Current + alumni
+              </ToggleBadge>
+              <ToggleBadge active={!filters.showAlumni} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, showAlumni: false })}>
+                Current only
+              </ToggleBadge>
+            </FilterSection>
+
+            {/* Year */}
+            <FilterSection label="Active in year">
               <ToggleBadge active={filters.year === null} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => handleYearChange(null)}>
-                All Time
+                Any year
               </ToggleBadge>
               {years.map((y) => (
                 <ToggleBadge key={y} active={filters.year === y} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => handleYearChange(y)}>

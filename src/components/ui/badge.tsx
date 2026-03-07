@@ -44,18 +44,21 @@ function Badge({
   // Define gradient styles for each variant
   const gradientStyles: Record<string, React.CSSProperties> = {
     default: {
-      background: 'linear-gradient(135deg, #bfdbfe 0%, #a5b4fc 100%)',
-      color: '#374151',
+      background: "linear-gradient(135deg, #f7fafc 0%, #eef2f7 100%)",
+      color: "#334155",
+      borderColor: "rgba(148, 163, 184, 0.28)",
       ...style,
     },
     secondary: {
-      background: 'linear-gradient(135deg, #e9d5ff 0%, #fbcfe8 100%)',
-      color: '#374151',
+      background: "linear-gradient(135deg, #fdf7ef 0%, #f3f4f6 100%)",
+      color: "#475569",
+      borderColor: "rgba(148, 163, 184, 0.24)",
       ...style,
     },
     destructive: {
-      background: 'linear-gradient(135deg, #fecaca 0%, #fed7aa 100%)',
-      color: '#7f1d1d',
+      background: "linear-gradient(135deg, #fee2e2 0%, #fde7d7 100%)",
+      color: "#7f1d1d",
+      borderColor: "rgba(239, 68, 68, 0.18)",
       ...style,
     },
     outline: style || {},

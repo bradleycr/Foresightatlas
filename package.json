@@ -1,7 +1,26 @@
 {
-    "name": "Foresight Fellows Map & Timeline",
+    "name": "foresightmap",
     "version": "0.1.0",
+    "description": "Grantees and Fellows Map and Programming — interactive map and event calendars for Foresight Institute community",
     "private": true,
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bradleycr/Foresightmap.git"
+    },
+    "bugs": {
+        "url": "https://github.com/bradleycr/Foresightmap/issues"
+    },
+    "homepage": "https://github.com/bradleycr/Foresightmap#readme",
+    "keywords": [
+        "foresight",
+        "map",
+        "grantees",
+        "fellows",
+        "leaflet",
+        "react",
+        "vite"
+    ],
     "dependencies": {
         "@radix-ui/react-accordion": "^1.2.3",
         "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -30,6 +49,7 @@
         "@radix-ui/react-toggle-group": "^1.1.2",
         "@radix-ui/react-tooltip": "^1.1.8",
         "@types/leaflet": "^1.9.21",
+        "chrono-node": "^2.9.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "*",
         "cmdk": "^1.1.1",
@@ -41,6 +61,7 @@
         "leaflet.markercluster": "^1.5.3",
         "lucide-react": "^0.487.0",
         "next-themes": "^0.4.6",
+        "qrcode.react": "^4.2.0",
         "react": "^18.3.1",
         "react-day-picker": "^8.10.1",
         "react-dom": "^18.3.1",
@@ -53,26 +74,39 @@
         "vaul": "^1.1.2"
     },
     "devDependencies": {
+        "@tailwindcss/vite": "^4.2.1",
         "@types/express": "^4.17.21",
         "@types/node": "^20.10.0",
         "@vitejs/plugin-react-swc": "^3.10.2",
         "concurrently": "^8.2.2",
         "dotenv": "^17.3.1",
         "googleapis": "^171.4.0",
+        "tailwindcss": "^4.2.1",
         "vite": "6.3.5"
     },
     "scripts": {
-        "dev": "vite",
-        "dev:api": "node server/index.js",
-        "dev:all": "concurrently \"npm run dev:api\" \"npm run dev\"",
+"dev": "node scripts/start-dev.js",
+    "dev:api": "node server/index.js",
+    "dev:signal": "node server/signal/index.js",
+    "dev:all": "concurrently \"pnpm run dev:api\" \"vite\" \"pnpm run dev:signal\"",
         "build": "vite build",
         "sync:sheet": "node scripts/sync-sheet-to-json.js",
+        "merge:people": "node scripts/merge-people-into-realdata.js",
+        "geocode:sheet": "node scripts/geocode-sheet.js",
+        "geocode:sheet:and-sync": "node scripts/geocode-sheet.js && node scripts/sync-sheet-to-json.js",
         "sync:events": "node scripts/sync-events.js",
         "sync:all": "node scripts/sync-sheet-to-json.js && node scripts/sync-events.js",
         "migrate:sheet": "node scripts/migrate-json-to-sheet.js",
         "export:sheet": "node scripts/export-database-to-csv.js",
         "export:sheet:sample": "node scripts/export-database-to-csv.js --sample",
-        "test:sheet-roundtrip": "node scripts/test-sheet-roundtrip.js"
+        "audit:realdata": "node scripts/audit-realdata.js",
+        "dedupe:realdata": "node scripts/dedupe-realdata.js",
+        "test:sheet-roundtrip": "node scripts/test-sheet-roundtrip.js",
+        "test:member-auth": "node scripts/test-member-auth.js",
+        "compare:sheet": "node scripts/compare-sheet-data.js",
+        "copyover-report": "node scripts/copyover-test-to-real-report.js",
+        "copyover-report:csv": "node scripts/copyover-test-to-real-report.js --csv",
+        "test:signal-checkin": "node scripts/test-signal-checkin.js"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

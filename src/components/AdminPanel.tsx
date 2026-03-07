@@ -150,27 +150,30 @@ export function AdminPanel({
         toast.error("Full name is required");
         return;
       }
-      if (!editingPerson.currentCity.trim() || !editingPerson.currentCountry.trim()) {
-        toast.error("Current city and country are required");
+      if (!editingPerson.currentCity.trim()) {
+        toast.error("City is required for the map");
         return;
       }
 
-      // Geocode current location if coordinates are missing or zero
+      // Geocode when coordinates missing (city is enough; country optional)
       let personToSave = { ...editingPerson };
       if (
-        (personToSave.currentCoordinates.lat === 0 &&
-          personToSave.currentCoordinates.lng === 0) ||
-        (!personToSave.currentCity || !personToSave.currentCountry)
+        personToSave.currentCoordinates.lat === 0 &&
+        personToSave.currentCoordinates.lng === 0 &&
+        personToSave.currentCity.trim()
       ) {
         const geocodeResult = await geocodeCity(
           personToSave.currentCity,
-          personToSave.currentCountry
+          personToSave.currentCountry || undefined
         );
         if (geocodeResult) {
           personToSave.currentCoordinates = {
             lat: geocodeResult.lat,
             lng: geocodeResult.lng,
           };
+          if (!personToSave.currentCountry?.trim() && geocodeResult.country) {
+            personToSave.currentCountry = geocodeResult.country;
+          }
         }
       }
 
@@ -620,9 +623,11 @@ export function AdminPanel({
                                 </p>
                                 <Badge variant="outline">{person.roleType}</Badge>
                                 <Badge variant="outline" className="text-xs">
-                                  {person.fellowshipEndYear != null
-                                    ? `${person.fellowshipCohortYear}–${person.fellowshipEndYear}`
-                                    : person.fellowshipCohortYear}
+                                  {person.fellowshipCohortYear
+                                    ? (person.fellowshipEndYear != null
+                                        ? `${person.fellowshipCohortYear}–${person.fellowshipEndYear}`
+                                        : person.fellowshipCohortYear)
+                                    : "—"}
                                 </Badge>
                               </div>
                               <p className="text-sm text-gray-600 mb-1">
@@ -807,24 +812,28 @@ function PersonEditForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Fellow">Fellow</SelectItem>
+              <SelectItem value="Senior Fellow">Senior Fellow</SelectItem>
               <SelectItem value="Grantee">Grantee</SelectItem>
               <SelectItem value="Prize Winner">Prize Winner</SelectItem>
+              <SelectItem value="Nodee">Nodee</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div>
-          <Label htmlFor="cohortYear">Cohort Year (start) *</Label>
+          <Label htmlFor="cohortYear">Cohort Year (start; 0 or blank = unknown / all-time)</Label>
           <Input
             id="cohortYear"
             type="number"
-            value={person.fellowshipCohortYear}
-            onChange={(e) =>
+            value={person.fellowshipCohortYear || ""}
+            placeholder="e.g. 2024"
+            onChange={(e) => {
+              const v = e.target.value.trim();
               onChange({
                 ...person,
-                fellowshipCohortYear: parseInt(e.target.value) || 2024,
-              })
-            }
+                fellowshipCohortYear: v === "" ? 0 : parseInt(e.target.value, 10) || 0,
+              });
+            }}
           />
         </div>
 
@@ -893,7 +902,7 @@ function PersonEditForm({
         </div>
 
         <div>
-          <Label htmlFor="currentCountry">Country *</Label>
+          <Label htmlFor="currentCountry">Country (optional)</Label>
           <Input
             id="currentCountry"
             value={person.currentCountry}

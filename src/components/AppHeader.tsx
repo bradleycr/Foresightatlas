@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Menu, X, LogOut, User, UserCircle2 } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import type { Identity } from "../services/identity";
+import type { Person } from "../types";
+import { Button } from "./ui/button";
+import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
 
 interface AppHeaderProps {
   /** Current route path: "/", "/berlin", "/sf" */
@@ -11,6 +16,11 @@ interface AppHeaderProps {
   activeTab: "map" | "timeline";
   onTabChange: (tab: "map" | "timeline") => void;
   suggestFormUrl?: string;
+  people: Person[];
+  identity: Identity | null;
+  onOpenProfile: () => void;
+  onSignIn: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  onSignOut: () => void;
 }
 
 export function AppHeader({
@@ -19,9 +29,15 @@ export function AppHeader({
   activeTab,
   onTabChange,
   suggestFormUrl,
+  people,
+  identity,
+  onOpenProfile,
+  onSignIn,
+  onSignOut,
 }: AppHeaderProps) {
   const [nodeMenuOpen, setNodeMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +46,7 @@ export function AppHeader({
 
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf";
+  const isProfileRoute = route === "/profile";
   const subtext = "A tool to help you connect to other grantees, fellows and nodees";
 
   useEffect(() => {
@@ -59,12 +76,36 @@ export function AppHeader({
     return () => { document.body.style.overflow = ""; };
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    if (accountDialogOpen) document.body.style.overflow = "hidden";
+    else if (!mobileMenuOpen) document.body.style.overflow = "";
+    return () => {
+      if (!mobileMenuOpen) document.body.style.overflow = "";
+    };
+  }, [accountDialogOpen, mobileMenuOpen]);
+
+  const identityInitials = identity
+    ? identity.fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : null;
+
+  const handleAccountButtonClick = () => {
+    setAccountDialogOpen(true);
+    setMobileMenuOpen(false);
+  };
+
+  const closeAccountDialog = () => setAccountDialogOpen(false);
+
   return (
     <header
       className="border-b border-gray-200 relative bg-app-header"
-      style={{ zIndex: Z_INDEX_HEADER_NAV }}
+      style={{
+        zIndex: Z_INDEX_HEADER_NAV,
+        paddingTop: "max(1rem, env(safe-area-inset-top, 0px) + 1rem)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      }}
     >
-      <div className="px-4 md:px-8 py-4 md:py-5">
+      <div className="px-4 md:px-8 pb-4 md:pb-5">
         <div className="flex flex-nowrap items-center justify-between gap-3 min-h-0">
           {/* Logo + title — shrinks so nav never wraps */}
           <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
@@ -162,14 +203,49 @@ export function AppHeader({
                 Suggest an update
               </a>
             )}
+
+            <button
+              type="button"
+              onClick={handleAccountButtonClick}
+              className={identity
+                ? "size-11 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 transition-all flex-shrink-0 touch-manipulation"
+                : "inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+              }
+              title={identity?.fullName ?? "Sign in to your profile"}
+              aria-label={identity ? "Open account menu" : "Sign in to your profile"}
+              aria-haspopup="dialog"
+              aria-expanded={accountDialogOpen}
+            >
+              {identity ? (
+                identityInitials
+              ) : (
+                <>
+                  <UserCircle2 className="size-4" />
+                  Profile
+                </>
+              )}
+            </button>
           </div>
 
-          {/* Mobile nav — hamburger only below 768px */}
-          <div className="header-mobile-nav flex md:hidden flex-shrink-0 items-center">
+          {/* Mobile nav — hamburger only below 768px; min 44px touch target for accessibility */}
+          <div className="header-mobile-nav flex md:hidden flex-shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={handleAccountButtonClick}
+              className={identity
+                ? "size-11 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 transition-all touch-manipulation"
+                : "min-w-[44px] min-h-[44px] rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-50 flex items-center justify-center"
+              }
+              aria-label={identity ? "Open account menu" : "Sign in to your profile"}
+              aria-haspopup="dialog"
+              aria-expanded={accountDialogOpen}
+            >
+              {identity ? identityInitials : <UserCircle2 className="size-5" />}
+            </button>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 -mr-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+              className="p-2 -mr-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
               aria-haspopup="dialog"
@@ -180,23 +256,159 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Mobile menu — same pattern as desktop dropdown: inline, fixed overlay/panel so it draws above map */}
-      {mobileMenuOpen && (
+      {accountDialogOpen && createPortal(
+        <>
+          <div
+            onClick={closeAccountDialog}
+            aria-hidden
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: Z_INDEX_MODAL_BACKDROP,
+              background: "rgba(0, 0, 0, 0.5)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={identity ? "Account menu" : "Profile sign in"}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: Z_INDEX_MODAL_CONTENT,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              style={{
+                pointerEvents: "auto",
+                width: "100%",
+                maxWidth: "24rem",
+                borderRadius: "1.75rem",
+                border: "1px solid #d1d5db",
+                background: "#ffffff",
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)",
+                overflow: "hidden",
+              }}
+            >
+              {identity ? (
+                <div className="p-6 sm:p-7">
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className="flex items-center justify-center text-base font-semibold"
+                      style={{ width: "3.5rem", height: "3.5rem", borderRadius: "1rem", background: "#ede9fe", color: "#6d28d9" }}
+                    >
+                      {identityInitials}
+                    </div>
+                    <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900">
+                      {identity.fullName}
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-gray-600">
+                      {isProfileRoute
+                        ? "Your directory profile is open."
+                        : "Manage your profile or sign out from this device."}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        closeAccountDialog();
+                        onOpenProfile();
+                      }}
+                      className="min-h-[44px] w-full"
+                    >
+                      <User className="size-4" />
+                      View profile
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        closeAccountDialog();
+                        onSignOut();
+                      }}
+                      className="min-h-[44px] w-full"
+                    >
+                      <LogOut className="size-4" />
+                      Sign out
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={closeAccountDialog}
+                      className="min-h-[44px] w-full"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 sm:p-7">
+                  <DirectoryLoginForm
+                    people={people}
+                    title="Sign in to your profile"
+                    description="Use your full name and password. If this is your first sign-in, use the temporary password password123 and then choose a new one."
+                    submitLabel="Sign in"
+                    onCancel={closeAccountDialog}
+                    onAddYourself={() => {
+                      closeAccountDialog();
+                      navigate("/profile?new=1");
+                    }}
+                    onSubmit={async (username, password) => {
+                      const result = await onSignIn(username, password);
+                      if (result.ok) {
+                        closeAccountDialog();
+                        onOpenProfile();
+                      }
+                      return result;
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </>,
+        document.body,
+      )}
+
+      {/* Mobile menu — portal to body so backdrops aren't trapped in header stacking context */}
+      {mobileMenuOpen && createPortal(
         <>
           <div
             role="presentation"
             aria-hidden
             onClick={closeMobileMenu}
-            className="fixed inset-0 bg-black/40 md:hidden"
-            style={{ zIndex: Z_INDEX_MODAL_BACKDROP }}
+            className="md:hidden"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: Z_INDEX_MODAL_BACKDROP,
+              background: "rgba(0, 0, 0, 0.4)",
+            }}
           />
           <div
             ref={mobileMenuRef}
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="fixed inset-y-0 right-0 w-full max-w-[min(20rem,100%)] flex flex-col bg-white shadow-2xl md:hidden rounded-l-2xl overflow-hidden"
+            className="flex flex-col bg-white shadow-2xl md:hidden overflow-hidden"
             style={{
+              position: "fixed",
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: "100%",
+              maxWidth: "min(20rem, 100%)",
+              borderTopLeftRadius: "1rem",
+              borderBottomLeftRadius: "1rem",
               zIndex: Z_INDEX_MODAL_CONTENT,
               animation: "slideInRight 0.25s ease-out",
             }}
@@ -223,7 +435,7 @@ export function AppHeader({
                     }}
                     className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
                       isMapRoute
-                        ? "bg-violet-100 text-violet-900 border-violet-200"
+                        ? "bg-sky-100 text-sky-900 border-sky-200"
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
@@ -238,7 +450,7 @@ export function AppHeader({
                     }}
                     className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
                       route === "/berlin"
-                        ? "bg-violet-100 text-violet-900 border-violet-200"
+                        ? "bg-sky-100 text-sky-900 border-sky-200"
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
@@ -253,7 +465,7 @@ export function AppHeader({
                     }}
                     className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
                       route === "/sf"
-                        ? "bg-violet-100 text-violet-900 border-violet-200"
+                        ? "bg-sky-100 text-sky-900 border-sky-200"
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
@@ -274,9 +486,52 @@ export function AppHeader({
                   </li>
                 )}
               </ul>
+
+              {/* Mobile identity strip */}
+              {identity && (
+                <div className="mx-3 mt-4 mb-2 p-4 rounded-xl bg-sky-50 border border-sky-100">
+                  <div className="flex items-start gap-3">
+                    <div className="size-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                      {identityInitials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {identity.fullName}
+                      </p>
+                      <p className="text-xs text-sky-600">
+                        {isProfileRoute ? "Editing your directory profile" : "Signed in"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenProfile();
+                        closeMobileMenu();
+                      }}
+                      className="min-h-[44px] rounded-xl border border-sky-200 bg-white px-3 text-sm font-medium text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors"
+                    >
+                      My profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSignOut();
+                        closeMobileMenu();
+                      }}
+                      className="min-h-[44px] rounded-xl border border-sky-200 bg-white px-3 text-sm font-medium text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors inline-flex items-center justify-center gap-2"
+                    >
+                      <LogOut className="size-4" />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </nav>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </header>
   );

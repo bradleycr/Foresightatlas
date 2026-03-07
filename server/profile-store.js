@@ -1,0 +1,353 @@
+const fsp = require("fs").promises;
+const path = require("path");
+const {
+  normalizeString,
+  normalizeStringArray,
+  normalizeNumber,
+  normalizeBoolean,
+  cloneRecord,
+  loadRealDataRecords,
+  upsertRealDataRecord,
+} = require("./realdata-store");
+const { geocodeCity } = require("./geocoding");
+const { issueDirectorySession, hashPassword } = require("./directory-auth");
+
+/** Optional local cache path; sheet is the source of truth. Writes here are best-effort only. */
+const DB_PATH = path.join(__dirname, "../public/data/database.json");
+
+const VALID_ROLE_TYPES = new Set([
+  "Fellow",
+  "Grantee",
+  "Prize Winner",
+  "Senior Fellow",
+  "Nodee",
+]);
+
+const VALID_PRIMARY_NODES = new Set([
+  "Global",
+  "Berlin Node",
+  "Bay Area Node",
+  "Alumni",
+]);
+
+function normalizeNullableString(value) {
+  const normalized = normalizeString(value);
+  return normalized || null;
+}
+
+function normalizeCoordinates(value) {
+  const lat = Number(value?.lat);
+  const lng = Number(value?.lng);
+
+  return {
+    lat: Number.isFinite(lat) ? lat : 0,
+    lng: Number.isFinite(lng) ? lng : 0,
+  };
+}
+
+function normalizePerson(input) {
+  const person = {
+    id: normalizeString(input?.id),
+    fullName: normalizeString(input?.fullName),
+    roleType: normalizeString(input?.roleType) || "Fellow",
+    fellowshipCohortYear: normalizeNumber(input?.fellowshipCohortYear, 0),
+    fellowshipEndYear:
+      input?.fellowshipEndYear === null ||
+      input?.fellowshipEndYear === undefined ||
+      input?.fellowshipEndYear === ""
+        ? null
+        : normalizeNumber(input?.fellowshipEndYear, null),
+    affiliationOrInstitution: normalizeNullableString(
+      input?.affiliationOrInstitution,
+    ),
+    focusTags: normalizeStringArray(input?.focusTags),
+    currentCity: normalizeString(input?.currentCity),
+    currentCountry: normalizeString(input?.currentCountry),
+    currentCoordinates: normalizeCoordinates(input?.currentCoordinates),
+    primaryNode: normalizeString(input?.primaryNode) || "Global",
+    profileUrl: normalizeString(input?.profileUrl),
+    contactUrlOrHandle: normalizeNullableString(input?.contactUrlOrHandle),
+    shortProjectTagline: normalizeString(input?.shortProjectTagline),
+    expandedProjectDescription: normalizeString(
+      input?.expandedProjectDescription,
+    ),
+    isAlumni: normalizeBoolean(input?.isAlumni),
+  };
+
+  if (!person.id) {
+    throw new Error("Profile update requires a person id.");
+  }
+
+  if (!person.fullName) {
+    throw new Error("Full name is required.");
+  }
+
+  if (!VALID_ROLE_TYPES.has(person.roleType)) {
+    throw new Error("Invalid role type.");
+  }
+
+  if (
+    !Number.isFinite(person.fellowshipCohortYear) ||
+    (person.fellowshipCohortYear !== 0 && (person.fellowshipCohortYear < 1900 || person.fellowshipCohortYear > 2100))
+  ) {
+    throw new Error("Cohort year must be a valid year (1900–2100) or 0 for unknown.");
+  }
+
+  if (
+    person.fellowshipEndYear !== null &&
+    (!Number.isFinite(person.fellowshipEndYear) ||
+      (person.fellowshipCohortYear > 0 && person.fellowshipEndYear < person.fellowshipCohortYear))
+  ) {
+    throw new Error("End year must be empty or greater than the cohort year.");
+  }
+
+  if (!VALID_PRIMARY_NODES.has(person.primaryNode)) {
+    throw new Error("Invalid primary node.");
+  }
+
+  return person;
+}
+
+/** Generate a unique id for a newly self-registered profile (never collides with sheet rows). */
+function generateNewPersonId() {
+  const t = Date.now();
+  const r = Math.random().toString(36).slice(2, 11);
+  return `realdata-new-${t}-${r}`;
+}
+
+/** Like normalizePerson but allows missing id (generates one for new registrations). */
+function normalizePersonForCreate(input) {
+  const rawId = normalizeString(input?.id);
+  const person = {
+    id: rawId || null,
+    fullName: normalizeString(input?.fullName),
+    roleType: normalizeString(input?.roleType) || "Fellow",
+    fellowshipCohortYear: normalizeNumber(input?.fellowshipCohortYear, 0),
+    fellowshipEndYear:
+      input?.fellowshipEndYear === null ||
+      input?.fellowshipEndYear === undefined ||
+      input?.fellowshipEndYear === ""
+        ? null
+        : normalizeNumber(input?.fellowshipEndYear, null),
+    affiliationOrInstitution: normalizeNullableString(
+      input?.affiliationOrInstitution,
+    ),
+    focusTags: normalizeStringArray(input?.focusTags),
+    currentCity: normalizeString(input?.currentCity),
+    currentCountry: normalizeString(input?.currentCountry),
+    currentCoordinates: normalizeCoordinates(input?.currentCoordinates),
+    primaryNode: normalizeString(input?.primaryNode) || "Global",
+    profileUrl: normalizeString(input?.profileUrl),
+    contactUrlOrHandle: normalizeNullableString(input?.contactUrlOrHandle),
+    shortProjectTagline: normalizeString(input?.shortProjectTagline),
+    expandedProjectDescription: normalizeString(
+      input?.expandedProjectDescription,
+    ),
+    isAlumni: normalizeBoolean(input?.isAlumni),
+  };
+
+  if (!person.fullName) {
+    throw new Error("Full name is required.");
+  }
+
+  if (!VALID_ROLE_TYPES.has(person.roleType)) {
+    throw new Error("Invalid role type.");
+  }
+
+  if (
+    !Number.isFinite(person.fellowshipCohortYear) ||
+    (person.fellowshipCohortYear !== 0 && (person.fellowshipCohortYear < 1900 || person.fellowshipCohortYear > 2100))
+  ) {
+    throw new Error("Cohort year must be a valid year (1900–2100) or 0 for unknown.");
+  }
+
+  if (
+    person.fellowshipEndYear !== null &&
+    (!Number.isFinite(person.fellowshipEndYear) ||
+      (person.fellowshipCohortYear > 0 && person.fellowshipEndYear < person.fellowshipCohortYear))
+  ) {
+    throw new Error("End year must be empty or greater than the cohort year.");
+  }
+
+  if (!VALID_PRIMARY_NODES.has(person.primaryNode)) {
+    throw new Error("Invalid primary node.");
+  }
+
+  if (!person.id) {
+    person.id = generateNewPersonId();
+  }
+
+  return person;
+}
+
+async function syncPersonToLocalDatabase(person) {
+  /* Optional: write to local JSON for scripts/backup; sheet remains source of truth. Best-effort. */
+  const raw = await fsp.readFile(DB_PATH, "utf8");
+  const database = JSON.parse(raw);
+  const people = Array.isArray(database.people) ? database.people : [];
+  const existingIndex = people.findIndex((entry) => entry.id === person.id);
+
+  if (existingIndex >= 0) {
+    people[existingIndex] = person;
+  } else {
+    people.push(person);
+  }
+
+  database.people = people;
+  await fsp.writeFile(DB_PATH, JSON.stringify(database, null, 2), "utf8");
+}
+
+async function enrichLocation(person) {
+  const next = {
+    ...person,
+    currentCoordinates: {
+      lat: person.currentCoordinates?.lat ?? 0,
+      lng: person.currentCoordinates?.lng ?? 0,
+    },
+  };
+
+  if (!next.currentCity) {
+    next.currentCountry = "";
+    next.currentCoordinates = { lat: 0, lng: 0 };
+    return next;
+  }
+
+  const geocodeResult = await geocodeCity(
+    next.currentCity,
+    next.currentCountry || undefined,
+  );
+
+  if (geocodeResult) {
+    next.currentCoordinates = {
+      lat: geocodeResult.lat,
+      lng: geocodeResult.lng,
+    };
+    if (!next.currentCountry && geocodeResult.country) {
+      next.currentCountry = geocodeResult.country;
+    }
+  } else if (
+    !Number.isFinite(next.currentCoordinates.lat) ||
+    !Number.isFinite(next.currentCoordinates.lng)
+  ) {
+    next.currentCoordinates = { lat: 0, lng: 0 };
+  }
+
+  return next;
+}
+
+async function syncPersonToSheets(person, authContext) {
+  const loaded = await loadRealDataRecords({ write: true });
+  const match = loaded.records.find((record) => record.person.id === person.id);
+  if (!match) {
+    throw new Error("We could not find your canonical RealData row.");
+  }
+
+  if (authContext.personId !== match.person.id) {
+    throw new Error("You can only update your own directory profile.");
+  }
+
+  if (authContext.mustChangePassword) {
+    throw new Error("Change your password before editing your profile.");
+  }
+
+  const now = new Date().toISOString();
+  const enrichedPerson = await enrichLocation(person);
+  const updated = cloneRecord(match);
+  updated.person = enrichedPerson;
+  updated.auth.lastProfileUpdatedAt = now;
+
+  await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updated);
+
+  return {
+    person: updated.person,
+    auth: issueDirectorySession(updated),
+    sheet: {
+      attempted: true,
+      synced: true,
+      targetSheets: [loaded.sheetName],
+    },
+  };
+}
+
+async function saveProfile(personInput, authContext) {
+  if (!authContext?.personId) {
+    throw new Error("A valid directory session is required.");
+  }
+
+  const person = normalizePerson(personInput);
+
+  if (person.id !== authContext.personId) {
+    throw new Error("You can only update your own directory profile.");
+  }
+
+  const result = await syncPersonToSheets(person, authContext);
+
+  await syncPersonToLocalDatabase(result.person).catch(() => {
+    // Writing the local JSON file is best-effort in production/serverless.
+  });
+
+  return {
+    person: result.person,
+    sheet: result.sheet,
+    auth: result.auth,
+  };
+}
+
+const DEFAULT_DIRECTORY_PASSWORD =
+  process.env.DIRECTORY_DEFAULT_PASSWORD || "password123";
+
+function validateNewPasswordForRegister(password) {
+  const p = String(password || "").trim();
+  if (p.length < 8) {
+    throw new Error("Choose a password with at least 8 characters.");
+  }
+  if (p === DEFAULT_DIRECTORY_PASSWORD) {
+    throw new Error("Choose a password different from the default temporary password.");
+  }
+  return p;
+}
+
+/**
+ * Create a new directory profile (self-registration). Appends a row to the
+ * RealData sheet, syncs to local database, and returns a session so the user
+ * is signed in immediately.
+ */
+async function createProfile(personInput, password) {
+  const validatedPassword = validateNewPasswordForRegister(password);
+  const person = normalizePersonForCreate(personInput);
+  const enrichedPerson = await enrichLocation(person);
+
+  const now = new Date().toISOString();
+  const passwordHash = await hashPassword(validatedPassword);
+
+  const record = {
+    person: enrichedPerson,
+    auth: {
+      passwordHash,
+      mustChangePassword: false,
+      claimedAt: now,
+      lastProfileUpdatedAt: now,
+      lastPasswordChangedAt: now,
+    },
+  };
+
+  const loaded = await loadRealDataRecords({ write: true });
+  const inserted = await upsertRealDataRecord(loaded.sheets, loaded.sheetName, record);
+
+  await syncPersonToLocalDatabase(inserted.person).catch(() => {});
+
+  return {
+    person: inserted.person,
+    auth: issueDirectorySession(inserted),
+    sheet: {
+      attempted: true,
+      synced: true,
+      targetSheets: [loaded.sheetName],
+    },
+  };
+}
+
+module.exports = {
+  saveProfile,
+  createProfile,
+};

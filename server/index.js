@@ -1,116 +1,136 @@
 /**
  * Simple Express API Server for Database Operations
- * 
+ *
  * Handles reading and writing to the JSON database file.
  * Runs on port 3001 in development, can be deployed as a standalone server or serverless function.
  */
 
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env.local") });
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+
 const express = require("express");
 const fs = require("fs").promises;
-const path = require("path");
 const cors = require("cors");
+const { saveProfile, createProfile } = require("./profile-store");
+const { getFullDatabaseFromSheet } = require("./sheet-database");
+const {
+  authenticateDirectoryLogin,
+  changeDirectoryPassword,
+  getDirectorySessionFromRequest,
+} = require("./directory-auth");
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const DEFAULT_PORT = 3001;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
-
-// Path to database file
-const DB_PATH = path.join(__dirname, "../public/data/database.json");
 
 /**
  * GET /api/database
- * Read the entire database
+ * Always reads from the Google Sheet (source of truth).
+ * Requires GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY.
  */
 app.get("/api/database", async (req, res) => {
   try {
-    const data = await fs.readFile(DB_PATH, "utf8");
-    const database = JSON.parse(data);
-    res.json(database);
+    const database = await getFullDatabaseFromSheet();
+    return res.json(database);
   } catch (error) {
-    console.error("Error reading database:", error);
-    res.status(500).json({ error: "Failed to read database" });
+    console.error("Error reading database from sheet:", error);
+    const message =
+      error?.message?.includes("credentials") || error?.message?.includes("configured")
+        ? "Google Sheet is not configured. Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY."
+        : "Failed to read database from sheet.";
+    res.status(503).json({ error: message });
   }
 });
 
 /**
- * POST /api/database
- * Write the entire database
+ * POST /api/database — deprecated. Sheet is the source of truth; profile edits go via POST /api/profile.
+ * Kept only for backwards compatibility; can be removed.
  */
 app.post("/api/database", async (req, res) => {
+  res.status(410).json({
+    error: "POST /api/database is deprecated. The Google Sheet is the source of truth; use the profile page to edit data.",
+  });
+});
+
+/**
+ * POST /api/member-login
+ * Server-validated member sign-in backed by RealData.
+ */
+app.post("/api/member-login", async (req, res) => {
   try {
-    const database = req.body;
-
-    // Basic validation
-    if (!database || typeof database !== "object") {
-      return res.status(400).json({ error: "Invalid database format" });
-    }
-
-    // Ensure required arrays exist
-    if (!Array.isArray(database.people)) {
-      database.people = [];
-    }
-    if (!Array.isArray(database.travelWindows)) {
-      database.travelWindows = [];
-    }
-    if (!Array.isArray(database.suggestions)) {
-      database.suggestions = [];
-    }
-    if (!Array.isArray(database.adminUsers)) {
-      database.adminUsers = [];
-    }
-
-    // Validate suggestions structure before saving (production-ready validation)
-    for (const suggestion of database.suggestions) {
-      if (!suggestion.id || typeof suggestion.id !== 'string') {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid ID" });
-      }
-      if (!suggestion.personName || typeof suggestion.personName !== 'string') {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid personName" });
-      }
-      if (!suggestion.personEmailOrHandle || typeof suggestion.personEmailOrHandle !== 'string') {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid personEmailOrHandle" });
-      }
-      if (!suggestion.requestedChangeType || !['New entry', 'Update location', 'Add travel window'].includes(suggestion.requestedChangeType)) {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid requestedChangeType" });
-      }
-      if (!suggestion.requestedPayload || typeof suggestion.requestedPayload !== 'object') {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid requestedPayload" });
-      }
-      if (!suggestion.status || !['Pending', 'Accepted', 'Rejected'].includes(suggestion.status)) {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid status" });
-      }
-      if (!suggestion.createdAt || typeof suggestion.createdAt !== 'string') {
-        return res.status(400).json({ error: "Invalid suggestion: missing or invalid createdAt" });
-      }
-    }
-
-    // Write to file with comprehensive error handling
-    try {
-      await fs.writeFile(DB_PATH, JSON.stringify(database, null, 2), "utf8");
-    } catch (writeError) {
-      console.error("Error writing database file:", writeError);
-      // Check if it's a permissions error
-      if (writeError.code === 'EACCES' || writeError.code === 'EPERM') {
-        return res.status(500).json({ error: "Permission denied: cannot write to database file" });
-      }
-      // Check if disk is full
-      if (writeError.code === 'ENOSPC') {
-        return res.status(500).json({ error: "Disk full: cannot save database" });
-      }
-      throw writeError; // Re-throw other errors
-    }
-
-    res.json({ success: true, message: "Database saved successfully" });
+    const result = await authenticateDirectoryLogin(
+      req.body?.username,
+      req.body?.password,
+    );
+    res.json(result);
   } catch (error) {
-    console.error("Error writing database:", error);
-    // Don't expose internal error details in production
-    const errorMessage = process.env.NODE_ENV === 'production' 
-      ? "Failed to write database" 
-      : error.message;
-    res.status(500).json({ error: errorMessage });
+    res.status(401).json({
+      error: error instanceof Error ? error.message : "Sign-in failed",
+    });
+  }
+});
+
+/**
+ * POST /api/member-password
+ * Change the signed-in member's password and clear first-login state.
+ */
+app.post("/api/member-password", async (req, res) => {
+  try {
+    const token = req.body?.token || req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    const result = await changeDirectoryPassword(
+      token,
+      req.body?.currentPassword,
+      req.body?.newPassword,
+    );
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : "Failed to change password",
+    });
+  }
+});
+
+/**
+ * POST /api/member-register
+ * Self-register a new directory profile. Creates a row in the RealData sheet and returns a session.
+ */
+app.post("/api/member-register", async (req, res) => {
+  try {
+    const { person, password } = req.body || {};
+    const result = await createProfile(person, password);
+    return res.json(result);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Registration failed";
+    res.status(400).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/profile
+ * Upsert a person profile into the local JSON database and, when configured,
+ * the Google Sheet source of truth.
+ */
+app.post("/api/profile", async (req, res) => {
+  try {
+    const session = getDirectorySessionFromRequest(req);
+    const result = await saveProfile(req.body?.person, session);
+    res.json(result);
+  } catch (error) {
+    console.error("Error saving profile:", error);
+    res.status(400).json({
+      error: error instanceof Error ? error.message : "Failed to save profile",
+    });
   }
 });
 
@@ -119,11 +139,56 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Explicit 404 for unmatched /api routes (return JSON so frontend can show a clear message)
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    error: "API route not found",
+    path: req.method + " " + req.path,
+  });
+});
+
+// SPA fallback: serve index.html for non-API GET so opening localhost:3001 shows the app (after build).
+// In dev, use http://localhost:3000 for the app; 3001 is API-only.
+const distPath = path.join(__dirname, "../dist");
+app.use(express.static(distPath));
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  const indexFile = path.join(distPath, "index.html");
+  fs.access(indexFile)
+    .then(() => res.sendFile(indexFile))
+    .catch(() => next());
+});
+
 // Start server
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Database API server running on http://localhost:${PORT}`);
-  });
+  const portMin = Number(process.env.PORT) || DEFAULT_PORT;
+  const portMax = Math.min(portMin + 9, 3010);
+
+  function tryListen(port) {
+    const server = app.listen(port, () => {
+      console.log(`Database API server running on http://localhost:${server.address().port}`);
+
+      /* Auto-start the Signal check-in poller when all required env vars are present */
+      if (process.env.SIGNAL_API_URL && process.env.SIGNAL_NUMBER && process.env.SIGNAL_GROUP_ID && process.env.SIGNAL_NODE_SLUG) {
+        try {
+          const { boot } = require("./signal/index");
+          boot();
+        } catch (err) {
+          console.error("[server] Signal poller failed to start:", err.message);
+        }
+      }
+    });
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE" && port < portMax) {
+        tryListen(port + 1);
+      } else {
+        console.error(err);
+        process.exit(1);
+      }
+    });
+  }
+
+  tryListen(portMin);
 }
 
 module.exports = app;

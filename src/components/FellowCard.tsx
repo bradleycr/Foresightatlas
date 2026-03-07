@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, Calendar, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, UserCircle } from "lucide-react";
 import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -11,7 +11,7 @@ import { getCohortLabel } from "../utils/cohortLabel";
 interface FellowCardProps {
   person: Person;
   nextTravel?: TravelWindow;
-  /** Called when "More details" is clicked — opens the full details modal. */
+  /** Called when the profile icon is clicked — opens the full details modal. */
   onSelect?: () => void;
   /** Optional: when card body is clicked (not "More details"), highlight + scroll only; if not set, card click uses onSelect. */
   onHighlight?: () => void;
@@ -26,10 +26,11 @@ export function FellowCard({
   isHighlighted,
 }: FellowCardProps) {
   const handleCardClick = () => (onHighlight ?? onSelect)?.();
-  const projectTagline = person.shortProjectTagline?.trim();
-  const projectFallback = person.isAlumni
-    ? "Alumni profile — project details forthcoming."
-    : "Project details coming soon.";
+  const projectSummary =
+    person.shortProjectTagline?.trim() ||
+    person.expandedProjectDescription?.trim() ||
+    person.affiliationOrInstitution?.trim() ||
+    "";
   const nodeLabel = getNodeLabel(person.primaryNode);
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
@@ -58,7 +59,7 @@ export function FellowCard({
       aria-label={onHighlight ? `Select ${person.fullName}` : `View full profile for ${person.fullName}`}
     >
       <div className="space-y-3">
-        {/* Header */}
+        {/* Header: name/role left, profile action top-right */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="text-gray-900 font-heading">{person.fullName}</h3>
@@ -78,21 +79,38 @@ export function FellowCard({
               </span>
             </div>
           </div>
+          {onSelect && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect();
+              }}
+              className="flex-shrink-0 rounded-full p-2 text-teal-600 hover:text-teal-700 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center"
+              aria-label={`View full profile for ${person.fullName}`}
+            >
+              <UserCircle className="size-6 sm:size-5" aria-hidden />
+            </button>
+          )}
         </div>
 
-        {/* Focus Tags */}
-        <div className="flex flex-wrap gap-1">
-          {person.focusTags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        {/* Focus Tags — only when present */}
+        {person.focusTags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {person.focusTags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-        {/* Project Tagline */}
-        <p className={`text-sm ${projectTagline ? "text-gray-700" : "text-gray-500 italic"}`}>
-          {projectTagline || projectFallback}
-        </p>
+        {/* Project summary — show only real data we actually have, never placeholders */}
+        {projectSummary && (
+          <p className="text-sm text-gray-700">
+            {projectSummary}
+          </p>
+        )}
 
         {/* Affiliation */}
         {(person.affiliationOrInstitution ?? "").trim() && (
@@ -101,11 +119,22 @@ export function FellowCard({
           </p>
         )}
 
-        {/* Node — only for current (alumni are not part of a node) */}
-        {!person.isAlumni && (
+        {/* Location and/or Node — one line when we have city/country and/or program node */}
+        {(person.currentCity?.trim() ||
+          person.currentCountry?.trim() ||
+          (!person.isAlumni && nodeLabel)) && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="size-4" />
-            <span>{nodeLabel}</span>
+            <MapPin className="size-4 flex-shrink-0" />
+            <span>
+              {[
+                [person.currentCity?.trim(), person.currentCountry?.trim()]
+                  .filter(Boolean)
+                  .join(", "),
+                !person.isAlumni && nodeLabel,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
           </div>
         )}
 
@@ -126,21 +155,6 @@ export function FellowCard({
           </div>
         )}
 
-        {/* More details — clear call-to-action */}
-        <div className="pt-3 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect?.();
-            }}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-md px-2 py-1 -ml-1 transition-colors"
-            aria-label={`More details about ${person.fullName}`}
-          >
-            More details
-            <ChevronRight className="size-4" aria-hidden />
-          </button>
-        </div>
       </div>
     </Card>
   );

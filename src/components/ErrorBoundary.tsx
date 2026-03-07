@@ -26,10 +26,18 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-            <p className="text-gray-700 mb-4">
+        <div
+          className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
+          style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full"
+            style={{ background: "#fff", borderRadius: "0.5rem", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)", padding: "1.5rem", maxWidth: "42rem", width: "100%" }}
+          >
+            <h1 className="text-2xl font-bold text-red-600 mb-4" style={{ fontSize: "1.5rem", fontWeight: 700, color: "#dc2626", marginBottom: "1rem" }}>
+              Something went wrong
+            </h1>
+            <p className="text-gray-700 mb-4" style={{ color: "#374151", marginBottom: "1rem" }}>
               {this.state.error?.message || "An unexpected error occurred"}
             </p>
             <details className="mb-4">

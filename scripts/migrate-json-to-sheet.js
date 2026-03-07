@@ -2,8 +2,8 @@
 /**
  * One-time migration: public/data/database.json → Google Sheet
  *
- * Overwrites the People, TravelWindows, Suggestions, and AdminUsers tabs with
- * data from the local database.json. Creates/updates the sheet structure.
+ * Overwrites the canonical RealData, TravelWindows, Suggestions, and AdminUsers
+ * tabs with data from the local database.json. Creates/updates the sheet structure.
  *
  * Requires write access: use a Service Account.
  * 1. Create a service account in Google Cloud, enable Google Sheets API.
@@ -54,6 +54,11 @@ function personToRow(p) {
     p.shortProjectTagline ?? "",
     p.expandedProjectDescription ?? "",
     p.isAlumni === true ? "TRUE" : "FALSE",
+    "",
+    "TRUE",
+    "",
+    "",
+    "",
   ];
 }
 
@@ -103,7 +108,7 @@ async function ensureSheets(sheets) {
   });
   const existing = (meta.data.sheets || []).map((s) => s.properties.title);
   const required = [
-    SHEET_NAMES.PEOPLE,
+    SHEET_NAMES.REAL_DATA,
     SHEET_NAMES.TRAVEL_WINDOWS,
     SHEET_NAMES.SUGGESTIONS,
     SHEET_NAMES.ADMIN_USERS,
@@ -174,7 +179,7 @@ async function main() {
 
   await writeSheet(
     sheets,
-    SHEET_NAMES.PEOPLE,
+    SHEET_NAMES.REAL_DATA,
     PEOPLE_HEADERS,
     people.map(personToRow)
   );
@@ -213,7 +218,7 @@ async function main() {
   );
 
   console.log(
-    `Migrated to sheet ${SPREADSHEET_ID}: ${people.length} people, ${travelWindows.length} travel windows, ${suggestions.length} suggestions, ${adminUsers.length} admin users, ${rsvps.length} RSVPs.`
+    `Migrated to sheet ${SPREADSHEET_ID}: ${people.length} RealData people, ${travelWindows.length} travel windows, ${suggestions.length} suggestions, ${adminUsers.length} admin users, ${rsvps.length} RSVPs.`
   );
 }
 

@@ -20,6 +20,37 @@ function stripMarkdown(text: string): string {
 }
 
 /**
+ * Escape HTML so we can safely inject description text.
+ */
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (ch) => map[ch] ?? ch);
+}
+
+/**
+ * Convert event description (markdown-style from Luma/Sheet) to safe HTML for display:
+ * newlines → <br />, **bold** → <strong>, *italic* → <em>. Links are stripped to text.
+ */
+export function formatEventDescriptionToHtml(description: string | null | undefined): string {
+  if (!description?.trim()) return "";
+  const escaped = escapeHtml(description);
+  return escaped
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [label](url) → label only
+    .replace(/\n{2,}/g, "</p><p class=\"mt-2\">")
+    .replace(/\n/g, "<br />")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/^/, '<p class="first:mt-0">')
+    .replace(/$/, "</p>");
+}
+
+/**
  * First paragraph or first MAX_TEASER_LENGTH chars of plain text, with ellipsis.
  * Use for event cards when full description is on Luma.
  */

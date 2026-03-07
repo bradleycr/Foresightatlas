@@ -8,4 +8,5 @@ build/
 .vite/
 *.map
 public/data/events.json
+public/data/database.json
 scripts/sheet-export/*.csv

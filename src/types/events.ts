@@ -27,7 +27,7 @@ export type RSVPStatus = "going" | "interested" | "not-going";
  * Per-node colour palette — all values are complete Tailwind utility strings
  * (so JIT picks them up) or raw CSS for inline styles.
  *
- * Berlin: deep violets → soft rose  (darker, European feel)
+ * Berlin: indigo → soft rose  (softer, European feel)
  * SF:     warm amber  → clear sky   (lighter, West-Coast feel)
  */
 export interface NodeColorTheme {
@@ -114,4 +114,26 @@ export interface RSVPSummary {
   notGoing: number;
   goingPersonIds: string[];
   interestedPersonIds: string[];
+}
+
+/* ── Node Table / Check-in ──────────────────────────────────────────── */
+
+export type CheckInType = "checkin" | "planned";
+
+/** A single person × date presence record at a node. */
+export interface CheckIn {
+  personId: string;
+  fullName: string;
+  nodeSlug: NodeSlug;
+  /** Calendar date in YYYY-MM-DD format. */
+  date: string;
+  type: CheckInType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Day-level aggregate used by the week-view table. */
+export interface DayCheckInSummary {
+  date: string;
+  people: CheckIn[];
 }

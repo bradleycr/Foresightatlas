@@ -157,7 +157,8 @@ let _dynamicLoaded = false;
 
 /**
  * Try loading events from /data/events.json (produced by sync-events.js).
- * Falls back to hardcoded seed events if the JSON doesn't exist yet.
+ * Merges in seed events (e.g. Berlin weekly coworking) that are not in the JSON,
+ * so coworking and other seed events always show even when sync only has Luma/Sheet data.
  */
 export async function loadEvents(): Promise<NodeEvent[]> {
   if (_dynamicLoaded && _cache) return _cache;
@@ -168,7 +169,17 @@ export async function loadEvents(): Promise<NodeEvent[]> {
     if (res.ok) {
       const json: NodeEvent[] = await res.json();
       if (Array.isArray(json) && json.length > 0) {
-        _cache = json.sort(
+        const seed = getSeedEvents();
+        const idsInJson = new Set(json.map((e) => e.id));
+        const recurrenceGroupsInJson = new Set(
+          json.map((e) => e.recurrenceGroupId).filter(Boolean) as string[],
+        );
+        const seedToAdd = seed.filter(
+          (se) =>
+            !idsInJson.has(se.id) &&
+            (!se.recurrenceGroupId || !recurrenceGroupsInJson.has(se.recurrenceGroupId)),
+        );
+        _cache = [...json, ...seedToAdd].sort(
           (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
         );
         _dynamicLoaded = true;
@@ -176,7 +187,7 @@ export async function loadEvents(): Promise<NodeEvent[]> {
       }
     }
   } catch {
-    // JSON not available — use seed data
+    // JSON not available — use seed data only
   }
 
   return getAllEvents();

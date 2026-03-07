@@ -2,20 +2,20 @@
 
 ## Current state
 
-- **Data:** The app reads from `public/data/database.json`. There is no in-memory or mock data layer.
-- **Data layer:** All reads go through `src/services/database.ts`, which fetches `/data/database.json` (static file). No direct Express API calls from the frontend.
-- **Optional Express server:** `server/index.js` exposes a read/write API for the same JSON file. Used for admin writes and optional suggestion/RSVP endpoints. Not required for read-only or static deploys.
-- **Optional Google Sheets:** The sheet can be the source of truth. Sync runs before build (see `docs/SHEETS_SYNC.md`). Sync writes into `public/data/database.json`; the app still reads from that file.
-- **Admin auth:** Admin users and credentials live in the JSON data (`adminUsers`). No separate auth service.
+- **Data:** The app uses the **Google Sheet** as the single source of truth. There is no static `database.json` at runtime.
+- **Data layer:** All reads go through `src/services/database.ts`, which fetches **GET /api/database**. The API (Express or Vercel serverless) reads from the Google Sheet via `server/sheet-database.js`. No fallback to a static JSON file.
+- **Express server:** `server/index.js` provides GET /api/database (sheet), POST /api/member-login, POST /api/member-register, POST /api/member-password, POST /api/profile. All directory and profile operations read/write the sheet (Real Data tab). Optional best-effort write to `public/data/database.json` after sheet writes is for local scripts only; the app never reads that file at runtime.
+- **Google Sheets:** Configure `GOOGLE_SHEETS_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_KEY` and `SPREADSHEET_ID`. See `docs/SHEETS_SYNC.md`.
+- **Admin auth:** Admin users live in the sheet (Admin Users tab). Directory (member) auth is backed by the Real Data tab (password hash per row).
 
-To switch to a real backend (e.g. Supabase), you only need to change `src/services/database.ts`: replace the fetch of `/data/database.json` with API calls to your backend. Keep the same TypeScript types and return shapes so the rest of the app stays unchanged.
+To switch to another backend (e.g. Supabase), you would change the API layer (`server/sheet-database.js`, `server/realdata-store.js`, and the Vercel `api/` handlers) to read/write your store instead of the sheet, and keep `src/services/database.ts` calling GET /api/database and the same POST endpoints so the frontend stays unchanged.
 
 ## Example: Supabase
 
 Use the same types (`Person`, `TravelWindow`, etc. from `src/types`). Example shape for a Supabase-backed `getPeople()`:
 
 ```ts
-// In database.ts, replace loadDatabase() / getPeople() with:
+// In database.ts, replace fetchDatabase() / getPeople() with:
 export async function getPeople(): Promise<Person[]> {
   const { data, error } = await supabase.from('people').select('*');
   if (error) throw error;
@@ -23,4 +23,4 @@ export async function getPeople(): Promise<Person[]> {
 }
 ```
 
-Schema and RLS ideas (tables: people, travel_windows, suggestions, admin_users) are standard; align column names with `src/types` and the existing JSON shape. Auth can stay in-app (e.g. AdminLoginModal) or move to Supabase Auth; the important part is that `database.ts` is the single place that loads people, travel windows, and suggestions.
+Schema and RLS ideas (tables: people, travel_windows, suggestions, admin_users) are standard; align column names with `src/types` and the existing sheet/JSON shape. Auth can stay in-app or move to Supabase Auth; the important part is that `database.ts` is the single place that loads people, travel windows, and suggestions.

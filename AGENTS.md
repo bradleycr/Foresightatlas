@@ -4,7 +4,7 @@
 
 ### Overview
 
-**Grantees and Fellows Map and Programming** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF) for event calendars. Data lives in a JSON file; an optional Express API server can serve/write it. Google Sheets can be the source of truth (sync before build).
+**Grantees and Fellows Map and Programming** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF) for event calendars. **The Google Sheet is the single source of truth.** The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime.
 
 ### Naming and copy
 
@@ -17,23 +17,24 @@
 
 | Service | Command | Port | Notes |
 |---|---|---|---|
-| Vite dev server (frontend) | `pnpm dev` | 3000 | Main app; add `--host 0.0.0.0` for remote access |
-| Express API server | `pnpm dev:api` | 3001 | Optional; needed only for admin write operations |
-| Both together | `pnpm dev:all` | 3000 + 3001 | Uses `concurrently` |
+| Frontend + API (local dev) | `pnpm dev` | 3000 + 3001 | **Single command:** runs Vite (3000) and Express API (3001). Proxies /api to 3001. Same behavior as production (one host, app + API). |
+| API only | `pnpm dev:api` | 3001 | Serves data from the Google Sheet. Use when you only need the API. |
+| All (with Signal) | `pnpm dev:all` | 3000 + 3001 + signal | Frontend, API, and Signal check-in poller. |
 
 ### Key caveats
 
 - **No linter or test runner configured.** No ESLint, Prettier, or test framework in `package.json`; no `lint` or `test` scripts.
-- **No external services required for basic run.** Database is `public/data/database.json`. No Docker, PostgreSQL, Redis, or API keys required to run locally.
-- **Frontend reads data statically.** `src/services/database.ts` fetches `/data/database.json`; it does **not** call the Express API. The Express server is a separate read/write API for the same file.
+- **Sheet is the only source of truth.** The app always fetches data from GET `/api/database`, which reads from the Google Sheet. Configure **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID**) so the API and app can load. No static `public/data/database.json` at runtime.
+- **Frontend.** `src/services/database.ts` fetches `/api/database` only; no JSON fallback. If the API or sheet is unavailable, the app shows the error from the API.
+- **Vercel.** Set **GOOGLE_SHEETS_API_KEY** (or service account) and **SPREADSHEET_ID** in Vercel env. The `api/database.js` serverless handler serves data from the sheet. No need for USE_SHEET_AS_DATABASE; the sheet is always used. See `docs/SHEETS_SYNC.md`.
 - **pnpm build scripts.** `@swc/core` and `esbuild` require approved build scripts via `pnpm.onlyBuiltDependencies` in `package.json`.
 - **CSS `@import` warning.** Build may emit a PostCSS warning about `@import` order; cosmetic only.
 - **Timeline view.** The Timeline tab exists but is “Coming soon” in the UI.
 - **Vite port.** Dev server runs on port **3000** (set in `vite.config.ts`), not Vite’s default 5173.
 - **Routes.** `/` = map, `/berlin` = Berlin Programming, `/sf` = SF Programming. Base-path-aware for GitHub Pages.
 - **Mobile map behavior.** On mobile, when the filtered marker set is small (≤50), the map fits the view to those markers so users don’t have to pan to find grantees or event RSVPs.
-- **Google Sheets.** Optional source of truth. See `docs/SHEETS_SYNC.md`.
-  - `pnpm sync:sheet` — Sheet → `database.json` (needs `GOOGLE_SHEETS_API_KEY`). Skips missing tabs.
-  - `pnpm migrate:sheet` — `database.json` → Sheet (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`). One-time populate.
-  - Deploy workflow runs sync before build when configured.
-- **Deploy.** **Vercel** is the primary deploy target (push to `main` → Vercel builds and deploys). **GitHub Pages** is dormant: the workflow (`.github/workflows/deploy.yml`) runs only on `workflow_dispatch` (manual from the Actions tab); re-enable push trigger if you want to use Pages again.
+- **Google Sheets.** Source of truth for people and directory auth. See `docs/SHEETS_SYNC.md`.
+  - **Runtime:** GET `/api/database` and directory login read from the sheet. No static database.json.
+  - `pnpm sync:sheet` — Sheet → `public/data/database.json` (optional backup/export; needs `GOOGLE_SHEETS_API_KEY`).
+  - `pnpm migrate:sheet` — `database.json` → Sheet (one-time populate; needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`).
+- **Deploy.** **Vercel** is the primary deploy target (push to `main` → Vercel builds and deploys). Ensure sheet credentials are set in Vercel env so the serverless API can read the sheet.

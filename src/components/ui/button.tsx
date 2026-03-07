@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-white shadow hover:shadow-lg border border-white/20",
+          "bg-primary text-primary-foreground shadow hover:shadow-md border border-gray-200",
         destructive:
-          "text-white shadow-sm hover:shadow-lg border border-white/20",
+          "bg-destructive text-white shadow-sm hover:shadow border border-red-200",
         outline:
           "border border-gray-300 bg-white shadow-sm hover:bg-gray-50 hover:shadow",
         secondary:
-          "shadow-sm hover:shadow border border-white/20",
+          "bg-secondary text-secondary-foreground shadow-sm hover:shadow border border-gray-200",
         ghost: "hover:bg-gray-100",
         link: "text-blue-600 underline-offset-4 hover:underline hover:text-blue-700",
       },
@@ -49,32 +49,11 @@ function Button(
 ) {
   const Comp = asChild ? Slot : "button";
 
-  // Define gradient styles for each variant
-  const gradientStyles: Record<string, React.CSSProperties> = {
-    default: {
-      background: 'linear-gradient(135deg, #93c5fd 0%, #a5b4fc 100%)',
-      ...style,
-    },
-    destructive: {
-      background: 'linear-gradient(135deg, #fca5a5 0%, #fbbf24 100%)',
-      ...style,
-    },
-    secondary: {
-      background: 'linear-gradient(135deg, #e9d5ff 0%, #fbcfe8 100%)',
-      ...style,
-    },
-    outline: style || {},
-    ghost: style || {},
-    link: style || {},
-  };
-
-  const appliedStyle = variant ? gradientStyles[variant] : gradientStyles.default;
-
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
-      style={appliedStyle}
+      style={style}
       {...props}
     />
   );

@@ -10,7 +10,7 @@ import { InlineFilters } from "./InlineFilters";
 import { List, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "./ui/use-mobile";
-import { ROLE_COLORS, getRoleGradient } from "../styles/roleColors";
+import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
 // @ts-ignore - Image import via alias
@@ -163,15 +163,23 @@ function MapResizer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
 }
 
 // Canonical order for segment layout so the badge always looks consistent
-const ROLE_ORDER: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+const ROLE_ORDER: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner", "Nodee"];
+type CommunityStatus = "current" | "alumni" | "mixed";
+
+function getCommunityStatus(people: Person[]): CommunityStatus {
+  const alumniCount = people.filter((person) => person.isAlumni).length;
+  if (alumniCount === 0) return "current";
+  if (alumniCount === people.length) return "alumni";
+  return "mixed";
+}
 
 /**
- * Badge background: one color for a single role type; segmented (halves or thirds)
- * for multiple types so you can see the mix at a glance.
+ * Badge background: one color for a single role type; segmented (halves, thirds,
+ * or quarters) for multiple types so you can see the mix at a glance.
  */
 const createRoleBasedBadgeBackground = (roleTypes: Set<RoleType>): string => {
   const roles = ROLE_ORDER.filter((r) => roleTypes.has(r));
-  if (roles.length === 0) return "linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%)";
+  if (roles.length === 0) return "linear-gradient(135deg, #f2dcff 0%, #d8c6f7 100%)";
   if (roles.length === 1) {
     const { start, end } = ROLE_COLORS[roles[0]];
     return `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
@@ -180,28 +188,48 @@ const createRoleBasedBadgeBackground = (roleTypes: Set<RoleType>): string => {
     const [a, b] = roles.map((r) => ROLE_COLORS[r].end);
     return `conic-gradient(from 0deg, ${a} 0deg 180deg, ${b} 180deg 360deg)`;
   }
-  // Three types: thirds
-  const [a, b, c] = roles.map((r) => ROLE_COLORS[r].end);
-  return `conic-gradient(from 0deg, ${a} 0deg 120deg, ${b} 120deg 240deg, ${c} 240deg 360deg)`;
+  if (roles.length === 3) {
+    const [a, b, c] = roles.map((r) => ROLE_COLORS[r].end);
+    return `conic-gradient(from 0deg, ${a} 0deg 120deg, ${b} 120deg 240deg, ${c} 240deg 360deg)`;
+  }
+  const [a, b, c, d] = roles.slice(0, 4).map((r) => ROLE_COLORS[r].end);
+  return `conic-gradient(from 0deg, ${a} 0deg 90deg, ${b} 90deg 180deg, ${c} 180deg 270deg, ${d} 270deg 360deg)`;
 };
 
 // Create custom icon for markers with badge (moved outside component)
 const createCustomIcon = (
   count: number,
   roleTypes: Set<RoleType>,
+  communityStatus: CommunityStatus,
   isSelected: boolean,
   foresightIcon: string
 ) => {
   const background = createRoleBasedBadgeBackground(roleTypes);
   const iconSize = isSelected ? 48 : 40;
   const badgeSize = isSelected ? 28 : 24;
+  const badgeBorder =
+    communityStatus === "current"
+      ? "#ffffff"
+      : communityStatus === "alumni"
+        ? "#cbd5e1"
+        : "#f8fafc";
+  const iconFilter =
+    communityStatus === "current"
+      ? "drop-shadow(0 6px 14px rgba(15, 23, 42, 0.22))"
+      : communityStatus === "alumni"
+        ? "grayscale(0.35) saturate(0.75) opacity(0.88) drop-shadow(0 4px 10px rgba(100, 116, 139, 0.24))"
+        : "saturate(0.92) drop-shadow(0 6px 14px rgba(15, 23, 42, 0.18))";
+  const badgeShadow =
+    communityStatus === "alumni"
+      ? "0 2px 8px rgba(100, 116, 139, 0.2)"
+      : "0 2px 8px rgba(15, 23, 42, 0.22)";
 
   const iconHtml = `
     <div style="position: relative; width: ${iconSize}px; height: ${iconSize}px;">
       <img 
         src="${foresightIcon}" 
         alt="Location" 
-        style="width: ${iconSize}px; height: ${iconSize}px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));"
+        style="width: ${iconSize}px; height: ${iconSize}px; filter: ${iconFilter};"
       />
       <div style="
         position: absolute;
@@ -211,11 +239,11 @@ const createCustomIcon = (
         height: ${badgeSize}px;
         border-radius: 50%;
         background: ${background};
-        border: 2px solid white;
+        border: 2px solid ${badgeBorder};
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: ${badgeShadow};
         font-weight: 600;
         font-size: ${isSelected ? '12px' : '10px'};
         color: #fff;
@@ -244,15 +272,26 @@ const escapeHtml = (s: string) =>
 
 /** Build popup HTML for one marker (location + list of people). */
 function buildPopupHtml(marker: MarkerData): string {
-  const cityCountry = escapeHtml(`${marker.city}, ${marker.country}`);
+  const cityCountry = escapeHtml(
+    marker.country ? `${marker.city}, ${marker.country}` : marker.city,
+  );
   const n = marker.people.length;
   const peopleWord = n === 1 ? "person" : "people";
+  const alumniCount = marker.people.filter(({ person }) => person.isAlumni).length;
+  const currentCount = n - alumniCount;
+  const statusSummary =
+    alumniCount === 0
+      ? "current ecosystem"
+      : currentCount === 0
+        ? "alumni"
+        : `${currentCount} current · ${alumniCount} alumni`;
+  const markerSummary = `${n} ${peopleWord} · ${escapeHtml(statusSummary)} — tap a name to see in list; tap profile icon for full profile`;
   const rows = marker.people
     .map(({ person, travelWindow, event }) => {
       const name = escapeHtml(person.fullName);
       const roleGradient = getRoleGradient(person.roleType);
-      const roleStyle = `background:${roleGradient};color:#374151`;
-      const alumni = person.isAlumni ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600 shrink-0">Alumni</span>' : "";
+      const roleStyle = `background:${roleGradient};color:${getRoleTextColor(person.roleType)}`;
+      const alumni = person.isAlumni ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-600 shrink-0">Alumni</span>' : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
       const focusTags = person.focusTags
         .slice(0, 3)
         .map((tag) => `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`)
@@ -280,10 +319,26 @@ function buildPopupHtml(marker: MarkerData): string {
   return `<div class="map-node-popup__inner overflow-hidden bg-white">
     <div class="map-node-popup__header px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100 shrink-0">
       <h4 class="font-semibold text-gray-900 text-sm leading-tight sm:text-base font-heading">${cityCountry}</h4>
-      <p class="text-xs text-gray-500 mt-0.5 leading-snug">${n} ${peopleWord} — tap a name to see in list; use More details for full profile</p>
+      <p class="text-xs text-gray-500 mt-0.5 leading-snug">${markerSummary}</p>
     </div>
     <div class="map-node-popup__list overflow-y-auto overscroll-contain pt-px min-h-0">${rows}</div>
   </div>`;
+}
+
+function dedupeMarkerEntries(marker: MarkerData): MarkerData {
+  const seen = new Map<string, MarkerData["people"][number]>();
+  marker.people.forEach((entry) => {
+    if (!seen.has(entry.person.id)) {
+      seen.set(entry.person.id, entry);
+    }
+  });
+
+  return {
+    ...marker,
+    people: Array.from(seen.values()).sort((a, b) =>
+      a.person.fullName.localeCompare(b.person.fullName),
+    ),
+  };
 }
 
 /**
@@ -316,7 +371,13 @@ function ImperativeMarkerClusters({
     if (markers.length === 1) {
       const marker = markers[0];
       const roleTypes = new Set<RoleType>(marker.people.map((p) => p.person.roleType));
-      const icon = createCustomIcon(marker.people.length, roleTypes, false, foresightIcon);
+      const icon = createCustomIcon(
+        marker.people.length,
+        roleTypes,
+        getCommunityStatus(marker.people.map((entry) => entry.person)),
+        false,
+        foresightIcon,
+      );
       const latLng: L.LatLngExpression = [marker.coordinates.lat, marker.coordinates.lng];
       const content = document.createElement("div");
       content.innerHTML = buildPopupHtml(marker);
@@ -392,17 +453,26 @@ function ImperativeMarkerClusters({
         });
         const count = cluster.getChildCount();
         const background = createRoleBasedBadgeBackground(allRoles);
-        const roles = ROLE_ORDER.filter((r) => allRoles.has(r));
-        // Multi-role: one circle only (gradient on outer), inner just centers the number
-        // so we don't draw the same conic-gradient twice (avoids doubled jagged edges).
-        const innerStyle =
-          roles.length >= 2
-            ? "background:transparent;color:#fff;text-shadow:0 0 1px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25)"
-            : `background:${roles.length ? ROLE_COLORS[roles[0]].end : "#6d28d9"};color:#fff;text-shadow:0 0 1px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)`;
+        const clusterPeople = cluster
+          .getAllChildMarkers()
+          .flatMap((m) => (m as MarkerWithRoles).__markerData?.people.map((entry) => entry.person) ?? []);
+        const communityStatus: CommunityStatus =
+          clusterPeople.every((person) => !person.isAlumni)
+            ? "current"
+            : clusterPeople.every((person) => person.isAlumni)
+              ? "alumni"
+              : "mixed";
         const sizeClass = count < 10 ? "small" : count < 100 ? "medium" : "large";
-        const outerStyle = `background:${background};border:2px solid white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);overflow:hidden;transform:translateZ(0)`;
+        const clusterBorder =
+          communityStatus === "current"
+            ? "#ffffff"
+            : communityStatus === "alumni"
+              ? "#cbd5e1"
+              : "#f8fafc";
+        // Single circle: role-based segments (conic gradient for multiple roles) with count centered. No inner circle.
+        const singleCircleStyle = `background:${background};border:2px solid ${clusterBorder};border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-weight:600;font-size:12px;color:#fff;text-shadow:0 0 1px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);overflow:hidden;transform:translateZ(0)`;
         return L.divIcon({
-          html: `<div class="marker-cluster-role-outer" style="${outerStyle}"><div class="marker-cluster-role-inner" style="${innerStyle};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">${count}</div></div>`,
+          html: `<div class="marker-cluster-role-outer" style="${singleCircleStyle}">${count}</div>`,
           className: `marker-cluster marker-cluster-${sizeClass} marker-cluster-role`,
           iconSize: L.point(40, 40),
           iconAnchor: L.point(20, 20),
@@ -472,7 +542,13 @@ function ImperativeMarkerClusters({
 
     markers.forEach((marker) => {
       const roleTypes = new Set<RoleType>(marker.people.map((p) => p.person.roleType));
-      const icon = createCustomIcon(marker.people.length, roleTypes, false, foresightIcon);
+      const icon = createCustomIcon(
+        marker.people.length,
+        roleTypes,
+        getCommunityStatus(marker.people.map((entry) => entry.person)),
+        false,
+        foresightIcon,
+      );
       const latLng: L.LatLngExpression = [marker.coordinates.lat, marker.coordinates.lng];
       const content = document.createElement("div");
       content.innerHTML = buildPopupHtml(marker);
@@ -573,8 +649,8 @@ export function MapView({
   
   // Cache for reverse geocoded city names (coordinates -> city, country)
   const [geocodedCities, setGeocodedCities] = useState<Map<string, { city: string; country: string }>>(new Map());
-  /** Forward-geocoded coords for people who have city+country but lat/lng missing (0,0). Key = person id. */
-  const [forwardGeocodedCoordinates, setForwardGeocodedCoordinates] = useState<Map<string, { lat: number; lng: number }>>(new Map());
+  /** Forward-geocoded location fallback for people whose stored coords are missing. Key = person id. */
+  const [forwardGeocodedCoordinates, setForwardGeocodedCoordinates] = useState<Map<string, { lat: number; lng: number; city?: string; country?: string }>>(new Map());
 
   // Keep refs to each person card so we can scroll them into view
   const personRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -721,13 +797,13 @@ export function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredPeople, filteredTravelWindows, granularity, timeWindowStart, timeWindowEnd]); // Don't include geocodedCities to avoid infinite loop
 
-  // Forward geocode: people with city+country but missing coordinates (0,0) so they still appear on the map
+  // Forward geocode: people with city but missing coordinates (0,0) so they get a pin.
+  // Update state after each successful geocode so pins appear incrementally. Do NOT include
+  // forwardGeocodedCoordinates in deps so the loop keeps running with 1.1s delay (Nominatim limit).
   useEffect(() => {
     const toGeocode = filteredPeople.filter(
       (p) =>
-        granularity === "Year" &&
         p.currentCity?.trim() &&
-        p.currentCountry?.trim() &&
         p.currentCoordinates.lat === 0 &&
         p.currentCoordinates.lng === 0 &&
         !forwardGeocodedCoordinates.has(p.id)
@@ -736,23 +812,32 @@ export function MapView({
 
     let cancelled = false;
     const run = async () => {
-      const next = new Map(forwardGeocodedCoordinates);
       for (let i = 0; i < toGeocode.length; i++) {
         if (cancelled) return;
         if (i > 0) await new Promise((r) => setTimeout(r, 1100));
         const person = toGeocode[i];
-        const result = await geocodeCity(person.currentCity, person.currentCountry);
-        if (result && !cancelled) next.set(person.id, { lat: result.lat, lng: result.lng });
-      }
-      if (!cancelled && next.size !== forwardGeocodedCoordinates.size) {
-        setForwardGeocodedCoordinates(next);
+        const result = await geocodeCity(person.currentCity, person.currentCountry || undefined);
+        if (result && !cancelled) {
+          setForwardGeocodedCoordinates((prev) => {
+            const next = new Map(prev);
+            next.set(person.id, {
+              lat: result.lat,
+              lng: result.lng,
+              city: result.city,
+              country: result.country,
+            });
+            return next;
+          });
+        }
       }
     };
     run();
     return () => { cancelled = true; };
-  }, [filteredPeople, granularity, forwardGeocodedCoordinates]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredPeople, granularity]);
 
-  // Calculate markers based on current time window and granularity
+  // Calculate markers based on current time window and granularity.
+  // Year view: anyone with currentCity gets a pin when we have coordinates (stored lat/lng or forward-geocoded from city).
   const markers = useMemo(() => {
     // Use coordinate-based keys to group markers by actual location, not city name
     // This ensures the popup shows the city where the pin actually is
@@ -762,14 +847,18 @@ export function MapView({
       // For Year view: Show current location. For Month/Week: Show where they are (trip if in range, else current location).
       if (granularity === "Year") {
         // Year view: Show current location only (or forward-geocoded location when lat/lng missing)
-        const city = person.currentCity;
-        const country = person.currentCountry;
-        if (!city || !country) return;
+        const city = person.currentCity?.trim();
+        const country = person.currentCountry?.trim();
+        if (!city) return;
 
         const rawCoords = person.currentCoordinates;
         const hasValidCoords = rawCoords.lat !== 0 || rawCoords.lng !== 0;
         const forwardCoords = forwardGeocodedCoordinates.get(person.id);
-        const coordinates = hasValidCoords ? rawCoords : forwardCoords ?? null;
+        const coordinates = hasValidCoords
+          ? rawCoords
+          : forwardCoords
+            ? { lat: forwardCoords.lat, lng: forwardCoords.lng }
+            : null;
         if (!coordinates) return;
 
         const coordKey = getCoordinateKey(coordinates);
@@ -802,7 +891,7 @@ export function MapView({
           }
         } else {
           displayCity = city;
-          displayCountry = country;
+          displayCountry = country || forwardCoords?.country || "";
         }
           
           if (!markerMap.has(coordKey)) {
@@ -888,8 +977,15 @@ export function MapView({
           });
         } else {
           // No trips in this time period, show current location
-          const coordinates = person.currentCoordinates;
-          if (coordinates.lat !== 0 && coordinates.lng !== 0) {
+          const rawCoordinates = person.currentCoordinates;
+          const hasCurrentCoordinates = rawCoordinates.lat !== 0 || rawCoordinates.lng !== 0;
+          const forwardCoords = forwardGeocodedCoordinates.get(person.id);
+          const coordinates = hasCurrentCoordinates
+            ? rawCoordinates
+            : forwardCoords
+              ? { lat: forwardCoords.lat, lng: forwardCoords.lng }
+              : null;
+          if (coordinates) {
             const coordKey = getCoordinateKey(coordinates);
             const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
             const geocoded = geocodedCities.get(geocodeKey);
@@ -922,9 +1018,9 @@ export function MapView({
                 displayCity = geocoded.city;
                 displayCountry = geocoded.country;
               }
-            } else if (person.currentCity && person.currentCountry) {
-              displayCity = person.currentCity;
-              displayCountry = person.currentCountry;
+            } else if (person.currentCity) {
+              displayCity = forwardCoords?.city || person.currentCity;
+              displayCountry = person.currentCountry || forwardCoords?.country || "";
             } else {
               return; // Skip if no location data
             }
@@ -975,7 +1071,7 @@ export function MapView({
       });
     }
 
-    return Array.from(markerMap.values());
+    return Array.from(markerMap.values()).map(dedupeMarkerEntries);
   }, [filteredPeople, filteredTravelWindows, timeWindowStart, timeWindowEnd, granularity, geocodedCities, forwardGeocodedCoordinates, events]);
 
   // Get next travel window for each person
@@ -988,10 +1084,36 @@ export function MapView({
   };
 
   // People to show in sidebar: when a location is selected, only that location; otherwise all filtered.
+  // Always sorted alphabetically by name for a consistent, scannable list.
   const sidebarPeople = useMemo(() => {
-    if (selectedMarker) return selectedMarker.people.map((p) => p.person);
-    return filteredPeople;
+    const people = selectedMarker
+      ? selectedMarker.people.map((p) => p.person)
+      : filteredPeople;
+    const deduped = new Map<string, Person>();
+    people.forEach((person) => {
+      if (!deduped.has(person.id)) deduped.set(person.id, person);
+    });
+    return Array.from(deduped.values()).sort((a, b) => a.fullName.localeCompare(b.fullName));
   }, [selectedMarker, filteredPeople]);
+
+  const peopleMissingLocationsCount = useMemo(() => {
+    return filteredPeople.filter((person) => {
+      const hasCurrentCoordinates =
+        person.currentCoordinates.lat !== 0 || person.currentCoordinates.lng !== 0;
+      const hasForwardCoordinates = forwardGeocodedCoordinates.has(person.id);
+      if (granularity === "Year") {
+        return !hasCurrentCoordinates && !hasForwardCoordinates;
+      }
+      const hasTravelCoordinates = filteredTravelWindows.some(
+        (tw) =>
+          tw.personId === person.id &&
+          new Date(tw.startDate) <= timeWindowEnd &&
+          new Date(tw.endDate) >= timeWindowStart &&
+          (tw.coordinates.lat !== 0 || tw.coordinates.lng !== 0),
+      );
+      return !hasTravelCoordinates && !hasCurrentCoordinates && !hasForwardCoordinates;
+    }).length;
+  }, [filteredPeople, filteredTravelWindows, forwardGeocodedCoordinates, granularity, timeWindowEnd, timeWindowStart]);
 
   const openSidebarAndScrollToPerson = (personId: string) => {
     setSelectedPerson(personId);
@@ -1008,7 +1130,13 @@ export function MapView({
     setSelectedPerson(null);
   };
 
-  // Shared people list: card click = highlight + scroll; "More details" = open full profile modal.
+  const selectedMarkerLabel = selectedMarker
+    ? selectedMarker.country
+      ? `${selectedMarker.city}, ${selectedMarker.country}`
+      : selectedMarker.city
+    : "";
+
+  // Shared people list: card click = highlight + scroll; profile icon = open full profile modal.
   const peopleListContent = (
     <>
       {sidebarPeople.length === 0 ? (
@@ -1035,7 +1163,7 @@ export function MapView({
                   setSelectedMarkerFromList(true);
                 }
                 const navContext = selectedMarker
-                  ? { peopleIds: sidebarPeople.map(p => p.id), label: `${selectedMarker.city}, ${selectedMarker.country}` }
+                  ? { peopleIds: sidebarPeople.map(p => p.id), label: selectedMarkerLabel }
                   : undefined;
                 onViewPersonDetails?.(person.id, navContext);
               }}
@@ -1052,8 +1180,8 @@ export function MapView({
     <div className="flex flex-col lg:flex-row h-full gap-4 relative">
       {/* Map Panel */}
       <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100">
-        {markers.length > 0 ? (
-          <MapContainer
+      {/* Map Panel — always show the map so the world view and tiles are visible; markers appear as geocoding completes */}
+        <MapContainer
             center={WORLD_VIEW_CENTER}
             zoom={WORLD_VIEW_ZOOM}
             minZoom={WORLD_VIEW_ZOOM}
@@ -1098,10 +1226,22 @@ export function MapView({
               }}
             />
           </MapContainer>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-2 px-4 text-center">
-            <p>No locations to display.</p>
-            <p className="text-sm">Try adjusting your filters or year.</p>
+
+        {/* Empty state overlay when we have people but no marker coords yet (e.g. still geocoding) or no one matches filters */}
+        {markers.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-white/90 rounded-xl">
+            <p className="text-gray-600 font-medium">
+              {filteredPeople.length === 0
+                ? "No people match your filters."
+                : "Loading locations…"}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {filteredPeople.length === 0
+                ? "Try changing search, year, or filter options."
+                : peopleMissingLocationsCount > 0
+                  ? `${peopleMissingLocationsCount} matching people still need map locations.`
+                  : "Pins will appear as locations are resolved."}
+            </p>
           </div>
         )}
 
@@ -1177,10 +1317,12 @@ export function MapView({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="text-gray-900 font-semibold truncate font-heading">
-                    {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                    {selectedMarker ? selectedMarkerLabel : "Fellows & Grantees"}
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                    {selectedMarker
+                      ? `${sidebarPeople.length} at this location`
+                      : `${filteredPeople.length} people${peopleMissingLocationsCount > 0 ? ` · ${peopleMissingLocationsCount} missing map locations` : ""}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -1220,10 +1362,12 @@ export function MapView({
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                  {selectedMarker ? `${selectedMarker.city}, ${selectedMarker.country}` : "Fellows & Grantees"}
+                  {selectedMarker ? selectedMarkerLabel : "Fellows & Grantees"}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {selectedMarker ? `${sidebarPeople.length} at this location` : `${filteredPeople.length} people`}
+                    {selectedMarker
+                      ? `${sidebarPeople.length} at this location`
+                      : `${filteredPeople.length} people${peopleMissingLocationsCount > 0 ? ` · ${peopleMissingLocationsCount} missing map locations` : ""}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Foresight Map — self-hosted Docker Compose
+#
+# Services:
+#   signal-api   signal-cli-rest-api (REST bridge to the Signal network)
+#   app          Express API + Signal check-in poller + static frontend
+#
+# Quick start:
+#   1. Copy .env.example → .env.local, fill in real values
+#   2. docker compose up -d
+#   3. Register your Signal number once (see DEPLOY.md)
+#
+# The signal-api volume persists the registered Signal identity across restarts.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  signal-api:
+    image: bbernhard/signal-cli-rest-api:latest
+    container_name: foresight-signal-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MODE=normal
+      - AUTO_RECEIVE_SCHEDULE=0 */2 * * * *
+    volumes:
+      - signal-data:/home/.local/share/signal-cli
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/about"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  app:
+    build: .
+    container_name: foresight-app
+    restart: unless-stopped
+    depends_on:
+      signal-api:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env.local
+    environment:
+      # Override SIGNAL_API_URL to point at the Docker network hostname
+      - SIGNAL_API_URL=http://signal-api:8080
+      - NODE_ENV=production
+      - PORT=3001
+      - TZ=Europe/Berlin
+
+volumes:
+  signal-data:

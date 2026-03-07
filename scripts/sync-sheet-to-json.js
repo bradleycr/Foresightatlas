@@ -21,7 +21,9 @@ const path = require("path");
 const { google } = require("googleapis");
 const {
   SHEET_NAMES,
+  REAL_DATA_TAB_NAMES,
   PEOPLE_HEADERS,
+  PEOPLE_SHEET_WIDTH,
   TRAVEL_WINDOWS_HEADERS,
   SUGGESTIONS_HEADERS,
   ADMIN_USERS_HEADERS,
@@ -42,10 +44,48 @@ function parseJsonSafe(str, fallback) {
   }
 }
 
+/** Parse focusTags: JSON array, or comma-separated string. So sheet can store either format. */
+function parseFocusTags(value) {
+  if (value == null || String(value).trim() === "") return [];
+  const s = String(value).trim();
+  const parsed = parseJsonSafe(s, null);
+  if (Array.isArray(parsed)) return parsed.map((t) => String(t).trim()).filter(Boolean);
+  return s.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+/** Sanitize cohort year: valid 1900–2100 only; anything else (blank, Excel serial, garbage) → 0 (unknown / all-time). */
+function sanitizeCohortYear(value) {
+  if (value === "" || value == null) return 0;
+  let n = parseInt(String(value), 10);
+  if (Number.isNaN(n)) return 0;
+  // Treat Excel serials and any invalid number as unknown (e.g. prize winners with 45966)
+  if (n < 1900 || n > 2100) return 0;
+  return n;
+}
+
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function buildStableMissingId(person, rowIndex) {
+  const namePart = slugify(person.fullName) || `row-${rowIndex}`;
+  const rolePart = slugify(person.roleType || "person") || "person";
+  const yearPart =
+    person.fellowshipCohortYear && person.fellowshipCohortYear > 0
+      ? String(person.fellowshipCohortYear)
+      : "unknown";
+  return `realdata-${namePart}-${rolePart}-${yearPart}`;
+}
+
 function rowToPerson(row) {
   const get = (i) => (row[i] != null ? String(row[i]).trim() : "");
   const idx = (name) => PEOPLE_HEADERS.indexOf(name);
-  const focusTags = parseJsonSafe(row[idx("focusTags")], []);
+  const focusTags = parseFocusTags(row[idx("focusTags")]);
   const lat = parseFloat(row[idx("lat")]);
   const lng = parseFloat(row[idx("lng")]);
   const fellowshipEndYearRaw = row[idx("fellowshipEndYear")];
@@ -57,7 +97,7 @@ function rowToPerson(row) {
     id: get(idx("id")) || undefined,
     fullName: get(idx("fullName")),
     roleType: get(idx("roleType")) || "Fellow",
-    fellowshipCohortYear: parseInt(row[idx("fellowshipCohortYear")], 10) || 0,
+    fellowshipCohortYear: sanitizeCohortYear(row[idx("fellowshipCohortYear")]),
     fellowshipEndYear: Number.isNaN(fellowshipEndYear) ? null : fellowshipEndYear,
     affiliationOrInstitution: get(idx("affiliationOrInstitution")) || null,
     focusTags: Array.isArray(focusTags) ? focusTags : [],
@@ -153,6 +193,33 @@ function rowsToObjects(rows, headers, rowToEntity) {
     .filter((e) => e && (e.id != null && e.id !== ""));
 }
 
+/**
+ * Parse people rows when id column may be empty (e.g. RealData tab).
+ * Missing ids are replaced with a deterministic synthetic id so row order
+ * changes do not rewrite identities.
+ */
+function rowsToPeopleAllowEmptyId(rows) {
+  if (!rows || rows.length < 2) return [];
+  const [headerRow, ...dataRows] = rows;
+  const colIndex = {};
+  PEOPLE_HEADERS.forEach((h, i) => {
+    colIndex[h] = headerRow[i] === h ? i : headerRow.findIndex((c) => String(c).trim() === h);
+  });
+  return dataRows
+    .map((row, i) => {
+      const ordered = PEOPLE_HEADERS.map((h) => row[colIndex[h]]);
+      const person = rowToPerson(ordered);
+      if (person && (person.fullName != null && person.fullName !== "")) {
+        if (!person.id || String(person.id).trim() === "") {
+          person.id = buildStableMissingId(person, i + 2);
+        }
+        return person;
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
 function rowsToRSVPs(rows) {
   if (!rows || rows.length < 2) return [];
   const [headerRow, ...dataRows] = rows;
@@ -198,15 +265,33 @@ async function main() {
 
   console.log("Fetching sheet:", SPREADSHEET_ID);
 
-  const [peopleRows, twRows, suggestionsRows, adminRows, rsvpsRows] = await Promise.all([
-    fetchSheetRange(sheets, SHEET_NAMES.PEOPLE, "A:Q"),
+  const [twRows, suggestionsRows, adminRows, rsvpsRows] = await Promise.all([
     fetchSheetRange(sheets, SHEET_NAMES.TRAVEL_WINDOWS, "A:K"),
     fetchSheetRange(sheets, SHEET_NAMES.SUGGESTIONS, "A:G"),
     fetchSheetRange(sheets, SHEET_NAMES.ADMIN_USERS, "A:D"),
     fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:G"),
   ]);
 
-  const people = rowsToObjects(peopleRows, PEOPLE_HEADERS, (row) => rowToPerson(row));
+  // Resolve Real Data tab: try each possible name (e.g. "RealData" or "Real Data") so sync works either way
+  let realDataRows = [];
+  let realDataTabUsed = null;
+  for (const tabName of REAL_DATA_TAB_NAMES) {
+    const rows = await fetchSheetRange(sheets, tabName, `A:${PEOPLE_SHEET_WIDTH}`);
+    if (rows && rows.length >= 2) {
+      realDataRows = rows;
+      realDataTabUsed = tabName;
+      break;
+    }
+  }
+
+  if (realDataTabUsed) {
+    console.log(`Using '${realDataTabUsed}' for people (${realDataRows.length - 1} rows).`);
+  } else {
+    console.log("RealData tab not found or empty; keeping existing public/data/database.json.");
+    return;
+  }
+
+  const people = rowsToPeopleAllowEmptyId(realDataRows);
   const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) =>
     rowToTravelWindow(row)
   );
@@ -226,10 +311,9 @@ async function main() {
     rsvps,
   };
 
-  // Fallback: if sheet has no people, don't overwrite — keep committed JSON so deploy has data
   if (people.length === 0) {
     console.log(
-      "Sheet has no people (empty or missing People tab); keeping existing public/data/database.json."
+      "RealData has no people; keeping existing public/data/database.json."
     );
     return;
   }

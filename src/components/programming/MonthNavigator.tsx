@@ -2,7 +2,7 @@
  * MonthNavigator — compact 6×2 grid of month cells.
  *
  * The selected / current-month accent is driven entirely by the per-node
- * NodeColorTheme so Berlin gets its violet–rose palette and SF gets its
+ * NodeColorTheme so Berlin gets its indigo–rose palette and SF gets its
  * amber–sky palette — matching the pastel gradient language of the map
  * sidebar and detail cards.
  */

@@ -33,7 +33,7 @@ const FOCUS_AREAS = [
   "Other",
 ];
 
-const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+const PROGRAMS: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner", "Nodee"];
 
 export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCount, expanded: controlledExpanded, onExpandedChange }: InlineFiltersProps) {
   const [internalExpanded, setInternalExpanded] = useState(false);
@@ -64,7 +64,11 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
     }
   };
 
-  const activeCount = filters.programs.length + filters.focusTags.length + (filters.year !== defaultYear ? 1 : 0);
+  const activeCount =
+    filters.programs.length +
+    filters.focusTags.length +
+    (filters.year !== null ? 1 : 0) +
+    (filters.showAlumni ? 0 : 1);
 
   return (
     <div className="inline-filters space-y-3">
@@ -132,10 +136,27 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
             ))}
           </QuickRow>
 
+          <QuickRow label="Community">
+            <TogglePill
+              active={filters.showAlumni}
+              activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
+              onClick={() => onFiltersChange({ ...filters, showAlumni: true })}
+            >
+              Current + alumni
+            </TogglePill>
+            <TogglePill
+              active={!filters.showAlumni}
+              activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
+              onClick={() => onFiltersChange({ ...filters, showAlumni: false })}
+            >
+              Current only
+            </TogglePill>
+          </QuickRow>
+
           {/* Year */}
-          <QuickRow label="Year">
+          <QuickRow label="Active in year">
             <TogglePill active={filters.year === null} activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => setYear(null)}>
-              All
+              Any year
             </TogglePill>
             {years.map((y) => (
               <TogglePill key={y} active={filters.year === y} activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => setYear(y)}>

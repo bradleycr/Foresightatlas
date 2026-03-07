@@ -211,7 +211,7 @@ export function ProgrammingTimeline({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              className="rounded-lg border border-input bg-input-background px-3 py-2 text-sm text-gray-700 shadow-sm transition-[border-color,box-shadow] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               {eventTypes.map((t) => (
                 <option key={t} value={t}>
