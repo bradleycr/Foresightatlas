@@ -46,6 +46,7 @@ import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel } from "../utils/cohortLabel";
+import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
 import { 
@@ -598,27 +599,72 @@ export function PersonDetailModal({
                         {displayPerson.roleType}
                       </span>
                       <span className="person-detail-pill person-detail-pill-muted">Cohort {getCohortLabel(displayPerson)}</span>
-                      {displayPerson.isAlumni && <Badge variant="secondary" className="person-detail-badge-pill text-xs">Alumni</Badge>}
+                      {displayPerson.isAlumni && <Badge variant="secondary" className="person-detail-badge-pill text-xs bg-slate-200/90 text-slate-700 border-slate-300/80">Alumni</Badge>}
                     </>
                   )}
                 </div>
                 {isEditing && editingPerson ? (
-                  <div className="mt-4">
-                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Focus tags (comma-separated; spaces within a tag are kept)</Label>
-                    <Input
-                      value={editingPerson.focusTags.join(", ")}
-                      onChange={(e) => setEditingPerson({ ...editingPerson, focusTags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
-                      placeholder="e.g. Longevity Biotechnology, Secure AI"
-                    />
-                  </div>
-                ) : (
-                  displayPerson.focusTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 sm:gap-2.5 mt-3 sm:mt-4">
-                      {displayPerson.focusTags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal">{tag}</Badge>
+                  <div className="mt-4 space-y-3">
+                    <Label className="text-sm font-medium text-gray-700 block">Focus areas</Label>
+                    <p className="text-xs text-gray-500 mb-2">Main areas are used for map filtering; custom ones appear on your profile only.</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-2">
+                      {PRESET_FOCUS_AREAS.map((tag) => (
+                        <label
+                          key={tag}
+                          className="flex min-h-[44px] touch-manipulation cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 has-[:checked]:border-teal-400 has-[:checked]:bg-teal-50 has-[:checked]:text-teal-800 sm:min-h-0"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editingPerson.focusTags.includes(tag)}
+                            onChange={() => {
+                              const preset = getPresetFocusTags(editingPerson.focusTags);
+                              const custom = getCustomFocusTags(editingPerson.focusTags);
+                              const next = preset.includes(tag)
+                                ? preset.filter((t) => t !== tag)
+                                : [...preset, tag];
+                              setEditingPerson({ ...editingPerson, focusTags: [...next, ...custom] });
+                            }}
+                            className="size-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span>{tag}</span>
+                        </label>
                       ))}
                     </div>
-                  )
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
+                      <Input
+                        value={getCustomFocusTags(editingPerson.focusTags).join(", ")}
+                        onChange={(e) => {
+                          const preset = getPresetFocusTags(editingPerson.focusTags);
+                          const custom = parseFocusTags(e.target.value);
+                          setEditingPerson({ ...editingPerson, focusTags: [...preset, ...custom] });
+                        }}
+                        placeholder="e.g. Quantum computing, Policy"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  (() => {
+                    const presetTags = getPresetFocusTags(displayPerson.focusTags);
+                    const customTags = getCustomFocusTags(displayPerson.focusTags);
+                    if (presetTags.length === 0 && customTags.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-2 sm:gap-2.5 mt-3 sm:mt-4">
+                        {presetTags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal">{tag}</Badge>
+                        ))}
+                        {customTags.length > 0 && (
+                          <>
+                            <Badge variant="outline" className="person-detail-badge-pill text-xs font-normal text-gray-600 border-gray-300">Other</Badge>
+                            {customTags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal bg-gray-100 text-gray-700">{tag}</Badge>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()
                 )}
               </header>
 

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Menu, X, LogOut, User, UserCircle2 } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
+import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import type { Identity } from "../services/identity";
 import type { Person } from "../types";
@@ -47,7 +48,8 @@ export function AppHeader({
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf";
   const isProfileRoute = route === "/profile";
-  const subtext = "A tool to help you connect to other grantees, fellows and nodees";
+  const appTitle = "Map · Programming · Nodes";
+  const subtext = "Connect with grantees, fellows and nodees";
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -122,7 +124,7 @@ export function AppHeader({
             </button>
             <div className="border-l border-gray-300 pl-3 md:pl-4 min-w-0">
               <h1 className="text-gray-900 text-sm md:text-xl font-heading truncate">
-                Grantees and Fellows Map and Programming
+                {appTitle}
               </h1>
               <p className="text-xs md:text-sm text-gray-600 truncate">
                 {subtext}
@@ -208,7 +210,7 @@ export function AppHeader({
               type="button"
               onClick={handleAccountButtonClick}
               className={identity
-                ? "size-11 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 transition-all flex-shrink-0 touch-manipulation"
+                ? "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-cyan-100 to-emerald-100 text-sky-700 ring-1 ring-gray-200/80 text-xs font-bold transition-all hover:from-cyan-200 hover:to-emerald-200 hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 touch-manipulation"
                 : "inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
               }
               title={identity?.fullName ?? "Sign in to your profile"}
@@ -217,7 +219,10 @@ export function AppHeader({
               aria-expanded={accountDialogOpen}
             >
               {identity ? (
-                identityInitials
+                <>
+                  <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-1.5 opacity-20" aria-hidden />
+                  <span className="relative z-10">{identityInitials}</span>
+                </>
               ) : (
                 <>
                   <UserCircle2 className="size-4" />
@@ -233,14 +238,21 @@ export function AppHeader({
               type="button"
               onClick={handleAccountButtonClick}
               className={identity
-                ? "size-11 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 transition-all touch-manipulation"
+                ? "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-cyan-100 to-emerald-100 ring-1 ring-gray-200/80 transition-all hover:from-cyan-200 hover:to-emerald-200 hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 touch-manipulation"
                 : "min-w-[44px] min-h-[44px] rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-50 flex items-center justify-center"
               }
               aria-label={identity ? "Open account menu" : "Sign in to your profile"}
               aria-haspopup="dialog"
               aria-expanded={accountDialogOpen}
             >
-              {identity ? identityInitials : <UserCircle2 className="size-5" />}
+              {identity ? (
+                <>
+                  <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-1.5 opacity-20" aria-hidden />
+                  <span className="relative z-10 text-xs font-bold text-sky-700">{identityInitials}</span>
+                </>
+              ) : (
+                <UserCircle2 className="size-5" />
+              )}
             </button>
             <button
               type="button"
@@ -300,11 +312,9 @@ export function AppHeader({
               {identity ? (
                 <div className="p-6 sm:p-7">
                   <div className="flex flex-col items-center text-center">
-                    <div
-                      className="flex items-center justify-center text-base font-semibold"
-                      style={{ width: "3.5rem", height: "3.5rem", borderRadius: "1rem", background: "#ede9fe", color: "#6d28d9" }}
-                    >
-                      {identityInitials}
+                    <div className="relative flex size-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200/80 sm:size-16">
+                      <img src={foresightIcon} alt="" className="absolute inset-0 size-full object-contain p-2 opacity-25" aria-hidden />
+                      <span className="relative z-10 text-base font-semibold text-sky-700 sm:text-lg">{identityInitials}</span>
                     </div>
                     <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900">
                       {identity.fullName}
@@ -323,7 +333,7 @@ export function AppHeader({
                         closeAccountDialog();
                         onOpenProfile();
                       }}
-                      className="min-h-[44px] w-full"
+                      className="min-h-[44px] w-full border-0 bg-gradient-to-r from-cyan-100 to-emerald-100 text-gray-900 shadow-sm hover:from-cyan-200 hover:to-emerald-200"
                     >
                       <User className="size-4" />
                       View profile
@@ -489,10 +499,11 @@ export function AppHeader({
 
               {/* Mobile identity strip */}
               {identity && (
-                <div className="mx-3 mt-4 mb-2 p-4 rounded-xl bg-sky-50 border border-sky-100">
+                <div className="mx-3 mt-4 mb-2 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-emerald-50 border border-sky-100">
                   <div className="flex items-start gap-3">
-                    <div className="size-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                      {identityInitials}
+                    <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-gray-200/80">
+                      <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-1 opacity-20" aria-hidden />
+                      <span className="relative z-10 text-sm font-bold text-sky-700">{identityInitials}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">

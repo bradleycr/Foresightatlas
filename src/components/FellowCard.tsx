@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, Calendar, UserCircle } from "lucide-react";
+import { MapPin, Calendar, UserCircle, Ticket } from "lucide-react";
 import { Person, TravelWindow } from "../types";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -8,9 +8,18 @@ import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel } from "../utils/cohortLabel";
 
+/** Compact event reference for "Attending" line on the card. */
+export interface AttendingEvent {
+  id: string;
+  title: string;
+  startAt: string;
+}
+
 interface FellowCardProps {
   person: Person;
   nextTravel?: TravelWindow;
+  /** Events this person is attending (going RSVPs) — shown on the card. */
+  attendingEvents?: AttendingEvent[];
   /** Called when the profile icon is clicked — opens the full details modal. */
   onSelect?: () => void;
   /** Optional: when card body is clicked (not "More details"), highlight + scroll only; if not set, card click uses onSelect. */
@@ -21,6 +30,7 @@ interface FellowCardProps {
 export function FellowCard({
   person,
   nextTravel,
+  attendingEvents,
   onSelect,
   onHighlight,
   isHighlighted,
@@ -70,7 +80,7 @@ export function FellowCard({
                 {person.roleType}
               </span>
               {person.isAlumni && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs bg-slate-200/90 text-slate-700 border-slate-300/80 hover:bg-slate-200">
                   Alumni
                 </Badge>
               )}
@@ -149,6 +159,23 @@ export function FellowCard({
                 </p>
                 <p className="text-xs text-gray-600">
                   {formatDateRange(nextTravel.startDate, nextTravel.endDate)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Attending — Vision Weekends, workshops, node events */}
+        {attendingEvents && attendingEvents.length > 0 && (
+          <div className="pt-3 border-t border-gray-200">
+            <div className="flex items-start gap-2 text-sm">
+              <Ticket className="size-4 text-teal-500 mt-0.5 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-500 mb-1">Attending</p>
+                <p className="text-gray-700">
+                  {attendingEvents.length <= 2
+                    ? attendingEvents.map((e) => e.title).join(", ")
+                    : `${attendingEvents.slice(0, 2).map((e) => e.title).join(", ")} +${attendingEvents.length - 2} more`}
                 </p>
               </div>
             </div>

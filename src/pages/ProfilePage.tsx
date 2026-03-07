@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, KeyRound, Loader2, Link2, LogOut, MapPin, Save, Sparkles, User, UserPlus, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, Link2, LogOut, Save, Sparkles, User, UserPlus, CheckCircle, AlertCircle, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { createPerson, updatePerson } from "../services/database";
 import { changeDirectoryPassword } from "../services/memberAuth";
 import { geocodeCity } from "../services/geocoding";
 import type { Person, PrimaryNode, RoleType } from "../types";
+import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
+import { getPersonRSVPs } from "../services/rsvp";
+import { fetchRSVPsFromAPI } from "../services/rsvp";
+import { getEventById } from "../data/events";
+import { getNode } from "../data/nodes";
+import { buildFullPath } from "../utils/router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
+// Foresight pin icon (same as map markers)
+import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import {
   Select,
   SelectContent,
@@ -46,11 +54,6 @@ const COHORT_YEAR_OPTIONS: number[] = (() => {
   for (let y = 2017; y <= current; y++) years.push(y);
   return years;
 })();
-
-/** Parse focus-tags string: split on comma, trim each part, drop empties. Spaces within a tag are kept. */
-function parseFocusTags(value: string): string[] {
-  return value.split(",").map((t) => t.trim()).filter(Boolean);
-}
 
 /** Blank person for the "Add yourself" create flow. */
 const EMPTY_PERSON: Person = {
@@ -125,15 +128,20 @@ export function ProfilePage({
   });
   /** For create mode: password and confirm. */
   const [createPassword, setCreatePassword] = useState({ password: "", confirm: "" });
-  /** Raw focus-tags string so users can type commas and spaces without them disappearing. */
-  const [createFocusTagsStr, setCreateFocusTagsStr] = useState("");
+  /** Selected preset focus areas (used for map filtering). */
+  const [createSelectedPresets, setCreateSelectedPresets] = useState<string[]>([]);
+  /** Custom focus tags (profile-only; comma-separated). */
+  const [createCustomFocusStr, setCreateCustomFocusStr] = useState("");
   /** Same for edit form. */
-  const [editFocusTagsStr, setEditFocusTagsStr] = useState("");
+  const [editSelectedPresets, setEditSelectedPresets] = useState<string[]>([]);
+  const [editCustomFocusStr, setEditCustomFocusStr] = useState("");
   /** Live geocode feedback so people can fix city/country before saving. */
   const [locationCheck, setLocationCheck] = useState<LocationCheckState>({
     status: "idle",
     message: "",
   });
+  /** Tick to refresh "Events I'm attending" after RSVP fetch (e.g. on profile load). */
+  const [rsvpTick, setRsvpTick] = useState(0);
 
   useEffect(() => {
     if (createMode && !identity) return;
@@ -147,22 +155,27 @@ export function ProfilePage({
     }
   }, [createMode, identity, draft]);
 
-  /** Sync create-form focus-tags string from draft when entering create mode or draft tags change from elsewhere. */
+  /** Sync create-form focus from draft when entering create mode or draft tags change. */
   useEffect(() => {
     if (createMode && !identity && draft) {
-      setCreateFocusTagsStr((prev) => {
-        const fromDraft = draft.focusTags.join(", ");
-        return fromDraft === prev ? prev : fromDraft;
-      });
+      setCreateSelectedPresets(getPresetFocusTags(draft.focusTags));
+      setCreateCustomFocusStr(getCustomFocusTags(draft.focusTags).join(", "));
     }
   }, [createMode, identity, draft?.focusTags]);
 
-  /** Sync edit-form focus-tags string from draft when in edit mode. */
+  /** Sync edit-form focus from draft when in edit mode. */
   useEffect(() => {
     if (identity && draft && !createMode) {
-      setEditFocusTagsStr(draft.focusTags.join(", "));
+      setEditSelectedPresets(getPresetFocusTags(draft.focusTags));
+      setEditCustomFocusStr(getCustomFocusTags(draft.focusTags).join(", "));
     }
   }, [identity, createMode, draft?.id, draft?.focusTags]);
+
+  /** Fetch RSVPs when viewing profile so "Events I'm attending" is up to date. */
+  useEffect(() => {
+    if (!identity?.personId) return;
+    fetchRSVPsFromAPI().then(() => setRsvpTick((t) => t + 1));
+  }, [identity?.personId]);
 
   /**
    * Validate the map location as the user types.
@@ -254,7 +267,7 @@ export function ProfilePage({
         try {
           const payload = {
             ...createDraft,
-            focusTags: parseFocusTags(createFocusTagsStr),
+            focusTags: [...createSelectedPresets, ...parseFocusTags(createCustomFocusStr)],
           };
           const result = await createPerson(payload, createPassword.password);
           onProfileSaved(result.person, result.auth);
@@ -283,9 +296,12 @@ export function ProfilePage({
           </button>
 
           <section className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow">
-            <div className="border-b border-gray-200/80 bg-[linear-gradient(135deg,rgba(250,250,255,0.98),rgba(248,250,252,0.98))] px-6 py-8 sm:px-8">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
-                <UserPlus className="size-6" />
+            <div
+              className="border-b border-gray-200/80 px-6 py-8 sm:px-8"
+              style={{ background: `linear-gradient(135deg, ${"#f0f9ff"} 0%, ${"#ecfdf5"} 50%, ${"#faf5ff"} 100%)` }}
+            >
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80">
+                <img src={foresightIconUrl} alt="" className="size-8 object-contain opacity-30" aria-hidden />
               </div>
               <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900">
                 Add yourself to the directory
@@ -401,17 +417,43 @@ export function ProfilePage({
                 </div>
                 <LocationCheckNotice state={locationCheck} />
                 <Field
-                  label="Focus tags"
-                  description="Separate with commas; spaces within a tag are kept (e.g. Longevity Biotechnology, Secure AI)."
+                  label="Focus areas"
+                  description="Select one or more main focus areas (used for map filtering). You can add custom areas under Other."
                 >
-                  <Input
-                    value={createFocusTagsStr}
-                    onChange={(e) => setCreateFocusTagsStr(e.target.value)}
-                    onBlur={() =>
-                      updateCreateDraft("focusTags", parseFocusTags(createFocusTagsStr))
-                    }
-                    placeholder="Longevity Biotechnology, Secure AI, Neurotechnology"
-                  />
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-y-3">
+                      {PRESET_FOCUS_AREAS.map((tag) => (
+                        <label
+                          key={tag}
+                          className="flex min-h-[44px] touch-manipulation cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50 has-[:checked]:border-sky-400 has-[:checked]:bg-sky-50 has-[:checked]:text-sky-800 sm:min-h-0"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={createSelectedPresets.includes(tag)}
+                            onChange={() =>
+                              setCreateSelectedPresets((prev) =>
+                                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                              )
+                            }
+                            className="size-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                          />
+                          <span>{tag}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Custom focus areas appear on your profile but are not used for map filtering.
+                      </p>
+                      <Input
+                        value={createCustomFocusStr}
+                        onChange={(e) => setCreateCustomFocusStr(e.target.value)}
+                        placeholder="e.g. Quantum computing, Policy"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
                 </Field>
               </ProfileSection>
 
@@ -606,7 +648,7 @@ export function ProfilePage({
     try {
       const payload = {
         ...draft,
-        focusTags: parseFocusTags(editFocusTagsStr),
+        focusTags: [...editSelectedPresets, ...parseFocusTags(editCustomFocusStr)],
       };
       const result = await updatePerson(draft.id, payload, identity.token);
       setDraft(result.person);
@@ -680,10 +722,15 @@ export function ProfilePage({
 
         <section className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow">
           {/* Header: identity only, no actions */}
-          <div className="border-b border-gray-200/80 bg-[linear-gradient(135deg,rgba(250,250,255,0.98),rgba(248,250,252,0.98))] px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
+          {/* Header: Foresight icon + initials, then name */}
+          <div
+            className="border-b border-gray-200/80 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            style={{ background: `linear-gradient(135deg, ${"#f0f9ff"} 0%, ${"#ecfdf5"} 50%, ${"#faf5ff"} 100%)` }}
+          >
             <div className="flex min-w-0 items-start gap-4 sm:gap-5">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-base font-semibold text-sky-700 sm:size-16">
-                {initials}
+              <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16">
+                <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-2 opacity-20" aria-hidden />
+                <span className="relative z-10 text-base font-semibold text-sky-700 sm:text-lg">{initials}</span>
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-sky-600/90 sm:text-sm">
@@ -811,19 +858,59 @@ export function ProfilePage({
                 </div>
 
                 <Field
-                  label="Focus tags"
-                  description="Separate with commas; spaces within a tag are kept (e.g. Longevity Biotechnology, Secure AI)."
+                  label="Focus areas"
+                  description="Select one or more main focus areas (used for map filtering). You can add custom areas under Other."
                 >
-                  <Input
-                    value={editFocusTagsStr}
-                    onChange={(e) => setEditFocusTagsStr(e.target.value)}
-                    onBlur={() =>
-                      updateDraft("focusTags", parseFocusTags(editFocusTagsStr))
-                    }
-                    placeholder="Longevity Biotechnology, Secure AI, Neurotechnology"
-                  />
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-y-3">
+                      {PRESET_FOCUS_AREAS.map((tag) => (
+                        <label
+                          key={tag}
+                          className="flex min-h-[44px] touch-manipulation cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50 has-[:checked]:border-sky-400 has-[:checked]:bg-sky-50 has-[:checked]:text-sky-800 sm:min-h-0"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editSelectedPresets.includes(tag)}
+                            onChange={() =>
+                              setEditSelectedPresets((prev) =>
+                                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                              )
+                            }
+                            className="size-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                          />
+                          <span>{tag}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Custom focus areas appear on your profile but are not used for map filtering.
+                      </p>
+                      <Input
+                        value={editCustomFocusStr}
+                        onChange={(e) => setEditCustomFocusStr(e.target.value)}
+                        placeholder="e.g. Quantum computing, Policy"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
                 </Field>
               </ProfileSection>
+
+              {/* Events I'm attending — reflects RSVPs from programming page; link to manage. */}
+              {identity?.personId && (
+                <ProfileSection
+                  title="Events I'm attending"
+                  description="Vision Weekends, workshops, and node events you've said you're attending. Manage on Berlin or SF Programming."
+                  icon={<CalendarDays className="size-4 text-sky-500" />}
+                >
+                  <ProfileEventsAttending
+                    personId={identity.personId}
+                    rsvpTick={rsvpTick}
+                  />
+                </ProfileSection>
+              )}
 
               <ProfileSection
                 title="Project and public presence"
@@ -857,7 +944,7 @@ export function ProfilePage({
               <ProfileSection
                 title="Location and map"
                 description="Add a precise city and country so your map pin lands in the right place."
-                icon={<MapPin className="size-4 text-sky-500" />}
+                icon={<img src={foresightIconUrl} alt="" className="size-4 object-contain opacity-90" aria-hidden />}
               >
                 <Field
                   label="City"
@@ -996,17 +1083,6 @@ export function ProfilePage({
                   />
                 </Field>
               </ProfileSection>
-
-              <section className="rounded-2xl border border-sky-100/80 bg-sky-50/50 p-4 text-sm leading-5 break-words sm:p-5">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-sky-700/80">
-                  Sync notes
-                </h2>
-                <ul className="mt-2 space-y-1.5 text-sky-900/70">
-                  <li>Card and map update in this session after save.</li>
-                  <li>Your profile saves back to the canonical RealData row.</li>
-                  <li>City-based coordinates are refreshed on the backend when possible.</li>
-                </ul>
-              </section>
             </section>
           </div>
 
@@ -1089,6 +1165,85 @@ function ProfileSection({
       </div>
       <div className="mt-5 space-y-4 sm:mt-6">{children}</div>
     </section>
+  );
+}
+
+/** Lists events the user is attending (going RSVPs) and links to programming to manage. */
+function ProfileEventsAttending({
+  personId,
+  rsvpTick,
+}: {
+  personId: string;
+  rsvpTick: number;
+}) {
+  void rsvpTick; // refresh when RSVPs are re-fetched
+  const attending = useMemo(() => {
+    const rsvps = getPersonRSVPs(personId).filter((r) => r.status === "going");
+    return rsvps
+      .map((r) => getEventById(r.eventId))
+      .filter((e): e is NonNullable<typeof e> => e != null)
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }, [personId, rsvpTick]);
+
+  if (attending.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-600">
+        <p>You haven&apos;t said you&apos;re attending any events yet.</p>
+        <p className="mt-2">
+          Visit{" "}
+          <a
+            href={buildFullPath("berlin")}
+            className="font-medium text-sky-600 underline hover:text-sky-700"
+          >
+            Berlin Programming
+          </a>{" "}
+          or{" "}
+          <a
+            href={buildFullPath("sf")}
+            className="font-medium text-sky-600 underline hover:text-sky-700"
+          >
+            SF Programming
+          </a>{" "}
+          to RSVP to Vision Weekends, workshops, and node events. It&apos;ll show here and on your profile card.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <ul className="space-y-2">
+        {attending.map((event) => {
+          const node = getNode(event.nodeSlug);
+          const nodeLabel = node ? `${node.city}` : event.location;
+          const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          const programPath = event.nodeSlug === "berlin" ? "berlin" : "sf";
+          return (
+            <li key={event.id}>
+              <a
+                href={buildFullPath(programPath)}
+                className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-sky-200 hover:bg-sky-50/80"
+              >
+                <span className="font-medium text-gray-900">{event.title}</span>
+                <span className="text-gray-500">
+                  {dateStr} · {nodeLabel}
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="text-xs text-gray-500">
+        To change attendance, go to{" "}
+        <a href={buildFullPath("berlin")} className="text-sky-600 underline hover:text-sky-700">Berlin</a>
+        {" or "}
+        <a href={buildFullPath("sf")} className="text-sky-600 underline hover:text-sky-700">SF Programming</a>.
+      </p>
+    </div>
   );
 }
 

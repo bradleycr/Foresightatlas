@@ -18,6 +18,7 @@ import { getRoleGradient } from "../styles/roleColors";
 import { activeMultiGradient, badgeGradient, gradientVariant1 } from "../styles/gradients";
 import { Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { getNodeLabel } from "../utils/nodeLabels";
+import { PRESET_FOCUS_AREAS } from "../data/focusAreas";
 
 interface FiltersBarProps {
   filters: Filters;
@@ -27,15 +28,7 @@ interface FiltersBarProps {
   activeTab: "map" | "timeline";
 }
 
-const FOCUS_AREAS = [
-  "Secure AI",
-  "Neurotechnology",
-  "Longevity Biotechnology",
-  "Nanotechnology",
-  "Space",
-  "Existential Hope",
-  "Other",
-];
+const FOCUS_AREAS = [...PRESET_FOCUS_AREAS];
 
 const PROGRAMS: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner", "Nodee"];
 const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node"];
@@ -110,7 +103,7 @@ export function FiltersBar({
       focusTags: [],
       nodes: [],
       cities: [],
-      showAlumni: true,
+      communityFilter: "all",
       year: null,
       granularity: "Year",
       referenceDate: new Date().toISOString(),
@@ -123,7 +116,7 @@ export function FiltersBar({
     filters.focusTags.length > 0 ||
     filters.nodes.length > 0 ||
     filters.cities.length > 0 ||
-    !filters.showAlumni ||
+    filters.communityFilter !== "all" ||
     filters.year !== null;
 
   // Count active non-search filters for badge
@@ -133,7 +126,7 @@ export function FiltersBar({
     filters.nodes.length +
     filters.cities.length +
     (filters.year !== null ? 1 : 0) +
-    (filters.showAlumni ? 0 : 1);
+    (filters.communityFilter !== "all" ? 1 : 0);
 
   return (
     <div className="border-b border-gray-200 bg-white relative">
@@ -217,13 +210,16 @@ export function FiltersBar({
               ))}
             </FilterSection>
 
-            {/* Year */}
+            {/* Community: current / alumni / all */}
             <FilterSection label="Community">
-              <ToggleBadge active={filters.showAlumni} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, showAlumni: true })}>
-                Current + alumni
+              <ToggleBadge active={filters.communityFilter === "all"} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, communityFilter: "all" })}>
+                All
               </ToggleBadge>
-              <ToggleBadge active={!filters.showAlumni} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, showAlumni: false })}>
+              <ToggleBadge active={filters.communityFilter === "current"} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, communityFilter: "current" })}>
                 Current only
+              </ToggleBadge>
+              <ToggleBadge active={filters.communityFilter === "alumni"} activeStyle={{ background: activeToggleGradient, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => onFiltersChange({ ...filters, communityFilter: "alumni" })}>
+                Alumni only
               </ToggleBadge>
             </FilterSection>
 

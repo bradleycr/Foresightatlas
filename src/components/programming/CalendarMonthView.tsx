@@ -36,6 +36,7 @@ const TYPE_DOT_COLOR: Record<EventType | string, string> = {
   demo:         "bg-orange-500",
   social:       "bg-pink-500",
   flagship:     "bg-rose-500",
+  "vision-weekend": "bg-violet-500",
   other:        "bg-gray-400",
 };
 
@@ -48,6 +49,7 @@ const TYPE_CHIP_STYLE: Record<EventType | string, { bg: string; text: string; bo
   demo:         { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
   social:       { bg: "bg-pink-50",   text: "text-pink-700",   border: "border-pink-200" },
   flagship:     { bg: "bg-rose-50",   text: "text-rose-700",   border: "border-rose-200" },
+  "vision-weekend": { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
   other:        { bg: "bg-gray-50",   text: "text-gray-600",   border: "border-gray-200" },
 };
 

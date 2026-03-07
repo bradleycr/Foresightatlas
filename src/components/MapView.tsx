@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L, { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
 import { getPersonRSVPs } from "../services/rsvp";
 import { getNode } from "../data/nodes";
-import { FellowCard } from "./FellowCard";
+import { FellowCard, type AttendingEvent } from "./FellowCard";
 import { InlineFilters } from "./InlineFilters";
 import { List, X } from "lucide-react";
 import { Button } from "./ui/button";
@@ -291,7 +291,7 @@ function buildPopupHtml(marker: MarkerData): string {
       const name = escapeHtml(person.fullName);
       const roleGradient = getRoleGradient(person.roleType);
       const roleStyle = `background:${roleGradient};color:${getRoleTextColor(person.roleType)}`;
-      const alumni = person.isAlumni ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-600 shrink-0">Alumni</span>' : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
+      const alumni = person.isAlumni ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-slate-200 text-slate-700 shrink-0">Alumni</span>' : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
       const focusTags = person.focusTags
         .slice(0, 3)
         .map((tag) => `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`)
@@ -1083,6 +1083,20 @@ export function MapView({
     return personWindows.find((tw) => new Date(tw.startDate) >= new Date());
   };
 
+  /** Events this person is attending (going RSVPs) for the card. */
+  const getAttendingEvents = useCallback(
+    (personId: string): AttendingEvent[] => {
+      if (!events?.length) return [];
+      return getPersonRSVPs(personId)
+        .filter((r) => r.status === "going")
+        .map((r) => events!.find((e) => e.id === r.eventId))
+        .filter((e): e is NodeEvent => e != null)
+        .map((e) => ({ id: e.id, title: e.title, startAt: e.startAt }))
+        .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    },
+    [events],
+  );
+
   // People to show in sidebar: when a location is selected, only that location; otherwise all filtered.
   // Always sorted alphabetically by name for a consistent, scannable list.
   const sidebarPeople = useMemo(() => {
@@ -1156,6 +1170,7 @@ export function MapView({
             <FellowCard
               person={person}
               nextTravel={getNextTravel(person.id)}
+              attendingEvents={getAttendingEvents(person.id)}
               onSelect={() => {
                 const personMarker = markers.find((m) => m.people.some((p) => p.person.id === person.id));
                 if (personMarker) {

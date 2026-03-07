@@ -65,7 +65,8 @@ export interface Filters {
   focusTags: string[];
   nodes: PrimaryNode[];
   cities: string[]; // Selected cities to filter by
-  showAlumni: boolean;
+  /** "all" = current + alumni; "current" = current only; "alumni" = alumni only */
+  communityFilter: "all" | "current" | "alumni";
   year: number | null; // null means "All time"
   granularity: Granularity;
   /**

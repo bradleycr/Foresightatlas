@@ -68,7 +68,7 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
     filters.programs.length +
     filters.focusTags.length +
     (filters.year !== null ? 1 : 0) +
-    (filters.showAlumni ? 0 : 1);
+    (filters.communityFilter !== "all" ? 1 : 0);
 
   return (
     <div className="inline-filters space-y-3">
@@ -138,18 +138,25 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
 
           <QuickRow label="Community">
             <TogglePill
-              active={filters.showAlumni}
+              active={filters.communityFilter === "all"}
               activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
-              onClick={() => onFiltersChange({ ...filters, showAlumni: true })}
+              onClick={() => onFiltersChange({ ...filters, communityFilter: "all" })}
             >
-              Current + alumni
+              All
             </TogglePill>
             <TogglePill
-              active={!filters.showAlumni}
+              active={filters.communityFilter === "current"}
               activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
-              onClick={() => onFiltersChange({ ...filters, showAlumni: false })}
+              onClick={() => onFiltersChange({ ...filters, communityFilter: "current" })}
             >
               Current only
+            </TogglePill>
+            <TogglePill
+              active={filters.communityFilter === "alumni"}
+              activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
+              onClick={() => onFiltersChange({ ...filters, communityFilter: "alumni" })}
+            >
+              Alumni only
             </TogglePill>
           </QuickRow>
 

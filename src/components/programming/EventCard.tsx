@@ -30,6 +30,7 @@ const TYPE_BADGE: Record<string, { bg: string; text: string; gradient?: boolean 
   demo:         { bg: "bg-orange-100", text: "text-orange-700" },
   social:       { bg: "bg-pink-100",   text: "text-pink-700" },
   flagship:     { bg: "bg-rose-100",   text: "text-rose-700" },
+  "vision-weekend": { bg: "bg-violet-100", text: "text-violet-700" },
   other:        { bg: "bg-gray-100",   text: "text-gray-600" },
 };
 

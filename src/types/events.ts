@@ -17,6 +17,7 @@ export type EventType =
   | "demo"
   | "social"
   | "flagship"
+  | "vision-weekend"
   | "other";
 
 export type EventVisibility = "public" | "internal";

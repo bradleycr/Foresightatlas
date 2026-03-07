@@ -4,14 +4,14 @@
 
 ### Overview
 
-**Grantees and Fellows Map and Programming** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF) for event calendars. **The Google Sheet is the single source of truth.** The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime.
+**Map · Programming · Nodes** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF) for event calendars. **The Google Sheet is the single source of truth.** The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime.
 
 ### Naming and copy
 
-- **App title:** “Grantees and Fellows Map and Programming” (order: grantees, then fellows; then map, then programming).
-- **Subtext:** “A tool to help you connect to other grantees, fellows and nodees.”
+- **App title:** “Map · Programming · Nodes” (the three pillars: map, programming, nodes).
+- **Subtext:** “Connect with grantees, fellows and nodees.”
 - **Nav:** Desktop = “Map” + “Programming” (dropdown: Berlin, San Francisco). Mobile hamburger = “Foresight map”, “Berlin programming”, “SF programming”.
-- **Footer:** “Foresight Institute · Grantees and Fellows Map and Programming · {year}”.
+- **Footer:** “Foresight Institute · Map · Programming · Nodes · {year}”.
 
 ### Services
 

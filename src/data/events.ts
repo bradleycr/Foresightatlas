@@ -123,6 +123,107 @@ const BERLIN_SPECIALS: NodeEvent[] = [
   },
 ];
 
+/* ── Vision Weekends & flagship workshops (from Event_3 schedule) ─────────── */
+
+const VISION_WEEKENDS_AND_WORKSHOPS: NodeEvent[] = [
+  {
+    id: "vision-weekend-puerto-rico-2026-02-06",
+    nodeSlug: "sf",
+    title: "Vision Weekend — Puerto Rico",
+    description:
+      "Foresight Vision Weekend in San Juan. Connect with grantees, fellows, and the event team for a focused gathering on long-term vision and collaboration.",
+    location: "San Juan",
+    startAt: "2026-02-06T09:00:00-04:00",
+    endAt: "2026-02-08T18:00:00-04:00",
+    type: "vision-weekend",
+    tags: ["vision-weekend", "flagship", "grantees", "fellows"],
+    visibility: "internal",
+    capacity: null,
+    externalLink: null,
+    recurrenceGroupId: null,
+  },
+  {
+    id: "vision-weekend-uk-2026-06-05",
+    nodeSlug: "berlin",
+    title: "Vision Weekend — UK",
+    description:
+      "Foresight Vision Weekend in London. Brings together grantees, fellows, and the event team for vision-setting and community building in Europe.",
+    location: "London",
+    startAt: "2026-06-05T09:00:00+01:00",
+    endAt: "2026-06-07T18:00:00+01:00",
+    type: "vision-weekend",
+    tags: ["vision-weekend", "flagship", "grantees", "fellows"],
+    visibility: "internal",
+    capacity: null,
+    externalLink: null,
+    recurrenceGroupId: null,
+  },
+  {
+    id: "vision-weekend-us-sf-2026-12-04",
+    nodeSlug: "sf",
+    title: "Vision Weekend — US (SF)",
+    description:
+      "Foresight Vision Weekend in San Francisco. Grantees, fellows, and SF node community gather for the flagship US vision weekend.",
+    location: "SF",
+    startAt: "2026-12-04T09:00:00-08:00",
+    endAt: "2026-12-06T18:00:00-08:00",
+    type: "vision-weekend",
+    tags: ["vision-weekend", "flagship", "grantees", "fellows", "node-sf"],
+    visibility: "internal",
+    capacity: null,
+    externalLink: null,
+    recurrenceGroupId: null,
+  },
+  {
+    id: "workshop-ai-for-ai-berlin-2026-07-17",
+    nodeSlug: "berlin",
+    title: "Workshop: AI for AI (Berlin)",
+    description:
+      "Berlin-node workshop on AI for AI: research and practice at the intersection of AI safety and capability. Hands-on sessions and discussions at the Berlin Node.",
+    location: "Berlin",
+    startAt: "2026-07-17T09:00:00+02:00",
+    endAt: "2026-07-19T18:00:00+02:00",
+    type: "workshop",
+    tags: ["workshop", "ai", "berlin", "node-berlin"],
+    visibility: "internal",
+    capacity: null,
+    externalLink: null,
+    recurrenceGroupId: null,
+  },
+  {
+    id: "workshop-existential-hope-korea-2026-07-07",
+    nodeSlug: "berlin",
+    title: "Workshop: Existential Hope (Korea)",
+    description:
+      "Workshop on existential hope and long-term futures, held in South Korea. Cross-regional gathering for fellows and collaborators.",
+    location: "South Korea",
+    startAt: "2026-07-07T09:00:00+09:00",
+    endAt: "2026-07-09T18:00:00+09:00",
+    type: "workshop",
+    tags: ["workshop", "existential-hope", "korea"],
+    visibility: "internal",
+    capacity: null,
+    externalLink: null,
+    recurrenceGroupId: null,
+  },
+  {
+    id: "workshop-ai-for-science-sf-2026-09-25",
+    nodeSlug: "sf",
+    title: "Workshop: AI for Science (SF)",
+    description:
+      "SF workshop on AI for science: frontier research and applications. Grantees, fellows, and both nodes invited. Team days aligned.",
+    location: "SF",
+    startAt: "2026-09-25T09:00:00-07:00",
+    endAt: "2026-09-27T18:00:00-07:00",
+    type: "workshop",
+    tags: ["workshop", "ai", "science", "node-sf", "node-berlin", "team-days"],
+    visibility: "internal",
+    capacity: null,
+    externalLink: null,
+    recurrenceGroupId: null,
+  },
+];
+
 /* ── San Francisco: monthly demo days ───────────────────────────────── */
 
 function sfDemoDays(): NodeEvent[] {
@@ -196,6 +297,7 @@ export async function loadEvents(): Promise<NodeEvent[]> {
 function getSeedEvents(): NodeEvent[] {
   return [
     ...BERLIN_SPECIALS,
+    ...VISION_WEEKENDS_AND_WORKSHOPS,
     ...berlinWeeklyCoworking(),
     ...sfDemoDays(),
   ].sort(

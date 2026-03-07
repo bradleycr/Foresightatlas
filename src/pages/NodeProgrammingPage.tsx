@@ -14,6 +14,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { ArrowLeft, Sparkles, CalendarDays, Users, ShieldCheck, UserCircle2 } from "lucide-react";
+import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NodeSlug, NodeEvent, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode } from "../data/nodes";
@@ -449,11 +450,12 @@ function DirectoryStatusBanner({
         <div className="flex items-center gap-4">
           <div
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-full",
+              "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full",
               theme.avatarActiveBg,
             )}
           >
-            <span className={cn("text-sm font-bold", theme.avatarActiveText)}>
+            <img src={foresightIconUrl} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-2 opacity-20" aria-hidden />
+            <span className={cn("relative z-10 text-sm font-bold", theme.avatarActiveText)}>
               {initials}
             </span>
           </div>

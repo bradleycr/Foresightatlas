@@ -6,6 +6,7 @@ import { MapView } from "./components/MapView";
 import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
+import { getPresetFocusTags } from "./data/focusAreas";
 import { getAllPeople, getAllTravelWindows } from "./services/database";
 import { loadEvents } from "./data/events";
 import type { NodeEvent } from "./types/events";
@@ -68,7 +69,7 @@ export default function App() {
     focusTags: [],
     nodes: [],
     cities: [],
-    showAlumni: true,
+    communityFilter: "all",
     year: null,
     granularity: "Year",
     referenceDate: today.toISOString(),
@@ -153,7 +154,8 @@ export default function App() {
 
       if (!matchesYearFilter) return false;
 
-      if (!filters.showAlumni && !isCurrentEcosystemMember) return false;
+      if (filters.communityFilter === "current" && person.isAlumni) return false;
+      if (filters.communityFilter === "alumni" && !person.isAlumni) return false;
 
       if (filters.search) {
         const q = filters.search.toLowerCase();
@@ -166,7 +168,10 @@ export default function App() {
       }
 
       if (filters.programs.length > 0 && !filters.programs.includes(person.roleType)) return false;
-      if (filters.focusTags.length > 0 && !filters.focusTags.some((t) => person.focusTags.includes(t))) return false;
+      if (filters.focusTags.length > 0) {
+        const personPresetTags = getPresetFocusTags(person.focusTags);
+        if (!filters.focusTags.some((t) => personPresetTags.includes(t))) return false;
+      }
       if (filters.nodes.length > 0 && !filters.nodes.includes(person.primaryNode)) return false;
 
       if (filters.cities.length > 0) {

@@ -28,7 +28,7 @@ export function AppFooter() {
           <span className="text-gray-300" aria-hidden>
             ·
           </span>
-          <span>Grantees and Fellows Map and Programming</span>
+          <span>Map · Programming · Nodes</span>
           <span className="text-gray-300" aria-hidden>
             ·
           </span>
