@@ -6,7 +6,7 @@ import { Card } from "./ui/card";
 import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
-import { getCohortLabel } from "../utils/cohortLabel";
+import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 
 /** Compact event reference for "Attending" line on the card. */
 export interface AttendingEvent {
@@ -79,8 +79,8 @@ export function FellowCard({
               >
                 {person.roleType}
               </span>
-              {person.isAlumni && (
-                <Badge variant="secondary" className="text-xs bg-slate-200/90 text-slate-700 border-slate-300/80 hover:bg-slate-200">
+              {effectiveIsAlumni(person) && (
+                <Badge variant="alumni" className="text-xs">
                   Alumni
                 </Badge>
               )}
@@ -132,7 +132,7 @@ export function FellowCard({
         {/* Location and/or Node — one line when we have city/country and/or program node */}
         {(person.currentCity?.trim() ||
           person.currentCountry?.trim() ||
-          (!person.isAlumni && nodeLabel)) && (
+          (!effectiveIsAlumni(person) && nodeLabel)) && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <MapPin className="size-4 flex-shrink-0" />
             <span>
@@ -140,7 +140,7 @@ export function FellowCard({
                 [person.currentCity?.trim(), person.currentCountry?.trim()]
                   .filter(Boolean)
                   .join(", "),
-                !person.isAlumni && nodeLabel,
+                !effectiveIsAlumni(person) && nodeLabel,
               ]
                 .filter(Boolean)
                 .join(" · ")}

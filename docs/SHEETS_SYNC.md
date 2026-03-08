@@ -52,10 +52,13 @@ The spreadsheet uses four tabs. Row 1 must be the header row; data starts at row
 | **TravelWindows** | Travel / residency / conference entries | id, personId, title, city, country, lat, lng, startDate, endDate, type, notes |
 | **Suggestions** | Pending location-update requests | id, personName, personEmailOrHandle, requestedChangeType, requestedPayload (JSON), createdAt, status |
 | **AdminUsers**  | Admin logins (if used)         | id, displayName, email, passwordPlaceholder |
-| **RSVPs**       | Event RSVPs (going / interested / not-going) | eventId, eventTitle, personId, fullName, status, createdAt, updatedAt |
+| **RSVPs**       | Event RSVPs (going / interested / not-going) | eventId, eventTitle, personId, fullName, status (going | interested | not-going), createdAt, updatedAt |
+| **Events**      | Programming events (Berlin, SF, global)       | id, nodeSlug, title, description, location, startAt, endAt, type, tags (JSON), visibility, capacity, externalLink, recurrenceGroupId, lumaEventId |
 
-- **RSVPs**: Added by sync/migrate. The app reads via GET /api/rsvps and writes via POST /api/rsvps (Vercel serverless). Columns: **eventId**, **eventTitle** (event name for easy scanning in the sheet), **personId**, **fullName**, **status**, **createdAt**, **updatedAt**. If your RSVPs tab was created before **eventTitle** existed, add a column B header `eventTitle` or re-run `pnpm run migrate:sheet` to refresh the tab.
-- **Suggestions**: Users submit via the “Suggest an update” form; POST /api/suggestions appends to this tab (requires `GOOGLE_SERVICE_ACCOUNT_KEY` on Vercel).
+- **Events**: Optional tab. When present, GET /api/database returns `events` and the app uses the sheet as the **source of truth for programming**. Add a tab named **Events**, row 1 = headers: **id**, **nodeSlug** (berlin | sf | global), **title**, **description**, **location**, **startAt**, **endAt** (ISO datetime), **type** (e.g. workshop, launch, vision-weekend), **tags** (JSON array, e.g. `["workshop","berlin"]`), **visibility** (public | internal), **capacity**, **externalLink**, **recurrenceGroupId**, **lumaEventId** (if this row links to a Luma event, sync-events uses Luma data for title/description/times). If the Events tab is missing or empty, the app falls back to `data/events.json` (from `pnpm run sync:events`, which merges Sheet + Luma) and seed events, with deduplication so the same event (e.g. Berlin Node Launch) does not appear twice. **Location → node:** If **location** is empty, "TBA", "TBD", or "to be announced", the event is treated as **global** (Global programming page only), regardless of the nodeSlug column; only events with a specific location (or explicitly set nodeSlug when location is set) appear on Berlin or SF.
+- **RSVPs**: Added by sync/migrate. The app reads via GET /api/rsvps (and GET /api/database includes RSVPs with the same normalization). Writes via POST /api/rsvps (Vercel serverless). Columns: **eventId**, **eventTitle** (event name for easy scanning in the sheet), **personId**, **fullName**, **status** (use **going**, **interested**, or **not-going** — only **going** counts as attending for map/profile), **createdAt**, **updatedAt**. The sheet is append-only; the API dedupes by (eventId, personId), keeping the latest by updatedAt. If your RSVPs tab was created before **eventTitle** existed, add a column B header `eventTitle` or re-run `pnpm run migrate:sheet` to refresh the tab.
+- **fullName (People/RealData)**: Only the **first line** of the cell is shown in the app. Do not paste multi-line text (e.g. internal notes or disclaimers) into the name cell; use a separate notes column or document if needed.
+- **Suggestions**: Users submit via the "Suggest an update" form; POST /api/suggestions appends to this tab (requires `GOOGLE_SERVICE_ACCOUNT_KEY` on Vercel). Users submit via the “Suggest an update” form; POST /api/suggestions appends to this tab (requires `GOOGLE_SERVICE_ACCOUNT_KEY` on Vercel).
 - **focusTags** and **requestedPayload** are stored as JSON strings (e.g. `["Secure AI","Neurotechnology"]`, `{"currentCity":"Berlin"}`).
 - **lat** / **lng** are numbers. **isAlumni** is `TRUE` / `FALSE` in the sheet.
 
@@ -111,7 +114,7 @@ The map needs **lat/lng** for each person with a city. You can fill those in the
 2. **So the map shows them right away**, the app must load data that includes those coordinates. Use one of these:
 
    - **Preferred: use the sheet as the data source**  
-     Set `USE_SHEET_AS_DATABASE=true` and run the API (`pnpm dev:api` or your deploy). The app will request `/api/database`, which reads from the sheet, so every load gets the latest coordinates. No extra step after geocoding.
+     Run the API (`pnpm dev:api` or your deploy) with **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY** set. The app always reads from the sheet via GET /api/database (no env flag). Every load gets the latest coordinates. No extra step after geocoding.
 
    - **Or: update the static JSON**  
      If you’re not using the API (e.g. local static file or deploy that doesn’t use the sheet at runtime), run **sync** after geocoding so `public/data/database.json` has the new coordinates, then reload (or redeploy):
@@ -179,6 +182,7 @@ To have each deploy use the latest sheet data:
 
 | Goal                         | Command / step |
 |-----------------------------|----------------|
+| Create Events tab (one-time) | `pnpm run setup:events-tab` (needs service account; creates tab and seeds Berlin/SF events) |
 | Copy current JSON → Sheet   | `pnpm run migrate:sheet` (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`) |
 | Backfill Real Data from People | `pnpm run merge:people` (needs service account; copies focus tags, contact, taglines where missing) |
 | Geocode sheet (city → lat/lng) | `pnpm run geocode:sheet` (needs service account; fills coordinates for everyone with a city) |

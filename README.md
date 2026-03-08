@@ -47,6 +47,8 @@ This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
    - `SPREADSHEET_ID` — optional; defaults to the Foresight Map sheet ID
 4. Deploy. The app fetches data from GET /api/database (sheet). No static database.json at runtime.
 
+**GitHub Pages:** An optional manual deploy workflow is documented in [DEPLOYMENT.md](DEPLOYMENT.md). By default it does not run on push; use Vercel for automatic deploys.
+
 ## Tech stack
 
 - React with TypeScript

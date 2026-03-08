@@ -1,17 +1,13 @@
 /**
  * Seed events for all nodes.
  *
- * Berlin events are pre-loaded per the launch brief:
- *   — Weekly coworking lunch/session, Thu 12–16h, April 1 onward
- *   — Open Houses: March 1 & March 19
- *   — Node Launch Event: April 1
- *   — AI for Science Workshop: July 18–19
- *
- * SF gets a handful of demo days so the page isn't empty.
- * Replace with a database-backed API when the app moves server-side.
+ * Used only when the Google Sheet Events tab is empty/unavailable or when
+ * merging with events.json (e.g. static build). Sheet is the source of truth
+ * when GET /api/database returns events.
  */
 
 import { NodeEvent, EventType, NodeSlug } from "../types/events";
+import { getEventsFromSheet } from "../services/database";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 
@@ -128,7 +124,7 @@ const BERLIN_SPECIALS: NodeEvent[] = [
 const VISION_WEEKENDS_AND_WORKSHOPS: NodeEvent[] = [
   {
     id: "vision-weekend-puerto-rico-2026-02-06",
-    nodeSlug: "sf",
+    nodeSlug: "global",
     title: "Vision Weekend — Puerto Rico",
     description:
       "Foresight Vision Weekend in San Juan. Connect with grantees, fellows, and the event team for a focused gathering on long-term vision and collaboration.",
@@ -144,7 +140,7 @@ const VISION_WEEKENDS_AND_WORKSHOPS: NodeEvent[] = [
   },
   {
     id: "vision-weekend-uk-2026-06-05",
-    nodeSlug: "berlin",
+    nodeSlug: "global",
     title: "Vision Weekend — UK",
     description:
       "Foresight Vision Weekend in London. Brings together grantees, fellows, and the event team for vision-setting and community building in Europe.",
@@ -160,7 +156,7 @@ const VISION_WEEKENDS_AND_WORKSHOPS: NodeEvent[] = [
   },
   {
     id: "vision-weekend-us-sf-2026-12-04",
-    nodeSlug: "sf",
+    nodeSlug: "global",
     title: "Vision Weekend — US (SF)",
     description:
       "Foresight Vision Weekend in San Francisco. Grantees, fellows, and SF node community gather for the flagship US vision weekend.",
@@ -192,7 +188,7 @@ const VISION_WEEKENDS_AND_WORKSHOPS: NodeEvent[] = [
   },
   {
     id: "workshop-existential-hope-korea-2026-07-07",
-    nodeSlug: "berlin",
+    nodeSlug: "global",
     title: "Workshop: Existential Hope (Korea)",
     description:
       "Workshop on existential hope and long-term futures, held in South Korea. Cross-regional gathering for fellows and collaborators.",
@@ -256,13 +252,52 @@ function sfDemoDays(): NodeEvent[] {
 let _cache: NodeEvent[] | null = null;
 let _dynamicLoaded = false;
 
+/** Normalize for comparison: lowercase, collapse spaces. */
+function normTitle(s: string): string {
+  return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** True if two events are likely the same (same day + similar title). Prefer Luma/sheet over seed. */
+function looksLikeDuplicate(existing: NodeEvent, seed: NodeEvent): boolean {
+  const startA = new Date(existing.startAt).toISOString().slice(0, 10);
+  const startB = new Date(seed.startAt).toISOString().slice(0, 10);
+  if (startA !== startB) return false;
+  const a = normTitle(existing.title);
+  const b = normTitle(seed.title);
+  if (a === b) return true;
+  const launch = "launch";
+  const node = "node";
+  const berlin = "berlin";
+  const openHouse = "open house";
+  const workshop = "workshop";
+  const hasLaunch = (t: string) => t.includes(launch);
+  const hasNode = (t: string) => t.includes(node);
+  const hasBerlin = (t: string) => t.includes(berlin);
+  const hasOpenHouse = (t: string) => t.includes(openHouse);
+  const hasWorkshop = (t: string) => t.includes(workshop);
+  if (hasLaunch(a) && hasLaunch(b) && (hasNode(a) || hasBerlin(a)) && (hasNode(b) || hasBerlin(b))) return true;
+  if (hasOpenHouse(a) && hasOpenHouse(b) && hasBerlin(a) && hasBerlin(b)) return true;
+  if (hasWorkshop(a) && hasWorkshop(b) && hasBerlin(a) && hasBerlin(b)) return true;
+  return false;
+}
+
 /**
- * Try loading events from /data/events.json (produced by sync-events.js).
- * Merges in seed events (e.g. Berlin weekly coworking) that are not in the JSON,
- * so coworking and other seed events always show even when sync only has Luma/Sheet data.
+ * Load events: Sheet (GET /api/database) is source of truth when it returns events.
+ * Otherwise fall back to data/events.json (from sync-events: Sheet + Luma) merged with
+ * seed events, deduplicating so we never show the same event twice (e.g. Berlin Node Launch
+ * from both Luma and seed).
  */
 export async function loadEvents(): Promise<NodeEvent[]> {
   if (_dynamicLoaded && _cache) return _cache;
+
+  const fromSheet = await getEventsFromSheet();
+  if (Array.isArray(fromSheet) && fromSheet.length > 0) {
+    _cache = fromSheet.sort(
+      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+    );
+    _dynamicLoaded = true;
+    return _cache;
+  }
 
   try {
     const basePath = (import.meta as any).env?.BASE_URL ?? "/";
@@ -275,11 +310,13 @@ export async function loadEvents(): Promise<NodeEvent[]> {
         const recurrenceGroupsInJson = new Set(
           json.map((e) => e.recurrenceGroupId).filter(Boolean) as string[],
         );
-        const seedToAdd = seed.filter(
-          (se) =>
-            !idsInJson.has(se.id) &&
-            (!se.recurrenceGroupId || !recurrenceGroupsInJson.has(se.recurrenceGroupId)),
-        );
+        const seedToAdd = seed.filter((se) => {
+          if (idsInJson.has(se.id)) return false;
+          if (se.recurrenceGroupId && recurrenceGroupsInJson.has(se.recurrenceGroupId))
+            return false;
+          const isDup = json.some((ex) => looksLikeDuplicate(ex, se));
+          return !isDup;
+        });
         _cache = [...json, ...seedToAdd].sort(
           (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
         );
@@ -313,7 +350,13 @@ export function getAllEvents(): NodeEvent[] {
 }
 
 export function getEventsByNode(slug: NodeSlug): NodeEvent[] {
+  if (slug === "global") return getEventsForGlobal();
   return getAllEvents().filter((e) => e.nodeSlug === slug);
+}
+
+/** Events for the Global programming page: only events not tied to a specific node (Vision Weekends, global workshops). Node-specific events (open houses, node launch, coworking, demo days) show only on Berlin or SF. */
+export function getEventsForGlobal(): NodeEvent[] {
+  return getAllEvents().filter((e) => e.nodeSlug === "global");
 }
 
 export function getEventById(id: string): NodeEvent | undefined {

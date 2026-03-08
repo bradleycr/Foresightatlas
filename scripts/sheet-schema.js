@@ -4,6 +4,7 @@
  *
  * Tabs: RealData, TravelWindows, Suggestions, AdminUsers, RSVPs, Events,
  *       SignalCheckins, DailyTable-Berlin, DailyTable-SF.
+ * The optional CheckIns tab (used by api/checkins.js for node check-in) is separate from SignalCheckins/DailyTable; not listed here.
  * Row 1 = headers; data from row 2. Arrays/objects stored as JSON strings.
  *
  * RealData is the canonical source of truth for people records. The legacy
@@ -140,6 +141,18 @@ function dailyTableTabName(nodeSlug) {
   return `DailyTable-${label}`;
 }
 
+/**
+ * True when location is TBA, empty, or "to be announced".
+ * Events with unspecified location belong on Global programming, not a specific node.
+ */
+function isLocationUnspecified(location) {
+  const s = (location || "").trim().toLowerCase();
+  if (!s) return true;
+  if (s === "tba" || s === "tbd") return true;
+  if (/to be announced/.test(s) || /to be determined/.test(s)) return true;
+  return false;
+}
+
 function getSheetColumnLetter(index) {
   let n = index + 1;
   let result = "";
@@ -168,5 +181,6 @@ module.exports = {
   SIGNAL_CHECKINS_HEADERS,
   DAILY_TABLE_HEADERS,
   dailyTableTabName,
+  isLocationUnspecified,
   getSheetColumnLetter,
 };

@@ -6,7 +6,7 @@
  * field names mirror what a relational schema would look like.
  */
 
-export type NodeSlug = "berlin" | "sf";
+export type NodeSlug = "berlin" | "sf" | "global";
 
 export type EventType =
   | "coworking"

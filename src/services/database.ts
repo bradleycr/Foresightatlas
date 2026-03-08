@@ -7,6 +7,7 @@
 
 import { Person, TravelWindow, LocationSuggestion, AdminUser, RoleType } from "../types";
 import type { RSVPRecord } from "../types/events";
+import type { NodeEvent } from "../types/events";
 
 /** Base path for API requests. Same origin; works with any BASE_URL (e.g. / or /app/). */
 function getApiBase(): string {
@@ -22,6 +23,7 @@ let cachedDatabase: {
   suggestions: LocationSuggestion[];
   adminUsers: AdminUser[];
   rsvps?: RSVPRecord[];
+  events?: NodeEvent[];
 } | null = null;
 
 const FETCH_TIMEOUT_MS = 15_000;
@@ -103,8 +105,13 @@ function normalizePerson(
   const legacy = p as Partial<Person> & { homeBaseCity?: string; homeBaseCountry?: string };
   const currentCity = p.currentCity?.trim() || legacy.homeBaseCity?.trim() || "";
   const currentCountry = p.currentCountry?.trim() || legacy.homeBaseCountry?.trim() || "";
+  /** Display name only: first line of fullName so internal notes in the sheet never leak into the UI. */
+  const fullName = (p.fullName ?? "")
+    .split(/\r?\n/)[0]
+    ?.trim() || (p.fullName ?? "").trim() || "";
   return {
     ...p,
+    fullName,
     fellowshipCohortYear: normalizeYearValue(p.fellowshipCohortYear) ?? 0,
     fellowshipEndYear: normalizeYearValue(p.fellowshipEndYear) ?? null,
     affiliationOrInstitution: p.affiliationOrInstitution ?? null,
@@ -241,6 +248,16 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
 export async function getRsvps(): Promise<RSVPRecord[]> {
   const db = await fetchDatabase();
   return db.rsvps ?? [];
+}
+
+/** Events from the sheet (via GET /api/database). Returns [] when sheet has no Events tab or API not configured. */
+export async function getEventsFromSheet(): Promise<NodeEvent[]> {
+  try {
+    const db = await fetchDatabase();
+    return Array.isArray(db.events) ? db.events : [];
+  } catch {
+    return [];
+  }
 }
 
 // ── Write operations (no-ops in static mode) ─────────────────────────

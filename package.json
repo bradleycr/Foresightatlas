@@ -106,7 +106,8 @@
         "compare:sheet": "node scripts/compare-sheet-data.js",
         "copyover-report": "node scripts/copyover-test-to-real-report.js",
         "copyover-report:csv": "node scripts/copyover-test-to-real-report.js --csv",
-        "test:signal-checkin": "node scripts/test-signal-checkin.js"
+        "test:signal-checkin": "node scripts/test-signal-checkin.js",
+        "setup:events-tab": "node scripts/create-events-tab.js"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

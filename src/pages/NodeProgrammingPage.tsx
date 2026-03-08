@@ -13,12 +13,12 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { ArrowLeft, Sparkles, CalendarDays, Users, ShieldCheck, UserCircle2 } from "lucide-react";
+import { ArrowLeft, Sparkles, CalendarDays, Users, ShieldCheck, UserCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NodeSlug, NodeEvent, RSVPStatus } from "../types/events";
 import { Person } from "../types";
-import { getNode } from "../data/nodes";
-import { getEventsByNode, loadEvents } from "../data/events";
+import { getNode, getProgrammingPageConfig } from "../data/nodes";
+import { getEventsByNode, getEventsForGlobal, loadEvents } from "../data/events";
 import type { Identity } from "../services/identity";
 import {
   setRSVP,
@@ -98,8 +98,9 @@ export function NodeProgrammingPage({
   const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
   const [showQR, setShowQR] = useState(false);
 
-  /* ── Tab state (URL param aware) ─────────────────────────────────── */
+  const isGlobal = activeNode === "global";
 
+  /* ── Tab state (URL param aware) ─────────────────────────────────── */
   const urlParams = useRef(readUrlParams());
   const [activeTab, setActiveTab] = useState<PageTab>(urlParams.current.tab);
   const autoCheckInHandled = useRef(false);
@@ -107,6 +108,10 @@ export function NodeProgrammingPage({
   useEffect(() => {
     setActiveNode(initialNode);
   }, [initialNode]);
+
+  useEffect(() => {
+    if (isGlobal && activeTab === "table") setActiveTab("events");
+  }, [isGlobal, activeTab]);
 
   /* ── Data loading ────────────────────────────────────────────────── */
 
@@ -121,11 +126,12 @@ export function NodeProgrammingPage({
   }, []);
 
   useEffect(() => {
+    if (isGlobal) return;
     const weekDates = getWeekDates(new Date());
     void fetchCheckInsFromAPI(activeNode, weekDates[0], weekDates[6]).then(() =>
       setCheckInTick((t) => t + 1),
     );
-  }, [activeNode]);
+  }, [activeNode, isGlobal]);
 
   /* ── QR auto-check-in flow ───────────────────────────────────────── */
 
@@ -133,6 +139,7 @@ export function NodeProgrammingPage({
     if (!urlParams.current.autoCheckIn) return;
     if (!identity) return;
     if (autoCheckInHandled.current) return;
+    if (isGlobal) return;
     autoCheckInHandled.current = true;
     clearUrlParams();
 
@@ -143,7 +150,7 @@ export function NodeProgrammingPage({
         description: `Welcome, ${identity.fullName}`,
       });
     });
-  }, [activeNode, identity]);
+  }, [activeNode, identity, isGlobal]);
 
   useEffect(() => {
     if (!urlParams.current.autoCheckIn) return;
@@ -154,13 +161,17 @@ export function NodeProgrammingPage({
   }, [identity]);
 
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const eventsTopRef = useRef<HTMLDivElement>(null);
 
-  const node = getNode(activeNode)!;
+  const node = getProgrammingPageConfig(activeNode)!;
   const allEvents = useMemo(() => {
-    const source = dynamicEvents ?? getEventsByNode(activeNode);
-    if (dynamicEvents) return source.filter((e) => e.nodeSlug === activeNode);
+    const source = dynamicEvents ?? (isGlobal ? getEventsForGlobal() : getEventsByNode(activeNode));
+    if (dynamicEvents) {
+      if (isGlobal) return source.filter((e) => e.nodeSlug === "global");
+      return source.filter((e) => e.nodeSlug === activeNode);
+    }
     return source;
-  }, [activeNode, dynamicEvents]);
+  }, [activeNode, dynamicEvents, isGlobal]);
   const isAuthed = identity !== null;
 
   const monthlyCounts = useMemo(() => {
@@ -220,6 +231,13 @@ export function NodeProgrammingPage({
     ? "Upcoming Events"
     : `${MONTH_NAMES[selectedMonth]} Events`;
 
+  // When user switches month (grid or prev/next), scroll back to top so they see the new month from the start.
+  useEffect(() => {
+    if (selectedMonth !== null && eventsTopRef.current) {
+      eventsTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedMonth]);
+
   const openProfile = useCallback(
     (personId: string, peopleIds: string[], label: string) => {
       if (!onViewPersonDetails) return;
@@ -238,13 +256,15 @@ export function NodeProgrammingPage({
 
   /* ── Tab bar ─────────────────────────────────────────────────────── */
 
+  const tabTabs: { id: PageTab; label: string; icon: typeof CalendarDays }[] = [
+    { id: "events", label: "Events", icon: CalendarDays },
+    ...(isGlobal ? [] : [{ id: "table" as PageTab, label: "The Table", icon: Users }]),
+  ];
+
   const tabBar = (
     <div className={pageShellClassName}>
       <div className="flex gap-1 border-b border-gray-200">
-        {([
-          { id: "events" as PageTab, label: "Events", icon: CalendarDays },
-          { id: "table" as PageTab, label: "The Table", icon: Users },
-        ]).map(({ id, label, icon: Icon }) => (
+        {tabTabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -264,7 +284,7 @@ export function NodeProgrammingPage({
               <span
                 className={cn(
                   "absolute bottom-0 left-2 right-2 h-0.5 rounded-full",
-                  node.slug === "berlin" ? "bg-indigo-500" : "bg-sky-500",
+                  node.slug === "berlin" ? "bg-indigo-500" : node.slug === "sf" ? "bg-sky-500" : "bg-teal-500",
                 )}
               />
             )}
@@ -311,9 +331,6 @@ export function NodeProgrammingPage({
         </div>
       )}
 
-      {/* Tab bar */}
-      <div className="flex-shrink-0 bg-white">{tabBar}</div>
-
       {/* Content */}
       <div className="w-full min-w-0">
         <div className={cn(
@@ -332,7 +349,7 @@ export function NodeProgrammingPage({
         {activeTab === "events" ? (
           /* ── Events tab ────────────────────────────────────────────── */
           <>
-            <div className="bg-white rounded-2xl border border-gray-200 shadow p-6 sm:p-8">
+            <div ref={eventsTopRef} className="rounded-2xl border border-gray-200 shadow p-6 sm:p-8" style={{ background: theme.headerGradient }}>
               <MonthNavigator
                 selected={selectedMonth}
                 year={YEAR}
@@ -388,11 +405,20 @@ export function NodeProgrammingPage({
                     } : undefined}
                     allPeople={people}
                     isAuthenticated={isAuthed}
-                    onPersonClick={(personId) => openProfile(personId, summaryOf(ev.id).goingPersonIds, "RSVP attendees")}
+                    onPersonClick={(personId) => openProfile(personId, summaryOf(ev.id).goingPersonIds, "Going to this event")}
                     theme={theme}
                   />
                 ))}
               </div>
+            )}
+            {/* Prev/next month — show whenever a single month is selected, even if that month has no events */}
+            {selectedMonth !== null && (
+              <MonthNavBar
+                selectedMonth={selectedMonth}
+                monthlyCounts={monthlyCounts}
+                onSelectMonth={setSelectedMonth}
+                theme={theme}
+              />
             )}
           </>
         ) : (
@@ -415,8 +441,8 @@ export function NodeProgrammingPage({
         </div>
       </div>
 
-      {/* QR code modal */}
-      {showQR && (
+      {/* QR code modal — only for physical nodes */}
+      {showQR && !isGlobal && (
         <QRCheckIn
           nodeSlug={activeNode}
           nodeName={node.city + " Node"}
@@ -425,6 +451,85 @@ export function NodeProgrammingPage({
         />
       )}
     </div>
+  );
+}
+
+/** Short month labels for prev/next bar */
+const MONTH_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+/**
+ * Bar at the bottom of a month's event list: Previous month | Next month.
+ * Lets users flip to adjacent months without scrolling back to the top.
+ */
+function MonthNavBar({
+  selectedMonth,
+  monthlyCounts,
+  onSelectMonth,
+  theme,
+}: {
+  selectedMonth: number;
+  monthlyCounts: number[];
+  onSelectMonth: (m: number | null) => void;
+  theme: ReturnType<typeof getNode>["theme"];
+}) {
+  const prevMonth = selectedMonth - 1;
+  const nextMonth = selectedMonth + 1;
+  const hasPrev = prevMonth >= 0;
+  const hasNext = nextMonth <= 11;
+
+  return (
+    <nav
+      className="flex items-center justify-between gap-4 pt-6 sm:pt-8 pb-2 border-t border-gray-200 mt-6 sm:mt-8"
+      aria-label="Navigate to adjacent month"
+    >
+      {hasPrev ? (
+        <button
+          type="button"
+          onClick={() => onSelectMonth(prevMonth)}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-sm font-medium rounded-lg px-4 py-2.5 transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            theme.focusRing,
+            "text-gray-700 hover:text-gray-900 hover:bg-gray-100",
+          )}
+        >
+          <ChevronLeft className="size-4 shrink-0" aria-hidden />
+          <span>{MONTH_SHORT[prevMonth]}</span>
+          {monthlyCounts[prevMonth] > 0 && (
+            <span className="text-xs text-gray-400 tabular-nums">
+              {monthlyCounts[prevMonth]} event{monthlyCounts[prevMonth] !== 1 ? "s" : ""}
+            </span>
+          )}
+        </button>
+      ) : (
+        <div aria-hidden />
+      )}
+      {hasNext ? (
+        <button
+          type="button"
+          onClick={() => onSelectMonth(nextMonth)}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-sm font-medium rounded-lg px-4 py-2.5 transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            theme.focusRing,
+            "text-gray-700 hover:text-gray-900 hover:bg-gray-100 ml-auto",
+          )}
+        >
+          <span>{MONTH_SHORT[nextMonth]}</span>
+          {monthlyCounts[nextMonth] > 0 && (
+            <span className="text-xs text-gray-400 tabular-nums">
+              {monthlyCounts[nextMonth]} event{monthlyCounts[nextMonth] !== 1 ? "s" : ""}
+            </span>
+          )}
+          <ChevronRight className="size-4 shrink-0" aria-hidden />
+        </button>
+      ) : (
+        <div aria-hidden />
+      )}
+    </nav>
   );
 }
 
@@ -446,16 +551,14 @@ function DirectoryStatusBanner({
       .toUpperCase();
 
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow sm:px-6 sm:py-5">
+      <div className="rounded-2xl border border-gray-200 px-5 py-4 shadow sm:px-6 sm:py-5 overflow-hidden" style={{ background: theme.headerGradient }}>
         <div className="flex items-center gap-4">
           <div
-            className={cn(
-              "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full",
-              theme.avatarActiveBg,
-            )}
+            className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/50 shadow-sm"
+            style={{ background: theme.headerGradient }}
           >
-            <img src={foresightIconUrl} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-2 opacity-20" aria-hidden />
-            <span className={cn("relative z-10 text-sm font-bold", theme.avatarActiveText)}>
+            <img src={foresightIconUrl} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+            <span className={cn("relative z-10 text-[10px] font-medium", theme.avatarActiveText, "opacity-90")}>
               {initials}
             </span>
           </div>
@@ -476,9 +579,9 @@ function DirectoryStatusBanner({
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow sm:px-6 sm:py-5">
+    <div className="rounded-2xl border border-gray-200 px-5 py-4 shadow sm:px-6 sm:py-5 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(248,250,252,0.95) 0%, rgba(241,245,249,0.9) 100%)" }}>
       <div className="flex items-start gap-4">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-gray-200/80 shadow-sm bg-gradient-to-br from-gray-100 to-gray-200 text-gray-500">
           <UserCircle2 className="size-5" />
         </div>
         <div className="min-w-0 flex-1">

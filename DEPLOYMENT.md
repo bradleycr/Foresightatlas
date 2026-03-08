@@ -48,7 +48,7 @@ gh repo view --web
    - Go to your repository on GitHub
    - Click on **Settings** > **Pages**
    - Under "Source", select **"GitHub Actions"** (not "Deploy from a branch")
-   - The workflow will automatically deploy on every push to `main`
+   - The workflow runs only when triggered manually (see above). To deploy on every push, edit `.github/workflows/deploy.yml` and add `push: branches: [main]` to the trigger
 
 4. **Access your site**:
    - Your site will be available at: `https://YOUR_USERNAME.github.io/foresightmap/`
@@ -56,8 +56,9 @@ gh repo view --web
 
 ## How It Works
 
-- The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
-  - Builds your Vite app when you push to `main` with `VITE_BASE_PATH=/${{ repo name }}/`
+- The GitHub Actions workflow (`.github/workflows/deploy.yml`) is triggered **manually** (`workflow_dispatch`) by default. When you run it from the Actions tab, it:
+  - Syncs sheet → JSON and events (if secrets are set)
+  - Builds your Vite app with `VITE_BASE_PATH=/${{ repo name }}/`
   - Deploys the `dist/` output to GitHub Pages
 - The app uses **base-path-aware routing** (`src/utils/router.ts`), so links and history work correctly at e.g. `https://username.github.io/Foresightmap/`.
 - **Deep links**: Visiting a path that doesn’t exist as a file (e.g. `.../Foresightmap/berlin`) triggers GitHub’s 404 page. The included `404.html` redirects to the app root and stores the path in `sessionStorage` so the SPA can restore the route (e.g. Berlin page) without a second load.

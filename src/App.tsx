@@ -3,10 +3,12 @@ import { X } from "lucide-react";
 import { AppHeader } from "./components/AppHeader";
 import { AppFooter } from "./components/AppFooter";
 import { MapView } from "./components/MapView";
+import foresightIconUrl from "./assets/Foresight_RGB_Icon_Black.png?url";
 import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getPresetFocusTags } from "./data/focusAreas";
+import { effectiveIsAlumni } from "./utils/cohortLabel";
 import { getAllPeople, getAllTravelWindows } from "./services/database";
 import { loadEvents } from "./data/events";
 import type { NodeEvent } from "./types/events";
@@ -93,7 +95,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/profile"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile"];
     const current = getRoutePath();
     if (!knownRoutes.includes(current)) {
       window.history.replaceState({}, "", buildFullPath("/"));
@@ -154,8 +156,8 @@ export default function App() {
 
       if (!matchesYearFilter) return false;
 
-      if (filters.communityFilter === "current" && person.isAlumni) return false;
-      if (filters.communityFilter === "alumni" && !person.isAlumni) return false;
+      if (filters.communityFilter === "current" && effectiveIsAlumni(person)) return false;
+      if (filters.communityFilter === "alumni" && !effectiveIsAlumni(person)) return false;
 
       if (filters.search) {
         const q = filters.search.toLowerCase();
@@ -347,7 +349,7 @@ export default function App() {
 
   // ── Views ──────────────────────────────────────────────────────────
 
-  const isProgrammingRoute = route === "/berlin" || route === "/sf";
+  const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
   const profileCreateMode =
     isProfileRoute &&
@@ -358,7 +360,7 @@ export default function App() {
 
   const mainContent = isProgrammingRoute ? (
     <NodeProgrammingPage
-      initialNode={(route === "/berlin" ? "berlin" : "sf") as NodeSlug}
+      initialNode={(route === "/berlin" ? "berlin" : route === "/sf" ? "sf" : "global") as NodeSlug}
       people={people}
       identity={identity}
       onNavigateHome={() => navigate("/")}
@@ -386,10 +388,11 @@ export default function App() {
   ) : (
     <>
       {/* Event filter banner — shown when returning from programming page */}
+      {/* Event filter banner — only people who are "going" (confirmed) are shown */}
       {mapFilterIds && (
         <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between gap-3">
           <p className="text-sm text-blue-700">
-            Showing <strong>{mapFilterIds.size}</strong> attendee{mapFilterIds.size !== 1 && "s"} from event RSVP
+            Showing <strong>{mapFilterIds.size}</strong> person{mapFilterIds.size !== 1 ? "s" : ""} <strong>going</strong> to this event
           </p>
           <button
             onClick={() => setMapFilterIds(null)}
@@ -485,12 +488,19 @@ export default function App() {
 
       {isLoading && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center"
-          style={{ zIndex: Z_INDEX_LOADING, position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+          style={{ zIndex: Z_INDEX_LOADING }}
+          aria-live="polite"
+          aria-busy="true"
         >
-          <div className="bg-white rounded-lg p-6 shadow-lg" style={{ background: "#fff", borderRadius: "0.5rem", padding: "1.5rem", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}>
-            <p className="text-gray-900 font-medium" style={{ color: "#111", fontWeight: 500 }}>Loading data…</p>
-            <p className="text-sm text-gray-500 mt-2" style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>Reading from local data. If this sticks, open DevTools (Mac: Cmd+Option+J) and check the Console.</p>
+          <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-4">
+            <img
+              src={foresightIconUrl}
+              alt=""
+              className="size-14 animate-spin opacity-90"
+              aria-hidden
+            />
+            <p className="text-gray-700 font-medium">Loading</p>
           </div>
         </div>
       )}

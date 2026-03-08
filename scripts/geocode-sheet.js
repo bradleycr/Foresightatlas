@@ -44,7 +44,7 @@ async function main() {
   console.log(`Real Data: ${loaded.records.length} rows, ${needGeocode.length} need geocoding.`);
   if (needGeocode.length === 0) {
     console.log("Nothing to do. All rows with a city already have coordinates.");
-    console.log("To refresh the app's data from the sheet, run  pnpm run sync:sheet  or use USE_SHEET_AS_DATABASE.");
+    console.log("To refresh the app's data from the sheet, run  pnpm run sync:sheet  or run the API with sheet credentials; the app always loads from the sheet.");
     return;
   }
 
@@ -79,7 +79,7 @@ async function main() {
   console.log(`Done. Geocoded ${done} rows, ${failed} skipped (no result).`);
   console.log("");
   console.log("Next: so the map shows these coordinates immediately on load:");
-  console.log("  • Use live sheet: set USE_SHEET_AS_DATABASE=true and run the API; the app will load from the sheet.");
+  console.log("  • Use live sheet: run the API with GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY set; the app always loads from the sheet.");
   console.log("  • Or update static JSON: run  pnpm run sync:sheet  then reload (or redeploy).");
   console.log("  • Or one command:  pnpm run geocode:sheet:and-sync  (geocode + sync in one go).");
 }

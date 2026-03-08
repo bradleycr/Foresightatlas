@@ -17,22 +17,32 @@ function parseRsvpRows(values) {
     const i = headerRow.findIndex((c) => String(c).trim().toLowerCase() === name.toLowerCase());
     return i >= 0 ? i : -1;
   };
-  return rows
+  const validStatus = (s) => (s === "interested" || s === "not-going" ? s : "going");
+  const list = rows
     .map((row) => {
       const eventId = row[col("eventId")] != null ? String(row[col("eventId")]).trim() : "";
       const personId = row[col("personId")] != null ? String(row[col("personId")]).trim() : "";
       if (!eventId || !personId) return null;
+      const rawStatus = row[col("status")] != null ? String(row[col("status")]).trim() : "";
       return {
         eventId,
         eventTitle: row[col("eventTitle")] != null ? String(row[col("eventTitle")]).trim() : "",
         personId,
         fullName: row[col("fullName")] != null ? String(row[col("fullName")]).trim() : "",
-        status: (row[col("status")] != null ? String(row[col("status")]).trim() : "going") || "going",
+        status: validStatus(rawStatus || "going"),
         createdAt: row[col("createdAt")] != null ? String(row[col("createdAt")]).trim() : new Date().toISOString(),
         updatedAt: row[col("updatedAt")] != null ? String(row[col("updatedAt")]).trim() : new Date().toISOString(),
       };
     })
     .filter(Boolean);
+  // Sheet is append-only: same person can have multiple rows per event. Keep one per (eventId, personId), latest by updatedAt.
+  const byKey = new Map();
+  for (const r of list) {
+    const key = `${r.eventId}\t${r.personId}`;
+    const existing = byKey.get(key);
+    if (!existing || new Date(r.updatedAt) > new Date(existing.updatedAt)) byKey.set(key, r);
+  }
+  return Array.from(byKey.values());
 }
 
 async function getSheetsClientForRead() {
@@ -95,8 +105,10 @@ module.exports = async function handler(req, res) {
     if (!sheets) return res.status(503).json({ error: "RSVP write not configured (missing GOOGLE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS)" });
     const { eventId, eventTitle, personId, fullName, status } = req.body || {};
     if (!eventId || !personId) return res.status(400).json({ error: "eventId and personId required" });
+    const validStatus = (s) => (s === "interested" || s === "not-going" ? s : "going");
+    const statusToSave = validStatus(status || "going");
     const now = new Date().toISOString();
-    const row = [eventId, eventTitle != null ? String(eventTitle).trim() : "", personId, fullName || "", status || "going", now, now];
+    const row = [eventId, eventTitle != null ? String(eventTitle).trim() : "", personId, fullName || "", statusToSave, now, now];
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
@@ -110,7 +122,7 @@ module.exports = async function handler(req, res) {
         eventTitle: eventTitle != null ? String(eventTitle).trim() : "",
         personId,
         fullName: fullName || "",
-        status: status || "going",
+        status: statusToSave,
         createdAt: now,
         updatedAt: now,
       });

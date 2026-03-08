@@ -255,22 +255,30 @@ export function EventCard({
               theme={theme}
             />
           )}
+          {/* Always show going and interested separately so the difference is obvious */}
           {(rsvpSummary.going > 0 || rsvpSummary.interested > 0) && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600" role="status">
               {rsvpSummary.going > 0 && (
-                <span>{rsvpSummary.going} going</span>
+                <span className="font-medium text-emerald-700">{rsvpSummary.going} going</span>
               )}
-              {rsvpSummary.going > 0 && rsvpSummary.interested > 0 && " · "}
+              {rsvpSummary.going > 0 && rsvpSummary.interested > 0 && (
+                <span className="text-gray-400 mx-1">·</span>
+              )}
               {rsvpSummary.interested > 0 && (
-                <span>{rsvpSummary.interested} interested</span>
+                <span className="font-medium text-amber-700">{rsvpSummary.interested} interested</span>
               )}
             </p>
           )}
-          {goingPeople.length > 0 && <AttendanceAvatars people={goingPeople} onPersonClick={onPersonClick} />}
+          {goingPeople.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-emerald-700">Going:</span>
+              <AttendanceAvatars people={goingPeople} label="going" onPersonClick={onPersonClick} />
+            </div>
+          )}
           {interestedPeople.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-gray-500">Interested:</span>
-              <AttendanceAvatars people={interestedPeople} onPersonClick={onPersonClick} />
+              <span className="text-xs font-medium text-amber-700">Interested:</span>
+              <AttendanceAvatars people={interestedPeople} label="interested" onPersonClick={onPersonClick} />
             </div>
           )}
         </div>

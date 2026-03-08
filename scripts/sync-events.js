@@ -39,6 +39,12 @@ const LUMA_BASE = "https://public-api.luma.com";
 
 const OUT_PATH = path.join(__dirname, "../public/data/events.json");
 
+const {
+  SHEET_NAMES,
+  EVENTS_HEADERS,
+  isLocationUnspecified,
+} = require("./sheet-schema.js");
+
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
 function parseJsonSafe(str, fallback) {
@@ -75,7 +81,7 @@ function mapLumaType(lumaEvent) {
   return "other";
 }
 
-/** Guess the node slug from a Luma event's location or geo fields. */
+/** Guess the node slug from a Luma event's location or geo fields. If no node-specific location, returns "global". */
 function guessNode(lumaEvent) {
   const loc = [
     lumaEvent.geo_address_info?.city || "",
@@ -86,7 +92,7 @@ function guessNode(lumaEvent) {
 
   if (loc.includes("berlin") || loc.includes("germany")) return "berlin";
   if (loc.includes("san francisco") || loc.includes("sf") || loc.includes("bay area")) return "sf";
-  return "berlin"; // default for Foresight
+  return "global";
 }
 
 /* ── Google Sheet fetch ──────────────────────────────────────────────── */
@@ -98,8 +104,6 @@ async function fetchSheetEvents() {
   }
 
   const { google } = require("googleapis");
-  const { SHEET_NAMES, EVENTS_HEADERS } = require("./sheet-schema.js");
-
   const auth = new google.auth.GoogleAuth({ apiKey: SHEETS_API_KEY });
   const sheets = google.sheets({ version: "v4", auth });
 
@@ -137,12 +141,15 @@ async function fetchSheetEvents() {
       if (!id) return null;
 
       const cap = get("capacity");
+      const location = get("location");
+      const nodeSlugFromSheet = get("nodeSlug") || "berlin";
+      const nodeSlug = isLocationUnspecified(location) ? "global" : nodeSlugFromSheet;
       return {
         id,
-        nodeSlug: get("nodeSlug") || "berlin",
+        nodeSlug,
         title: get("title"),
         description: get("description"),
-        location: get("location"),
+        location,
         startAt: get("startAt"),
         endAt: get("endAt"),
         type: get("type") || "other",
@@ -204,17 +211,19 @@ async function fetchLumaEvents() {
   return allEvents.map((ev) => {
     const urlLink = normalizeLumaEventUrl(ev.url);
     const externalLink = urlLink || (ev.api_id ? `https://lu.ma/e/${ev.api_id}` : null);
+    const location = ev.geo_address_info?.full_address
+      || ev.geo_address_info?.city
+      || ev.meeting_url
+      || "TBA";
+    const nodeSlug = isLocationUnspecified(location) ? "global" : guessNode(ev);
     return {
       _lumaApiId: ev.api_id,
       _lumaUrl: urlLink || externalLink,
       id: `luma-${ev.api_id}`,
-      nodeSlug: guessNode(ev),
+      nodeSlug,
       title: ev.name || "Untitled Event",
       description: (ev.description_md || ev.description || "").trim(),
-      location: ev.geo_address_info?.full_address
-        || ev.geo_address_info?.city
-        || ev.meeting_url
-        || "TBA",
+      location,
       startAt: ev.start_at,
       endAt: ev.end_at,
       type: mapLumaType(ev),
@@ -245,12 +254,15 @@ function mergeEvents(sheetEvents, lumaEvents) {
       // Sheet row links to a Luma event — Luma data wins for rich fields
       const lumaEv = lumaById.get(sheetEv._lumaEventId);
       matchedLumaIds.add(sheetEv._lumaEventId);
+      const location = lumaEv.location;
+      let nodeSlug = sheetEv.nodeSlug || lumaEv.nodeSlug;
+      if (isLocationUnspecified(location)) nodeSlug = "global";
       merged.push({
         id: sheetEv.id,
-        nodeSlug: sheetEv.nodeSlug || lumaEv.nodeSlug,
+        nodeSlug,
         title: lumaEv.title,
         description: lumaEv.description || sheetEv.description,
-        location: lumaEv.location,
+        location,
         startAt: lumaEv.startAt,
         endAt: lumaEv.endAt,
         type: sheetEv.type !== "other" ? sheetEv.type : lumaEv.type,
@@ -271,8 +283,14 @@ function mergeEvents(sheetEvents, lumaEvents) {
   for (const lumaEv of lumaEvents) {
     if (!matchedLumaIds.has(lumaEv._lumaApiId)) {
       const { _lumaApiId, _lumaUrl, ...clean } = lumaEv;
+      if (isLocationUnspecified(clean.location)) clean.nodeSlug = "global";
       merged.push(clean);
     }
+  }
+
+  // Final pass: any event with unspecified location belongs on Global
+  for (const ev of merged) {
+    if (isLocationUnspecified(ev.location)) ev.nodeSlug = "global";
   }
 
   // Sort by start time

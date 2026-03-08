@@ -46,10 +46,9 @@ export function AppHeader({
   const closeNodeMenu = () => setNodeMenuOpen(false);
 
   const isMapRoute = route === "/";
-  const isProgrammingRoute = route === "/berlin" || route === "/sf";
+  const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
-  const appTitle = "Map · Programming · Nodes";
-  const subtext = "Connect with grantees, fellows and nodees";
+  const subtext = "A tool to help you connect to other grantees, fellows and nodees";
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -124,7 +123,7 @@ export function AppHeader({
             </button>
             <div className="border-l border-gray-300 pl-3 md:pl-4 min-w-0">
               <h1 className="text-gray-900 text-sm md:text-xl font-heading truncate">
-                {appTitle}
+                Grantees and Fellows Map and Programming
               </h1>
               <p className="text-xs md:text-sm text-gray-600 truncate">
                 {subtext}
@@ -180,7 +179,7 @@ export function AppHeader({
                     }}
                     className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                   >
-                    Berlin
+                    Berlin node
                   </button>
                   <button
                     onClick={() => {
@@ -189,7 +188,16 @@ export function AppHeader({
                     }}
                     className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                   >
-                    San Francisco
+                    SF node
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate("/global");
+                      setNodeMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    Global
                   </button>
                 </div>
               )}
@@ -220,8 +228,8 @@ export function AppHeader({
             >
               {identity ? (
                 <>
-                  <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-1.5 opacity-20" aria-hidden />
-                  <span className="relative z-10">{identityInitials}</span>
+                  <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                  <span className="relative z-10 text-[10px] font-medium text-sky-700/90">{identityInitials}</span>
                 </>
               ) : (
                 <>
@@ -247,8 +255,8 @@ export function AppHeader({
             >
               {identity ? (
                 <>
-                  <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-1.5 opacity-20" aria-hidden />
-                  <span className="relative z-10 text-xs font-bold text-sky-700">{identityInitials}</span>
+                  <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                  <span className="relative z-10 text-[10px] font-medium text-sky-700/90">{identityInitials}</span>
                 </>
               ) : (
                 <UserCircle2 className="size-5" />
@@ -313,8 +321,8 @@ export function AppHeader({
                 <div className="p-6 sm:p-7">
                   <div className="flex flex-col items-center text-center">
                     <div className="relative flex size-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200/80 sm:size-16">
-                      <img src={foresightIcon} alt="" className="absolute inset-0 size-full object-contain p-2 opacity-25" aria-hidden />
-                      <span className="relative z-10 text-base font-semibold text-sky-700 sm:text-lg">{identityInitials}</span>
+                      <img src={foresightIcon} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                      <span className="relative z-10 text-sm font-medium text-sky-700/85">{identityInitials}</span>
                     </div>
                     <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900">
                       {identity.fullName}
@@ -464,7 +472,7 @@ export function AppHeader({
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
-                    Berlin programming
+                    Berlin node
                   </button>
                 </li>
                 <li>
@@ -479,7 +487,22 @@ export function AppHeader({
                         : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
-                    SF programming
+                    SF node
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      navigate("/global");
+                      closeMobileMenu();
+                    }}
+                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
+                      route === "/global"
+                        ? "bg-sky-100 text-sky-900 border-sky-200"
+                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                    }`}
+                  >
+                    Global programming
                   </button>
                 </li>
                 {suggestFormUrl && (
@@ -502,8 +525,8 @@ export function AppHeader({
                 <div className="mx-3 mt-4 mb-2 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-emerald-50 border border-sky-100">
                   <div className="flex items-start gap-3">
                     <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-gray-200/80">
-                      <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-1 opacity-20" aria-hidden />
-                      <span className="relative z-10 text-sm font-bold text-sky-700">{identityInitials}</span>
+                      <img src={foresightIcon} alt="" className="pointer-events-none absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                      <span className="relative z-10 text-xs font-medium text-sky-700/85">{identityInitials}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">

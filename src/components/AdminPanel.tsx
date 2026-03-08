@@ -61,6 +61,7 @@ import {
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 import { getNodeLabel } from "../utils/nodeLabels";
+import { effectiveIsAlumni } from "../utils/cohortLabel";
 
 interface AdminPanelProps {
   people: Person[];
@@ -635,7 +636,7 @@ export function AdminPanel({
                               </p>
                               <p className="text-xs text-gray-500">
                                 {person.currentCity}, {person.currentCountry}
-                                {!person.isAlumni && ` · ${getNodeLabel(person.primaryNode)}`}
+                                {!effectiveIsAlumni(person) && ` · ${getNodeLabel(person.primaryNode)}`}
                                 {(person.affiliationOrInstitution ?? "").trim() && ` · ${person.affiliationOrInstitution}`}
                               </p>
                             </div>

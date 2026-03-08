@@ -1,9 +1,8 @@
 /**
  * RSVPButtonGroup — pill-rounded RSVP toggles.
  *
- * Active states (going/interested/can't-go) are semantically coloured regardless
- * of node. Only the keyboard-focus ring inherits the node's pastel theme so
- * the overall palette stays cohesive.
+ * Going = confirmed attending. Interested = might attend (not the same as going).
+ * Counts are shown next to each option so it's always clear how many are going vs interested.
  */
 
 import { Check, Star, X } from "lucide-react";
@@ -25,6 +24,8 @@ const CHOICES: {
   Icon: typeof Check;
   on: string;
   off: string;
+  /** Clarifies how this differs from Going (for accessibility and tooltips). */
+  ariaDescription?: string;
 }[] = [
   {
     status: "going",
@@ -32,6 +33,7 @@ const CHOICES: {
     Icon: Check,
     on: "bg-emerald-100 text-emerald-700 border-emerald-200",
     off: "hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700",
+    ariaDescription: "Confirmed attending — you're going",
   },
   {
     status: "interested",
@@ -39,6 +41,7 @@ const CHOICES: {
     Icon: Star,
     on: "bg-amber-100 text-amber-700 border-amber-200",
     off: "hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700",
+    ariaDescription: "Might attend — not the same as Going",
   },
   {
     status: "not-going",
@@ -46,6 +49,7 @@ const CHOICES: {
     Icon: X,
     on: "bg-gray-100 text-gray-600 border-gray-300",
     off: "hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600",
+    ariaDescription: "Not attending",
   },
 ];
 
@@ -58,8 +62,8 @@ export function RSVPButtonGroup({
   theme,
 }: RSVPButtonGroupProps) {
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP">
-      {CHOICES.map(({ status, label, Icon, on, off }) => {
+    <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP: Going means confirmed attending, Interested means might attend">
+      {CHOICES.map(({ status, label, Icon, on, off, ariaDescription }) => {
         const active = currentStatus === status;
         const count =
           status === "going" ? goingCount
@@ -72,6 +76,8 @@ export function RSVPButtonGroup({
             onClick={() => onStatusChange(active ? null : status)}
             disabled={disabled}
             aria-pressed={active}
+            title={ariaDescription}
+            aria-label={count !== undefined && count > 0 ? `${label} (${count})` : label}
             className={cn(
               "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold border transition-all",
               cn("focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1", theme?.focusRing ?? "focus-visible:ring-gray-400"),
@@ -84,7 +90,7 @@ export function RSVPButtonGroup({
             <Icon className="size-3" />
             {label}
             {count !== undefined && count > 0 && (
-              <span className="text-xs opacity-70">{count}</span>
+              <span className="text-xs opacity-90" aria-hidden>({count})</span>
             )}
           </button>
         );

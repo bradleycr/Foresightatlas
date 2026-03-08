@@ -13,6 +13,7 @@ import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
+import { effectiveIsAlumni } from "../utils/cohortLabel";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -167,7 +168,7 @@ const ROLE_ORDER: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Win
 type CommunityStatus = "current" | "alumni" | "mixed";
 
 function getCommunityStatus(people: Person[]): CommunityStatus {
-  const alumniCount = people.filter((person) => person.isAlumni).length;
+  const alumniCount = people.filter((person) => effectiveIsAlumni(person)).length;
   if (alumniCount === 0) return "current";
   if (alumniCount === people.length) return "alumni";
   return "mixed";
@@ -277,7 +278,7 @@ function buildPopupHtml(marker: MarkerData): string {
   );
   const n = marker.people.length;
   const peopleWord = n === 1 ? "person" : "people";
-  const alumniCount = marker.people.filter(({ person }) => person.isAlumni).length;
+  const alumniCount = marker.people.filter(({ person }) => effectiveIsAlumni(person)).length;
   const currentCount = n - alumniCount;
   const statusSummary =
     alumniCount === 0
@@ -291,7 +292,7 @@ function buildPopupHtml(marker: MarkerData): string {
       const name = escapeHtml(person.fullName);
       const roleGradient = getRoleGradient(person.roleType);
       const roleStyle = `background:${roleGradient};color:${getRoleTextColor(person.roleType)}`;
-      const alumni = person.isAlumni ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-slate-200 text-slate-700 shrink-0">Alumni</span>' : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
+      const alumni = effectiveIsAlumni(person) ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium text-slate-50 shrink-0" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 1px solid rgba(100,116,139,0.4)">Alumni</span>' : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
       const focusTags = person.focusTags
         .slice(0, 3)
         .map((tag) => `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`)
@@ -457,9 +458,9 @@ function ImperativeMarkerClusters({
           .getAllChildMarkers()
           .flatMap((m) => (m as MarkerWithRoles).__markerData?.people.map((entry) => entry.person) ?? []);
         const communityStatus: CommunityStatus =
-          clusterPeople.every((person) => !person.isAlumni)
+          clusterPeople.every((person) => !effectiveIsAlumni(person))
             ? "current"
-            : clusterPeople.every((person) => person.isAlumni)
+            : clusterPeople.every((person) => effectiveIsAlumni(person))
               ? "alumni"
               : "mixed";
         const sizeClass = count < 10 ? "small" : count < 100 ? "medium" : "large";
@@ -1182,7 +1183,15 @@ export function MapView({
                   : undefined;
                 onViewPersonDetails?.(person.id, navContext);
               }}
-              onHighlight={() => openSidebarAndScrollToPerson(person.id)}
+              onHighlight={() => {
+                // Show this person on the map: fly to their marker so the sidebar selection matches the map.
+                const personMarker = markers.find((m) => m.people.some((p) => p.person.id === person.id));
+                if (personMarker) {
+                  setSelectedMarker(personMarker);
+                  setSelectedMarkerFromList(true);
+                }
+                openSidebarAndScrollToPerson(person.id);
+              }}
               isHighlighted={selectedPerson === person.id}
             />
           </div>
@@ -1332,7 +1341,7 @@ export function MapView({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="text-gray-900 font-semibold truncate font-heading">
-                    {selectedMarker ? selectedMarkerLabel : "Fellows & Grantees"}
+                    {selectedMarker ? selectedMarkerLabel : "Fellows, Grantees, and Nodees"}
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {selectedMarker
@@ -1377,7 +1386,7 @@ export function MapView({
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                  {selectedMarker ? selectedMarkerLabel : "Fellows & Grantees"}
+                  {selectedMarker ? selectedMarkerLabel : "Fellows, Grantees, and Nodees"}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                     {selectedMarker

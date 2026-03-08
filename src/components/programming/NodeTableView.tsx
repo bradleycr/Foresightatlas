@@ -202,8 +202,8 @@ export function NodeTableView({
           </h2>
         </div>
 
-        {/* Table surface — neutral background so content and CTA are clear */}
-        <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 rounded-2xl bg-gray-50 border border-gray-200 min-h-[220px] sm:min-h-[260px] flex flex-col">
+        {/* Table surface — pastel gradient matching node theme */}
+        <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 rounded-2xl border border-gray-200 min-h-[220px] sm:min-h-[260px] flex flex-col overflow-hidden" style={{ background: theme.headerGradient }}>
           {dayPeople.length > 0 ? (
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 sm:gap-5 p-5 sm:p-6 flex-1">
               {dayPeople.map((c) => {
@@ -234,8 +234,11 @@ export function NodeTableView({
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12 sm:py-14">
-              <div className={cn("size-16 sm:size-20 rounded-2xl flex items-center justify-center mb-4", theme.avatarActiveBg)}>
-                <Coffee className={cn("size-8 sm:size-9", theme.avatarActiveText)} />
+              <div
+                className="size-14 sm:size-16 rounded-2xl flex items-center justify-center mb-4 border border-white/50 shadow-sm"
+                style={{ background: theme.headerGradient }}
+              >
+                <Coffee className={cn("size-7 sm:size-8", theme.avatarActiveText)} />
               </div>
               <p className="text-base sm:text-lg font-semibold text-gray-700">
                 {isPast ? "No one was at the table" : "No one at the table yet"}
@@ -248,34 +251,35 @@ export function NodeTableView({
             </div>
           )}
 
-          {/* CTA — outside the table surface, full width, high contrast */}
+          {/* CTA — pastel gradient, compact; matches node theme */}
           {identity && !isPast && (
-            <div className="p-4 sm:p-5 pt-2 border-t-2 border-gray-200 bg-white rounded-b-2xl">
+            <div className="p-3 sm:p-4 pt-2 border-t border-gray-200/80 rounded-b-2xl" style={{ background: theme.headerGradient }}>
               <button
                 type="button"
                 onClick={handleToggle}
                 className={cn(
-                  "w-full flex items-center justify-center gap-2.5 rounded-xl py-4 text-base font-semibold transition-all touch-manipulation active:scale-[0.98]",
+                  "w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all touch-manipulation active:scale-[0.98] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                  theme.focusRing,
                   meIn
-                    ? "bg-gray-100 text-gray-800 border-2 border-gray-300 hover:bg-gray-200"
+                    ? "bg-white/80 text-gray-800 border-gray-300 hover:bg-white"
                     : nodeSlug === "berlin"
-                      ? "bg-indigo-600 text-white border-2 border-indigo-700 hover:bg-indigo-700 shadow-lg"
-                      : "bg-sky-600 text-white border-2 border-sky-700 hover:bg-sky-700 shadow-lg",
+                      ? "bg-gradient-to-r from-indigo-100 to-rose-100 text-indigo-800 border-indigo-200 hover:from-indigo-200 hover:to-rose-200 shadow-sm"
+                      : "bg-gradient-to-r from-sky-100 to-amber-100 text-sky-800 border-sky-200 hover:from-sky-200 hover:to-amber-200 shadow-sm",
                 )}
               >
                 {meIn ? (
                   <>
-                    <Check className="size-5" />
+                    <Check className="size-4" />
                     {isToday ? "You're at the table · tap to leave" : "You're planned · tap to remove"}
                   </>
                 ) : isToday ? (
                   <>
-                    <MapPinCheck className="size-5" />
+                    <MapPinCheck className="size-4" />
                     I'm here today
                   </>
                 ) : (
                   <>
-                    <MapPinCheck className="size-5" />
+                    <MapPinCheck className="size-4" />
                     Plan to attend
                   </>
                 )}

@@ -167,12 +167,14 @@ function rowToAdminUser(row) {
 function rowToRSVP(row) {
   const get = (i) => (row[i] != null ? String(row[i]).trim() : "");
   const idx = (name) => RSVPS_HEADERS.indexOf(name);
+  const rawStatus = get(idx("status"));
+  const status = rawStatus === "interested" || rawStatus === "not-going" ? rawStatus : "going";
   return {
     eventId: get(idx("eventId")),
     eventTitle: get(idx("eventTitle")),
     personId: get(idx("personId")),
     fullName: get(idx("fullName")),
-    status: get(idx("status")) || "going",
+    status,
     createdAt: get(idx("createdAt")),
     updatedAt: get(idx("updatedAt")),
   };
@@ -227,12 +229,19 @@ function rowsToRSVPs(rows) {
   RSVPS_HEADERS.forEach((h, i) => {
     colIndex[h] = headerRow[i] === h ? i : headerRow.findIndex((c) => String(c).trim() === h);
   });
-  return dataRows
+  const list = dataRows
     .map((row) => {
       const ordered = RSVPS_HEADERS.map((h) => row[colIndex[h]]);
       return rowToRSVP(ordered);
     })
     .filter((e) => e && e.eventId && e.personId);
+  const byKey = new Map();
+  for (const r of list) {
+    const key = `${r.eventId}\t${r.personId}`;
+    const existing = byKey.get(key);
+    if (!existing || new Date(r.updatedAt) > new Date(existing.updatedAt)) byKey.set(key, r);
+  }
+  return Array.from(byKey.values());
 }
 
 async function fetchSheetRange(sheets, sheetName, range) {

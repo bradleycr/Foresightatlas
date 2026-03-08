@@ -54,7 +54,7 @@ If you want to add manual events via the sheet:
 |----|----------|-------|-------------|----------|---------|-------|------|------|------------|----------|--------------|-------------------|-------------|
 
 - **id** — unique string (e.g. `berlin-workshop-2026-05-15`)
-- **nodeSlug** — `berlin` or `sf`
+- **nodeSlug** — `berlin`, `sf`, or `global`. **Location overrides:** If **location** is empty, "TBA", "TBD", or "to be announced", the event is always shown on **Global** programming only (not Berlin or SF). Luma events with no address default to global; only events with a node-specific location (or explicitly tagged in the sheet) appear on Berlin/SF.
 - **startAt / endAt** — ISO 8601 datetime (e.g. `2026-05-15T14:00:00+02:00`)
 - **type** — one of: `coworking`, `workshop`, `conference`, `launch`, `open-house`, `demo`, `social`, `flagship`, `other`
 - **tags** — JSON array (e.g. `["ai","workshop"]`)

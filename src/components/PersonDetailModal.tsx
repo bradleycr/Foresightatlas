@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays, MapPinCheck
+  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays, MapPinCheck, Copy, ChevronDown
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
@@ -42,10 +42,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
-import { getCohortLabel } from "../utils/cohortLabel";
+import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
@@ -599,7 +605,7 @@ export function PersonDetailModal({
                         {displayPerson.roleType}
                       </span>
                       <span className="person-detail-pill person-detail-pill-muted">Cohort {getCohortLabel(displayPerson)}</span>
-                      {displayPerson.isAlumni && <Badge variant="secondary" className="person-detail-badge-pill text-xs bg-slate-200/90 text-slate-700 border-slate-300/80">Alumni</Badge>}
+                      {effectiveIsAlumni(displayPerson) && <Badge variant="alumni" className="person-detail-badge-pill text-xs">Alumni</Badge>}
                     </>
                   )}
                 </div>
@@ -765,7 +771,7 @@ export function PersonDetailModal({
                         <div>
                           <h3 className="person-detail-section-title">Program status</h3>
                           <p className="person-detail-body">
-                            {displayPerson.isAlumni ? "Alumni" : "Current participant"}
+                            {effectiveIsAlumni(displayPerson) ? "Alumni" : "Current participant"}
                           </p>
                         </div>
                       </div>
@@ -787,25 +793,59 @@ export function PersonDetailModal({
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {displayPerson.contactUrlOrHandle && (
-                          <a
-                            href={displayPerson.contactUrlOrHandle.startsWith("@") ? `https://twitter.com/${displayPerson.contactUrlOrHandle.slice(1)}` : displayPerson.contactUrlOrHandle.startsWith("http") ? displayPerson.contactUrlOrHandle : `mailto:${displayPerson.contactUrlOrHandle}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="person-detail-link-primary min-h-[44px] sm:min-h-[40px]"
-                          >
-                            {displayPerson.contactUrlOrHandle.includes("@") && !displayPerson.contactUrlOrHandle.startsWith("@") ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-                            {displayPerson.contactUrlOrHandle.startsWith("@")
-                              ? displayPerson.contactUrlOrHandle
-                              : displayPerson.contactUrlOrHandle.includes("linkedin.com")
-                                ? "LinkedIn"
-                                : displayPerson.contactUrlOrHandle.length > 40
-                                  ? displayPerson.contactUrlOrHandle.slice(0, 37) + "..."
-                                  : displayPerson.contactUrlOrHandle}
-                          </a>
-                        )}
+                        {displayPerson.contactUrlOrHandle && (() => {
+                          const contact = displayPerson.contactUrlOrHandle;
+                          const isEmail = contact.includes("@") && !contact.startsWith("@");
+                          const isUrl = contact.startsWith("http");
+                          const href = contact.startsWith("@")
+                            ? `https://twitter.com/${contact.slice(1)}`
+                            : isUrl
+                              ? contact
+                              : `mailto:${contact}`;
+                          const displayLabel = contact.startsWith("@")
+                            ? contact
+                            : contact.includes("linkedin.com")
+                              ? "LinkedIn"
+                              : contact.length > 40
+                                ? contact.slice(0, 37) + "..."
+                                : contact;
+                          const copyValue = contact;
+                          const handleCopy = () => {
+                            navigator.clipboard.writeText(copyValue).then(
+                              () => toast.success("Copied to clipboard"),
+                              () => toast.error("Could not copy"),
+                            );
+                          };
+                          const handleOpen = () => window.open(href, "_blank", "noopener,noreferrer");
+                          return (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="person-detail-link-primary min-h-[44px] sm:min-h-[40px] inline-flex items-center gap-2"
+                                  aria-haspopup="menu"
+                                  aria-label={`Contact: ${displayLabel}. Open menu for options.`}
+                                >
+                                  {isEmail ? <Mail className="h-4 w-4 shrink-0" /> : <ExternalLink className="h-4 w-4 shrink-0" />}
+                                  <span className="min-w-0 truncate">{displayLabel}</span>
+                                  <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="min-w-[12rem]">
+                                <DropdownMenuItem onSelect={handleOpen}>
+                                  {isEmail ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                                  {isEmail ? "Send email" : isUrl ? "Open link" : "Open profile"}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={handleCopy}>
+                                  <Copy className="h-4 w-4" />
+                                  {isEmail ? "Copy email address" : "Copy to clipboard"}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          );
+                        })()}
                         <a
-                          href="https://foresight.org"
+                          href="https://foresight.org/about/"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
@@ -869,7 +909,7 @@ export function PersonDetailModal({
                 )}
               </section>
 
-              {/* Event RSVPs — where they're going (events they're attending at nodes) */}
+              {/* Event RSVPs — only "going" (confirmed), not "interested" */}
               {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
 
               {/* Node check-in schedule — upcoming days they plan to be at a node */}
@@ -909,8 +949,8 @@ export function PersonDetailModal({
 }
 
 /**
- * Renders the "Event RSVPs" block for the person detail: events they're attending (going)
- * with location (node city) and date. Only shows when events are loaded and person has at least one going RSVP.
+ * Renders the "Event RSVPs" block for the person detail: events they're going to (confirmed).
+ * Only "going" RSVPs are shown — not "interested". Only when events are loaded and person has at least one going RSVP.
  */
 function PersonEventRSVPs({ personId, events }: { personId: string; events: NodeEvent[] | null | undefined }) {
   const goingRsvps = useMemo(() => getPersonRSVPs(personId).filter((r) => r.status === "going"), [personId]);
@@ -931,7 +971,7 @@ function PersonEventRSVPs({ personId, events }: { personId: string; events: Node
     <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
       <h3 className="person-detail-section-title flex items-center gap-2 mb-4">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-        Event RSVPs — Where they&apos;ll be ({resolved.length})
+        Events they&apos;re going to ({resolved.length})
       </h3>
       <div className="space-y-3">
         {resolved.map(({ event }) => {

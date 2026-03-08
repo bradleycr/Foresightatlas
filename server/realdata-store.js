@@ -42,6 +42,17 @@ function normalizeString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/**
+ * Use only the first line of a string as the display value.
+ * Prevents internal notes or disclaimers pasted in the sheet name cell from
+ * appearing in the app (e.g. "Name\nPlease note that..." → "Name").
+ */
+function displayNameOnly(value) {
+  const s = normalizeString(value);
+  const first = s.split(/\r?\n/)[0];
+  return first != null ? first.trim() : s;
+}
+
 function normalizeNullableString(value) {
   const normalized = normalizeString(value);
   return normalized || null;
@@ -149,7 +160,7 @@ function rowToPersonRecord(orderedRow, rowNumber) {
 
   const person = {
     id: normalizeString(orderedRow[idx("id")]),
-    fullName: normalizeString(orderedRow[idx("fullName")]),
+    fullName: displayNameOnly(orderedRow[idx("fullName")]),
     roleType: normalizeString(orderedRow[idx("roleType")]) || "Fellow",
     fellowshipCohortYear: sanitizeCohortYear(orderedRow[idx("fellowshipCohortYear")]),
     fellowshipEndYear: Number.isNaN(fellowshipEndYear) ? null : fellowshipEndYear,

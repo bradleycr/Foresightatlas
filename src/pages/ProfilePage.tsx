@@ -729,8 +729,8 @@ export function ProfilePage({
           >
             <div className="flex min-w-0 items-start gap-4 sm:gap-5">
               <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16">
-                <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-2 opacity-20" aria-hidden />
-                <span className="relative z-10 text-base font-semibold text-sky-700 sm:text-lg">{initials}</span>
+                <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                <span className="relative z-10 text-sm font-medium text-sky-700/85 sm:text-base">{initials}</span>
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-sky-600/90 sm:text-sm">
@@ -898,11 +898,11 @@ export function ProfilePage({
                 </Field>
               </ProfileSection>
 
-              {/* Events I'm attending — reflects RSVPs from programming page; link to manage. */}
+              {/* Events I'm attending — only "going" (confirmed), not "interested" */}
               {identity?.personId && (
                 <ProfileSection
                   title="Events I'm attending"
-                  description="Vision Weekends, workshops, and node events you've said you're attending. Manage on Berlin or SF Programming."
+                  description={'Events you\'ve confirmed you\'re going to. (Choosing "Interested" does not add you here — only "Going" counts.) Manage on Berlin or SF Programming.'}
                   icon={<CalendarDays className="size-4 text-sky-500" />}
                 >
                   <ProfileEventsAttending
@@ -1168,7 +1168,7 @@ function ProfileSection({
   );
 }
 
-/** Lists events the user is attending (going RSVPs) and links to programming to manage. */
+/** Lists events the user is attending (going RSVPs only — not "interested"). */
 function ProfileEventsAttending({
   personId,
   rsvpTick,
@@ -1188,23 +1188,30 @@ function ProfileEventsAttending({
   if (attending.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-600">
-        <p>You haven&apos;t said you&apos;re attending any events yet.</p>
+        <p>You haven&apos;t said you&apos;re <strong>going</strong> to any events yet. Use &quot;Going&quot; (not just &quot;Interested&quot;) on the programming page to confirm.</p>
         <p className="mt-2">
           Visit{" "}
           <a
-            href={buildFullPath("berlin")}
+            href={buildFullPath("/berlin")}
             className="font-medium text-sky-600 underline hover:text-sky-700"
           >
-            Berlin Programming
-          </a>{" "}
-          or{" "}
+            Berlin node
+          </a>
+          ,{" "}
           <a
-            href={buildFullPath("sf")}
+            href={buildFullPath("/sf")}
             className="font-medium text-sky-600 underline hover:text-sky-700"
           >
-            SF Programming
+            SF node
+          </a>
+          , or{" "}
+          <a
+            href={buildFullPath("/global")}
+            className="font-medium text-sky-600 underline hover:text-sky-700"
+          >
+            Global programming
           </a>{" "}
-          to RSVP to Vision Weekends, workshops, and node events. It&apos;ll show here and on your profile card.
+          to RSVP to Vision Weekends, workshops, and node events. Choose <strong>Going</strong> (not just Interested) and it&apos;ll show here and on your profile card.
         </p>
       </div>
     );
@@ -1221,11 +1228,11 @@ function ProfileEventsAttending({
             day: "numeric",
             year: "numeric",
           });
-          const programPath = event.nodeSlug === "berlin" ? "berlin" : "sf";
+          const programPath = event.nodeSlug === "global" ? "global" : event.nodeSlug === "berlin" ? "berlin" : "sf";
           return (
             <li key={event.id}>
               <a
-                href={buildFullPath(programPath)}
+                href={buildFullPath(`/${programPath}`)}
                 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-sky-200 hover:bg-sky-50/80"
               >
                 <span className="font-medium text-gray-900">{event.title}</span>

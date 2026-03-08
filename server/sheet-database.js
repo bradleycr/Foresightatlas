@@ -17,6 +17,8 @@ const {
   SUGGESTIONS_HEADERS,
   ADMIN_USERS_HEADERS,
   RSVPS_HEADERS,
+  EVENTS_HEADERS,
+  isLocationUnspecified,
 } = require("../scripts/sheet-schema.js");
 
 function parseJsonSafe(value, fallback) {
@@ -94,17 +96,20 @@ function rowToAdminUser(row) {
 
 function rowToRSVP(row) {
   const idx = (name) => RSVPS_HEADERS.indexOf(name);
+  const rawStatus = get(row, idx("status"));
+  const status = rawStatus === "interested" || rawStatus === "not-going" ? rawStatus : "going";
   return {
     eventId: get(row, idx("eventId")),
     eventTitle: get(row, idx("eventTitle")),
     personId: get(row, idx("personId")),
     fullName: get(row, idx("fullName")),
-    status: get(row, idx("status")) || "going",
+    status,
     createdAt: get(row, idx("createdAt")),
     updatedAt: get(row, idx("updatedAt")),
   };
 }
 
+/** Sheet is append-only: same person can have multiple rows per event. Keep one per (eventId, personId), latest by updatedAt. */
 function rowsToRSVPs(rows) {
   if (!rows || rows.length < 2) return [];
   const [headerRow, ...dataRows] = rows;
@@ -112,12 +117,62 @@ function rowsToRSVPs(rows) {
   RSVPS_HEADERS.forEach((h, i) => {
     colIndex[h] = headerRow[i] === h ? i : headerRow.findIndex((c) => String(c).trim() === h);
   });
-  return dataRows
+  const list = dataRows
     .map((row) => {
       const ordered = RSVPS_HEADERS.map((h) => (row[colIndex[h]] !== undefined ? row[colIndex[h]] : ""));
       return rowToRSVP(ordered);
     })
     .filter((e) => e && e.eventId && e.personId);
+  const byKey = new Map();
+  for (const r of list) {
+    const key = `${r.eventId}\t${r.personId}`;
+    const existing = byKey.get(key);
+    if (!existing || new Date(r.updatedAt) > new Date(existing.updatedAt)) byKey.set(key, r);
+  }
+  return Array.from(byKey.values());
+}
+
+function rowToEvent(row) {
+  const idx = (name) => EVENTS_HEADERS.indexOf(name);
+  const rawNodeSlug = get(row, idx("nodeSlug"));
+  const location = get(row, idx("location")) || "";
+  const nodeSlug = isLocationUnspecified(location)
+    ? "global"
+    : rawNodeSlug === "sf" || rawNodeSlug === "global"
+      ? rawNodeSlug
+      : "berlin";
+  const cap = get(row, idx("capacity"));
+  const tags = parseJsonSafe(get(row, idx("tags")), []);
+  return {
+    id: get(row, idx("id")),
+    nodeSlug,
+    title: get(row, idx("title")) || "Untitled",
+    description: get(row, idx("description")) || "",
+    location,
+    startAt: get(row, idx("startAt")) || new Date(0).toISOString(),
+    endAt: get(row, idx("endAt")) || new Date(0).toISOString(),
+    type: get(row, idx("type")) || "other",
+    tags: Array.isArray(tags) ? tags : [],
+    visibility: get(row, idx("visibility")) === "public" ? "public" : "internal",
+    capacity: cap === "" ? null : parseInt(cap, 10) || null,
+    externalLink: get(row, idx("externalLink")) || null,
+    recurrenceGroupId: get(row, idx("recurrenceGroupId")) || null,
+  };
+}
+
+function rowsToEvents(rows) {
+  if (!rows || rows.length < 2) return [];
+  const [headerRow, ...dataRows] = rows;
+  const colIndex = {};
+  EVENTS_HEADERS.forEach((h, i) => {
+    colIndex[h] = headerRow[i] === h ? i : headerRow.findIndex((c) => String(c).trim() === h);
+  });
+  return dataRows
+    .map((row) => {
+      const ordered = EVENTS_HEADERS.map((h) => (row[colIndex[h]] !== undefined ? row[colIndex[h]] : ""));
+      return rowToEvent(ordered);
+    })
+    .filter((e) => e && e.id);
 }
 
 async function fetchSheetRange(sheets, sheetName, range) {
@@ -147,18 +202,20 @@ async function getFullDatabaseFromSheet() {
     throw new Error("Google Sheets credentials not configured. Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY.");
   }
 
-  const [loaded, twRows, suggestionsRows, adminRows, rsvpsRows] = await Promise.all([
+  const [loaded, twRows, suggestionsRows, adminRows, rsvpsRows, eventsRows] = await Promise.all([
     loadRealDataRecords({ sheets, write: false }),
     fetchSheetRange(sheets, SHEET_NAMES.TRAVEL_WINDOWS, "A:K"),
     fetchSheetRange(sheets, SHEET_NAMES.SUGGESTIONS, "A:G"),
     fetchSheetRange(sheets, SHEET_NAMES.ADMIN_USERS, "A:D"),
     fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:G"),
+    fetchSheetRange(sheets, SHEET_NAMES.EVENTS, "A:N"),
   ]);
   const people = (loaded.records || []).map((r) => r.person).filter((p) => p && p.fullName);
   const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) => rowToTravelWindow(row));
   const suggestions = rowsToObjects(suggestionsRows, SUGGESTIONS_HEADERS, (row) => rowToSuggestion(row));
   const adminUsers = rowsToObjects(adminRows, ADMIN_USERS_HEADERS, (row) => rowToAdminUser(row));
   const rsvps = rowsToRSVPs(rsvpsRows);
+  const events = rowsToEvents(eventsRows);
 
   return {
     people,
@@ -166,6 +223,7 @@ async function getFullDatabaseFromSheet() {
     suggestions,
     adminUsers,
     rsvps,
+    events,
   };
 }
 

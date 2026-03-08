@@ -19,6 +19,9 @@ const badgeVariants = cva(
           "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
         secondary:
           "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+        /** Alumni: soft gray gradient — reads as "no longer active" but matches app gradient vibe. */
+        alumni:
+          "border-slate-400/50 [a&]:hover:opacity-90",
         destructive:
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
@@ -53,6 +56,13 @@ function Badge({
       background: "linear-gradient(135deg, #fdf7ef 0%, #f3f4f6 100%)",
       color: "#475569",
       borderColor: "rgba(148, 163, 184, 0.24)",
+      ...style,
+    },
+    /** Soft slate gradient — darker than focus pills but gradient + softer, not a harsh block. */
+    alumni: {
+      background: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+      color: "#f8fafc",
+      borderColor: "rgba(100, 116, 139, 0.4)",
       ...style,
     },
     destructive: {
