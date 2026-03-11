@@ -53,7 +53,7 @@ import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
-import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
+import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
 import { 
   updatePerson, 
@@ -818,7 +818,7 @@ export function PersonDetailModal({
                           };
                           const handleOpen = () => window.open(href, "_blank", "noopener,noreferrer");
                           return (
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
                                 <button
                                   type="button"
@@ -831,7 +831,11 @@ export function PersonDetailModal({
                                   <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
                                 </button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start" className="min-w-[12rem]">
+                              <DropdownMenuContent
+                                align="start"
+                                className="min-w-[12rem]"
+                                style={{ zIndex: Z_INDEX_MODAL_DROPDOWN }}
+                              >
                                 <DropdownMenuItem onSelect={handleOpen}>
                                   {isEmail ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
                                   {isEmail ? "Send email" : isUrl ? "Open link" : "Open profile"}
@@ -851,7 +855,7 @@ export function PersonDetailModal({
                           className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
                         >
                           <Globe className="h-4 w-4" />
-                          Foresight.org
+                          foresight.org/about
                         </a>
                       </div>
                     )}

@@ -18,7 +18,7 @@ export function AppFooter() {
       <div className="px-4 md:px-8">
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-gray-500">
           <a
-            href="https://foresight.org/about/"
+            href="https://foresight.org"
             target="_blank"
             rel="noopener noreferrer"
             className="text-teal-600 underline underline-offset-2 decoration-teal-400 hover:text-teal-700 hover:decoration-teal-600 transition-colors font-medium"
