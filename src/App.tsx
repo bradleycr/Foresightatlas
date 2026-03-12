@@ -18,6 +18,7 @@ import { Button } from "./components/ui/button";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ConnectionsPage } from "./pages/ConnectionsPage";
 import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
@@ -95,7 +96,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections"];
     const current = getRoutePath();
     if (!knownRoutes.includes(current)) {
       window.history.replaceState({}, "", buildFullPath("/"));
@@ -338,9 +339,12 @@ export default function App() {
     [navigate],
   );
 
-  // ── Map overlay filter (set from programming page) ────────────────
+  // Map overlay filter (set from programming page) ────────────────
 
   const [mapFilterIds, setMapFilterIds] = useState<Set<string> | null>(null);
+
+  /** Increment when user toggles a connection in the person modal so ConnectionsPage can re-read. */
+  const [connectionsVersion, setConnectionsVersion] = useState(0);
 
   const mapPeople = useMemo(() => {
     if (!mapFilterIds) return filteredPeople;
@@ -351,6 +355,7 @@ export default function App() {
 
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
+  const isConnectionsRoute = route === "/connections";
   const profileCreateMode =
     isProfileRoute &&
     typeof window !== "undefined" &&
@@ -358,7 +363,19 @@ export default function App() {
   const signedInPerson =
     identity ? people.find((person) => person.id === identity.personId) ?? null : null;
 
-  const mainContent = isProgrammingRoute ? (
+  const mainContent = isConnectionsRoute ? (
+    <ConnectionsPage
+      identity={identity}
+      people={people}
+      connectionsVersion={connectionsVersion}
+      onNavigateHome={() => navigate("/")}
+      onOpenProfile={() => navigate("/profile")}
+      onViewPerson={(id) => {
+        setSelectedPersonId(id);
+        setDetailNavContext(null);
+      }}
+    />
+  ) : isProgrammingRoute ? (
     <NodeProgrammingPage
       initialNode={(route === "/berlin" ? "berlin" : route === "/sf" ? "sf" : "global") as NodeSlug}
       people={people}
@@ -480,6 +497,8 @@ export default function App() {
         filters={filters}
         isOpen={selectedPersonId !== null}
         isAdmin={false}
+        identity={identity}
+        onConnectionsChange={() => setConnectionsVersion((v) => v + 1)}
         onClose={() => { setSelectedPersonId(null); setDetailNavContext(null); }}
         onNavigate={(id) => setSelectedPersonId(id)}
         onExpandNavigation={() => setDetailNavContext(null)}

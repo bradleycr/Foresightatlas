@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Menu, X, LogOut, User, UserCircle2 } from "lucide-react";
+import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
@@ -8,6 +8,7 @@ import type { Identity } from "../services/identity";
 import type { Person } from "../types";
 import { Button } from "./ui/button";
 import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
+import { cn } from "./ui/utils";
 
 interface AppHeaderProps {
   /** Current route path: "/", "/berlin", "/sf" */
@@ -48,6 +49,7 @@ export function AppHeader({
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
+  const isConnectionsRoute = route === "/connections";
   const subtext = "A tool to help you connect to other grantees, fellows and nodees";
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export function AppHeader({
     >
       <div className="px-4 md:px-8 pb-4 md:pb-5">
         <div className="flex flex-nowrap items-center justify-between gap-3 min-h-0">
-          {/* Logo + title — shrinks so nav never wraps */}
+          {/* Logo + title — on mobile allow wrap so full text is readable */}
           <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
             <button
               type="button"
@@ -122,10 +124,10 @@ export function AppHeader({
               <img src={foresightLogo} alt="Foresight Institute" className="h-9 md:h-12" />
             </button>
             <div className="border-l border-gray-300 pl-3 md:pl-4 min-w-0">
-              <h1 className="text-gray-900 text-sm md:text-xl font-heading truncate">
+              <h1 className="text-gray-900 text-sm md:text-xl font-heading md:truncate line-clamp-2 md:line-clamp-none">
                 Grantees and Fellows Map and Programming
               </h1>
-              <p className="text-xs md:text-sm text-gray-600 truncate">
+              <p className="text-xs md:text-sm text-gray-600 line-clamp-2 md:truncate md:line-clamp-none mt-0.5">
                 {subtext}
               </p>
             </div>
@@ -203,6 +205,17 @@ export function AppHeader({
               )}
             </div>
 
+            <button
+              onClick={() => navigate("/connections")}
+              className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
+                isConnectionsRoute
+                  ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent"
+              }`}
+            >
+              Connections
+            </button>
+
             {suggestFormUrl && (
               <a
                 href={suggestFormUrl}
@@ -240,14 +253,14 @@ export function AppHeader({
             </button>
           </div>
 
-          {/* Mobile nav — hamburger only below 768px; min 44px touch target for accessibility */}
-          <div className="header-mobile-nav flex md:hidden flex-shrink-0 items-center gap-1">
+          {/* Mobile nav — hamburger + account; pill style to match desktop nav */}
+          <div className="header-mobile-nav flex md:hidden flex-shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={handleAccountButtonClick}
               className={identity
                 ? "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-cyan-100 to-emerald-100 ring-1 ring-gray-200/80 transition-all hover:from-cyan-200 hover:to-emerald-200 hover:ring-2 hover:ring-sky-200 hover:ring-offset-1 touch-manipulation"
-                : "min-w-[44px] min-h-[44px] rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-50 flex items-center justify-center"
+                : "min-w-[44px] min-h-[44px] rounded-xl border border-gray-200 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-50 flex items-center justify-center"
               }
               aria-label={identity ? "Open account menu" : "Sign in to your profile"}
               aria-haspopup="dialog"
@@ -265,12 +278,18 @@ export function AppHeader({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 -mr-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+              className={cn(
+                "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all touch-manipulation",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2",
+                mobileMenuOpen
+                  ? "bg-app-tab-active text-gray-900 shadow-sm border-white/50"
+                  : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm",
+              )}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
               aria-haspopup="dialog"
             >
-              <Menu className="size-6" />
+              {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
@@ -351,6 +370,18 @@ export function AppHeader({
                       variant="outline"
                       onClick={() => {
                         closeAccountDialog();
+                        navigate("/connections");
+                      }}
+                      className="min-h-[44px] w-full"
+                    >
+                      <Bookmark className="size-4" />
+                      Connections
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        closeAccountDialog();
                         onSignOut();
                       }}
                       className="min-h-[44px] w-full"
@@ -409,7 +440,9 @@ export function AppHeader({
               position: "fixed",
               inset: 0,
               zIndex: Z_INDEX_MODAL_BACKDROP,
-              background: "rgba(0, 0, 0, 0.4)",
+              background: "rgba(0, 0, 0, 0.35)",
+              backdropFilter: "blur(3px)",
+              WebkitBackdropFilter: "blur(3px)",
             }}
           />
           <div
@@ -417,33 +450,40 @@ export function AppHeader({
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="flex flex-col bg-white shadow-2xl md:hidden overflow-hidden"
+            className="flex flex-col md:hidden overflow-hidden bg-app-header"
             style={{
               position: "fixed",
               top: 0,
               bottom: 0,
               right: 0,
               width: "100%",
-              maxWidth: "min(20rem, 100%)",
-              borderTopLeftRadius: "1rem",
-              borderBottomLeftRadius: "1rem",
+              maxWidth: "min(22rem, 100%)",
+              borderLeft: "1px solid rgba(0,0,0,0.06)",
+              boxShadow: "-4px 0 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02)",
               zIndex: Z_INDEX_MODAL_CONTENT,
               animation: "slideInRight 0.25s ease-out",
             }}
           >
-            <div className="flex items-center justify-between flex-shrink-0 px-4 py-4 border-b border-gray-200">
-              <span className="text-sm font-semibold text-gray-900">Menu</span>
+            {/* Panel header — gradient strip + logo + close, matches app header feel */}
+            <div
+              className="flex items-center justify-between flex-shrink-0 px-4 py-4 border-b border-gray-200/80"
+              style={{ background: "linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)" }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <img src={foresightIcon} alt="" className="h-8 w-8 flex-shrink-0 opacity-90" />
+                <span className="text-sm font-semibold text-gray-900 font-heading tracking-tight">Menu</span>
+              </div>
               <button
                 type="button"
                 onClick={closeMobileMenu}
-                className="p-2 -m-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                className="p-2.5 -m-2 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Close menu"
               >
                 <X className="size-5" />
               </button>
             </div>
-            <nav className="flex-1 overflow-auto py-2" aria-label="Main navigation">
-              <ul className="space-y-0.5 px-3">
+            <nav className="flex-1 overflow-auto py-4 px-3" aria-label="Main navigation">
+              <ul className="space-y-1.5">
                 <li>
                   <button
                     onClick={() => {
@@ -451,10 +491,10 @@ export function AppHeader({
                       onTabChange("map");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${
                       isMapRoute
-                        ? "bg-sky-100 text-sky-900 border-sky-200"
-                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
+                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     Foresight map
@@ -466,10 +506,10 @@ export function AppHeader({
                       navigate("/berlin");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${
                       route === "/berlin"
-                        ? "bg-sky-100 text-sky-900 border-sky-200"
-                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
+                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     Berlin node
@@ -481,10 +521,10 @@ export function AppHeader({
                       navigate("/sf");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${
                       route === "/sf"
-                        ? "bg-sky-100 text-sky-900 border-sky-200"
-                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
+                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     SF node
@@ -496,13 +536,28 @@ export function AppHeader({
                       navigate("/global");
                       closeMobileMenu();
                     }}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl text-base font-medium border transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${
                       route === "/global"
-                        ? "bg-sky-100 text-sky-900 border-sky-200"
-                        : "text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
+                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     Global programming
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      navigate("/connections");
+                      closeMobileMenu();
+                    }}
+                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${
+                      isConnectionsRoute
+                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
+                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                    }`}
+                  >
+                    Connections
                   </button>
                 </li>
                 {suggestFormUrl && (

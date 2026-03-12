@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays, MapPinCheck, Copy, ChevronDown
+  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays, MapPinCheck, Copy, ChevronDown, Bookmark
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
@@ -64,6 +64,8 @@ import {
 } from "../services/database";
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
+import type { Identity } from "../services/identity";
+import { isConnected, toggleConnection } from "../services/connections";
 
 /** Cohort years 2017–current plus 0 for Unknown. */
 const COHORT_YEAR_OPTIONS: number[] = (() => {
@@ -93,6 +95,10 @@ interface PersonDetailModalProps {
   filters?: Filters;
   isOpen: boolean;
   isAdmin?: boolean;
+  /** Logged-in user; when set, show bookmark (connections) button. */
+  identity?: Identity | null;
+  /** Called after user toggles a connection so parent can refresh (e.g. Connections page). */
+  onConnectionsChange?: () => void;
   onClose: () => void;
   onNavigate?: (personId: string) => void;
   /** Called when user clicks "Browse all" to widen navigation to the full filtered set. */
@@ -109,6 +115,8 @@ export function PersonDetailModal({
   filters,
   isOpen,
   isAdmin = false,
+  identity = null,
+  onConnectionsChange,
   onClose,
   onNavigate,
   onExpandNavigation,
@@ -452,15 +460,15 @@ export function PersonDetailModal({
               } : undefined}
             >
               {/* Toolbar: nav + context left, actions right */}
-              <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4">
-                <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
                   {!isEditing && (hasPrevious || hasNext) && (
                     <>
                       <button
                         type="button"
                         onClick={handlePrevious}
                         disabled={!hasPrevious}
-                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0"
+                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation"
                         aria-label="Previous person"
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -469,7 +477,7 @@ export function PersonDetailModal({
                         type="button"
                         onClick={handleNext}
                         disabled={!hasNext}
-                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0"
+                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation"
                         aria-label="Next person"
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -482,7 +490,30 @@ export function PersonDetailModal({
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                  {identity && person && identity.personId !== person.id && !isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nowConnected = toggleConnection(identity.personId, person.id);
+                        onConnectionsChange?.();
+                        toast.success(
+                          nowConnected ? "Added to connections" : "Removed from connections",
+                        );
+                      }}
+                      className={cn(
+                        "person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation active:scale-95 transition-transform",
+                        isConnected(identity.personId, person.id)
+                          ? "text-sky-600 bg-sky-50 border-sky-200"
+                          : "text-gray-500 hover:text-sky-600 hover:bg-sky-50/80 active:bg-sky-50",
+                      )}
+                      aria-label={isConnected(identity.personId, person.id) ? "Remove from connections" : "Add to connections"}
+                    >
+                      <Bookmark
+                        className={cn("h-5 w-5", isConnected(identity.personId, person.id) && "fill-current")}
+                      />
+                    </button>
+                  )}
                   {isAdmin && !isEditing && (
                     <button type="button" onClick={handleEdit} className="person-detail-toolbar-btn flex min-h-[44px] sm:min-h-9 items-center gap-1.5 px-3 sm:px-3">
                       <Edit className="h-4 w-4 sm:mr-0.5" />
@@ -503,7 +534,7 @@ export function PersonDetailModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="person-detail-toolbar-btn-close flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-2.5"
+                    className="person-detail-toolbar-btn-close flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-2.5 touch-manipulation"
                     aria-label="Close"
                   >
                     <X className="h-5 w-5" />
@@ -833,7 +864,7 @@ export function PersonDetailModal({
                               </DropdownMenuTrigger>
                               <DropdownMenuContent
                                 align="start"
-                                className="min-w-[12rem]"
+                                className="min-w-[12rem] !bg-white text-gray-900 border border-gray-200 shadow-xl rounded-lg py-1"
                                 style={{ zIndex: Z_INDEX_MODAL_DROPDOWN }}
                               >
                                 <DropdownMenuItem onSelect={handleOpen}>
