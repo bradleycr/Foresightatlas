@@ -5,10 +5,10 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../ui/popover";
 
 /** Default temporary password for first-time directory sign-in (must match backend DEFAULT_DIRECTORY_PASSWORD). */
 const DEFAULT_TEMP_PASSWORD = "password123";
@@ -162,8 +162,8 @@ export function DirectoryLoginForm({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label htmlFor="directory-login-password">Password</Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <Popover>
+              <PopoverTrigger asChild>
                 <button
                   type="button"
                   className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 rounded-full"
@@ -171,13 +171,13 @@ export function DirectoryLoginForm({
                 >
                   <HelpCircle className="size-4" />
                 </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" theme="light" className="max-w-[260px]">
-                Haven&apos;t logged in before? Your temporary password is{" "}
+              </PopoverTrigger>
+              <PopoverContent side="top" align="start" className="max-w-[260px]">
+                First time? Temporary password is{" "}
                 <span className="font-semibold text-teal-700">{DEFAULT_TEMP_PASSWORD}</span>
-                . You&apos;ll set your own password after signing in.
-              </TooltipContent>
-            </Tooltip>
+                . You&apos;ll set your own after signing in.
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
@@ -191,19 +191,6 @@ export function DirectoryLoginForm({
               className="h-11 pl-10"
             />
           </div>
-          {!hasSelection && (
-            <p className="text-xs leading-5 text-gray-500">
-              Use your full name and password. First time? Your temporary password is{" "}
-              <span className="font-medium text-gray-700">{DEFAULT_TEMP_PASSWORD}</span>
-              — you can set your own after signing in.
-            </p>
-          )}
-          {hasSelection && (
-            <p className="text-xs leading-5 text-gray-500">
-              First time? Use <span className="font-medium text-gray-700">{DEFAULT_TEMP_PASSWORD}</span>.
-              Otherwise enter your password, then sign in.
-            </p>
-          )}
         </div>
       </div>
 

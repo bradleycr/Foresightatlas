@@ -11,11 +11,12 @@ export function getBasePath(): string {
   return BASE;
 }
 
-/** Current pathname with base stripped (e.g. "" or "berlin") */
+/** Current pathname with base stripped and trailing slash removed (e.g. "" or "berlin") */
 export function getPathFromLocation(): string {
-  const pathname = window.location.pathname;
-  if (!pathname.startsWith(BASE)) return pathname.replace(/^\/+/, "") || "";
-  return pathname.slice(BASE.length).replace(/^\/+/, "") || "";
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (!pathname.startsWith(BASE)) return pathname.replace(/^\/+/, "").replace(/\/+$/, "") || "";
+  const afterBase = pathname.slice(BASE.length).replace(/^\/+/, "").replace(/\/+$/, "") || "";
+  return afterBase;
 }
 
 /** Path suitable for route matching: "/" for root, "/segment" for others */

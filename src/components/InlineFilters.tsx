@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Filters, RoleType } from "../types";
 import { Badge } from "./ui/badge";
+import { cn } from "./ui/utils";
 import { getRoleGradient } from "../styles/roleColors";
 import { activeMultiGradient, badgeGradient } from "../styles/gradients";
 
@@ -94,21 +95,29 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
         </div>
       </div>
 
-      {/* Result count + filter toggle on one row so search stays uncluttered */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Result count + prominent Filters button */}
+      <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium text-neutral-500">
           {resultCount} {resultCount === 1 ? "person" : "people"}
         </p>
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="inline-filters__toggle relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:ring-offset-1"
+          className={cn(
+            "inline-filters__toggle relative flex items-center gap-2 rounded-lg border font-medium text-sm transition-all min-h-[2.75rem] sm:min-h-[2.25rem] px-4 py-2 touch-manipulation",
+            "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-400",
+            expanded || activeCount > 0
+              ? "border-teal-300/80 text-gray-900 shadow-sm"
+              : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900"
+          )}
+          style={expanded || activeCount > 0 ? { background: activeToggle, borderColor: "rgba(255,255,255,0.5)" } : undefined}
           aria-label={expanded ? "Collapse filters" : "Expand filters"}
           aria-expanded={expanded}
         >
-          <SlidersHorizontal className="size-4" />
-          {activeCount > 0 && !expanded && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-[10px] font-semibold text-white">
+          <SlidersHorizontal className="size-4 shrink-0" aria-hidden />
+          <span>Filters</span>
+          {activeCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 text-[11px] font-semibold text-white">
               {activeCount}
             </span>
           )}

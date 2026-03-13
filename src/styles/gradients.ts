@@ -41,4 +41,16 @@ export const activeMultiGradient = 'linear-gradient(135deg, #a5f3fc 0%, #bfdbfe 
  */
 export const badgeGradient = 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 50%, #fbcfe8 100%)';
 
+/* ── Connections page (bookmarks) ─────────────────────────────────────────
+ * Same pastel language as programming nodes; pink→mint so it feels personal
+ * and "saved" without reusing Berlin/SF/Global palettes.
+ */
+
+/** Header band: soft pink to mint (rgba for overlay blend, like node headers). */
+export const connectionsHeaderGradient =
+  'linear-gradient(135deg, rgba(251,207,232,0.5) 0%, rgba(167,243,208,0.45) 100%)';
+
+/** Accent for bookmark icon and CTAs (hex for buttons/badges). */
+export const connectionsAccentGradient = 'linear-gradient(135deg, #fbcfe8 0%, #a7f3d0 100%)';
+
 

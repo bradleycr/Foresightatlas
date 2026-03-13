@@ -51,8 +51,7 @@ export function AdminLoginModal({ onClose, onLogin }: AdminLoginModalProps) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <p className="text-sm text-gray-600">
-            Login to access admin features including review and approval of location
-            updates.
+            Log in to review and approve location updates.
           </p>
 
           {error && (

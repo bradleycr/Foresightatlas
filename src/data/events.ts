@@ -252,40 +252,11 @@ function sfDemoDays(): NodeEvent[] {
 let _cache: NodeEvent[] | null = null;
 let _dynamicLoaded = false;
 
-/** Normalize for comparison: lowercase, collapse spaces. */
-function normTitle(s: string): string {
-  return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-/** True if two events are likely the same (same day + similar title). Prefer Luma/sheet over seed. */
-function looksLikeDuplicate(existing: NodeEvent, seed: NodeEvent): boolean {
-  const startA = new Date(existing.startAt).toISOString().slice(0, 10);
-  const startB = new Date(seed.startAt).toISOString().slice(0, 10);
-  if (startA !== startB) return false;
-  const a = normTitle(existing.title);
-  const b = normTitle(seed.title);
-  if (a === b) return true;
-  const launch = "launch";
-  const node = "node";
-  const berlin = "berlin";
-  const openHouse = "open house";
-  const workshop = "workshop";
-  const hasLaunch = (t: string) => t.includes(launch);
-  const hasNode = (t: string) => t.includes(node);
-  const hasBerlin = (t: string) => t.includes(berlin);
-  const hasOpenHouse = (t: string) => t.includes(openHouse);
-  const hasWorkshop = (t: string) => t.includes(workshop);
-  if (hasLaunch(a) && hasLaunch(b) && (hasNode(a) || hasBerlin(a)) && (hasNode(b) || hasBerlin(b))) return true;
-  if (hasOpenHouse(a) && hasOpenHouse(b) && hasBerlin(a) && hasBerlin(b)) return true;
-  if (hasWorkshop(a) && hasWorkshop(b) && hasBerlin(a) && hasBerlin(b)) return true;
-  return false;
-}
-
 /**
- * Load events: Sheet (GET /api/database) is source of truth when it returns events.
- * Otherwise fall back to data/events.json (from sync-events: Sheet + Luma) merged with
- * seed events, deduplicating so we never show the same event twice (e.g. Berlin Node Launch
- * from both Luma and seed).
+ * Load events: Google Sheet (GET /api/database) is the only source of truth.
+ * When the sheet returns events we use and cache them. When the sheet has none
+ * (or the API is unavailable), we use in-code seed events only — no static
+ * events.json or other backup; sheet-first everywhere.
  */
 export async function loadEvents(): Promise<NodeEvent[]> {
   if (_dynamicLoaded && _cache) return _cache;
@@ -297,35 +268,6 @@ export async function loadEvents(): Promise<NodeEvent[]> {
     );
     _dynamicLoaded = true;
     return _cache;
-  }
-
-  try {
-    const basePath = (import.meta as any).env?.BASE_URL ?? "/";
-    const res = await fetch(`${basePath}data/events.json`);
-    if (res.ok) {
-      const json: NodeEvent[] = await res.json();
-      if (Array.isArray(json) && json.length > 0) {
-        const seed = getSeedEvents();
-        const idsInJson = new Set(json.map((e) => e.id));
-        const recurrenceGroupsInJson = new Set(
-          json.map((e) => e.recurrenceGroupId).filter(Boolean) as string[],
-        );
-        const seedToAdd = seed.filter((se) => {
-          if (idsInJson.has(se.id)) return false;
-          if (se.recurrenceGroupId && recurrenceGroupsInJson.has(se.recurrenceGroupId))
-            return false;
-          const isDup = json.some((ex) => looksLikeDuplicate(ex, se));
-          return !isDup;
-        });
-        _cache = [...json, ...seedToAdd].sort(
-          (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
-        );
-        _dynamicLoaded = true;
-        return _cache;
-      }
-    }
-  } catch {
-    // JSON not available — use seed data only
   }
 
   return getAllEvents();
@@ -357,6 +299,31 @@ export function getEventsByNode(slug: NodeSlug): NodeEvent[] {
 /** Events for the Global programming page: only events not tied to a specific node (Vision Weekends, global workshops). Node-specific events (open houses, node launch, coworking, demo days) show only on Berlin or SF. */
 export function getEventsForGlobal(): NodeEvent[] {
   return getAllEvents().filter((e) => e.nodeSlug === "global");
+}
+
+/**
+ * Seed events for a single node (used when API returns no events for that node).
+ * Berlin coworking and other in-code events are not in the Sheet; this prevents
+ * the Berlin/SF programming pages from showing empty when Sheet/Luma have no rows for that node.
+ */
+export function getSeedEventsByNode(slug: NodeSlug): NodeEvent[] {
+  return getSeedEvents().filter((e) => e.nodeSlug === slug);
+}
+
+/**
+ * Events to show on a node's programming page. Uses API (Sheet + Luma) when present;
+ * if the API has no events for this node, falls back to seed events so Berlin coworking
+ * and other in-code events still appear.
+ */
+export function getEventsByNodeForDisplay(
+  slug: NodeSlug,
+  dynamicEvents: NodeEvent[] | null,
+): NodeEvent[] {
+  if (dynamicEvents && dynamicEvents.length > 0) {
+    const forNode = dynamicEvents.filter((e) => e.nodeSlug === slug);
+    if (forNode.length > 0) return forNode;
+  }
+  return getSeedEventsByNode(slug);
 }
 
 export function getEventById(id: string): NodeEvent | undefined {

@@ -404,7 +404,7 @@ export function AppHeader({
                   <DirectoryLoginForm
                     people={people}
                     title="Sign in to your profile"
-                    description="Use your full name and password. If this is your first sign-in, use the temporary password password123 and then choose a new one."
+                    description="Use your full name and password."
                     submitLabel="Sign in"
                     onCancel={closeAccountDialog}
                     onAddYourself={() => {

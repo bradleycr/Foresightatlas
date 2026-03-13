@@ -5,10 +5,12 @@
  * and the number is explicitly the event count (not a date). Visual treatment
  * (icon + "events" sublabel) makes that unambiguous.
  *
+ * By default, months with no events are hidden; a small toggle reveals them.
  * Selected / current-month accent is driven by the per-node NodeColorTheme.
  */
 
-import { CalendarDays } from "lucide-react";
+import { useState } from "react";
+import { CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../ui/utils";
 import { NodeColorTheme } from "../../types/events";
 
@@ -32,22 +34,29 @@ export function MonthNavigator({
   onChange,
   theme,
 }: MonthNavigatorProps) {
+  const [showEmptyMonths, setShowEmptyMonths] = useState(false);
   const now = new Date();
   const currentMonth = now.getFullYear() === year ? now.getMonth() : -1;
   const totalEvents = counts.reduce((a, b) => a + b, 0);
 
+  const monthIndicesToShow = showEmptyMonths
+    ? SHORT.map((_, i) => i)
+    : SHORT.map((_, i) => i).filter((i) => counts[i] > 0 || i === currentMonth);
+  const hasHiddenEmpty = !showEmptyMonths && monthIndicesToShow.length < 12;
+  const hiddenCount = 12 - monthIndicesToShow.length;
+
   return (
-    <div>
+    <div className="min-w-0">
       {/* Year row */}
-      <div className="flex items-center justify-between mb-5 sm:mb-6">
-        <div className="flex items-baseline gap-2">
+      <div className="flex items-center justify-between gap-2 mb-5 sm:mb-6 flex-wrap">
+        <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-sm font-semibold text-gray-900">{year}</span>
-          <span className="text-xs text-gray-400">{totalEvents} events</span>
+          <span className="text-xs text-gray-400 shrink-0">{totalEvents} events</span>
         </div>
         <button
           onClick={() => onChange(null)}
           className={cn(
-            "text-xs font-medium px-3 py-2 rounded-md transition-all",
+            "text-xs font-medium px-3 py-2 rounded-md transition-all shrink-0",
             selected === null ? theme.allUpcomingActive : theme.allUpcomingIdle,
           )}
         >
@@ -55,9 +64,10 @@ export function MonthNavigator({
         </button>
       </div>
 
-      {/* Month grid — each cell: month name + event count (clearly not a date) */}
-      <div className="grid gap-2 sm:gap-2.5" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
-        {SHORT.map((label, i) => {
+      {/* Month grid — 3 cols on mobile, 6 on sm+ so it never overflows */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5 min-w-0">
+        {monthIndicesToShow.map((i) => {
+          const label = SHORT[i];
           const isSelected = selected === i;
           const isCurrent = i === currentMonth;
           const hasEvents = counts[i] > 0;
@@ -127,6 +137,39 @@ export function MonthNavigator({
           );
         })}
       </div>
+
+      {hasHiddenEmpty && (
+        <button
+          type="button"
+          onClick={() => setShowEmptyMonths(true)}
+          className={cn(
+            "mt-4 flex items-center gap-1.5 text-xs font-medium rounded-lg px-3 py-2 transition-colors",
+            "text-gray-500 hover:text-gray-700 hover:bg-gray-100/80",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+            theme.focusRing,
+          )}
+          aria-label={`Show ${hiddenCount} empty month${hiddenCount !== 1 ? "s" : ""}`}
+        >
+          <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+          Show empty months
+        </button>
+      )}
+      {showEmptyMonths && (
+        <button
+          type="button"
+          onClick={() => setShowEmptyMonths(false)}
+          className={cn(
+            "mt-4 flex items-center gap-1.5 text-xs font-medium rounded-lg px-3 py-2 transition-colors",
+            "text-gray-500 hover:text-gray-700 hover:bg-gray-100/80",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+            theme.focusRing,
+          )}
+          aria-label="Hide months with no events"
+        >
+          <ChevronUp className="size-3.5 opacity-70" aria-hidden />
+          Show only months with events
+        </button>
+      )}
 
       {selected !== null && (
         <p className="text-xs text-gray-400 mt-4 sm:mt-5">

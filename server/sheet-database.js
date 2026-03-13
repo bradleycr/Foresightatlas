@@ -156,7 +156,9 @@ function rowToEvent(row) {
     visibility: get(row, idx("visibility")) === "public" ? "public" : "internal",
     capacity: cap === "" ? null : parseInt(cap, 10) || null,
     externalLink: get(row, idx("externalLink")) || null,
+    coverImageUrl: get(row, idx("coverImageUrl")) || null,
     recurrenceGroupId: get(row, idx("recurrenceGroupId")) || null,
+    _lumaEventId: get(row, idx("lumaEventId")) || null,
   };
 }
 
@@ -199,7 +201,11 @@ async function fetchSheetRange(sheets, sheetName, range) {
 async function getFullDatabaseFromSheet() {
   const sheets = await getSheetsClient({ write: false });
   if (!sheets) {
-    throw new Error("Google Sheets credentials not configured. Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY.");
+    throw new Error(
+      "Google Sheets credentials not configured. " +
+        "Set GOOGLE_SHEETS_API_KEY (read-only: sheet must be shared 'Anyone with the link can view') or GOOGLE_SERVICE_ACCOUNT_KEY in .env.local. " +
+        "Optional: SPREADSHEET_ID (defaults to Foresight Map sheet). See docs/SHEETS_SYNC.md.",
+    );
   }
 
   const [loaded, twRows, suggestionsRows, adminRows, rsvpsRows, eventsRows] = await Promise.all([
@@ -208,7 +214,7 @@ async function getFullDatabaseFromSheet() {
     fetchSheetRange(sheets, SHEET_NAMES.SUGGESTIONS, "A:G"),
     fetchSheetRange(sheets, SHEET_NAMES.ADMIN_USERS, "A:D"),
     fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:G"),
-    fetchSheetRange(sheets, SHEET_NAMES.EVENTS, "A:N"),
+    fetchSheetRange(sheets, SHEET_NAMES.EVENTS, "A:O"),
   ]);
   const people = (loaded.records || []).map((r) => r.person).filter((p) => p && p.fullName);
   const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) => rowToTravelWindow(row));

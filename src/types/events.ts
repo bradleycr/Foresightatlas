@@ -92,6 +92,8 @@ export interface NodeEvent {
   visibility: EventVisibility;
   capacity: number | null;
   externalLink: string | null;
+  /** Optional cover/thumbnail from Luma or sheet (cards without it render as before). */
+  coverImageUrl?: string | null;
   recurrenceGroupId: string | null;
 }
 

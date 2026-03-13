@@ -216,6 +216,7 @@ async function fetchLumaEvents() {
       || ev.meeting_url
       || "TBA";
     const nodeSlug = isLocationUnspecified(location) ? "global" : guessNode(ev);
+    const coverUrl = (ev.cover_url && String(ev.cover_url).trim()) || null;
     return {
       _lumaApiId: ev.api_id,
       _lumaUrl: urlLink || externalLink,
@@ -231,6 +232,7 @@ async function fetchLumaEvents() {
       visibility: ev.visibility === "public" ? "public" : "internal",
       capacity: ev.max_capacity || null,
       externalLink,
+      coverImageUrl: coverUrl,
       recurrenceGroupId: ev.recurrence_id || null,
     };
   });
@@ -270,6 +272,7 @@ function mergeEvents(sheetEvents, lumaEvents) {
         visibility: lumaEv.visibility,
         capacity: lumaEv.capacity ?? sheetEv.capacity,
         externalLink: lumaEv.externalLink || sheetEv.externalLink,
+        coverImageUrl: lumaEv.coverImageUrl ?? sheetEv.coverImageUrl ?? null,
         recurrenceGroupId: lumaEv.recurrenceGroupId || sheetEv.recurrenceGroupId,
       });
     } else {

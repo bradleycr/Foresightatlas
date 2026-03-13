@@ -14,6 +14,7 @@ const fs = require("fs").promises;
 const cors = require("cors");
 const { saveProfile, createProfile } = require("./profile-store");
 const { getFullDatabaseFromSheet } = require("./sheet-database");
+const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const {
   authenticateDirectoryLogin,
   changeDirectoryPassword,
@@ -41,14 +42,16 @@ app.use(express.json());
 app.get("/api/database", async (req, res) => {
   try {
     const database = await getFullDatabaseFromSheet();
+    database.events = await mergeSheetEventsWithLuma(database.events || []);
     return res.json(database);
   } catch (error) {
     console.error("Error reading database from sheet:", error);
-    const message =
-      error?.message?.includes("credentials") || error?.message?.includes("configured")
-        ? "Google Sheet is not configured. Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY."
-        : "Failed to read database from sheet.";
-    res.status(503).json({ error: message });
+    const msg = error?.message || "Failed to read database from sheet.";
+    const hint =
+      msg.includes("credentials") || msg.includes("configured")
+        ? " Set GOOGLE_SHEETS_API_KEY (or GOOGLE_SERVICE_ACCOUNT_KEY) and SPREADSHEET_ID in .env.local. Share the sheet with 'Anyone with the link can view' for API key. See docs/SHEETS_SYNC.md."
+        : "";
+    res.status(503).json({ error: msg + hint });
   }
 });
 

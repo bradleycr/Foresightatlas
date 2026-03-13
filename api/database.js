@@ -1,13 +1,14 @@
 /**
  * Vercel serverless: GET /api/database
  *
- * Returns the full database (people, travelWindows, suggestions, adminUsers, rsvps)
- * from the Google Sheet. The sheet is the source of truth.
+ * Returns the full database (people, travelWindows, suggestions, adminUsers, rsvps, events)
+ * from the Google Sheet. Events are merged with Luma live (cached 10 min).
  *
- * Env: GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY, SPREADSHEET_ID
+ * Env: GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY, SPREADSHEET_ID; optional LUMA_API_KEY for events.
  */
 
 const { getFullDatabaseFromSheet } = require("../server/sheet-database");
+const { mergeSheetEventsWithLuma } = require("../server/luma-merge");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
@@ -20,11 +21,17 @@ module.exports = async function handler(req, res) {
 
   try {
     const database = await getFullDatabaseFromSheet();
+    database.events = await mergeSheetEventsWithLuma(database.events || []);
     return res.status(200).json(database);
   } catch (error) {
     console.error("GET /api/database", error?.message || error);
+    const msg = error?.message || "Failed to read database from sheet";
+    const hint =
+      process.env.NODE_ENV === "development" || process.env.VERCEL
+        ? " Set GOOGLE_SHEETS_API_KEY (or GOOGLE_SERVICE_ACCOUNT_KEY) and SPREADSHEET_ID in env. Share sheet 'Anyone with the link can view'. See docs/SHEETS_SYNC.md."
+        : "";
     return res.status(503).json({
-      error: "Failed to read database from sheet",
+      error: msg + hint,
       detail: process.env.NODE_ENV === "development" ? (error?.message || String(error)) : undefined,
     });
   }

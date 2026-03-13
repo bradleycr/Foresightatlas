@@ -1183,15 +1183,6 @@ export function MapView({
                   : undefined;
                 onViewPersonDetails?.(person.id, navContext);
               }}
-              onHighlight={() => {
-                // Show this person on the map: fly to their marker so the sidebar selection matches the map.
-                const personMarker = markers.find((m) => m.people.some((p) => p.person.id === person.id));
-                if (personMarker) {
-                  setSelectedMarker(personMarker);
-                  setSelectedMarkerFromList(true);
-                }
-                openSidebarAndScrollToPerson(person.id);
-              }}
               isHighlighted={selectedPerson === person.id}
             />
           </div>
@@ -1243,6 +1234,10 @@ export function MapView({
                 setSelectedPerson(personId);
                 setFiltersExpanded(false);
                 setIsSidebarOpen(true);
+                const navContext = selectedMarker
+                  ? { peopleIds: sidebarPeople.map((p) => p.id), label: selectedMarkerLabel }
+                  : undefined;
+                onViewPersonDetails?.(personId, navContext);
                 requestAnimationFrame(() => {
                   const el = personRefs.current[personId];
                   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1335,9 +1330,10 @@ export function MapView({
       {/* Fellows & Grantees List - desktop sidebar */}
       {!isMobile && isSidebarOpen && (
         <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none min-h-0 relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
-          {/* Single scrollable area: title + filters + list so month row and all controls are reachable */}
+          {/* Scrollable: sticky search/filters at top, then list */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-            <div className="p-4 pb-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
+            {/* Sticky block: title + search + filters stay visible when scrolling the list */}
+            <div className="sticky top-0 z-10 p-4 pb-4 border-b border-gray-200 bg-app-sidebar space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="text-gray-900 font-semibold truncate font-heading">
@@ -1410,9 +1406,10 @@ export function MapView({
               </div>
             </div>
           </header>
-          {/* Scrollable area: filters + list only — header stays fixed above */}
+          {/* Scrollable area: sticky search/filters at top, then list */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-            <div className="px-4 pt-3 pb-4 border-b border-gray-200 space-y-3 bg-app-sidebar">
+            {/* Sticky block: search + filters stay visible when scrolling the list */}
+            <div className="sticky top-0 z-10 px-4 pt-3 pb-4 border-b border-gray-200 bg-app-sidebar">
               {filters && onFiltersChange && defaultYear !== undefined && (
                 <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} expanded={filtersExpanded} onExpandedChange={setFiltersExpanded} />
               )}

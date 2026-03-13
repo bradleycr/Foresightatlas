@@ -1,8 +1,9 @@
 /**
  * Geocoding Service
- * 
+ *
  * Provides utilities for geocoding city names to coordinates and countries.
  * Uses OpenStreetMap Nominatim API (free, no API key required).
+ * Tolerates common country typos (e.g. Germabny → Germany) and falls back to city-only search.
  */
 
 export interface GeocodeResult {
@@ -10,6 +11,41 @@ export interface GeocodeResult {
   lng: number;
   country?: string;
   city?: string;
+}
+
+/** Common country name typos → canonical name for geocoding. */
+const COUNTRY_TYPO_MAP: Record<string, string> = {
+  germabny: "Germany",
+  germnay: "Germany",
+  geramny: "Germany",
+  gernany: "Germany",
+  engalnd: "England",
+  engand: "England",
+  "untied kingdom": "United Kingdom",
+  uk: "United Kingdom",
+  usa: "United States",
+  "untied states": "United States",
+  americ: "United States",
+  frnace: "France",
+  spian: "Spain",
+  itlay: "Italy",
+  netherand: "Netherlands",
+  austira: "Austria",
+  switerland: "Switzerland",
+  protugal: "Portugal",
+  belguim: "Belgium",
+  polnad: "Poland",
+  czeck: "Czech Republic",
+  jpan: "Japan",
+  austrlia: "Australia",
+  mexcio: "Mexico",
+  singapor: "Singapore",
+};
+
+function correctCountryTypo(country: string): string {
+  if (!country.trim()) return country;
+  const key = country.trim().toLowerCase().replace(/\s+/g, " ");
+  return COUNTRY_TYPO_MAP[key] ?? country.trim();
 }
 
 /**
@@ -130,34 +166,26 @@ export function validateReverseGeocodeResult(
 }
 
 /**
- * Geocode a city name to get coordinates and country
+ * Single-query Nominatim search. Returns null on no results or error.
  */
-export async function geocodeCity(
-  cityName: string,
-  country?: string
+async function geocodeCityOneQuery(
+  query: string
 ): Promise<GeocodeResult | null> {
-  if (!cityName.trim()) return null;
-
   try {
-    const query = country
-      ? `${cityName}, ${country}`
-      : cityName;
-    
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
       {
         headers: {
-          'User-Agent': 'ForesightMap/1.0', // Required by Nominatim
+          "User-Agent": "ForesightMap/1.0", // Required by Nominatim
         },
       }
     );
-    
+
     if (!response.ok) {
-      throw new Error(`Geocoding failed: ${response.statusText}`);
+      return null;
     }
-    
+
     const data = await response.json();
-    
     if (data && data.length > 0) {
       const result = data[0];
       return {
@@ -167,12 +195,47 @@ export async function geocodeCity(
         city: result.address?.city || result.address?.town || result.address?.village || undefined,
       };
     }
-    
     return null;
-  } catch (error) {
-    console.error("Error geocoding city:", error);
+  } catch {
     return null;
   }
+}
+
+/**
+ * Geocode a city name to get coordinates and country.
+ * Tries: (1) "city, corrected country" (fixes common typos like Germabny→Germany),
+ * (2) "city, country" as typed, (3) city-only so well-known cities still resolve.
+ */
+export async function geocodeCity(
+  cityName: string,
+  country?: string
+): Promise<GeocodeResult | null> {
+  if (!cityName.trim()) return null;
+
+  const city = cityName.trim();
+  const rawCountry = (country ?? "").trim();
+  const correctedCountry = rawCountry ? correctCountryTypo(rawCountry) : "";
+
+  // Build query list: prefer corrected country, then city-only for fallback
+  const queries: string[] = [];
+  if (correctedCountry) {
+    queries.push(`${city}, ${correctedCountry}`);
+  }
+  if (rawCountry && correctedCountry !== rawCountry) {
+    queries.push(`${city}, ${rawCountry}`);
+  }
+  queries.push(city);
+
+  for (let i = 0; i < queries.length; i++) {
+    const result = await geocodeCityOneQuery(queries[i]);
+    if (result) return result;
+    // Nominatim allows 1 req/sec; wait between fallbacks
+    if (i < queries.length - 1) {
+      await new Promise((r) => setTimeout(r, 1100));
+    }
+  }
+
+  return null;
 }
 
 /**

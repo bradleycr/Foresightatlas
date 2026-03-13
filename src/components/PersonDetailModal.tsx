@@ -50,6 +50,7 @@ import {
 } from "./ui/dropdown-menu";
 import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
+import { connectionsAccentGradient } from "../styles/gradients";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
@@ -504,9 +505,10 @@ export function PersonDetailModal({
                       className={cn(
                         "person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation active:scale-95 transition-transform",
                         isConnected(identity.personId, person.id)
-                          ? "text-sky-600 bg-sky-50 border-sky-200"
-                          : "text-gray-500 hover:text-sky-600 hover:bg-sky-50/80 active:bg-sky-50",
+                          ? "text-gray-900 border border-gray-200"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 active:bg-gray-100",
                       )}
+                      style={isConnected(identity.personId, person.id) ? { background: connectionsAccentGradient } : undefined}
                       aria-label={isConnected(identity.personId, person.id) ? "Remove from connections" : "Add to connections"}
                     >
                       <Bookmark

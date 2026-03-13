@@ -4,13 +4,17 @@
     <meta charset="utf-8">
     <title>Foresight Map</title>
     <script>
-      // GitHub Pages serves this for unknown routes. Redirect to app root
+      // GitHub Pages (or static host) serves this for unknown routes. Redirect to app root
       // and store the requested path so the SPA can restore it (deep links).
+      // Known SPA routes mean we're at site root (/) — redirect to / and let the app restore path.
+      // Otherwise the first segment is the repo/base (e.g. Foresightmap) — redirect to /base/.
       (function () {
-        var path = window.location.pathname;
-        var segments = path.replace(/^\//, '').split('/');
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        var segments = path.replace(/^\//, '').split('/').filter(Boolean);
         var baseSegment = segments[0] || '';
-        var base = baseSegment ? '/' + baseSegment + '/' : '/';
+        var knownRoutes = ['berlin', 'sf', 'global', 'profile', 'connections'];
+        var isAppRoute = knownRoutes.indexOf(baseSegment) !== -1;
+        var base = isAppRoute ? '/' : (baseSegment ? '/' + baseSegment + '/' : '/');
         try {
           sessionStorage.setItem('foresightmap_redirect', path);
         } catch (e) {}

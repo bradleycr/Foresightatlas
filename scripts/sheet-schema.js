@@ -110,6 +110,7 @@ const EVENTS_HEADERS = [
   "externalLink",
   "recurrenceGroupId",
   "lumaEventId",
+  "coverImageUrl",
 ];
 
 /** Append-only log of every /checkin command received via Signal. */

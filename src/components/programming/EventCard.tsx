@@ -136,6 +136,19 @@ export function EventCard({
 
   return (
     <div className="relative bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition-shadow p-6 sm:p-7 overflow-hidden">
+      {/* Optional cover image from Luma — only when present; cards without stay unchanged */}
+      {event.coverImageUrl && (
+        <div className="absolute inset-x-0 top-0 h-32 sm:h-40 overflow-hidden">
+          <img
+            src={event.coverImageUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent pointer-events-none" aria-hidden />
+        </div>
+      )}
+      <div className={cn(event.coverImageUrl && "pt-28 sm:pt-36")}>
       {isLumaEvent && (
         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: badgeGradient }} aria-hidden />
       )}
@@ -283,6 +296,7 @@ export function EventCard({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

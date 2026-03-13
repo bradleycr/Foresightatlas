@@ -1,30 +1,26 @@
 # Luma + Google Sheet Events Integration
 
-Events on the Programming pages come from **two sources**, merged at build time:
+Events on the Programming pages come from **two sources**, merged **when you load the app**:
 
-1. **Google Sheet "Events" tab** — for manual / internal entries you manage yourself  
-2. **Luma API** — pulls public events from [luma.com/foresightinstitute](https://luma.com/foresightinstitute)
+1. **Google Sheet "Events" tab** — source of truth for manual / internal entries  
+2. **Luma API** — fetched live by the server and merged with sheet events on each request (cached 10 minutes)
 
-If the same event exists in both (linked via `lumaEventId`), Luma data wins for title, description, times, location, and link. No duplicates.
+No manual sync step: **GET /api/database** reads events from the sheet, then merges in Luma events (with a short server-side cache). If the same event exists in both (linked via `lumaEventId`), Luma data wins for title, description, times, location, link, and cover image. No duplicates.
 
-**Where does the data actually come from?** See [docs/EVENTS_SOURCE.md](EVENTS_SOURCE.md) for the full picture (including fallback seed data in code).
+**Where does the data actually come from?** See [docs/EVENTS_SOURCE.md](EVENTS_SOURCE.md) for the full picture (including fallback seed data when the API is unavailable).
 
 ---
 
-## How it works
+## How it works (live merge)
 
-```
-pnpm sync:events
-```
+When the app loads, it calls **GET /api/database**. The server:
 
-This runs `scripts/sync-events.js` which:
+1. Reads the **Events** tab from the Google Sheet (source of truth)
+2. Fetches events from **Luma** via their API (cached for 10 minutes to avoid hitting Luma on every request)
+3. Merges and deduplicates (Sheet + Luma)
+4. Returns the merged list in the database payload
 
-1. Fetches the **Events** tab from your Google Sheet
-2. Fetches all events from **Luma** via their API
-3. Merges and deduplicates them
-4. Writes `public/data/events.json`
-
-The app loads `events.json` at runtime. If the file doesn't exist, it falls back to the hardcoded seed events in `src/data/events.ts`.
+You do **not** need to run `pnpm sync:events` for the app to show Luma events. Optionally, you can still run it to write **public/data/events.json** (used only when the API/sheet is unavailable).
 
 ---
 
@@ -107,9 +103,21 @@ This means you can:
 
 ---
 
+## Berlin / SF coworking and seed events
+
+**Berlin coworking sessions** (and some other recurring or one-off events) are defined **in code** as seed data in `src/data/events.ts`. They are **not** stored in the Google Sheet by default.
+
+- **If the API returns no events for a node:** the app shows that node’s seed events (e.g. Berlin weekly coworking, SF demo days) so the programming page is never empty.
+- **If the API returns events for other nodes but none for Berlin:** the app now **falls back to Berlin seed events** on the Berlin page, so coworking still appears.
+- **To make events the single source of truth:** add them to the Sheet **Events** tab (or create them on Luma with a clear Berlin/SF location). Then they come from the API and seed is only used when the API has nothing for that node.
+
+---
+
 ## Luma API reference
 
 - [Getting Started](https://docs.luma.com/reference/getting-started-with-your-api)
 - [List Events](https://docs.luma.com/reference/get_v1-calendar-list-events) — `GET /v1/calendar/list-events`
 - Base URL: `https://public-api.luma.com`
 - Auth header: `x-luma-api-key: YOUR_KEY`
+
+Events returned by the API can include a **`cover_url`** (cover image). The sync script passes this through as **`coverImageUrl`**; event cards show the image when present. Cards without a cover render as before (no empty placeholder).

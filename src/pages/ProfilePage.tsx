@@ -307,7 +307,7 @@ export function ProfilePage({
                 Add yourself to the directory
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-                Not in the list? Fill in your details below and set a password. Your profile will be added to the map and directory.
+                Not in the list? Add your details below; you&apos;ll appear on the map and in the directory.
               </p>
             </div>
 
@@ -568,7 +568,7 @@ export function ProfilePage({
               <DirectoryLoginForm
                 people={people}
                 title="Sign in to edit your directory profile"
-                description="Use your full name and password. If this is your first sign-in, your temporary password is password123."
+                description="Use your full name and password."
                 submitLabel="Sign in"
                 onSubmit={onSignIn}
                 onAddYourself={onAddYourself}
@@ -740,7 +740,7 @@ export function ProfilePage({
                   {draft.fullName}
                 </h1>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-                  Edit the fields below; save and sign out are at the bottom of the page.
+                  Edit below; Save and Sign out are at the bottom.
                 </p>
               </div>
             </div>
@@ -984,18 +984,13 @@ export function ProfilePage({
               >
                 {identity.mustChangePassword ? (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    This is your first sign-in. Use <span className="font-semibold">password123</span> as the current password, then choose a new one below.
+                    Use <span className="font-semibold">password123</span> as current password below, then set a new one.
                   </div>
                 ) : null}
                 <div className="grid gap-4">
                   <Field
                     label="Current password"
                     required
-                    description={
-                      identity.mustChangePassword
-                        ? "Your temporary password is password123."
-                        : undefined
-                    }
                   >
                     <Input
                       type="password"

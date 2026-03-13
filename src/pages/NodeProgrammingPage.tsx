@@ -18,7 +18,7 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NodeSlug, NodeEvent, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode, getProgrammingPageConfig } from "../data/nodes";
-import { getEventsByNode, getEventsForGlobal, loadEvents } from "../data/events";
+import { getEventsByNodeForDisplay, loadEvents } from "../data/events";
 import type { Identity } from "../services/identity";
 import {
   setRSVP,
@@ -43,6 +43,9 @@ import { cn } from "../components/ui/utils";
 import { toast } from "sonner";
 
 type PageTab = "events" | "table";
+
+/** Check-in table (The Table) is on for Berlin and SF. Set to false to hide the tab until Signal/etc. is ready. */
+const ENABLE_CHECKIN_TABLE = true;
 
 const YEAR = 2026;
 const UPCOMING_DAYS = 90;
@@ -99,6 +102,7 @@ export function NodeProgrammingPage({
   const [showQR, setShowQR] = useState(false);
 
   const isGlobal = activeNode === "global";
+  const isPhysicalNode = (activeNode === "berlin" || activeNode === "sf") && ENABLE_CHECKIN_TABLE;
 
   /* ── Tab state (URL param aware) ─────────────────────────────────── */
   const urlParams = useRef(readUrlParams());
@@ -110,8 +114,8 @@ export function NodeProgrammingPage({
   }, [initialNode]);
 
   useEffect(() => {
-    if (isGlobal && activeTab === "table") setActiveTab("events");
-  }, [isGlobal, activeTab]);
+    if (!isPhysicalNode && activeTab === "table") setActiveTab("events");
+  }, [isPhysicalNode, activeTab]);
 
   /* ── Data loading ────────────────────────────────────────────────── */
 
@@ -164,14 +168,10 @@ export function NodeProgrammingPage({
   const eventsTopRef = useRef<HTMLDivElement>(null);
 
   const node = getProgrammingPageConfig(activeNode)!;
-  const allEvents = useMemo(() => {
-    const source = dynamicEvents ?? (isGlobal ? getEventsForGlobal() : getEventsByNode(activeNode));
-    if (dynamicEvents) {
-      if (isGlobal) return source.filter((e) => e.nodeSlug === "global");
-      return source.filter((e) => e.nodeSlug === activeNode);
-    }
-    return source;
-  }, [activeNode, dynamicEvents, isGlobal]);
+  const allEvents = useMemo(
+    () => getEventsByNodeForDisplay(activeNode, dynamicEvents),
+    [activeNode, dynamicEvents],
+  );
   const isAuthed = identity !== null;
 
   const monthlyCounts = useMemo(() => {
@@ -258,12 +258,12 @@ export function NodeProgrammingPage({
 
   const tabTabs: { id: PageTab; label: string; icon: typeof CalendarDays }[] = [
     { id: "events", label: "Events", icon: CalendarDays },
-    ...(isGlobal ? [] : [{ id: "table" as PageTab, label: "The Table", icon: Users }]),
+    ...(isPhysicalNode ? [{ id: "table" as PageTab, label: "The Table", icon: Users }] : []),
   ];
 
   const tabBar = (
-    <div className={pageShellClassName}>
-      <div className="flex gap-1 border-b border-gray-200">
+    <div className={cn("flex-shrink-0 sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm", pageShellClassName)}>
+      <div className="flex gap-1">
         {tabTabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -331,6 +331,9 @@ export function NodeProgrammingPage({
         </div>
       )}
 
+      {/* Tab bar — Events + The Table (Berlin/SF when ENABLE_CHECKIN_TABLE is true) */}
+      {isPhysicalNode ? tabBar : null}
+
       {/* Content */}
       <div className="w-full min-w-0">
         <div className={cn(
@@ -349,7 +352,7 @@ export function NodeProgrammingPage({
         {activeTab === "events" ? (
           /* ── Events tab ────────────────────────────────────────────── */
           <>
-            <div ref={eventsTopRef} className="rounded-2xl border border-gray-200 shadow p-6 sm:p-8" style={{ background: theme.headerGradient }}>
+            <div ref={eventsTopRef} className="rounded-2xl border border-gray-200 shadow p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden" style={{ background: theme.headerGradient }}>
               <MonthNavigator
                 selected={selectedMonth}
                 year={YEAR}
@@ -422,7 +425,7 @@ export function NodeProgrammingPage({
             )}
           </>
         ) : (
-          /* ── The Table tab ─────────────────────────────────────────── */
+          /* ── The Table (check-in) — who's at the node today; no Signal bot required ── */
           <NodeTableView
             nodeSlug={activeNode}
             theme={theme}
@@ -568,8 +571,8 @@ function DirectoryStatusBanner({
             </p>
             <p className="mt-1 text-xs text-gray-500">
               {mode === "table"
-                ? "You are signed in for node check-ins. Use the Profile button in the top right to manage your account."
-                : "You are signed in for event RSVPs. Use the Profile button in the top right to manage your account."}
+                ? "Signed in for check-ins. Use Profile (top right) to manage your account."
+                : "Signed in for RSVPs. Use Profile (top right) to manage your account."}
             </p>
           </div>
           <ShieldCheck className={cn("hidden size-5 shrink-0 sm:block", theme.avatarActiveText)} />
@@ -586,12 +589,12 @@ function DirectoryStatusBanner({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-gray-900 sm:text-base">
-            Sign in from the top-right Profile menu
+            Sign in (Profile, top right)
           </p>
           <p className="mt-1 text-xs text-gray-500 sm:text-sm">
             {mode === "table"
-              ? "Check-ins now use your profile account. Sign in once from the header, then come back here to mark yourself at the node."
-              : "Event RSVPs now use your profile account. Sign in once from the header, then RSVP directly on events below."}
+              ? "Sign in once, then return here to mark yourself at the node."
+              : "Sign in once, then RSVP on events below."}
           </p>
         </div>
       </div>

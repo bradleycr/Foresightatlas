@@ -54,9 +54,12 @@ export function FellowCard({
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:shadow-lg border ${
-        isHighlighted ? "ring-2 ring-teal-500 shadow-lg border-teal-200 bg-app-card-highlight" : "border-gray-100 bg-app-card"
-      }`}
+      className={cn(
+        "p-4 cursor-pointer transition-all hover:shadow-lg border border-gray-100",
+        isHighlighted
+          ? "border-l-4 border-l-teal-500 bg-teal-50/70 shadow-sm"
+          : "bg-app-card"
+      )}
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
