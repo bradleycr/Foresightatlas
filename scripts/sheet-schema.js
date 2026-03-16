@@ -43,6 +43,7 @@ const PEOPLE_PUBLIC_HEADERS = [
   "lng",
   "primaryNode",
   "profileUrl",
+  "profileImageUrl",
   "contactUrlOrHandle",
   "shortProjectTagline",
   "expandedProjectDescription",

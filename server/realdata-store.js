@@ -176,6 +176,7 @@ function rowToPersonRecord(orderedRow, rowNumber) {
     },
     primaryNode: normalizeString(orderedRow[idx("primaryNode")]) || "Global",
     profileUrl: normalizeString(orderedRow[idx("profileUrl")]),
+    profileImageUrl: normalizeNullableString(orderedRow[idx("profileImageUrl")]),
     contactUrlOrHandle: normalizeNullableString(orderedRow[idx("contactUrlOrHandle")]),
     shortProjectTagline: normalizeString(orderedRow[idx("shortProjectTagline")]),
     expandedProjectDescription: normalizeString(
@@ -218,6 +219,7 @@ function personRecordToRow(record) {
     person.currentCoordinates?.lng ?? "",
     person.primaryNode ?? "Global",
     person.profileUrl ?? "",
+    person.profileImageUrl ?? "",
     person.contactUrlOrHandle ?? "",
     person.shortProjectTagline ?? "",
     person.expandedProjectDescription ?? "",

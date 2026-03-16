@@ -72,9 +72,18 @@ export function FellowCard({
       aria-label={onHighlight ? `Select ${person.fullName}` : `View full profile for ${person.fullName}`}
     >
       <div className="space-y-3">
-        {/* Header: name/role left, profile action top-right */}
+        {/* Header: optional avatar, name/role left, profile action top-right */}
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 flex items-start gap-3">
+            {person.profileImageUrl && (
+              <img
+                src={person.profileImageUrl}
+                alt=""
+                className="size-10 sm:size-12 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <div className="min-w-0 flex-1">
             <h3 className="text-gray-900 font-heading">{person.fullName}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span
@@ -90,6 +99,7 @@ export function FellowCard({
               <span className="text-sm text-gray-600">
                 Cohort {getCohortLabel(person)}
               </span>
+            </div>
             </div>
           </div>
           {onSelect && (

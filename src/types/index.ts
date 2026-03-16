@@ -23,6 +23,8 @@ export interface Person {
   currentCoordinates: { lat: number; lng: number };
   primaryNode: PrimaryNode;
   profileUrl: string;
+  /** Optional profile/avatar image URL (e.g. from foresight.org); not hosted by us. */
+  profileImageUrl: string | null;
   contactUrlOrHandle: string | null;
   shortProjectTagline: string;
   expandedProjectDescription: string;

@@ -121,6 +121,7 @@ function normalizePerson(
     currentCoordinates: p.currentCoordinates ?? { lat: 0, lng: 0 },
     primaryNode: p.primaryNode ?? "Global",
     profileUrl: p.profileUrl ?? "",
+    profileImageUrl: p.profileImageUrl ?? null,
     contactUrlOrHandle: p.contactUrlOrHandle ?? null,
     shortProjectTagline: p.shortProjectTagline ?? "",
     expandedProjectDescription: p.expandedProjectDescription ?? "",

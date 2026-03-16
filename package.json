@@ -74,6 +74,7 @@
         "vaul": "^1.1.2"
     },
     "devDependencies": {
+        "@playwright/test": "^1.58.2",
         "@tailwindcss/vite": "^4.2.1",
         "@types/express": "^4.17.21",
         "@types/node": "^20.10.0",
@@ -81,14 +82,15 @@
         "concurrently": "^8.2.2",
         "dotenv": "^17.3.1",
         "googleapis": "^171.4.0",
+        "playwright": "^1.58.2",
         "tailwindcss": "^4.2.1",
         "vite": "6.3.5"
     },
     "scripts": {
-"dev": "node scripts/start-dev.js",
-    "dev:api": "node server/index.js",
-    "dev:signal": "node server/signal/index.js",
-    "dev:all": "concurrently \"pnpm run dev:api\" \"vite\" \"pnpm run dev:signal\"",
+        "dev": "node scripts/start-dev.js",
+        "dev:api": "node server/index.js",
+        "dev:signal": "node server/signal/index.js",
+        "dev:all": "concurrently \"pnpm run dev:api\" \"vite\" \"pnpm run dev:signal\"",
         "build": "vite build",
         "sync:sheet": "node scripts/sync-sheet-to-json.js",
         "merge:people": "node scripts/merge-people-into-realdata.js",
@@ -107,7 +109,9 @@
         "copyover-report": "node scripts/copyover-test-to-real-report.js",
         "copyover-report:csv": "node scripts/copyover-test-to-real-report.js --csv",
         "test:signal-checkin": "node scripts/test-signal-checkin.js",
-        "setup:events-tab": "node scripts/create-events-tab.js"
+        "setup:events-tab": "node scripts/create-events-tab.js",
+        "sync:fellows": "node scripts/sync-fellows-from-website.js",
+        "scrape:fellowship": "node scripts/scrape-fellowship-website.js"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

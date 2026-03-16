@@ -109,6 +109,7 @@ function rowToPerson(row) {
     },
     primaryNode: get(idx("primaryNode")) || "Global",
     profileUrl: get(idx("profileUrl")),
+    profileImageUrl: get(idx("profileImageUrl")) || null,
     contactUrlOrHandle: get(idx("contactUrlOrHandle")) || null,
     shortProjectTagline: get(idx("shortProjectTagline")),
     expandedProjectDescription: get(idx("expandedProjectDescription")),

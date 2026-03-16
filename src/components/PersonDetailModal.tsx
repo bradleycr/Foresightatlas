@@ -130,6 +130,12 @@ export function PersonDetailModal({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  /** When true, show full expanded project description; otherwise truncate with "Show more". */
+  const [projectDescriptionExpanded, setProjectDescriptionExpanded] = useState(false);
+
+  useEffect(() => {
+    setProjectDescriptionExpanded(false);
+  }, [person?.id]);
   const isMobile = useIsMobile();
 
   // Lock body scroll when modal is open
@@ -584,9 +590,18 @@ export function PersonDetailModal({
                 </div>
               )}
 
-              {/* Name + metadata block */}
+              {/* Name + metadata block (optional profile image from foresight.org) */}
               <header className="person-detail-content__head">
-                <div className="mb-3 sm:mb-4">
+                <div className={cn("mb-3 sm:mb-4", (displayPerson.profileImageUrl || (isEditing && editingPerson?.profileImageUrl)) && "flex items-start gap-4")}>
+                  {(displayPerson.profileImageUrl || (isEditing && editingPerson?.profileImageUrl)) && (
+                    <img
+                      src={isEditing && editingPerson?.profileImageUrl ? editingPerson.profileImageUrl! : displayPerson.profileImageUrl!}
+                      alt=""
+                      className="size-16 sm:size-20 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
                   {isEditing && editingPerson ? (
                     <Input
                       value={editingPerson.fullName}
@@ -599,6 +614,7 @@ export function PersonDetailModal({
                       {displayPerson.fullName}
                     </h2>
                   )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   {isEditing && editingPerson ? (
@@ -734,11 +750,27 @@ export function PersonDetailModal({
                           const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
                           const showTagline = tagline && !taglineIsPrefix;
                           const showExpandedOnly = expanded.length > 0;
+                          const truncateLength = 320;
+                          const isLong = expanded.length > truncateLength;
+                          const showMore = isLong && !projectDescriptionExpanded;
+                          const visibleDescription = showMore ? `${expanded.slice(0, truncateLength).trim()}\u2026` : expanded;
                           return (
                             <>
                               {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
                               {showExpandedOnly && (
-                                <p className="person-detail-body leading-relaxed">{expanded}</p>
+                                <>
+                                  <p className="person-detail-body leading-relaxed whitespace-pre-wrap">{visibleDescription}</p>
+                                  {isLong && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setProjectDescriptionExpanded((v) => !v)}
+                                      className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 rounded"
+                                    >
+                                      {projectDescriptionExpanded ? "Show less" : "Show more"}
+                                      <ChevronDown className={`size-3.5 transition-transform ${projectDescriptionExpanded ? "rotate-180" : ""}`} />
+                                    </button>
+                                  )}
+                                </>
                               )}
                               {(displayPerson.affiliationOrInstitution ?? "").trim() && (
                                 <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
