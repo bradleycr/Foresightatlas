@@ -76,7 +76,7 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
       {/* Search — full-width row so the input has room; short placeholder keeps it feeling spacious */}
       <div className="w-full">
         <label className="sr-only" htmlFor="sidebar-search">
-          Search by name, project, or city
+          Search by name, details, or city
         </label>
         <div className="relative">
           <Search
@@ -87,7 +87,7 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
             id="sidebar-search"
             type="search"
             placeholder="Search…"
-            title="Search by name, project, or city"
+            title="Search by name, details, or city"
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
             className="inline-filters__input w-full rounded-lg border border-neutral-200 bg-neutral-50 py-2.5 pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-200 min-h-[2.75rem]"

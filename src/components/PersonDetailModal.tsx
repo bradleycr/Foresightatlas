@@ -3,7 +3,7 @@
  * 
  * Displays comprehensive person information in a full-screen modal.
  * When admin is logged in, provides full CRUD editing capabilities for:
- * - Person details (name, role, cohort, focus tags, locations, project info, contact)
+ * - Person details (name, role, cohort, focus tags, locations, details/bio, contact)
  * - Travel windows (create, edit, delete)
  * 
  * Beautiful, modular design with elegant mobile styling and production-ready error handling.
@@ -724,19 +724,19 @@ export function PersonDetailModal({
               </header>
 
               {/* Main content: 2-col from md (tablet) up, single col on mobile.
-                  When project is absent the sidebar spans full width — no ghost left column. */}
+                  When details block is absent the sidebar spans full width — no ghost left column. */}
               <div className={cn(
                 "person-detail-grid grid grid-cols-1 gap-6 md:gap-8 lg:gap-10",
                 hasProject && "md:grid-cols-[1fr_minmax(0,280px)]"
               )}>
-                {/* Left: Project — only rendered when content exists, or admin is in edit mode */}
+                {/* Left: Details — bio/tagline/affiliation; only rendered when content exists or admin editing */}
                 {hasProject && (
                   <section className="person-detail-section space-y-2">
-                    <h3 className="person-detail-section-title">Project</h3>
+                    <h3 className="person-detail-section-title">Details</h3>
                     {isEditing && editingPerson ? (
                       <div className="space-y-3">
                         <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
-                        <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="Full description" />
+                        <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="About you, your work, or project — full description" />
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
                           <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value.trim() || null })} placeholder="Institution or company" className="mt-1" />
@@ -928,20 +928,21 @@ export function PersonDetailModal({
                 </div>
               </div>
 
-              {/* Travel — full width below grid */}
+              {/* Events, travel & residencies — full width below grid; events first, then travel windows */}
               <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <h3 className="person-detail-section-title flex items-center gap-2">
                     <Calendar className="h-3.5 w-3.5 shrink-0" />
-                    Travel & Residencies ({personTravelWindows.length})
+                    Events, travel & residencies
                   </h3>
                   {isEditing && isAdmin && (
                     <Button size="sm" onClick={handleAddTravelWindow} className="bg-teal-600 hover:bg-teal-700">
                       <Plus className="h-4 w-4 mr-1" />
-                      Add
+                      Add travel
                     </Button>
                   )}
                 </div>
+                {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
                 {editingTravelWindow ? (
                   <TravelWindowEditForm travelWindow={editingTravelWindow} onChange={setEditingTravelWindow} onSave={handleSaveTravelWindow} onCancel={() => setEditingTravelWindow(null)} isSaving={isSaving} />
                 ) : (
@@ -977,9 +978,6 @@ export function PersonDetailModal({
                   </div>
                 )}
               </section>
-
-              {/* Event RSVPs — only "going" (confirmed), not "interested" */}
-              {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
 
               {/* Node check-in schedule — upcoming days they plan to be at a node */}
               {!isEditing && <PersonCheckIns personId={person.id} />}

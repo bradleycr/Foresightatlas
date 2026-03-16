@@ -138,7 +138,7 @@ export function FiltersBar({
             <Input
               type="text"
               placeholder="Search…"
-              title="Search by name, project, or city"
+              title="Search by name, details, or city"
               value={filters.search}
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
               className="pl-10 pr-4 py-2 text-sm md:text-base"

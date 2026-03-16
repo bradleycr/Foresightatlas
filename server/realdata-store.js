@@ -79,6 +79,17 @@ function sanitizeProfileImageUrl(value) {
   return null;
 }
 
+/** Reject contact field when it looks like bio/prose (wrong column or pasted description). */
+function sanitizeContact(value) {
+  const s = normalizeString(value);
+  if (!s) return null;
+  if (s.length > 180) return null; // contact should be short
+  if (/\b(the|and|with|from|have|research|institute|university)\b/i.test(s) && s.length > 80) return null; // prose
+  if (/^People\s*\/\s*\S+$/i.test(s)) return null;
+  if (/^https?:\/\//i.test(s) && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return null; // image URL in contact
+  return s;
+}
+
 function normalizeStringArray(value) {
   const source = Array.isArray(value)
     ? value
@@ -198,7 +209,7 @@ function rowToPersonRecord(orderedRow, rowNumber) {
     primaryNode: normalizeString(orderedRow[idx("primaryNode")]) || "Global",
     profileUrl: normalizeString(orderedRow[idx("profileUrl")]),
     profileImageUrl: sanitizeProfileImageUrl(orderedRow[idx("profileImageUrl")]),
-    contactUrlOrHandle: normalizeNullableString(orderedRow[idx("contactUrlOrHandle")]),
+    contactUrlOrHandle: sanitizeContact(orderedRow[idx("contactUrlOrHandle")]),
     shortProjectTagline: normalizeString(orderedRow[idx("shortProjectTagline")]),
     expandedProjectDescription: sanitizeBio(
       orderedRow[idx("expandedProjectDescription")],

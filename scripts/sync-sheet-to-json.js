@@ -64,6 +64,17 @@ function sanitizeProfileImageUrl(value) {
   return null;
 }
 
+/** Reject contact when it looks like bio/prose (same as realdata-store). */
+function sanitizeContact(value) {
+  const s = value != null ? String(value).trim() : "";
+  if (!s) return null;
+  if (s.length > 180) return null;
+  if (/\b(the|and|with|from|have|research|institute|university)\b/i.test(s) && s.length > 80) return null;
+  if (/^People\s*\/\s*\S+$/i.test(s)) return null;
+  if (/^https?:\/\//i.test(s) && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return null;
+  return s;
+}
+
 /** Parse focusTags: JSON array, or comma-separated string. So sheet can store either format. */
 function parseFocusTags(value) {
   if (value == null || String(value).trim() === "") return [];
@@ -130,7 +141,7 @@ function rowToPerson(row) {
     primaryNode: get(idx("primaryNode")) || "Global",
     profileUrl: get(idx("profileUrl")),
     profileImageUrl: sanitizeProfileImageUrl(row[idx("profileImageUrl")]),
-    contactUrlOrHandle: get(idx("contactUrlOrHandle")) || null,
+    contactUrlOrHandle: sanitizeContact(row[idx("contactUrlOrHandle")]),
     shortProjectTagline: get(idx("shortProjectTagline")),
     expandedProjectDescription: sanitizeBio(row[idx("expandedProjectDescription")]),
     isAlumni: String(row[idx("isAlumni")]).toLowerCase() === "true",

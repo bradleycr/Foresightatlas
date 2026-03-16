@@ -346,7 +346,7 @@ export function AdminPanel({
       return (
         <div className="text-sm space-y-1">
           <p>
-            <span className="text-gray-600">Project:</span>{" "}
+            <span className="text-gray-600">Details:</span>{" "}
             <span className="text-gray-900">{payload.projectTagline}</span>
           </p>
           <p>
@@ -982,19 +982,19 @@ function PersonEditForm({
       </div>
 
       <div>
-        <Label htmlFor="tagline">Short Project Tagline *</Label>
+        <Label htmlFor="tagline">Short tagline *</Label>
         <Input
           id="tagline"
           value={person.shortProjectTagline}
           onChange={(e) =>
             onChange({ ...person, shortProjectTagline: e.target.value })
           }
-          placeholder="Brief description of their project"
+          placeholder="One sentence about their work or focus"
         />
       </div>
 
       <div>
-        <Label htmlFor="description">Expanded Project Description</Label>
+        <Label htmlFor="description">Details (full description)</Label>
         <Textarea
           id="description"
           value={person.expandedProjectDescription}
@@ -1005,7 +1005,7 @@ function PersonEditForm({
             })
           }
           rows={4}
-          placeholder="Detailed description of their research and work"
+          placeholder="About them, their work, research, or project"
         />
       </div>
 

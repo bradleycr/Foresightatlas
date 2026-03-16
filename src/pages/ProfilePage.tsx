@@ -459,10 +459,10 @@ export function ProfilePage({
 
               <ProfileSection
                 title="Optional"
-                description="Project tagline, description, and links."
+                description="Tagline, details, and links."
                 icon={<Sparkles className="size-4 text-sky-500" />}
               >
-                <Field label="Short project tagline">
+                <Field label="Short tagline">
                   <Input
                     value={createDraft.shortProjectTagline}
                     onChange={(e) => updateCreateDraft("shortProjectTagline", e.target.value)}
@@ -913,11 +913,11 @@ export function ProfilePage({
               )}
 
               <ProfileSection
-                title="Project and public presence"
+                title="Details and public presence"
                 description="What people see when they open your card."
                 icon={<Sparkles className="size-4 text-sky-500" />}
               >
-                <Field label="Short project tagline">
+                <Field label="Short tagline">
                   <Input
                     value={draft.shortProjectTagline}
                     onChange={(event) =>
@@ -927,14 +927,14 @@ export function ProfilePage({
                   />
                 </Field>
 
-                <Field label="Expanded project description">
+                <Field label="Details (full description)">
                   <Textarea
                     rows={7}
                     value={draft.expandedProjectDescription}
                     onChange={(event) =>
                       updateDraft("expandedProjectDescription", event.target.value)
                     }
-                    placeholder="Add the fuller context behind your project, research direction, or work."
+                    placeholder="About you, your work, research direction, or project — fuller context."
                   />
                 </Field>
               </ProfileSection>

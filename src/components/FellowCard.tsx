@@ -36,7 +36,7 @@ export function FellowCard({
   isHighlighted,
 }: FellowCardProps) {
   const handleCardClick = () => (onHighlight ?? onSelect)?.();
-  const projectSummary =
+  const detailsSummary =
     person.shortProjectTagline?.trim() ||
     person.expandedProjectDescription?.trim() ||
     person.affiliationOrInstitution?.trim() ||
@@ -128,10 +128,10 @@ export function FellowCard({
           </div>
         )}
 
-        {/* Project summary — show only real data we actually have, never placeholders */}
-        {projectSummary && (
+        {/* Details — tagline, bio, or affiliation; no placeholders */}
+        {detailsSummary && (
           <p className="text-sm text-gray-700">
-            {projectSummary}
+            {detailsSummary}
           </p>
         )}
 

@@ -1371,10 +1371,10 @@ export function TimelineView({
                     </div>
                   </div>
 
-                  {/* Project */}
+                  {/* Details */}
                   {selectedTravel.person.shortProjectTagline && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">Project</p>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Details</p>
                       <p className="text-sm text-gray-900">
                         {selectedTravel.person.shortProjectTagline}
                       </p>
@@ -1851,9 +1851,9 @@ export function TimelineView({
               </div>
             </div>
 
-            {/* Project */}
+            {/* Details */}
             <div>
-              <p className="text-sm text-gray-600 mb-1">Project</p>
+              <p className="text-sm text-gray-600 mb-1">Details</p>
               <p className="text-sm text-gray-900">
                 {selectedTravel.person.shortProjectTagline}
               </p>
