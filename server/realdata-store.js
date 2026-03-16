@@ -79,15 +79,21 @@ function sanitizeProfileImageUrl(value) {
   return null;
 }
 
-/** Reject contact field when it looks like bio/prose (wrong column or pasted description). */
+/** Only accept values that look like real contact: email, URL, or @handle. Reject bio/description. */
 function sanitizeContact(value) {
   const s = normalizeString(value);
   if (!s) return null;
-  if (s.length > 180) return null; // contact should be short
-  if (/\b(the|and|with|from|have|research|institute|university)\b/i.test(s) && s.length > 80) return null; // prose
+  if (s.length > 250) return null;
+  // Reject obvious non-contact: breadcrumb, image URL, or long prose (multiple sentences / bio words)
   if (/^People\s*\/\s*\S+$/i.test(s)) return null;
-  if (/^https?:\/\//i.test(s) && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return null; // image URL in contact
-  return s;
+  if (/^https?:\/\//i.test(s) && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return null;
+  if (/\b(the|and|with|from|have|research|institute|university|vision|degree|work|develop)\b/i.test(s) && s.length > 60) return null;
+  // Must look like contact: email, http(s) URL, or @handle
+  const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120;
+  const looksLikeUrl = /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220;
+  const looksLikeHandle = /^@[\w]+$/i.test(s) && s.length <= 50;
+  if (looksLikeEmail || looksLikeUrl || looksLikeHandle) return s;
+  return null;
 }
 
 function normalizeStringArray(value) {

@@ -64,15 +64,19 @@ function sanitizeProfileImageUrl(value) {
   return null;
 }
 
-/** Reject contact when it looks like bio/prose (same as realdata-store). */
+/** Only accept contact that looks like email, URL, or @handle (same as realdata-store). */
 function sanitizeContact(value) {
   const s = value != null ? String(value).trim() : "";
   if (!s) return null;
-  if (s.length > 180) return null;
-  if (/\b(the|and|with|from|have|research|institute|university)\b/i.test(s) && s.length > 80) return null;
+  if (s.length > 250) return null;
   if (/^People\s*\/\s*\S+$/i.test(s)) return null;
   if (/^https?:\/\//i.test(s) && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return null;
-  return s;
+  if (/\b(the|and|with|from|have|research|institute|university|vision|degree|work|develop)\b/i.test(s) && s.length > 60) return null;
+  const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120;
+  const looksLikeUrl = /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220;
+  const looksLikeHandle = /^@[\w]+$/i.test(s) && s.length <= 50;
+  if (looksLikeEmail || looksLikeUrl || looksLikeHandle) return s;
+  return null;
 }
 
 /** Parse focusTags: JSON array, or comma-separated string. So sheet can store either format. */

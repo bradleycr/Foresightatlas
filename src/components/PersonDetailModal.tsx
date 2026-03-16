@@ -68,6 +68,17 @@ import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { isConnected, toggleConnection } from "../services/connections";
 
+/** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
+function looksLikeContact(value: string | null | undefined): boolean {
+  const s = (value ?? "").trim();
+  if (!s) return false;
+  if (s.length > 250) return false;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120) return true;
+  if (/^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220) return true;
+  if (/^@[\w]+$/i.test(s) && s.length <= 50) return true;
+  return false;
+}
+
 /** Cohort years 2017–current plus 0 for Unknown. */
 const COHORT_YEAR_OPTIONS: number[] = (() => {
   const current = new Date().getFullYear();
@@ -858,8 +869,8 @@ export function PersonDetailModal({
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {displayPerson.contactUrlOrHandle && (() => {
-                          const contact = displayPerson.contactUrlOrHandle;
+                        {looksLikeContact(displayPerson.contactUrlOrHandle) ? (() => {
+                          const contact = displayPerson.contactUrlOrHandle!;
                           const isEmail = contact.includes("@") && !contact.startsWith("@");
                           const isUrl = contact.startsWith("http");
                           const href = contact.startsWith("@")
@@ -883,7 +894,7 @@ export function PersonDetailModal({
                           };
                           const handleOpen = () => window.open(href, "_blank", "noopener,noreferrer");
                           return (
-                            <DropdownMenu modal={false}>
+                            <DropdownMenu key="contact" modal={false}>
                               <DropdownMenuTrigger asChild>
                                 <button
                                   type="button"
@@ -912,7 +923,13 @@ export function PersonDetailModal({
                               </DropdownMenuContent>
                             </DropdownMenu>
                           );
-                        })()}
+                        })() : (
+                          <p className="text-sm text-gray-500 italic">
+                            {identity?.personId === person.id
+                              ? "No contact info yet. You can add it when you log in and edit your profile."
+                              : "No contact info added yet."}
+                          </p>
+                        )}
                         <a
                           href="https://foresight.org/about/"
                           target="_blank"
