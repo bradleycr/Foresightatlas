@@ -44,6 +44,26 @@ function parseJsonSafe(str, fallback) {
   }
 }
 
+/** Reject bios that are boolean, menu text, or breadcrumb-only (same as realdata-store). */
+function sanitizeBio(value) {
+  const s = value != null ? String(value).trim() : "";
+  if (!s) return "";
+  if (/^true$/i.test(s) || /^false$/i.test(s)) return "";
+  if (/^People\s*\/\s*\S+$/.test(s)) return "";
+  if (/^Menu\s|^Focus Areas\s|Secure AI Neurotechnology Longevity/.test(s)) return "";
+  return s;
+}
+
+/** Only accept image URLs; reject emails or non-URLs (same as realdata-store). */
+function sanitizeProfileImageUrl(value) {
+  const s = value != null ? String(value).trim() : "";
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) return null;
+  if (/@/.test(s)) return null;
+  if (/foresight\.org/i.test(s) || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return s;
+  return null;
+}
+
 /** Parse focusTags: JSON array, or comma-separated string. So sheet can store either format. */
 function parseFocusTags(value) {
   if (value == null || String(value).trim() === "") return [];
@@ -109,10 +129,10 @@ function rowToPerson(row) {
     },
     primaryNode: get(idx("primaryNode")) || "Global",
     profileUrl: get(idx("profileUrl")),
-    profileImageUrl: get(idx("profileImageUrl")) || null,
+    profileImageUrl: sanitizeProfileImageUrl(row[idx("profileImageUrl")]),
     contactUrlOrHandle: get(idx("contactUrlOrHandle")) || null,
     shortProjectTagline: get(idx("shortProjectTagline")),
-    expandedProjectDescription: get(idx("expandedProjectDescription")),
+    expandedProjectDescription: sanitizeBio(row[idx("expandedProjectDescription")]),
     isAlumni: String(row[idx("isAlumni")]).toLowerCase() === "true",
   };
 }

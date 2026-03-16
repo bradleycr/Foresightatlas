@@ -67,6 +67,27 @@ function slugify(value) {
 
 const UA = "ForesightMap-Sync/1.0 (sync-fellows-from-website)";
 
+/** Reject bios that are boolean, menu text, or breadcrumb-only. */
+function isValidBio(s) {
+  if (!s || typeof s !== "string") return false;
+  const t = s.trim();
+  if (t.length < 20) return false;
+  const lower = t.toLowerCase();
+  if (lower === "true" || lower === "false") return false;
+  if (/^People\s*\/\s*\S+$/i.test(t)) return false;
+  if (/^Menu\s|^Focus Areas\s|Secure AI Neurotechnology Longevity/i.test(t)) return false;
+  return true;
+}
+
+/** Only treat as image URL if it looks like http(s) and foresight.org or image extension. */
+function isValidProfileImageUrl(s) {
+  if (!s || typeof s !== "string") return false;
+  const t = s.trim();
+  if (!/^https?:\/\//i.test(t)) return false;
+  if (/@/.test(t)) return false;
+  return /foresight\.org/i.test(t) || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(t);
+}
+
 /**
  * Fetch a fellow's profile page and return { bio, profileImageUrl }.
  * profileImageUrl is the og:image URL (hosted on foresight.org; we do not host it).
@@ -80,23 +101,41 @@ async function fetchProfilePage(slug) {
     const text = await res.text();
 
     let bio = null;
-    const markdownMatch = text.match(
-      /People\s*\/\s*[^\n]+\n\n([\s\S]+?)(?=\n##\s|\n\[Donate\]|$)/i
-    );
-    if (markdownMatch) {
-      const b = markdownMatch[1].replace(/\n+/g, " ").trim();
-      if (b.length > 20) bio = b;
+    // Prefer og:description (Yoast/WordPress) — real bio, may be truncated with [&hellip;]
+    const ogDesc = text.match(
+      /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i
+    ) || text.match(/content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+    if (ogDesc && ogDesc[1]) {
+      const b = ogDesc[1]
+        .replace(/\s*\[&hellip;\]\s*$/, "…")
+        .replace(/&hellip;/g, "…")
+        .replace(/&amp;/g, "&")
+        .replace(/&#8217;/g, "'")
+        .trim();
+      if (b.length > 30 && !/^People\s*\/\s*\S+$/i.test(b)) bio = b;
+    }
+    if (!bio) {
+      const markdownMatch = text.match(
+        /People\s*\/\s*[^\n]+\n\n([\s\S]+?)(?=\n##\s|\n\[Donate\]|$)/i
+      );
+      if (markdownMatch) {
+        const b = markdownMatch[1].replace(/\n+/g, " ").trim();
+        if (b.length > 20 && !/^People\s*\/\s*\S+$/i.test(b)) bio = b;
+      }
     }
     if (!bio) {
       const metaDesc = text.match(/<meta\s+name="description"\s+content="([^"]+)"/i);
-      if (metaDesc && metaDesc[1].length > 30) bio = metaDesc[1].trim();
+      if (metaDesc && metaDesc[1].length > 30) {
+        const b = metaDesc[1].trim();
+        if (!/^People\s*\/\s*\S+$/i.test(b)) bio = b;
+      }
     }
     if (!bio) {
       const afterBreadcrumb = text.replace(/[\s\S]*?People\s*\/\s*[^<]+/i, "");
       const pMatch = afterBreadcrumb.match(/<p[^>]*>([\s\S]+?)<\/p>/i);
       if (pMatch) {
         const b = pMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-        if (b.length > 30) bio = b;
+        if (b.length > 30 && !/^People\s*\/\s*\S+$/i.test(b)) bio = b;
       }
     }
 
@@ -241,17 +280,18 @@ async function main() {
     const { person } = record;
     const slug = person.profileUrl?.match(/\/people\/([^/]+)/)?.[1] || slugify(person.fullName);
     const { bio, profileImageUrl } = await fetchProfilePage(slug);
-    const trimmedBio = bio ? bio.slice(0, 50000).trim() : "";
+    const trimmedBio = bio && isValidBio(bio) ? bio.slice(0, 50000).trim() : "";
+    const imageUrl = profileImageUrl && isValidProfileImageUrl(profileImageUrl) ? profileImageUrl : null;
     const hasChange =
       (trimmedBio && trimmedBio !== (person.expandedProjectDescription || "").trim()) ||
-      (profileImageUrl && profileImageUrl !== (person.profileImageUrl || "").trim());
+      (imageUrl && imageUrl !== (person.profileImageUrl || "").trim());
     if (!hasChange) continue;
     const updatedRecord = {
       ...record,
       person: {
         ...person,
         expandedProjectDescription: trimmedBio || person.expandedProjectDescription || "",
-        profileImageUrl: profileImageUrl || person.profileImageUrl || null,
+        profileImageUrl: imageUrl || person.profileImageUrl || null,
       },
     };
     await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updatedRecord);

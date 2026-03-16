@@ -58,6 +58,27 @@ function normalizeNullableString(value) {
   return normalized || null;
 }
 
+/** Reject bios that are clearly wrong: boolean strings, scraped menu text, or breadcrumb-only. */
+function sanitizeBio(value) {
+  const s = normalizeString(value);
+  if (!s) return "";
+  const lower = s.toLowerCase();
+  if (lower === "true" || lower === "false") return "";
+  if (/^People\s*\/\s*\S+$/.test(s)) return "";
+  if (/^Menu\s|^Focus Areas\s|Secure AI Neurotechnology Longevity/.test(s)) return "";
+  return s;
+}
+
+/** Only accept values that look like image URLs (foresight.org or common image extensions). */
+function sanitizeProfileImageUrl(value) {
+  const s = normalizeString(value);
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) return null;
+  if (/@/.test(s)) return null; // email, not URL
+  if (/foresight\.org/i.test(s) || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return s;
+  return null;
+}
+
 function normalizeStringArray(value) {
   const source = Array.isArray(value)
     ? value
@@ -176,10 +197,10 @@ function rowToPersonRecord(orderedRow, rowNumber) {
     },
     primaryNode: normalizeString(orderedRow[idx("primaryNode")]) || "Global",
     profileUrl: normalizeString(orderedRow[idx("profileUrl")]),
-    profileImageUrl: normalizeNullableString(orderedRow[idx("profileImageUrl")]),
+    profileImageUrl: sanitizeProfileImageUrl(orderedRow[idx("profileImageUrl")]),
     contactUrlOrHandle: normalizeNullableString(orderedRow[idx("contactUrlOrHandle")]),
     shortProjectTagline: normalizeString(orderedRow[idx("shortProjectTagline")]),
-    expandedProjectDescription: normalizeString(
+    expandedProjectDescription: sanitizeBio(
       orderedRow[idx("expandedProjectDescription")],
     ),
     isAlumni: normalizeBoolean(orderedRow[idx("isAlumni")]),
