@@ -2,6 +2,8 @@
 
 The app is **always** connected to the Google Sheet in production. There is no static JSON backup at build or runtime. Data loads from the sheet on every request (with a short cache).
 
+**Note:** The env var `USE_SHEET_AS_DATABASE` is not used anywhere in the app. You can remove it from Vercel if it’s set.
+
 ---
 
 ## What you need in Vercel (2 env vars)

@@ -1,8 +1,14 @@
 # Vercel environment variables
 
-The app reads and writes the **Google Sheet** in production. There is **no static database.json at runtime** — the sheet is the only source of truth. The env var **USE_SHEET_AS_DATABASE** is not used anywhere; the app always uses the sheet when credentials are present.
+The app reads and writes the **Google Sheet** in production. There is **no static database.json at runtime** — the sheet is the only source of truth.
+
+**USE_SHEET_AS_DATABASE:** The app **never** reads this env var. If it’s set in Vercel or `.env.local`, you can remove it; it has no effect. The app always uses the sheet when sheet credentials are present.
 
 For profile updates, RSVPs, and suggestions to work, and for the map to load, set these in Vercel.
+
+## If you see "file does not exist" or ENOENT (e.g. lstat '/Users')
+
+That usually means **GOOGLE_APPLICATION_CREDENTIALS** is set to a **local file path** (e.g. `/Users/you/Downloads/...json`). On Vercel that path doesn't exist, so the app fails. **Fix:** In Vercel, **remove** **GOOGLE_APPLICATION_CREDENTIALS** and set **GOOGLE_SERVICE_ACCOUNT_KEY** to the **full JSON** of the service account key (paste the entire key contents). The app prefers the JSON env var and does not need a file path in production.
 
 ## Why profile update fails with “credentials not configured”
 

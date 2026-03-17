@@ -8,6 +8,15 @@
  * Env: GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY, SPREADSHEET_ID; optional LUMA_API_KEY for events.
  */
 
+// If GOOGLE_APPLICATION_CREDENTIALS points to a missing file (e.g. local path on Vercel), clear it
+// before loading any Google client so we avoid ENOENT / lstat from the auth library.
+const path = require("path");
+const fs = require("fs");
+const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+if (credPath && !fs.existsSync(path.resolve(credPath))) {
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
+
 const { getFullDatabaseFromSheet } = require("../server/sheet-database");
 const { mergeSheetEventsWithLuma } = require("../server/luma-merge");
 

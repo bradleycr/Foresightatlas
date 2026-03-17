@@ -286,13 +286,16 @@ async function getSheetsClient({ write = false } = {}) {
       const fs = require("fs");
       const path = require("path");
       const resolved = path.resolve(keyPath);
-      if (!fs.existsSync(resolved)) {
-        throw new Error(
-          `GOOGLE_APPLICATION_CREDENTIALS file not found: ${resolved}. ` +
-          "Remove this env var or fix the path. To use a key without a file, set GOOGLE_SERVICE_ACCOUNT_KEY to the full JSON (see docs/SHEETS_SYNC.md).",
-        );
+      if (fs.existsSync(resolved)) {
+        try {
+          key = JSON.parse(fs.readFileSync(resolved, "utf8"));
+        } catch {
+          key = null;
+        }
+      } else {
+        // File missing (e.g. local path on Vercel). Unset so google-auth-library doesn't try to load it (avoids ENOENT / lstat).
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
       }
-      key = JSON.parse(fs.readFileSync(resolved, "utf8"));
     }
     if (key) {
       const auth = new google.auth.GoogleAuth({

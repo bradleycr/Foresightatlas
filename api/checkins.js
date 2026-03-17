@@ -85,11 +85,16 @@ async function getSheetsClientForWrite() {
       return null;
     }
   } else if (keyPath) {
-    try {
-      key = JSON.parse(fs.readFileSync(path.resolve(keyPath), "utf8"));
-    } catch (e) {
-      console.error("GOOGLE_APPLICATION_CREDENTIALS read failed:", e.message);
-      return null;
+    const resolved = path.resolve(keyPath);
+    if (fs.existsSync(resolved)) {
+      try {
+        key = JSON.parse(fs.readFileSync(resolved, "utf8"));
+      } catch (e) {
+        console.error("GOOGLE_APPLICATION_CREDENTIALS read failed:", e.message);
+        return null;
+      }
+    } else {
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
     }
   }
   if (!key) return null;
