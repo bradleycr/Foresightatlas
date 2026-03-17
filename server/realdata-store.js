@@ -277,19 +277,30 @@ async function getSheetsClient({ write = false } = {}) {
   if (keyJson || keyPath) {
     let key = null;
     if (keyJson) {
-      key = JSON.parse(keyJson);
-    } else {
+      try {
+        key = typeof keyJson === "object" ? keyJson : JSON.parse(keyJson);
+      } catch {
+        key = null;
+      }
+    } else if (keyPath) {
       const fs = require("fs");
       const path = require("path");
-      key = JSON.parse(fs.readFileSync(path.resolve(keyPath), "utf8"));
+      const resolved = path.resolve(keyPath);
+      if (!fs.existsSync(resolved)) {
+        throw new Error(
+          `GOOGLE_APPLICATION_CREDENTIALS file not found: ${resolved}. ` +
+          "Remove this env var or fix the path. To use a key without a file, set GOOGLE_SERVICE_ACCOUNT_KEY to the full JSON (see docs/SHEETS_SYNC.md).",
+        );
+      }
+      key = JSON.parse(fs.readFileSync(resolved, "utf8"));
     }
-
-    const auth = new google.auth.GoogleAuth({
-      credentials: key,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-
-    return google.sheets({ version: "v4", auth });
+    if (key) {
+      const auth = new google.auth.GoogleAuth({
+        credentials: key,
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+      });
+      return google.sheets({ version: "v4", auth });
+    }
   }
 
   if (write) return null;
@@ -330,10 +341,14 @@ async function ensureRealDataHeaders(sheets, sheetName, headerRow) {
 async function loadRealDataRecords(options = {}) {
   const sheets = options.sheets || (await getSheetsClient(options));
   if (!sheets) {
+    const envHint = process.env.VERCEL
+      ? " In Vercel → Project → Settings → Environment Variables add GOOGLE_SERVICE_ACCOUNT_KEY (full JSON key). The API key is read-only; profile updates require a service account. See docs/VERCEL_ENV.md."
+      : " Set GOOGLE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS (and SPREADSHEET_ID) in .env.local. See docs/SHEETS_SYNC.md.";
     throw new Error(
-      options.write
-        ? "Google Sheets write credentials are not configured."
-        : "Google Sheets credentials are not configured.",
+      (options.write
+        ? "Google Sheets write credentials are not configured. Profile updates require GOOGLE_SERVICE_ACCOUNT_KEY (the API key cannot write to the sheet)."
+        : "Google Sheets credentials are not configured.") +
+        " " + envHint,
     );
   }
 

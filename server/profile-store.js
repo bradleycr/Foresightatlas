@@ -1,5 +1,3 @@
-const fsp = require("fs").promises;
-const path = require("path");
 const {
   normalizeString,
   normalizeStringArray,
@@ -12,8 +10,7 @@ const {
 const { geocodeCity } = require("./geocoding");
 const { issueDirectorySession, hashPassword } = require("./directory-auth");
 
-/** Optional local cache path; sheet is the source of truth. Writes here are best-effort only. */
-const DB_PATH = path.join(__dirname, "../public/data/database.json");
+/** Sheet is the only source of truth; no database.json read or write at runtime. */
 
 const VALID_ROLE_TYPES = new Set([
   "Fellow",
@@ -180,23 +177,6 @@ function normalizePersonForCreate(input) {
   return person;
 }
 
-async function syncPersonToLocalDatabase(person) {
-  /* Optional: write to local JSON for scripts/backup; sheet remains source of truth. Best-effort. */
-  const raw = await fsp.readFile(DB_PATH, "utf8");
-  const database = JSON.parse(raw);
-  const people = Array.isArray(database.people) ? database.people : [];
-  const existingIndex = people.findIndex((entry) => entry.id === person.id);
-
-  if (existingIndex >= 0) {
-    people[existingIndex] = person;
-  } else {
-    people.push(person);
-  }
-
-  database.people = people;
-  await fsp.writeFile(DB_PATH, JSON.stringify(database, null, 2), "utf8");
-}
-
 async function enrichLocation(person) {
   const next = {
     ...person,
@@ -282,10 +262,6 @@ async function saveProfile(personInput, authContext) {
 
   const result = await syncPersonToSheets(person, authContext);
 
-  await syncPersonToLocalDatabase(result.person).catch(() => {
-    // Writing the local JSON file is best-effort in production/serverless.
-  });
-
   return {
     person: result.person,
     sheet: result.sheet,
@@ -333,8 +309,6 @@ async function createProfile(personInput, password) {
 
   const loaded = await loadRealDataRecords({ write: true });
   const inserted = await upsertRealDataRecord(loaded.sheets, loaded.sheetName, record);
-
-  await syncPersonToLocalDatabase(inserted.person).catch(() => {});
 
   return {
     person: inserted.person,

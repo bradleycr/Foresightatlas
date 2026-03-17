@@ -10,3 +10,9 @@ build/
 public/data/events.json
 public/data/database.json
 scripts/sheet-export/*.csv
+
+# Google service account key — never commit
+keys/*.json
+*-service-account*.json
+*-credentials*.json
+foresight-map-*.json

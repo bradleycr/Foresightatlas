@@ -3,12 +3,17 @@
  *
  * Returns the full database (people, travelWindows, suggestions, adminUsers, rsvps, events)
  * from the Google Sheet. Events are merged with Luma live (cached 10 min).
+ * In-memory cache (60s TTL) per instance reduces sheet reads and speeds repeat loads.
  *
  * Env: GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY, SPREADSHEET_ID; optional LUMA_API_KEY for events.
  */
 
 const { getFullDatabaseFromSheet } = require("../server/sheet-database");
 const { mergeSheetEventsWithLuma } = require("../server/luma-merge");
+
+const CACHE_TTL_MS = 60 * 1000; // 60s per instance (Vercel serverless may reuse the same instance)
+let cached = null;
+let cachedAt = 0;
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
@@ -20,8 +25,14 @@ module.exports = async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   try {
+    const now = Date.now();
+    if (cached && now - cachedAt < CACHE_TTL_MS) {
+      return res.status(200).json(cached);
+    }
     const database = await getFullDatabaseFromSheet();
     database.events = await mergeSheetEventsWithLuma(database.events || []);
+    cached = database;
+    cachedAt = now;
     return res.status(200).json(database);
   } catch (error) {
     console.error("GET /api/database", error?.message || error);

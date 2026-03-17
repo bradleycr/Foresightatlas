@@ -121,8 +121,7 @@ app.post("/api/member-register", async (req, res) => {
 
 /**
  * POST /api/profile
- * Upsert a person profile into the local JSON database and, when configured,
- * the Google Sheet source of truth.
+ * Save the signed-in user's profile to the Google Sheet (RealData). Requires GOOGLE_SERVICE_ACCOUNT_KEY.
  */
 app.post("/api/profile", async (req, res) => {
   try {

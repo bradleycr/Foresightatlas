@@ -201,11 +201,10 @@ async function fetchSheetRange(sheets, sheetName, range) {
 async function getFullDatabaseFromSheet() {
   const sheets = await getSheetsClient({ write: false });
   if (!sheets) {
-    throw new Error(
-      "Google Sheets credentials not configured. " +
-        "Set GOOGLE_SHEETS_API_KEY (read-only: sheet must be shared 'Anyone with the link can view') or GOOGLE_SERVICE_ACCOUNT_KEY in .env.local. " +
-        "Optional: SPREADSHEET_ID (defaults to Foresight Map sheet). See docs/SHEETS_SYNC.md.",
-    );
+    const envHint = process.env.VERCEL
+      ? " Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY (and SPREADSHEET_ID) in Vercel → Project → Settings → Environment Variables. See docs/VERCEL_ENV.md."
+      : " Set GOOGLE_SHEETS_API_KEY (read-only) or GOOGLE_SERVICE_ACCOUNT_KEY in .env.local. Optional: SPREADSHEET_ID. See docs/SHEETS_SYNC.md.";
+    throw new Error("Google Sheets credentials not configured. " + envHint);
   }
 
   const [loaded, twRows, suggestionsRows, adminRows, rsvpsRows, eventsRows] = await Promise.all([

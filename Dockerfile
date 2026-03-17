@@ -2,10 +2,20 @@
 # Foresight Map — self-hosted production image
 #
 # Runs the Express API server (port 3001) and, when SIGNAL_* env vars are set,
-# the Signal check-in poller inside the same process.
+# the Signal check-in poller inside the same process. Data is read/written to
+# the Google Sheet only (no database.json at runtime).
 #
 # Build:  docker build -t foresightmap .
-# Run:    docker run --env-file .env.local -p 3001:3001 foresightmap
+#
+# Run (env from file; .env.local should have SPREADSHEET_ID and
+#      GOOGLE_SERVICE_ACCOUNT_KEY with the full JSON, or use -e for each):
+#   docker run --env-file .env.local -p 3001:3001 foresightmap
+#
+# Or mount the keys folder and use the key file:
+#   docker run -v "$(pwd)/keys:/app/keys" \
+#     -e SPREADSHEET_ID=your-sheet-id \
+#     -e GOOGLE_APPLICATION_CREDENTIALS=/app/keys/service-account.json \
+#     -p 3001:3001 foresightmap
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Stage 1: install deps ────────────────────────────────────────────────────

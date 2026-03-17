@@ -26,7 +26,7 @@
 - **No linter or test runner configured.** No ESLint, Prettier, or test framework in `package.json`; no `lint` or `test` scripts.
 - **Sheet is the only source of truth.** The app always fetches data from GET `/api/database`, which reads from the Google Sheet. Configure **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID**) so the API and app can load. No static `public/data/database.json` at runtime.
 - **Frontend.** `src/services/database.ts` fetches `/api/database` only; no JSON fallback. If the API or sheet is unavailable, the app shows the error from the API.
-- **Vercel.** Set **GOOGLE_SHEETS_API_KEY** (or service account) and **SPREADSHEET_ID** in Vercel env. The `api/database.js` serverless handler serves data from the sheet. No need for USE_SHEET_AS_DATABASE; the sheet is always used. See `docs/SHEETS_SYNC.md`.
+- **Vercel.** Set **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID**) in Vercel so the app can load data and users can save profiles. Without it, profile update shows “Google Sheets write credentials are not configured.” See `docs/VERCEL_ENV.md`. Read-only alternative: **GOOGLE_SHEETS_API_KEY** (sheet shared “Anyone with the link can view”); profile save still needs the service account.
 - **pnpm build scripts.** `@swc/core` and `esbuild` require approved build scripts via `pnpm.onlyBuiltDependencies` in `package.json`.
 - **CSS `@import` warning.** Build may emit a PostCSS warning about `@import` order; cosmetic only.
 - **Timeline view.** The Timeline tab exists but is “Coming soon” in the UI.
