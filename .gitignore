@@ -22,6 +22,9 @@ scripts/sheet-export/*.csv
 reports/*
 !reports/README.md
 
+# Local mock storage (auto-created in dev when Google creds are absent)
+mock/*.local.json
+
 # Google service account key — never commit
 keys/*.json
 *-service-account*.json

@@ -1,7 +1,8 @@
 /**
  * Express API for local development (and optional static hosting of dist/).
  *
- * Reads and writes the Google Sheet as source of truth. Production on Vercel uses `api/` handlers.
+ * Sheet-backed entrypoint. Production on Vercel uses `api/` handlers.
+ * For file-backed local mock storage, use `server/index.mock.js`.
  */
 
 const path = require("path");
@@ -167,7 +168,8 @@ app.get("*", (req, res, next) => {
 // Start server
 if (require.main === module) {
   const portMin = Number(process.env.PORT) || DEFAULT_PORT;
-  const portMax = Math.min(portMin + 9, 3010);
+  const hasExplicitPort = Number.isFinite(Number(process.env.PORT)) && String(process.env.PORT).trim() !== "";
+  const portMax = hasExplicitPort ? portMin : Math.min(portMin + 9, 3010);
 
   function tryListen(port) {
     const server = app.listen(port, () => {

@@ -35,6 +35,16 @@ pnpm dev:all
 
 Open **http://localhost:3000**. Data is loaded from the Google Sheet via the API. Setup details: [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md) and [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
 
+If no Google credentials are configured, local dev now falls back to a file-backed mock backend (no external services):
+- `mock/database.local.json` (main database)
+- `mock/auth.local.json` (directory auth/password state)
+- `mock/luma-events.local.json` (seeded with at least 2 mock Luma events)
+
+Split server entrypoints:
+- `server/index.js` = sheet-backed Express API
+- `server/index.mock.js` = file-backed local mock API
+- `pnpm dev` auto-selects the entrypoint based on credentials
+
 ## Deploy on Vercel
 
 This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
