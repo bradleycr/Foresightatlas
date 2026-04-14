@@ -2,25 +2,45 @@
 
 ## Current state
 
-- **Data:** The app uses the **Google Sheet** as the single source of truth. There is no static `database.json` at runtime.
-- **Data layer:** All reads go through `src/services/database.ts`, which fetches **GET /api/database**. The API (Express or Vercel serverless) reads from the Google Sheet via `server/sheet-database.js`. No fallback to a static JSON file.
-- **Express server:** `server/index.js` provides GET /api/database (sheet), POST /api/member-login, POST /api/member-register, POST /api/member-password, POST /api/profile. All directory and profile operations read/write the sheet (Real Data tab). Optional best-effort write to `public/data/database.json` after sheet writes is for local scripts only; the app never reads that file at runtime.
-- **Google Sheets:** Configure `GOOGLE_SHEETS_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_KEY` and `SPREADSHEET_ID`. See `docs/SHEETS_SYNC.md`.
-- **Admin auth:** Admin users live in the sheet (Admin Users tab). Directory (member) auth is backed by the Real Data tab (password hash per row).
+- **Data:** The **Google Sheet** is the default source of truth. There is no static `database.json` at runtime.
+- **Data layer:** Reads go through `src/services/database.ts`, which calls **GET /api/database**. The API (Express locally, Vercel `api/` in production) reads the sheet via `server/sheet-database.js`. Optional best-effort writes to `public/data/database.json` are for local tooling only; the SPA does not read that file.
+- **Express:** `server/index.js` exposes core routes (see below). Additional routes exist on Vercel in `api/*.js` (check-ins, RSVPs, suggestions, etc.).
+- **Sheets:** Configure `GOOGLE_SHEETS_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_KEY` and `SPREADSHEET_ID`. See `docs/SHEETS_SYNC.md`.
+- **Admin / directory auth:** Backed by sheet tabs (e.g. Admin Users, Real Data). See `server/directory-auth.js` and sheet docs.
 
-To switch to another backend (e.g. Supabase), you would change the API layer (`server/sheet-database.js`, `server/realdata-store.js`, and the Vercel `api/` handlers) to read/write your store instead of the sheet, and keep `src/services/database.ts` calling GET /api/database and the same POST endpoints so the frontend stays unchanged.
+To swap the persistence layer (e.g. to your community platform’s API), replace or proxy the server handlers while **keeping response shapes** aligned with what `database.ts` and `src/types` expect. The UI should not need changes if the JSON matches.
 
-## Example: Supabase
+## API surface the UI depends on
 
-Use the same types (`Person`, `TravelWindow`, etc. from `src/types`). Example shape for a Supabase-backed `getPeople()`:
+The frontend uses `getApiBase()` from `src/services/api-base.ts`, which normally resolves to same-origin `/api` (with base path support for subfolder deploys).
 
-```ts
-// In database.ts, replace fetchDatabase() / getPeople() with:
-export async function getPeople(): Promise<Person[]> {
-  const { data, error } = await supabase.from('people').select('*');
-  if (error) throw error;
-  return data as Person[];
-}
-```
+Important routes (implement or proxy these for a drop-in replacement):
 
-Schema and RLS ideas (tables: people, travel_windows, suggestions, admin_users) are standard; align column names with `src/types` and the existing sheet/JSON shape. Auth can stay in-app or move to Supabase Auth; the important part is that `database.ts` is the single place that loads people, travel windows, and suggestions.
+| Method | Path | Used for |
+|--------|------|----------|
+| GET | `/api/database` | People, travel windows, suggestions, admin users, RSVPs, events (aggregate payload) |
+| POST | `/api/member-login` | Directory sign-in |
+| POST | `/api/member-password` | Password change |
+| POST | `/api/member-register` | New directory profile |
+| POST | `/api/profile` | Save profile for authenticated member |
+| GET/POST | `/api/rsvps` | Event RSVPs (`src/services/rsvp.ts`) |
+| GET/POST | `/api/checkins` | Web check-ins (`src/services/checkin.ts`) |
+| POST | `/api/suggestions` | “Suggest an update” form |
+
+Exact bodies and headers are defined in the service modules above. Optional write protection: `X-Foresight-Write-Secret` when `FORESIGHT_PUBLIC_WRITE_SECRET` / `VITE_FORESIGHT_WRITE_SECRET` are set.
+
+## Partner or “skin” deployment
+
+Goal: **host this repo’s static frontend** (same UX and design) while **your platform supplies `/api`** (or a compatible subset).
+
+1. **Same origin (simplest)** — Serve the built `dist/` and reverse-proxy `/api` to your backend. No CORS issues; cookies behave predictably if you add them later.
+2. **Split origin** — Build the Vite app with:
+   - `VITE_API_ORIGIN=https://api.your-company.com`  
+   Your API must respond at `https://api.your-company.com/api/...` and send appropriate **CORS** headers for the static site’s origin (and allow needed methods/headers).
+3. **Subpath hosting** — Use `VITE_BASE_PATH=/community/map/` (or your path) so asset URLs and `getApiBase()` stay consistent. Your CDN or gateway should still route `/community/map/api/*` or you use split origin with `VITE_API_ORIGIN`.
+
+This repository stays the **canonical UI**; your team can maintain a fork or pin to releases while implementing adapters in your environment.
+
+## Example: Supabase (conceptual)
+
+Use the same types (`Person`, `TravelWindow`, etc. from `src/types`). Replace fetch implementations in `database.ts` (or point `VITE_API_ORIGIN` at a tiny BFF that talks to Supabase). Auth can remain in-app or move to Supabase Auth as long as profile saves and directory flows remain coherent with the existing components.

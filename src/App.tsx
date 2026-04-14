@@ -4,7 +4,6 @@ import { AppHeader } from "./components/AppHeader";
 import { AppFooter } from "./components/AppFooter";
 import { MapView } from "./components/MapView";
 import foresightIconUrl from "./assets/Foresight_RGB_Icon_Black.png?url";
-import { TimelineView } from "./components/TimelineView";
 import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getPresetFocusTags } from "./data/focusAreas";
@@ -15,6 +14,7 @@ import type { NodeEvent } from "./types/events";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
+import { useIsMobile } from "./components/ui/use-mobile";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -41,11 +41,9 @@ import { authenticateDirectoryMember } from "./services/memberAuth";
 const SUGGEST_FORM_URL: string | undefined = undefined;
 
 export default function App() {
+  const isMobileLayout = useIsMobile();
   // Base-path-aware routing (works on GitHub Pages e.g. /Foresightmap/)
   const [route, setRoute] = useState(() => getRoutePath());
-
-  // Tab state
-  const [activeTab, setActiveTab] = useState<"map" | "timeline">("map");
 
   // Modal state
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -333,7 +331,6 @@ export default function App() {
     (_eventId: string, goingPersonIds: string[]) => {
       if (goingPersonIds.length === 0) return;
       setMapFilterIds(new Set(goingPersonIds));
-      setActiveTab("map");
       navigate("/");
     },
     [navigate],
@@ -421,39 +418,21 @@ export default function App() {
       )}
 
       <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-hidden">
-        {activeTab === "map" ? (
-          <MapView
-            filteredPeople={mapPeople}
-            filteredTravelWindows={filteredTravelWindows}
-            timeWindowStart={timeWindowStart}
-            timeWindowEnd={timeWindowEnd}
-            granularity={filters.granularity}
-            events={events}
-            onViewPersonDetails={(id, context) => {
-              setSelectedPersonId(id);
-              setDetailNavContext(context ?? null);
-            }}
-            filters={filters}
-            onFiltersChange={setFilters}
-            defaultYear={today.getFullYear()}
-          />
-        ) : (
-          <TimelineView
-            timelineViewMode={filters.timelineViewMode}
-            filteredPeople={filteredPeople}
-            filteredTravelWindows={filteredTravelWindows}
-            year={filters.year}
-            granularity={filters.granularity}
-            referenceDate={filters.referenceDate}
-            cities={filters.cities}
-            nodes={filters.nodes}
-            onViewPersonDetails={(id) => {
-              setSelectedPersonId(id);
-              setDetailNavContext(null);
-            }}
-            onSwitchToMap={() => setActiveTab("map")}
-          />
-        )}
+        <MapView
+          filteredPeople={mapPeople}
+          filteredTravelWindows={filteredTravelWindows}
+          timeWindowStart={timeWindowStart}
+          timeWindowEnd={timeWindowEnd}
+          granularity={filters.granularity}
+          events={events}
+          onViewPersonDetails={(id, context) => {
+            setSelectedPersonId(id);
+            setDetailNavContext(context ?? null);
+          }}
+          filters={filters}
+          onFiltersChange={setFilters}
+          defaultYear={today.getFullYear()}
+        />
       </div>
     </>
   );
@@ -470,16 +449,12 @@ export default function App() {
         <AppHeader
           route={route}
           navigate={navigate}
-          activeTab={activeTab}
           people={people}
           identity={identity}
           onOpenProfile={() => navigate("/profile")}
           onSignIn={handleDirectorySignIn}
           onSignOut={handleIdentityClear}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            setMapFilterIds(null);
-          }}
+          onNavigateHome={() => setMapFilterIds(null)}
           suggestFormUrl={SUGGEST_FORM_URL}
         />
 
@@ -526,7 +501,11 @@ export default function App() {
 
       {error && !isLoading && (
         <div
-          className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-900 px-4 py-3 rounded-lg shadow-lg max-w-md"
+          className={`fixed z-50 bg-red-50 border border-red-200 text-red-900 px-4 py-3 shadow-lg ${
+            isMobileLayout
+              ? "inset-x-0 bottom-0 rounded-t-xl border-b-0 max-w-none"
+              : "bottom-4 right-4 rounded-lg max-w-md"
+          }`}
           style={{ zIndex: Z_INDEX_ERROR }}
         >
           <div className="flex items-start justify-between gap-3">

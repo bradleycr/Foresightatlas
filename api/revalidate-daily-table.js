@@ -18,10 +18,10 @@ const {
   DAILY_TABLE_HEADERS,
   dailyTableTabName,
   getSheetColumnLetter,
+  getSpreadsheetId,
 } = require("../scripts/sheet-schema");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const SPREADSHEET_ID = getSpreadsheetId();
 
 async function getSheetsClient() {
   const key = process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;

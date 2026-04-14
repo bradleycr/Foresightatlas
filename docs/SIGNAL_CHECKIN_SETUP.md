@@ -2,6 +2,15 @@
 
 The Signal check-in feature is **optional**. If you don’t configure it, the app runs exactly as before. The bot only starts when all required env vars are set.
 
+## Web check-ins vs Signal (two sheet paths)
+
+| Path | Sheet tabs | Who writes | Who reads |
+|------|------------|------------|-----------|
+| **Web / programming page** | **CheckIns** | Browser via `POST /api/checkins` (`src/services/checkin.ts`) | `GET /api/checkins`, merged with localStorage in the UI (“The Table”). |
+| **Signal bot** | **SignalCheckins** (audit log) + **DailyTable-Berlin** / **DailyTable-SF** (grid) | Signal poller after `/checkin` commands | Optional `GET /api/revalidate-daily-table` for polling the daily grid after Signal updates. |
+
+These are **not** merged automatically: Signal and web check-ins are separate flows today. You can run both in parallel; choose one as canonical per workflow if you standardize later.
+
 ## What you need
 
 1. **signal-cli-rest-api** — Docker container that bridges your app to Signal.

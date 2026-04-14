@@ -89,9 +89,9 @@ async function main() {
     ...(topDuplicates.length > 0 ? topDuplicates : ["No duplicate names detected.", ""]),
   ];
 
-  const docsDir = path.join(__dirname, "../docs");
-  await fs.mkdir(docsDir, { recursive: true });
-  const outPath = path.join(docsDir, "REALDATA_AUDIT_REPORT.md");
+  const reportsDir = path.join(__dirname, "../reports");
+  await fs.mkdir(reportsDir, { recursive: true });
+  const outPath = path.join(reportsDir, "REALDATA_AUDIT_REPORT.md");
   await fs.writeFile(outPath, lines.join("\n"), "utf8");
   console.log(`Wrote ${outPath}`);
 }

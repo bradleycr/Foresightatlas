@@ -252,7 +252,9 @@ function mergeEvents(sheetEvents, lumaEvents) {
   const merged = [];
 
   for (const sheetEv of sheetEvents) {
-    if (sheetEv._lumaEventId && lumaById.has(sheetEv._lumaEventId)) {
+    // Only merge once per Luma event — if two sheet rows share the same lumaEventId, second is sheet-only
+    const alreadyMatched = sheetEv._lumaEventId && matchedLumaIds.has(sheetEv._lumaEventId);
+    if (sheetEv._lumaEventId && lumaById.has(sheetEv._lumaEventId) && !alreadyMatched) {
       // Sheet row links to a Luma event — Luma data wins for rich fields
       const lumaEv = lumaById.get(sheetEv._lumaEventId);
       matchedLumaIds.add(sheetEv._lumaEventId);

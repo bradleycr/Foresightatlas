@@ -35,6 +35,7 @@
 - **Mobile map behavior.** On mobile, when the filtered marker set is small (≤50), the map fits the view to those markers so users don’t have to pan to find grantees or event RSVPs.
 - **Google Sheets.** Source of truth for people and directory auth. See `docs/SHEETS_SYNC.md`.
   - **Runtime:** GET `/api/database` and directory login read from the sheet. No static database.json.
+  - **Events:** Programming events (including Berlin coworking Wednesdays) live on the **Events** tab. Edit events directly in the sheet; no scripts needed. See `docs/LUMA_INTEGRATION.md`.
   - `pnpm sync:sheet` — Sheet → `public/data/database.json` (optional backup/export; needs `GOOGLE_SHEETS_API_KEY`).
   - `pnpm migrate:sheet` — `database.json` → Sheet (one-time populate; needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`).
 - **Deploy.** **Vercel** is the primary deploy target (push to `main` → Vercel builds and deploys). Ensure sheet credentials are set in Vercel env so the serverless API can read the sheet.

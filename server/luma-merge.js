@@ -3,7 +3,7 @@
 /**
  * Live Luma merge: fetch Luma events and merge with sheet events at request time.
  * Used by GET /api/database so events are always Sheet + Luma without running a sync script.
- * Cache TTL 10 minutes to avoid hitting Luma on every request.
+ * Luma response is cached ~10 minutes; sheet rows merge on every call so edits show immediately.
  */
 
 const LUMA_BASE = "https://public-api.luma.com";
@@ -11,7 +11,8 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 const { isLocationUnspecified } = require("../scripts/sheet-schema.js");
 
-let cache = null; // { merged: events[], expiresAt: number }
+/** Cache Luma fetch only; sheet events are always merged fresh (avoids stale sheet rows). */
+let cache = null; // { lumaEvents: Array, expiresAt: number }
 
 function normalizeLumaEventUrl(value) {
   const raw = String(value || "").trim();
@@ -61,7 +62,11 @@ async function fetchLumaEvents() {
     params.set("sort_direction", "asc");
 
     const res = await fetch(`${LUMA_BASE}/v1/calendar/list-events?${params}`, { headers });
-    if (!res.ok) break;
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[luma-merge] Luma API error ${res.status}: ${body}`);
+      break;
+    }
 
     const data = await res.json().catch(() => ({}));
     const entries = data.entries || [];
@@ -73,7 +78,14 @@ async function fetchLumaEvents() {
     }
 
     if (!data.has_more) break;
-    cursor = data.next_cursor;
+    const next = data.next_cursor;
+    if (next == null || next === "") {
+      console.warn(
+        "[luma-merge] Luma API returned has_more without next_cursor; stopping pagination",
+      );
+      break;
+    }
+    cursor = next;
   }
 
   return allEvents.map((ev) => {
@@ -114,7 +126,10 @@ function mergeEvents(sheetEvents, lumaEvents) {
   const merged = [];
 
   for (const sheetEv of sheetEvents) {
-    if (sheetEv._lumaEventId && lumaById.has(sheetEv._lumaEventId)) {
+    // Only merge when Sheet links to Luma and we haven't already used this Luma event
+    // (prevents duplicates if two sheet rows share the same lumaEventId)
+    const alreadyMatched = sheetEv._lumaEventId && matchedLumaIds.has(sheetEv._lumaEventId);
+    if (sheetEv._lumaEventId && lumaById.has(sheetEv._lumaEventId) && !alreadyMatched) {
       const lumaEv = lumaById.get(sheetEv._lumaEventId);
       matchedLumaIds.add(sheetEv._lumaEventId);
       const location = lumaEv.location;
@@ -168,14 +183,14 @@ function mergeEvents(sheetEvents, lumaEvents) {
  */
 async function mergeSheetEventsWithLuma(sheetEvents) {
   const now = Date.now();
-  if (cache && cache.expiresAt > now) {
-    return cache.merged;
+  let lumaEvents = [];
+  if (cache && cache.expiresAt > now && Array.isArray(cache.lumaEvents)) {
+    lumaEvents = cache.lumaEvents;
+  } else {
+    lumaEvents = await fetchLumaEvents();
+    cache = { lumaEvents, expiresAt: now + CACHE_TTL_MS };
   }
-
-  const lumaEvents = await fetchLumaEvents();
-  const merged = mergeEvents(Array.isArray(sheetEvents) ? sheetEvents : [], lumaEvents);
-  cache = { merged, expiresAt: now + CACHE_TTL_MS };
-  return merged;
+  return mergeEvents(Array.isArray(sheetEvents) ? sheetEvents : [], lumaEvents);
 }
 
 module.exports = {

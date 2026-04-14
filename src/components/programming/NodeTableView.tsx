@@ -26,6 +26,7 @@ import {
   isPersonCheckedIn,
   fetchCheckInsFromAPI,
 } from "../../services/checkin";
+import { toast } from "sonner";
 import { cn } from "../ui/utils";
 
 const MAX_HEADS = 15;
@@ -125,13 +126,19 @@ export function NodeTableView({
     if (isPersonCheckedIn(identity.personId, nodeSlug, selectedDate)) {
       removeCheckIn(identity.personId, nodeSlug, selectedDate);
     } else {
-      await checkIn(
-        identity.personId,
-        identity.fullName,
-        nodeSlug,
-        selectedDate,
-        isToday ? "checkin" : "planned",
-      );
+      try {
+        await checkIn(
+          identity.personId,
+          identity.fullName,
+          nodeSlug,
+          selectedDate,
+          isToday ? "checkin" : "planned",
+        );
+      } catch (e) {
+        toast.error("Check-in not synced", {
+          description: e instanceof Error ? e.message : "Saved on this device only.",
+        });
+      }
     }
     onTick();
   }, [identity, nodeSlug, selectedDate, isToday, onTick]);

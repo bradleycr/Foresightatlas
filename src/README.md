@@ -1,39 +1,30 @@
-# Grantees and Fellows Map and Programming
+# Grantees and Fellows Map and Programming (frontend)
 
-A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they're traveling.
+React + TypeScript UI: map, programming pages, profiles, and community features.
 
 ## Overview
 
-The app has two main views:
-- **Map view**: Interactive world map showing where people are or will be
-- **Timeline view**: Gantt-style timeline of upcoming travel and events
+- **Map** — Leaflet map and sidebar list with filters.
+- **Programming** — Node event calendars, RSVPs, and check-ins when the API provides them.
+- **Profile / directory** — Sheet-backed member profiles and auth via `/api/*`.
 
-People can browse, filter, and search. Anyone can suggest location updates through a public form. Admins review and approve these suggestions.
+For full-stack setup, environment variables, and deploy, see the **root [README.md](../README.md)** and **[docs/README.md](../docs/README.md)**.
 
-## Running locally
-
-See the main README in the project root for setup instructions.
-
-## Project structure
+## Project structure (this folder)
 
 ```
 src/
-├── components/          # React components
-│   ├── MapView.tsx     # Map visualization
-│   ├── TimelineView.tsx # Timeline/Gantt view
-│   ├── FiltersBar.tsx  # Search and filters
-│   ├── AdminPanel.tsx  # Admin interface
-│   └── ui/             # shadcn/ui components
-├── services/
-│   ├── database.ts     # API calls to backend
-│   └── geocoding.ts    # City geocoding
-├── types/
-│   └── index.ts        # TypeScript types
-└── App.tsx             # Main app component
+├── components/     # UI (map, programming, modals, shadcn/ui)
+├── pages/          # Route-level views
+├── services/       # API clients — database.ts is the main data entry point
+├── types/          # Shared TypeScript types
+└── App.tsx         # App shell and routing
 ```
 
 ## Backend integration
 
-The app currently uses a JSON file with an Express server. See `INTEGRATION.md` for details on connecting to Supabase or another backend.
+The SPA expects a working **`/api`** that serves the shapes defined in `types/` and used in `services/database.ts`, `memberAuth.ts`, `rsvp.ts`, and `checkin.ts`.
 
-All database operations go through `services/database.ts`, so you only need to update that file when switching backends.
+To plug in a different backend (or a partner-hosted API), read **[INTEGRATION.md](INTEGRATION.md)** — same-origin proxy, `VITE_API_ORIGIN`, and route compatibility are covered there.
+
+The root README previously referred to a JSON file database; **runtime data always comes from the API + Google Sheet** in the default configuration.

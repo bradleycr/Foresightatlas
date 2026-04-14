@@ -2,7 +2,7 @@
 /**
  * Find usable data in the People (test/mock) tab that could fill gaps in Real Data.
  * Matches rows by fullName (normalized), then reports which fields in People have
- * values that Real Data is missing. Output: docs/REAL_DATA_COPYOVER_REPORT.md
+ * values that Real Data is missing. Output: reports/REAL_DATA_COPYOVER_REPORT.md
  *
  * Run: node scripts/copyover-test-to-real-report.js
  * Requires: GOOGLE_SHEETS_API_KEY, SPREADSHEET_ID
@@ -230,7 +230,7 @@ async function main() {
     lines.push("");
   }
 
-  const outPath = path.join(__dirname, "../docs/REAL_DATA_COPYOVER_REPORT.md");
+  const outPath = path.join(__dirname, "../reports/REAL_DATA_COPYOVER_REPORT.md");
   await fs.mkdir(path.dirname(outPath), { recursive: true });
   await fs.writeFile(outPath, lines.join("\n"), "utf8");
   console.log("Wrote", outPath);
@@ -262,7 +262,7 @@ async function main() {
       if (!city && !country && !lat && !lng && !contact && !tagline && !desc && !tags) return;
       csvRows.push([real.fullName, city, country, lat, lng, contact, tagline, desc, tags].map(escape).join(","));
     });
-    const csvPath = path.join(__dirname, "../docs/REAL_DATA_COPYOVER.csv");
+    const csvPath = path.join(__dirname, "../reports/REAL_DATA_COPYOVER.csv");
     await fs.writeFile(csvPath, csvRows.join("\n"), "utf8");
     console.log("Wrote", csvPath, `(${csvRows.length - 1} rows with at least one value to copy)`);
   }

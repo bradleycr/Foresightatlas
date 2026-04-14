@@ -18,7 +18,7 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NodeSlug, NodeEvent, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode, getProgrammingPageConfig } from "../data/nodes";
-import { getEventsByNodeForDisplay, loadEvents } from "../data/events";
+import { getEventsByNodeForDisplay, getEventsSheetLoadError, loadEvents } from "../data/events";
 import type { Identity } from "../services/identity";
 import {
   setRSVP,
@@ -99,6 +99,7 @@ export function NodeProgrammingPage({
   const [rsvpTick, setRsvpTick] = useState(0);
   const [checkInTick, setCheckInTick] = useState(0);
   const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
+  const [eventsSheetError, setEventsSheetError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
 
   const isGlobal = activeNode === "global";
@@ -126,7 +127,10 @@ export function NodeProgrammingPage({
       await fetchRSVPsFromAPI();
       setRsvpTick((t) => t + 1);
     })();
-    loadEvents().then(setDynamicEvents);
+    loadEvents().then((ev) => {
+      setDynamicEvents(ev);
+      setEventsSheetError(getEventsSheetLoadError());
+    });
   }, []);
 
   useEffect(() => {
@@ -148,12 +152,19 @@ export function NodeProgrammingPage({
     clearUrlParams();
 
     const today = toDateKey(new Date());
-    void doCheckIn(identity.personId, identity.fullName, activeNode, today, "checkin").then(() => {
-      setCheckInTick((t) => t + 1);
-      toast.success(`Checked in at ${getNode(activeNode)?.city ?? activeNode}!`, {
-        description: `Welcome, ${identity.fullName}`,
+    void doCheckIn(identity.personId, identity.fullName, activeNode, today, "checkin")
+      .then(() => {
+        setCheckInTick((t) => t + 1);
+        toast.success(`Checked in at ${getNode(activeNode)?.city ?? activeNode}!`, {
+          description: `Welcome, ${identity.fullName}`,
+        });
+      })
+      .catch((e) => {
+        setCheckInTick((t) => t + 1);
+        toast.error("Check-in not synced", {
+          description: e instanceof Error ? e.message : "Saved on this device only.",
+        });
       });
-    });
   }, [activeNode, identity, isGlobal]);
 
   useEffect(() => {
@@ -205,10 +216,17 @@ export function NodeProgrammingPage({
       if (!identity) return;
       if (status === null) {
         removeRSVP(eventId, identity.personId);
+        setRsvpTick((t) => t + 1);
       } else {
-        void setRSVP(eventId, identity.personId, status, identity.fullName, eventTitle);
+        void setRSVP(eventId, identity.personId, status, identity.fullName, eventTitle)
+          .then(() => setRsvpTick((t) => t + 1))
+          .catch((e) => {
+            toast.error("RSVP not synced", {
+              description: e instanceof Error ? e.message : "Saved on this device only.",
+            });
+            setRsvpTick((t) => t + 1);
+          });
       }
-      setRsvpTick((t) => t + 1);
     },
     [identity],
   );
@@ -333,6 +351,21 @@ export function NodeProgrammingPage({
 
       {/* Tab bar — Events + The Table (Berlin/SF when ENABLE_CHECKIN_TABLE is true) */}
       {isPhysicalNode ? tabBar : null}
+
+      {eventsSheetError && activeTab === "events" ? (
+        <div className={cn(pageShellClassName, "pt-3")}>
+          <div
+            role="status"
+            className="rounded-xl border border-amber-200 bg-amber-50/95 text-amber-950 text-sm px-4 py-3 shadow-sm"
+          >
+            <p className="font-medium">Could not load events from the sheet</p>
+            <p className="mt-1 text-amber-900/90 text-xs sm:text-sm">{eventsSheetError}</p>
+            <p className="mt-2 text-xs text-amber-800/85">
+              Showing in-app sample events until the API is available.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Content */}
       <div className="w-full min-w-0">

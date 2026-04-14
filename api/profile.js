@@ -21,6 +21,8 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to save profile";
-    return res.status(400).json({ error: message });
+    const status =
+      error && typeof error === "object" && error.statusCode === 401 ? 401 : 400;
+    return res.status(status).json({ error: message });
   }
 };

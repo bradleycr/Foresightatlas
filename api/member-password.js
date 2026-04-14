@@ -27,7 +27,9 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json(result);
   } catch (error) {
-    return res.status(400).json({
+    const status =
+      error && typeof error === "object" && error.statusCode === 401 ? 401 : 400;
+    return res.status(status).json({
       error:
         error instanceof Error ? error.message : "Failed to change password",
     });

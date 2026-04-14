@@ -7,7 +7,7 @@
  */
 
 import { NodeEvent, EventType, NodeSlug } from "../types/events";
-import { getEventsFromSheet } from "../services/database";
+import { fetchSheetEvents } from "../services/database";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 
@@ -251,25 +251,33 @@ function sfDemoDays(): NodeEvent[] {
 
 let _cache: NodeEvent[] | null = null;
 let _dynamicLoaded = false;
+/** Set when the last load fell back to seeds because GET /api/database failed. */
+let _eventsSheetError: string | null = null;
+
+export function getEventsSheetLoadError(): string | null {
+  return _eventsSheetError;
+}
 
 /**
- * Load events: Google Sheet (GET /api/database) is the only source of truth.
- * When the sheet returns events we use and cache them. When the sheet has none
- * (or the API is unavailable), we use in-code seed events only — no static
- * events.json or other backup; sheet-first everywhere.
+ * Load events: Google Sheet (GET /api/database) is the source of truth when it returns rows.
+ * When the sheet has no events we use seeds. When the API fails, we use seeds and expose
+ * {@link getEventsSheetLoadError} for UI.
  */
 export async function loadEvents(): Promise<NodeEvent[]> {
   if (_dynamicLoaded && _cache) return _cache;
 
-  const fromSheet = await getEventsFromSheet();
-  if (Array.isArray(fromSheet) && fromSheet.length > 0) {
-    _cache = fromSheet.sort(
+  const result = await fetchSheetEvents();
+  if (result.ok && result.events.length > 0) {
+    _cache = result.events.sort(
       (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
     );
+    _eventsSheetError = null;
     _dynamicLoaded = true;
     return _cache;
   }
 
+  _eventsSheetError = result.ok ? null : result.message;
+  _dynamicLoaded = true;
   return getAllEvents();
 }
 

@@ -31,7 +31,7 @@ Use this after starting the app locally (`pnpm dev` and `pnpm dev:api` in two te
 
 ## Quick verification commands
 
-- `pnpm run audit:realdata` — Regenerate `docs/REALDATA_AUDIT_REPORT.md` (duplicate groups should be empty or minimal after dedupe).
+- `pnpm run audit:realdata` — Writes `reports/REALDATA_AUDIT_REPORT.md` (gitignored; see `reports/README.md`).
 - `pnpm run sync:sheet` — Refresh `public/data/database.json` from RealData.
 - `pnpm run test:sheet-roundtrip` — Profile write → sync → verify (uses one unique row).
 - `pnpm run test:member-auth` — First-login + password change flow (uses one unclaimed row, then restores).

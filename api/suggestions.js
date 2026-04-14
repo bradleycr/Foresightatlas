@@ -6,8 +6,9 @@
 const fs = require("fs");
 const path = require("path");
 const { google } = require("googleapis");
+const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
 
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_SUGGESTIONS = "Suggestions";
 const SUGGESTION_HEADERS = ["id", "personName", "personEmailOrHandle", "requestedChangeType", "requestedPayload", "createdAt", "status"];
 

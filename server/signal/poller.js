@@ -42,6 +42,10 @@ function startPoller(opts) {
       const messages = await receiveMessages();
       currentBackoff = pollIntervalMs;
 
+      if (process.env.SIGNAL_LOG_VERBOSE === "1") {
+        console.log("[signal-poller] poll", { inbox: messages.length, nodeSlug });
+      }
+
       for (const msg of messages) {
         const envelope = msg.envelope || msg;
         const data = envelope.dataMessage;
@@ -68,6 +72,7 @@ function startPoller(opts) {
 
           if (reply) {
             await sendGroupMessage(groupId, reply);
+            console.log("[signal-poller] checkin command processed", { nodeSlug });
           }
         } catch (handleErr) {
           console.error("[signal-poller] handler error:", handleErr);

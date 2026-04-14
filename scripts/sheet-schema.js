@@ -1,6 +1,6 @@
 /**
  * Shared schema for the Foresight Map Google Sheet.
- * Sheet ID: 1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ
+ * Default sheet ID (override with env SPREADSHEET_ID):
  *
  * Tabs: RealData, TravelWindows, Suggestions, AdminUsers, RSVPs, Events,
  *       SignalCheckins, DailyTable-Berlin, DailyTable-SF.
@@ -11,6 +11,12 @@
  * People tab is still named here only so older read-only scripts can inspect
  * or compare it during migration cleanup.
  */
+
+const DEFAULT_SPREADSHEET_ID = "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+
+function getSpreadsheetId() {
+  return process.env.SPREADSHEET_ID || DEFAULT_SPREADSHEET_ID;
+}
 
 const SHEET_NAMES = {
   PEOPLE: "People",
@@ -169,6 +175,8 @@ function getSheetColumnLetter(index) {
 const PEOPLE_SHEET_WIDTH = getSheetColumnLetter(PEOPLE_HEADERS.length - 1);
 
 module.exports = {
+  DEFAULT_SPREADSHEET_ID,
+  getSpreadsheetId,
   SHEET_NAMES,
   REAL_DATA_TAB_NAMES,
   PEOPLE_PUBLIC_HEADERS,

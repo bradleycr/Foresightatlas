@@ -1,8 +1,7 @@
 /**
- * Simple Express API Server for Database Operations
+ * Express API for local development (and optional static hosting of dist/).
  *
- * Handles reading and writing to the JSON database file.
- * Runs on port 3001 in development, can be deployed as a standalone server or serverless function.
+ * Reads and writes the Google Sheet as source of truth. Production on Vercel uses `api/` handlers.
  */
 
 const path = require("path");
@@ -97,7 +96,9 @@ app.post("/api/member-password", async (req, res) => {
     );
     res.json(result);
   } catch (error) {
-    res.status(400).json({
+    const status =
+      error && typeof error === "object" && error.statusCode === 401 ? 401 : 400;
+    res.status(status).json({
       error: error instanceof Error ? error.message : "Failed to change password",
     });
   }
@@ -130,7 +131,9 @@ app.post("/api/profile", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("Error saving profile:", error);
-    res.status(400).json({
+    const status =
+      error && typeof error === "object" && error.statusCode === 401 ? 401 : 400;
+    res.status(status).json({
       error: error instanceof Error ? error.message : "Failed to save profile",
     });
   }

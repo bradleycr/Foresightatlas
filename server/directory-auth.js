@@ -9,6 +9,22 @@ const {
   upsertRealDataRecord,
 } = require("./realdata-store");
 
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.DIRECTORY_SESSION_SECRET && !process.env.SESSION_SECRET) {
+    throw new Error(
+      "Set DIRECTORY_SESSION_SECRET or SESSION_SECRET in production.",
+    );
+  }
+  if (
+    !process.env.DIRECTORY_DEFAULT_PASSWORD ||
+    String(process.env.DIRECTORY_DEFAULT_PASSWORD).trim() === ""
+  ) {
+    throw new Error(
+      "Set DIRECTORY_DEFAULT_PASSWORD in production (not the dev default).",
+    );
+  }
+}
+
 const DEFAULT_DIRECTORY_PASSWORD =
   process.env.DIRECTORY_DEFAULT_PASSWORD || "password123";
 const SESSION_SECRET =
@@ -58,8 +74,14 @@ function issueDirectorySession(record) {
 }
 
 function verifyDirectorySessionToken(token) {
+  const unauthorized = (message) => {
+    const err = new Error(message);
+    err.statusCode = 401;
+    return err;
+  };
+
   if (!token || typeof token !== "string" || !token.includes(".")) {
-    throw new Error("Missing directory session.");
+    throw unauthorized("Missing directory session.");
   }
 
   const [encodedPayload, signature] = token.split(".");
@@ -70,12 +92,17 @@ function verifyDirectorySessionToken(token) {
     expectedBuffer.length !== actualBuffer.length ||
     !crypto.timingSafeEqual(expectedBuffer, actualBuffer)
   ) {
-    throw new Error("Invalid directory session.");
+    throw unauthorized("Invalid directory session.");
   }
 
-  const payload = JSON.parse(base64UrlDecode(encodedPayload));
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw unauthorized("Invalid directory session.");
+  }
   if (!payload.exp || new Date(payload.exp).getTime() <= Date.now()) {
-    throw new Error("Your directory session has expired. Please sign in again.");
+    throw unauthorized("Your directory session has expired. Please sign in again.");
   }
 
   return payload;

@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { ChangeType, Person } from "../types";
 import { activeMultiGradient } from "../styles/gradients";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
+import { getApiBase } from "../services/api-base";
 
 interface SuggestUpdateModalProps {
   onClose: () => void;
@@ -264,7 +265,7 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
     };
 
     try {
-      const res = await fetch("/api/suggestions", {
+      const res = await fetch(`${getApiBase()}/suggestions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(suggestion),

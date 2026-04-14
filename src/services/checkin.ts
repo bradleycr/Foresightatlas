@@ -12,8 +12,18 @@
 
 import type { CheckIn, CheckInType, NodeSlug, DayCheckInSummary } from "../types/events";
 
+import { getApiBase } from "./api-base";
+
 const STORAGE_KEY = "foresightmap_checkins";
-const API_BASE = "";
+
+function writeHeaders(): HeadersInit {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const token = import.meta.env.VITE_FORESIGHT_WRITE_SECRET;
+  if (typeof token === "string" && token.length > 0) {
+    h["X-Foresight-Write-Secret"] = token;
+  }
+  return h;
+}
 
 type NodeStore = Record<string, Record<string, CheckIn>>;   // date → personId → CheckIn
 type Store = Record<string, NodeStore>;                      // nodeSlug → NodeStore
@@ -44,7 +54,7 @@ export async function fetchCheckInsFromAPI(
 ): Promise<CheckIn[] | null> {
   try {
     const params = new URLSearchParams({ nodeSlug, startDate, endDate });
-    const res = await fetch(`${API_BASE}/api/checkins?${params}`);
+    const res = await fetch(`${getApiBase()}/checkins?${params}`);
     if (!res.ok) return null;
     const list = (await res.json()) as CheckIn[];
     const valid = Array.isArray(list) ? list : [];
@@ -112,22 +122,36 @@ export async function checkIn(
   store[nodeSlug][date][personId] = record;
   saveLocal(store);
 
-  // Fire-and-forget API write
   try {
-    const res = await fetch(`${API_BASE}/api/checkins`, {
+    const res = await fetch(`${getApiBase()}/checkins`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: writeHeaders(),
       body: JSON.stringify(record),
     });
-    if (res.ok) {
-      const created = (await res.json()) as CheckIn;
-      apiCheckIns = apiCheckIns.filter(
-        (c) => !(c.personId === personId && c.nodeSlug === nodeSlug && c.date === date),
-      );
-      apiCheckIns.push(created);
+    if (!res.ok) {
+      let msg = `Could not save check-in (${res.status})`;
+      try {
+        const j = (await res.json()) as { error?: string };
+        if (typeof j?.error === "string") msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
     }
-  } catch {
-    // Offline — localStorage already persisted
+    const created = (await res.json()) as CheckIn;
+    apiCheckIns = apiCheckIns.filter(
+      (c) => !(c.personId === personId && c.nodeSlug === nodeSlug && c.date === date),
+    );
+    apiCheckIns.push(created);
+  } catch (e) {
+    const net =
+      e instanceof TypeError ||
+      (e instanceof Error &&
+        (e.message === "Failed to fetch" || e.message.includes("Load failed")));
+    if (net) {
+      throw new Error("Offline or server unreachable — check-in saved on this device only.");
+    }
+    throw e instanceof Error ? e : new Error(String(e));
   }
 
   return record;

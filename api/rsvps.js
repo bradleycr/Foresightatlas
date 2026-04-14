@@ -1,13 +1,22 @@
 /**
- * Vercel serverless: GET = read RSVPs from sheet (API key). POST = append one RSVP (service account).
- * Env: SPREADSHEET_ID, GOOGLE_SHEETS_API_KEY (read), GOOGLE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS (write).
+ * Vercel serverless: GET = read RSVPs from sheet. POST = append one RSVP (service account).
+ * Env: SPREADSHEET_ID; read: GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY; write: GOOGLE_SERVICE_ACCOUNT_KEY (or GOOGLE_APPLICATION_CREDENTIALS with valid file).
  */
 
+// If GOOGLE_APPLICATION_CREDENTIALS points to a missing file (e.g. local path on Vercel), clear it
+// before loading googleapis so we avoid ENOENT / lstat from the auth library.
 const fs = require("fs");
 const path = require("path");
-const { google } = require("googleapis");
+const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+if (credPath && !fs.existsSync(path.resolve(credPath))) {
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
 
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { google } = require("googleapis");
+const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
+const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
+
+const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_RSVPS = "RSVPs";
 
 function parseRsvpRows(values) {
@@ -46,10 +55,13 @@ function parseRsvpRows(values) {
 }
 
 async function getSheetsClientForRead() {
-  const key = process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!key) return null;
-  const auth = new google.auth.GoogleAuth({ apiKey: key });
-  return google.sheets({ version: "v4", auth });
+  const apiKey = process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
+  if (apiKey) {
+    const auth = new google.auth.GoogleAuth({ apiKey });
+    return google.sheets({ version: "v4", auth });
+  }
+  // Fall back to service account so one env var (GOOGLE_SERVICE_ACCOUNT_KEY) works for read + write.
+  return getSheetsClientForWrite();
 }
 
 async function getSheetsClientForWrite() {
@@ -86,12 +98,15 @@ async function getSheetsClientForWrite() {
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-Foresight-Write-Secret, Authorization",
+  );
   if (req.method === "OPTIONS") return res.status(204).end();
 
   if (req.method === "GET") {
     const sheets = await getSheetsClientForRead();
-    if (!sheets) return res.status(503).json({ error: "RSVP read not configured (missing GOOGLE_SHEETS_API_KEY)" });
+    if (!sheets) return res.status(503).json({ error: "RSVP read not configured (missing GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY)" });
     try {
       const { data } = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -106,6 +121,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    if (!assertPublicWriteSecret(req, res)) return;
     const sheets = await getSheetsClientForWrite();
     if (!sheets) return res.status(503).json({ error: "RSVP write not configured (missing GOOGLE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS)" });
     const { eventId, eventTitle, personId, fullName, status } = req.body || {};

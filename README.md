@@ -1,133 +1,105 @@
 # Grantees and Fellows Map and Programming
 
-A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they're traveling. Built for the Foresight community to see who's where and when.
+A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they are traveling. Built for the Foresight community to see who is where and when.
 
-**Internal tool** — If you've been invited to contribute, see [Contributing](#contributing).
+**Open source** — Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and the [documentation index](docs/README.md).
 
 ## What it does
 
-The app shows two views:
+The app includes:
 
-- **Map view**: Interactive world map with markers showing where people are currently or will be traveling. Click markers to see who's at each location.
-- **Timeline view**: Gantt-style timeline showing upcoming travel windows, residencies, and conferences.
+- **Map** — Interactive world map with markers for current location and travel. Click markers to see who is at each place.
+- **Programming** — Per-node event calendars (e.g. Berlin, San Francisco) with RSVPs and check-ins where configured.
+- **Timeline** — Tab exists in the UI; full timeline experience is still **coming soon** (see [AGENTS.md](AGENTS.md)).
 
-Anyone can browse the map and timeline, filter by program type, focus area, or location. People can also suggest location updates through a public form. Admins review and approve these suggestions.
+Anyone can browse, filter by program type, focus area, or location, and suggest location updates through a public form. Maintainers review suggestions in the Google Sheet.
 
 ## Running it locally
 
-You'll need Node.js installed. The app uses a simple Express server for the database (JSON file).
+You need **Node.js** (20+ recommended) and **pnpm**.
 
-**Environment variables (optional):** For a new environment or integrations (e.g. Google Sheets), copy `.env.example` to `.env.local` and set any values you need. **The app requires the API and Google Sheet to be configured** — there is no static database.json at runtime. Without sheet credentials, GET /api/database will fail.
+**Environment:** Copy `.env.example` to `.env.local` and set sheet credentials. The app **requires** the API and Google Sheet — there is no static `database.json` at runtime. Without credentials, `GET /api/database` will fail.
 
 ```bash
-# Install dependencies
 pnpm install
 
-# Start both the API server and frontend
-pnpm dev:all
+# Frontend (Vite, port 3000) + API (Express, port 3001); /api is proxied
+pnpm dev
 
-# Or run them separately:
-pnpm dev:api    # Starts server on port 3001
-pnpm dev        # Starts frontend on port 3000
+# API only (port 3001)
+pnpm dev:api
+
+# Frontend + API + optional Signal check-in poller (if Signal env vars are set)
+pnpm dev:all
 ```
 
-The app will be available at `http://localhost:3000`. **Data is loaded from the Google Sheet** via the API (GET /api/database). Configure the sheet and credentials — see [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md).
+Open **http://localhost:3000**. Data is loaded from the Google Sheet via the API. Setup details: [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md) and [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
 
 ## Deploy on Vercel
 
 This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
 
-1. Push your repo to GitHub and go to [vercel.com](https://vercel.com) → **Add New Project** → import the repo.
-2. Vercel will detect Vite from `vercel.json` / `package.json`. Use:
-   - **Build Command:** (leave default; `vercel.json` sets it to run sheet sync then `pnpm run build`)
-   - **Output Directory:** `dist`
-   - **Install Command:** `pnpm install`
-3. Add environment variables for the live sheet (required for data to load):
-   - `GOOGLE_SHEETS_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_KEY`
-   - `SPREADSHEET_ID` — optional; defaults to the Foresight Map sheet ID
-4. Deploy. The app fetches data from GET /api/database (sheet). No static database.json at runtime.
+1. Import the repo in [vercel.com](https://vercel.com) → **Add New Project**.
+2. **Build:** defaults plus `vercel.json` (may run sheet sync before `pnpm run build` — see repo config).
+3. **Output directory:** `dist`.
+4. **Install:** `pnpm install`.
+5. **Environment variables** for live data: `GOOGLE_SHEETS_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_KEY`, and optionally `SPREADSHEET_ID`. Profile save and writes need the service account — see [docs/VERCEL_ENV.md](docs/VERCEL_ENV.md).
 
-**GitHub Pages:** An optional manual deploy workflow is documented in [DEPLOYMENT.md](DEPLOYMENT.md). By default it does not run on push; use Vercel for automatic deploys.
+**GitHub Pages:** An optional manual workflow is described in [DEPLOYMENT.md](DEPLOYMENT.md). Primary deploy is Vercel.
 
 ## Tech stack
 
-- React with TypeScript
-- Vite for building
-- Tailwind CSS for styling
-- shadcn/ui components
+- React + TypeScript, Vite, Tailwind, shadcn/ui
 - React Leaflet for the map
-- Express server for the database API (reads/writes Google Sheet)
+- Express API in development; Vercel serverless handlers under `api/` in production
+- **Google Sheet** as source of truth for people, directory auth, events (when using the default backend)
 
-## Project structure
+## Project structure (abbreviated)
 
 ```
-src/
-├── components/          # React components
-│   ├── MapView.tsx     # Map visualization
-│   ├── TimelineView.tsx # Timeline/Gantt view
-│   ├── FiltersBar.tsx  # Search and filters
-│   ├── AdminPanel.tsx  # Admin interface
-│   └── ui/             # shadcn/ui components
-├── services/
-│   ├── database.ts     # API calls to backend
-│   └── geocoding.ts    # City geocoding
-├── types/
-│   └── index.ts        # TypeScript types
-└── App.tsx             # Main app component
-
-server/
-└── index.js            # Express API (sheet-backed)
-
-public/data/
-└── database.json       # Optional export/cache (not used at runtime; see docs/SHEETS_SYNC.md)
+src/                 # React app (map, programming pages, services)
+src/services/        # API clients — database.ts is the main data façade
+api/                 # Vercel serverless routes (database, profile, rsvps, …)
+server/              # Express app for local dev; sheet + Signal poller
+server/signal/       # Signal check-in integration (optional)
+scripts/             # Sheet sync, geocoding, tests, one-off maintenance
+docs/                # Curated documentation ([index](docs/README.md))
+reports/             # Gitignored outputs from audit/compare scripts (see reports/README.md)
 ```
 
-## Data model
+## Data model (conceptual)
 
-The app tracks three main things:
+**People** — Grantees, fellows, prize winners: identity, role, cohort, focus areas, location, project copy, node affiliation.
 
-**People** (grantees, fellows, prize winners):
-- Basic info: name, role type, cohort year, focus areas
-- Location: home base and current city/country with coordinates
-- Project: tagline and description
-- Node affiliation: Bay Area, Berlin, or Global
+**Travel windows** — Upcoming or current trips with places and dates.
 
-**Travel Windows**:
-- Where someone will be (city, country, coordinates)
-- When (start/end dates)
-- Type: residency, conference, workshop, visit, etc.
-- Notes
+**Location suggestions** — Public submissions; admins handle in the sheet.
 
-**Location Suggestions**:
-- Public submissions for location updates
-- Status: pending, accepted, or rejected
-- Admins review and approve these
+**Events & RSVPs** — Programming calendar and attendee state when those tabs/APIs are enabled.
 
-## Admin access
+Exact columns are documented in [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md) and `scripts/sheet-schema.js`.
 
-There's a simple admin login (currently using hardcoded credentials in the JSON database). Admins can:
-- Review pending location suggestions
-- Accept or reject suggestions
-- Edit people and travel windows directly
+## Admin and directory access
 
-To add an admin user, add them to the **Admin Users** tab in the Google Sheet (or the sheet-backed data). See docs/SHEETS_SYNC.md.
+There is **no** hardcoded admin user in a JSON file. Admin and directory (member) accounts are **sheet-backed** (e.g. Admin Users and Real Data tabs). See [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md).
 
-## Backend integration
+## Backend integration and partner deployments
 
-Right now it uses the **Google Sheet** as the source of truth, with an Express (or Vercel serverless) API that reads and writes the sheet. See `src/INTEGRATION.md` and `docs/SHEETS_SYNC.md` for details.
+The default stack reads and writes the Google Sheet through `/api/*`. All frontend data access goes through `src/services/database.ts` and related service modules, so you can:
 
-All database operations go through `src/services/database.ts`, so you only need to update that file when switching backends.
+- Keep this repo as the **UI shell** and point it at another origin that implements the same JSON shapes and routes (see [src/INTEGRATION.md](src/INTEGRATION.md)).
+- Or replace the server layer while preserving the React app.
 
-## Development notes
+Optional **cross-origin API:** set `VITE_API_ORIGIN` at build time so the static app calls `https://your-api-host` instead of same-origin `/api` (CORS must be allowed on the API).
 
-The map uses React Leaflet. If you want to use Google Maps instead, you'd need to swap out the MapView component. The current setup works fine for this use case.
+## Optional: Signal check-in bot
 
-The app is responsive and works on mobile, tablet, and desktop. The timeline view can be organized by person or by location, and you can filter by year, month, or week.
+The Signal integration is **optional**. If you are helping finish or operate the bot, start with [docs/SIGNAL_CHECKIN_SETUP.md](docs/SIGNAL_CHECKIN_SETUP.md) and `server/signal/`.
 
 ## Contributing
 
-This repo is an internal Foresight Institute tool. We invite selected people to contribute. If you have access and want to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to report issues, suggest changes, and submit pull requests. By participating, you agree to our [Code of Conduct](CODE_OF_CONDUCT.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Before a release, [docs/MANUAL_UX_CHECKLIST.md](docs/MANUAL_UX_CHECKLIST.md) is a practical smoke-test list.
 
 ## License
 
-MIT License. Copyright (c) 2025 Foresight Institute. See [LICENSE](LICENSE).
+MIT License. Copyright (c) 2025–2026 Foresight Institute. See [LICENSE](LICENSE).

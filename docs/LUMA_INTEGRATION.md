@@ -90,11 +90,13 @@ pnpm dev
 
 ## How deduplication works
 
+Merge is **cross-checked** so you never get doubles and never lose events:
+
 | Scenario | Result |
 |----------|--------|
 | Event only in Sheet | Included as-is |
 | Event only on Luma | Included with auto-detected node and type |
-| Event in both (Sheet row has `lumaEventId` matching Luma `api_id`) | **Luma wins** for title, description, times, location, link. Sheet's `nodeSlug` and `type` are kept if they're set. |
+| Event in both (Sheet row has `lumaEventId` matching Luma `api_id`) | **Luma wins** for title, description, times, location, link. Sheet's `nodeSlug` and `type` are kept if they're set. **One merged event** — if two sheet rows point at the same Luma event, only the first is merged; the second is kept as sheet-only so the same Luma event never appears twice. |
 
 This means you can:
 - **Add events to Luma** → they appear automatically on the Programming pages
@@ -103,13 +105,21 @@ This means you can:
 
 ---
 
-## Berlin / SF coworking and seed events
+## Berlin coworking Wednesdays (live on the Sheet)
 
-**Berlin coworking sessions** (and some other recurring or one-off events) are defined **in code** as seed data in `src/data/events.ts`. They are **not** stored in the Google Sheet by default.
+**Every Wednesday, April–November**, Berlin Node runs a **co-working day** (10:30–16:00, lunch for nodees). These events are **already on the Google Sheet** (Events tab) for 2025 and 2026 — they’re live and show on Berlin Programming.
+
+**No scripts needed.** Edit any event directly in the sheet (title, time, location, description, etc.); the app and API use the sheet as the source of truth, so changes appear as soon as the app reloads. To link a row to Luma (so Luma’s title/description/times overwrite), set **lumaEventId** to that event’s Luma `api_id`.
+
+*Optional:* To add another year (e.g. 2027) later, run `pnpm seed:berlin-coworking 2027 2027` once; it appends new rows and skips existing IDs.
+
+## Berlin / SF seed events (fallback in code)
+
+**Berlin coworking sessions** and other recurring or one-off events are also defined **in code** as seed data in `src/data/events.ts`. They are **not** stored in the Google Sheet by default.
 
 - **If the API returns no events for a node:** the app shows that node’s seed events (e.g. Berlin weekly coworking, SF demo days) so the programming page is never empty.
-- **If the API returns events for other nodes but none for Berlin:** the app now **falls back to Berlin seed events** on the Berlin page, so coworking still appears.
-- **To make events the single source of truth:** add them to the Sheet **Events** tab (or create them on Luma with a clear Berlin/SF location). Then they come from the API and seed is only used when the API has nothing for that node.
+- **If the API returns events for other nodes but none for Berlin:** the app **falls back to Berlin seed events** on the Berlin page, so coworking still appears.
+- The sheet is the source of truth: events on the Events tab (e.g. Berlin coworking) are returned by the API; seed is only used when the API has no events for that node.
 
 ---
 

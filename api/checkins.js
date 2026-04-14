@@ -11,9 +11,10 @@
 const fs = require("fs");
 const path = require("path");
 const { google } = require("googleapis");
+const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
+const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_CHECKINS = "CheckIns";
 
 function parseCheckInRows(values, filters) {
@@ -68,10 +69,12 @@ function parseCheckInRows(values, filters) {
 }
 
 async function getSheetsClientForRead() {
-  const key = process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!key) return null;
-  const auth = new google.auth.GoogleAuth({ apiKey: key });
-  return google.sheets({ version: "v4", auth });
+  const apiKey = process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
+  if (apiKey) {
+    const auth = new google.auth.GoogleAuth({ apiKey });
+    return google.sheets({ version: "v4", auth });
+  }
+  return getSheetsClientForWrite();
 }
 
 async function getSheetsClientForWrite() {
@@ -108,15 +111,19 @@ async function getSheetsClientForWrite() {
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-Foresight-Write-Secret, Authorization",
+  );
   if (req.method === "OPTIONS") return res.status(204).end();
 
   if (req.method === "GET") {
     const sheets = await getSheetsClientForRead();
     if (!sheets)
-      return res
-        .status(503)
-        .json({ error: "CheckIn read not configured (missing GOOGLE_SHEETS_API_KEY)" });
+      return res.status(503).json({
+        error:
+          "CheckIn read not configured (missing GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY)",
+      });
 
     const { nodeSlug, startDate, endDate } = req.query || {};
     try {
@@ -137,6 +144,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    if (!assertPublicWriteSecret(req, res)) return;
     const sheets = await getSheetsClientForWrite();
     if (!sheets)
       return res.status(503).json({

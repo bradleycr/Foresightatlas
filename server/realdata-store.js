@@ -1,15 +1,24 @@
 "use strict";
 
+// If GOOGLE_APPLICATION_CREDENTIALS points to a missing file (e.g. local path on Vercel),
+// clear it before loading googleapis so we avoid ENOENT / lstat from the auth library.
+const path = require("path");
+const fs = require("fs");
+const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+if (credPath && !fs.existsSync(path.resolve(credPath))) {
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
+
 const { google } = require("googleapis");
 const {
   SHEET_NAMES,
   REAL_DATA_TAB_NAMES,
   PEOPLE_HEADERS,
   PEOPLE_SHEET_WIDTH,
+  getSpreadsheetId,
 } = require("../scripts/sheet-schema.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const SPREADSHEET_ID = getSpreadsheetId();
 
 function parseJsonSafe(value, fallback) {
   if (value == null || String(value).trim() === "") return fallback;

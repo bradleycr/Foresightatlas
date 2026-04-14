@@ -178,11 +178,24 @@ To have each deploy use the latest sheet data:
 
 ---
 
+## Fellows from foresight.org (optional)
+
+To pull published Fellowship profiles from [foresight.org](https://foresight.org/engage/fellowship/) into the **RealData** sheet (bios and metadata), use a **service account** with Editor access on the spreadsheet:
+
+```bash
+pnpm run sync:fellows
+```
+
+Implementation: `scripts/sync-fellows-from-website.js`. To refresh the list from the public fellowship pages before syncing, run `pnpm run scrape:fellowship` (writes gitignored `scripts/website-fellows.json`, then use `pnpm run sync:fellows -- --from-file=scripts/website-fellows.json`).
+
+---
+
 ## Summary
 
 | Goal                         | Command / step |
 |-----------------------------|----------------|
 | Create Events tab (one-time) | `pnpm run setup:events-tab` (needs service account; creates tab and seeds Berlin/SF events) |
+| Sync fellows from website → RealData | `pnpm run sync:fellows` (service account; see above) |
 | Copy current JSON → Sheet   | `pnpm run migrate:sheet` (needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`) |
 | Backfill Real Data from People | `pnpm run merge:people` (needs service account; copies focus tags, contact, taglines where missing) |
 | Geocode sheet (city → lat/lng) | `pnpm run geocode:sheet` (needs service account; fills coordinates for everyone with a city) |

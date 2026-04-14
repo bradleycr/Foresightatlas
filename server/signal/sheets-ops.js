@@ -19,10 +19,10 @@ const {
   DAILY_TABLE_HEADERS,
   dailyTableTabName,
   getSheetColumnLetter,
+  getSpreadsheetId,
 } = require("../../scripts/sheet-schema");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const SPREADSHEET_ID = getSpreadsheetId();
 
 /* ── Auth helpers (mirror api/checkins.js) ──────────────────────────────── */
 

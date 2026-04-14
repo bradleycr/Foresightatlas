@@ -1,18 +1,30 @@
 node_modules/
 dist/
+
+# Vercel CLI — local project link (optional: commit for team if you prefer)
+.vercel/
 build/
 .DS_Store
 *.log
 .env
 .env.local
+.env.vercel.local
+.vercel-session-tmp.txt
+.directory-bootstrap-password.txt
 .vite/
 *.map
 public/data/events.json
 public/data/database.json
+scripts/website-fellows.json
 scripts/sheet-export/*.csv
+
+# Maintainer script output (see reports/README.md)
+reports/*
+!reports/README.md
 
 # Google service account key — never commit
 keys/*.json
 *-service-account*.json
 *-credentials*.json
 foresight-map-*.json
+.vercel

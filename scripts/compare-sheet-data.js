@@ -2,7 +2,7 @@
 /**
  * Compare people data: current database.json (mock/legacy) vs People tab vs Real Data tab.
  * Fetches both sheet tabs, parses with the same schema as sync-sheet-to-json, and writes
- * a markdown dossier to docs/DATA_COMPARISON_DOSSIER.md.
+ * a markdown dossier to reports/DATA_COMPARISON_DOSSIER.md (gitignored; see reports/README.md).
  *
  * Run: node scripts/compare-sheet-data.js
  * Requires: GOOGLE_SHEETS_API_KEY, SPREADSHEET_ID (same as sync:sheet)
@@ -189,7 +189,7 @@ async function main() {
   const realNames = new Set(realData.people.map((p) => (p.fullName || "").trim().toLowerCase()));
   const nameOverlap = [...currentNames].filter((n) => n && realNames.has(n)).length;
 
-  const dossierDir = path.join(__dirname, "../docs");
+  const dossierDir = path.join(__dirname, "../reports");
   await fs.mkdir(dossierDir, { recursive: true });
   const outPath = path.join(dossierDir, "DATA_COMPARISON_DOSSIER.md");
 

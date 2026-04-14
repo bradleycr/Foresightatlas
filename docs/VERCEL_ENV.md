@@ -1,5 +1,7 @@
 # Vercel environment variables
 
+To manage these from the terminal after a one-time login, see **[VERCEL_CLI.md](./VERCEL_CLI.md)**.
+
 The app reads and writes the **Google Sheet** in production. There is **no static database.json at runtime** — the sheet is the only source of truth.
 
 **USE_SHEET_AS_DATABASE:** The app **never** reads this env var. If it’s set in Vercel or `.env.local`, you can remove it; it has no effect. The app always uses the sheet when sheet credentials are present.
@@ -64,6 +66,21 @@ vercel --prod
 - **POST /api/rsvps**, **POST /api/suggestions**: same as profile — need **GOOGLE_SERVICE_ACCOUNT_KEY**.
 
 So for “people can go in and update their profile,” you **must** set **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID** if different from the default) in Vercel.
+
+- **GET /api/checkins** (node check-in table): same read credentials as RSVPs — **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY**. If you only use the service account key (no API key), check-ins still load.
+
+### Optional: RSVP / check-in write secret
+
+If you set **`FORESIGHT_PUBLIC_WRITE_SECRET`** on the server, **`POST /api/rsvps`** and **`POST /api/checkins`** require header **`X-Foresight-Write-Secret`** with the same value (or `Authorization: Bearer …`). For the SPA to send it, set **`VITE_FORESIGHT_WRITE_SECRET`** to the **same** value in Vercel at build time. This is a light abuse deterrent (the value is in the client bundle); combine with rate limiting for stronger protection.
+
+### Directory auth in production
+
+Server code that loads **`server/directory-auth.js`** requires in **`NODE_ENV=production`**:
+
+- **`DIRECTORY_SESSION_SECRET`** or **`SESSION_SECRET`**
+- **`DIRECTORY_DEFAULT_PASSWORD`** (must be explicitly set — do not rely on the dev default)
+
+Set these on any production host that runs member login / profile routes (Vercel includes them in serverless functions that import that module).
 
 ## Data is live
 

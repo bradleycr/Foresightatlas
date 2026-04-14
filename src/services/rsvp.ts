@@ -8,8 +8,18 @@
 
 import { RSVPRecord, RSVPStatus, RSVPSummary } from "../types/events";
 
+import { getApiBase } from "./api-base";
+
 const STORAGE_KEY = "foresightmap_rsvps";
-const API_BASE = ""; // same origin; Vercel serves /api
+
+function writeHeaders(): HeadersInit {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const token = import.meta.env.VITE_FORESIGHT_WRITE_SECRET;
+  if (typeof token === "string" && token.length > 0) {
+    h["X-Foresight-Write-Secret"] = token;
+  }
+  return h;
+}
 
 type Store = Record<string, Record<string, RSVPRecord>>;
 
@@ -32,7 +42,7 @@ function saveLocal(store: Store): void {
 /** Fetch all RSVPs from the sheet-backed API. Call on programming page load. */
 export async function fetchRSVPsFromAPI(): Promise<RSVPRecord[] | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/rsvps`);
+    const res = await fetch(`${getApiBase()}/rsvps`);
     if (!res.ok) return null;
     const list = (await res.json()) as RSVPRecord[];
     apiRsvps = Array.isArray(list) ? list : [];
@@ -40,11 +50,6 @@ export async function fetchRSVPsFromAPI(): Promise<RSVPRecord[] | null> {
   } catch {
     return null;
   }
-}
-
-/** Whether the API is configured (we got a successful response at least once). */
-export function hasAPI(): boolean {
-  return apiRsvps.length >= 0; // we don't track failure; caller can check fetchRSVPsFromAPI result
 }
 
 function mergeIntoStore(store: Store, records: RSVPRecord[]): void {
@@ -93,18 +98,33 @@ export async function setRSVP(
   saveLocal(store);
 
   try {
-    const res = await fetch(`${API_BASE}/api/rsvps`, {
+    const res = await fetch(`${getApiBase()}/rsvps`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: writeHeaders(),
       body: JSON.stringify({ eventId, personId, fullName, status, eventTitle }),
     });
-    if (res.ok) {
-      const created = (await res.json()) as RSVPRecord;
-      apiRsvps = apiRsvps.filter((r) => !(r.eventId === eventId && r.personId === personId));
-      apiRsvps.push(created);
+    if (!res.ok) {
+      let msg = `Could not save RSVP (${res.status})`;
+      try {
+        const j = (await res.json()) as { error?: string };
+        if (typeof j?.error === "string") msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
     }
-  } catch {
-    // Offline or API not configured — localStorage already updated
+    const created = (await res.json()) as RSVPRecord;
+    apiRsvps = apiRsvps.filter((r) => !(r.eventId === eventId && r.personId === personId));
+    apiRsvps.push(created);
+  } catch (e) {
+    const net =
+      e instanceof TypeError ||
+      (e instanceof Error &&
+        (e.message === "Failed to fetch" || e.message.includes("Load failed")));
+    if (net) {
+      throw new Error("Offline or server unreachable — RSVP saved on this device only.");
+    }
+    throw e instanceof Error ? e : new Error(String(e));
   }
   return record;
 }

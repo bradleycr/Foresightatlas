@@ -1,6 +1,6 @@
 import type { Person } from "../types";
 
-const API_BASE = "";
+import { getApiBase } from "./api-base";
 
 export interface DirectoryAuthResult {
   person: Person;
@@ -37,7 +37,7 @@ export async function authenticateDirectoryMember(
   username: string,
   password: string,
 ): Promise<DirectoryAuthResult> {
-  return postJson<DirectoryAuthResult>(`${API_BASE}/api/member-login`, {
+  return postJson<DirectoryAuthResult>(`${getApiBase()}/member-login`, {
     username,
     password,
   });
@@ -49,7 +49,7 @@ export async function changeDirectoryPassword(
   newPassword: string,
 ): Promise<DirectoryAuthResult> {
   return postJson<DirectoryAuthResult>(
-    `${API_BASE}/api/member-password`,
+    `${getApiBase()}/member-password`,
     {
       currentPassword,
       newPassword,

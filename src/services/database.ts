@@ -9,12 +9,7 @@ import { Person, TravelWindow, LocationSuggestion, AdminUser, RoleType } from ".
 import type { RSVPRecord } from "../types/events";
 import type { NodeEvent } from "../types/events";
 
-/** Base path for API requests. Same origin; works with any BASE_URL (e.g. / or /app/). */
-function getApiBase(): string {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const baseNorm = base.endsWith("/") ? base.slice(0, -1) : base;
-  return baseNorm ? `${baseNorm}/api` : "/api";
-}
+import { getApiBase } from "./api-base";
 
 /** Cached database so we only fetch once per session. */
 let cachedDatabase: {
@@ -251,13 +246,22 @@ export async function getRsvps(): Promise<RSVPRecord[]> {
   return db.rsvps ?? [];
 }
 
-/** Events from the sheet (via GET /api/database). Returns [] when sheet has no Events tab or API not configured. */
-export async function getEventsFromSheet(): Promise<NodeEvent[]> {
+/** Result of reading events from GET /api/database (sheet + Luma merge on the server). */
+export type SheetEventsFetchResult =
+  | { ok: true; events: NodeEvent[] }
+  | { ok: false; message: string };
+
+/**
+ * Loads the database and returns sheet/Luma events, or an error if the API/sheet request failed.
+ * Does not swallow failures (unlike the old getEventsFromSheet + empty array).
+ */
+export async function fetchSheetEvents(): Promise<SheetEventsFetchResult> {
   try {
     const db = await fetchDatabase();
-    return Array.isArray(db.events) ? db.events : [];
-  } catch {
-    return [];
+    return { ok: true, events: Array.isArray(db.events) ? db.events : [] };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { ok: false, message };
   }
 }
 

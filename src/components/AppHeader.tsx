@@ -15,8 +15,8 @@ interface AppHeaderProps {
   route: string;
   /** Navigate to a path (updates history and scroll) */
   navigate: (path: string) => void;
-  activeTab: "map" | "timeline";
-  onTabChange: (tab: "map" | "timeline") => void;
+  /** Clear map-only overlays (e.g. event RSVP filter) when user returns to the map via header. */
+  onNavigateHome?: () => void;
   suggestFormUrl?: string;
   people: Person[];
   identity: Identity | null;
@@ -28,8 +28,7 @@ interface AppHeaderProps {
 export function AppHeader({
   route,
   navigate,
-  activeTab,
-  onTabChange,
+  onNavigateHome,
   suggestFormUrl,
   people,
   identity,
@@ -116,7 +115,7 @@ export function AppHeader({
               type="button"
               onClick={() => {
                 navigate("/");
-                onTabChange("map");
+                onNavigateHome?.();
               }}
               className="flex-shrink-0 flex items-center gap-3 md:gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 rounded cursor-pointer hover:opacity-90 transition-opacity"
               aria-label="Back to map"
@@ -136,9 +135,10 @@ export function AppHeader({
           {/* Desktop nav — original pill-style Map + Programming */}
           <div className="header-desktop-nav flex-shrink-0 items-center gap-1 sm:gap-2">
             <button
+              type="button"
               onClick={() => {
                 navigate("/");
-                if (isMapRoute) onTabChange("map");
+                onNavigateHome?.();
               }}
               className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
                 isMapRoute
@@ -488,7 +488,7 @@ export function AppHeader({
                   <button
                     onClick={() => {
                       navigate("/");
-                      onTabChange("map");
+                      onNavigateHome?.();
                       closeMobileMenu();
                     }}
                     className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${

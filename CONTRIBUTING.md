@@ -1,66 +1,61 @@
-# Contributing to Grantees and Fellows Map and Programming
+# Contributing
 
-This project is an **internal Foresight Institute tool**. If you've been invited to contribute, this document explains how to collaborate, report issues, and submit changes.
+Thank you for helping improve this project. By participating, you agree to uphold our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Code of conduct
+## Ways to contribute
 
-By participating, you agree to uphold our [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## How to contribute
-
-- **Report bugs** — Open an [issue](https://github.com/bradleycr/Foresightmap/issues) with a clear description and steps to reproduce.
-- **Suggest features** — Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml) so we can discuss scope and design.
-- **Improve docs** — Fix typos, clarify setup, or add examples via pull requests.
-- **Submit code** — Follow the steps below for pull requests.
+- **Report bugs** — Open an [issue](https://github.com/bradleycr/Foresightmap/issues) with reproduction steps.
+- **Suggest features** — Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml) where applicable.
+- **Documentation** — Fixes and clarifications in `docs/` and root READMEs are welcome.
+- **Code** — Pull requests: keep them focused; one logical change per PR is easiest to review.
 
 ## Development setup
 
-1. **Clone the repo** (you should have access if you're an invited contributor)
+1. **Clone and install**
 
    ```bash
    git clone https://github.com/bradleycr/Foresightmap.git
    cd Foresightmap
-   ```
-
-2. **Install dependencies**
-
-   ```bash
    pnpm install
    ```
 
-3. **Run locally**
+2. **Environment** — Copy `.env.example` to `.env.local` and add sheet credentials so `GET /api/database` works. See [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
+
+3. **Run**
 
    ```bash
-   pnpm dev:all
+   pnpm dev        # Vite + API (recommended)
+   # or
+   pnpm dev:all    # Includes Signal poller when Signal env vars are set
    ```
 
    Frontend: [http://localhost:3000](http://localhost:3000). API: [http://localhost:3001](http://localhost:3001).
 
-   Optional: copy `.env.example` to `.env.local` and set sheet credentials (e.g. `GOOGLE_SHEETS_API_KEY`, `SPREADSHEET_ID`). The app loads data from GET /api/database (Google Sheet); no static database.json at runtime.
+4. **Context**
 
-4. **Project context**
+   - [AGENTS.md](AGENTS.md) — Ports, naming, and caveats.
+   - [docs/README.md](docs/README.md) — Index of setup, deploy, Signal, Luma, sheets.
 
-   - See [AGENTS.md](AGENTS.md) for naming, services, and caveats.
-   - See [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md) for Google Sheet setup.
-   - Frontend reads only from `/api/database`; the API reads from the sheet.
+## Focus areas for collaborators
+
+- **Signal check-in bot** — Behavior and setup: [docs/SIGNAL_CHECKIN_SETUP.md](docs/SIGNAL_CHECKIN_SETUP.md), code under `server/signal/`. The bot is optional; the app runs without it.
+- **API compatibility** — If you work on the backend, see [src/INTEGRATION.md](src/INTEGRATION.md) for how the frontend expects `/api` to behave and how a partner-hosted API can sit behind the same UI.
 
 ## Pull request process
 
-1. **Branch** — Create a branch from `main` (e.g. `fix/typo-readme` or `feat/filter-by-node`).
-2. **Changes** — Keep PRs focused. One logical change per PR is easier to review.
-3. **Commit messages** — Use clear, present-tense messages (e.g. "Add CONTRIBUTING.md", "Fix map centering on mobile").
-4. **Open a PR** — Use the [pull request template](.github/PULL_REQUEST_TEMPLATE.md). Link any related issues.
-5. **Review** — Maintainers will review and may request changes. Once approved, your PR will be merged.
+1. Branch from `main` (e.g. `fix/map-tooltip`, `feat/signal-retry`).
+2. Use clear, present-tense commit messages.
+3. Open a PR using [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md).
+4. Run `pnpm build` before submitting (there is no CI linter/test gate in this repo yet).
 
 ## Code and style
 
-- **TypeScript** — The app is React + TypeScript. Keep types accurate; avoid `any` where avoidable.
-- **Modularity** — Prefer small, focused components and clear separation of concerns.
-- **Mobile** — Ensure changes work on mobile as well as desktop; the app is responsive.
-- **No linter/test runner** — The project does not currently run ESLint or tests in CI. Please run `pnpm build` before submitting to ensure the project builds.
+- TypeScript on the frontend; match existing patterns and keep types honest.
+- Prefer small modules and responsive, mobile-friendly UI.
+- Avoid drive-by refactors unrelated to your change.
 
 ## Questions
 
-Open a [Discussion](https://github.com/bradleycr/Foresightmap/discussions) or an issue if something is unclear. Maintainers are happy to help.
+Use [Discussions](https://github.com/bradleycr/Foresightmap/discussions) or issues if something is unclear.
 
 Thanks for contributing.
