@@ -10,6 +10,7 @@ The app includes:
 
 - **Map** — Interactive world map with markers for current location and travel. Click markers to see who is at each place.
 - **Programming** — Per-node event calendars (e.g. Berlin, San Francisco) with RSVPs and check-ins where configured.
+- **Calendar** — Signed-in members get a large shared-node calendar view powered by React Big Calendar and `/api/calendar-events` (Google Calendar with mock fallback).
 - **Timeline** — Tab exists in the UI; full timeline experience is still **coming soon** (see [AGENTS.md](AGENTS.md)).
 
 Anyone can browse, filter by program type, focus area, or location, and suggest location updates through a public form. Maintainers review suggestions in the Google Sheet.
@@ -35,7 +36,7 @@ pnpm dev:all
 
 Open **http://localhost:3000**. Data is loaded from the Google Sheet via the API. Setup details: [docs/SHEETS_SYNC.md](docs/SHEETS_SYNC.md) and [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
 
-If no Google credentials are configured, local dev now falls back to a file-backed mock backend (no external services):
+If no Google credentials are configured, local dev falls back to a file-backed mock backend (no external services):
 - `mock/database.local.json` (main database)
 - `mock/auth.local.json` (directory auth/password state)
 - `mock/luma-events.local.json` (seeded with at least 2 mock Luma events)
@@ -63,6 +64,7 @@ This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
 - React Leaflet for the map
 - Express API in development; Vercel serverless handlers under `api/` in production
 - **Google Sheet** as source of truth for people, directory auth, events (when using the default backend)
+- Google Calendar API for shared node calendars (`/api/calendar-events`)
 
 ## Project structure (abbreviated)
 

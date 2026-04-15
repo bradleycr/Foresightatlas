@@ -20,6 +20,7 @@ const {
   changeDirectoryPassword,
   getDirectorySessionFromRequest,
 } = require("./directory-auth");
+const calendarEventsHandler = require("../api/calendar-events");
 
 const app = express();
 const DEFAULT_PORT = 3001;
@@ -139,6 +140,8 @@ app.post("/api/profile", async (req, res) => {
     });
   }
 });
+
+app.get("/api/calendar-events", calendarEventsHandler);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

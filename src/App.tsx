@@ -19,6 +19,7 @@ import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
+import { CalendarPage } from "./pages/CalendarPage";
 import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
@@ -94,7 +95,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar"];
     const current = getRoutePath();
     if (!knownRoutes.includes(current)) {
       window.history.replaceState({}, "", buildFullPath("/"));
@@ -265,7 +266,7 @@ export default function App() {
   const handleIdentityClear = useCallback(() => {
     clearIdentity();
     setIdentityState(null);
-    if (route === "/profile") {
+    if (route === "/profile" || route === "/calendar") {
       navigate("/");
     }
   }, [navigate, route]);
@@ -353,6 +354,7 @@ export default function App() {
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
   const isConnectionsRoute = route === "/connections";
+  const isCalendarRoute = route === "/calendar";
   const profileCreateMode =
     isProfileRoute &&
     typeof window !== "undefined" &&
@@ -398,6 +400,12 @@ export default function App() {
       onProfileSaved={handleProfileSaved}
       onExitCreateMode={() => navigate("/profile")}
       onAddYourself={() => navigate("/profile?new=1")}
+    />
+  ) : isCalendarRoute ? (
+    <CalendarPage
+      identity={identity}
+      signedInPerson={signedInPerson}
+      onOpenProfile={() => navigate("/profile")}
     />
   ) : (
     <>

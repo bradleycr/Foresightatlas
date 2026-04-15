@@ -15,6 +15,7 @@ const MOCK_DIR = path.resolve(__dirname, "../mock");
 const DATABASE_FILE = path.join(MOCK_DIR, "database.local.json");
 const AUTH_FILE = path.join(MOCK_DIR, "auth.local.json");
 const LUMA_FILE = path.join(MOCK_DIR, "luma-events.local.json");
+const CALENDAR_FILE = path.join(MOCK_DIR, "google-calendar.local.json");
 
 function hasServiceAccountCredentials() {
   if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) return true;
@@ -163,6 +164,23 @@ function defaultMockAuthRecords(database) {
 function defaultMockLumaEvents() {
   return [
     {
+      _lumaApiId: "mock-luma-berlin-kickoff-2026",
+      id: "luma-mock-luma-berlin-kickoff-2026",
+      nodeSlug: "berlin",
+      title: "Berlin Node Kickoff",
+      description: "Kickoff gathering for the Berlin node community.",
+      location: "Berlin Node",
+      startAt: "2026-04-01T17:00:00.000Z",
+      endAt: "2026-04-01T20:00:00.000Z",
+      type: "launch",
+      tags: ["mock-luma", "berlin", "kickoff"],
+      visibility: "public",
+      capacity: 120,
+      externalLink: "https://lu.ma/mock-luma-berlin-kickoff-2026",
+      coverImageUrl: null,
+      recurrenceGroupId: null,
+    },
+    {
       _lumaApiId: "mock-luma-berlin-1",
       id: "luma-mock-luma-berlin-1",
       nodeSlug: "berlin",
@@ -199,6 +217,23 @@ function defaultMockLumaEvents() {
   ];
 }
 
+function defaultMockGoogleCalendarEvents() {
+  return [
+    {
+      id: "gcal-mock-berlin-user-invite-2026-04-16",
+      nodeSlug: "berlin",
+      title: "User Invite Gathering",
+      description: "User-invited event in the shared Berlin calendar mock feed.",
+      location: "Berlin Node",
+      invitedBy: "Alice Example",
+      start: "2026-04-16T17:00:00.000Z",
+      end: "2026-04-16T20:00:00.000Z",
+      externalLink: "https://calendar.google.com/calendar/u/0/r",
+      source: "google",
+    },
+  ];
+}
+
 async function ensureMockFiles() {
   await fsp.mkdir(MOCK_DIR, { recursive: true });
 
@@ -229,6 +264,14 @@ async function ensureMockFiles() {
     await fsp.writeFile(
       LUMA_FILE,
       JSON.stringify(defaultMockLumaEvents(), null, 2) + "\n",
+      "utf8",
+    );
+  }
+
+  if (!fs.existsSync(CALENDAR_FILE)) {
+    await fsp.writeFile(
+      CALENDAR_FILE,
+      JSON.stringify(defaultMockGoogleCalendarEvents(), null, 2) + "\n",
       "utf8",
     );
   }
@@ -632,10 +675,16 @@ async function getMockLumaEvents() {
   return Array.isArray(raw) ? raw : defaultMockLumaEvents();
 }
 
+async function getMockCalendarEvents() {
+  const raw = await readJsonFile(CALENDAR_FILE, defaultMockGoogleCalendarEvents);
+  return Array.isArray(raw) ? raw : defaultMockGoogleCalendarEvents();
+}
+
 module.exports = {
   DATABASE_FILE,
   AUTH_FILE,
   LUMA_FILE,
+  CALENDAR_FILE,
   isLocalMockMode,
   getLocalDatabase,
   authenticateLocalMember,
@@ -648,5 +697,6 @@ module.exports = {
   appendLocalCheckin,
   appendLocalSuggestion,
   getMockLumaEvents,
+  getMockCalendarEvents,
 };
 

@@ -15,6 +15,7 @@ const cors = require("cors");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const {
   getLocalDatabase,
+  getMockCalendarEvents,
   authenticateLocalMember,
   changeLocalMemberPassword,
   createLocalProfile,
@@ -25,12 +26,58 @@ const {
   appendLocalCheckin,
   appendLocalSuggestion,
   DATABASE_FILE,
+  CALENDAR_FILE,
   LUMA_FILE,
 } = require("./local-storage");
 const { getDirectorySessionFromRequest } = require("./directory-auth");
 
 const app = express();
 const DEFAULT_PORT = 3001;
+const VALID_CALENDAR_NODE_SLUGS = new Set(["berlin", "sf", "global"]);
+
+function dedupeCalendarEvents(events) {
+  const byKey = new Map();
+  for (const event of events) {
+    const key = `${String(event.title || "").trim().toLowerCase()}|${event.start}|${event.end}`;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, event);
+      continue;
+    }
+    if (existing.source !== "google" && event.source === "google") {
+      byKey.set(key, event);
+    }
+  }
+  return Array.from(byKey.values());
+}
+
+function mapMockEventToCalendarEvent(event) {
+  if (!event || typeof event !== "object") return null;
+  const start =
+    typeof event.start === "string"
+      ? event.start
+      : typeof event.startAt === "string"
+        ? event.startAt
+        : "";
+  const end =
+    typeof event.end === "string"
+      ? event.end
+      : typeof event.endAt === "string"
+        ? event.endAt
+        : "";
+  if (!start || !end) return null;
+  return {
+    id: String(event.id || `mock-${start}`),
+    title: String(event.title || "Untitled event"),
+    start,
+    end,
+    location: event.location ? String(event.location) : null,
+    invitedBy: event.invitedBy ? String(event.invitedBy) : null,
+    description: event.description ? String(event.description) : null,
+    externalLink: event.externalLink ? String(event.externalLink) : null,
+    source: event.source === "google" ? "google" : "mock",
+  };
+}
 
 app.use(
   cors({
@@ -180,6 +227,43 @@ app.post("/api/suggestions", async (req, res) => {
   }
 });
 
+app.get("/api/calendar-events", async (req, res) => {
+  const rawNodeSlug = typeof req.query?.nodeSlug === "string" ? req.query.nodeSlug : "global";
+  const nodeSlug = rawNodeSlug.trim().toLowerCase();
+  if (!VALID_CALENDAR_NODE_SLUGS.has(nodeSlug)) {
+    return res.status(400).json({ error: "Invalid nodeSlug. Use berlin, sf, or global." });
+  }
+
+  try {
+    const calendarEvents = await getMockCalendarEvents();
+    const database = await getLocalDatabase();
+    database.events = await mergeSheetEventsWithLuma(database.events || []);
+
+    const googleEvents = calendarEvents
+      .filter((event) => event?.nodeSlug === nodeSlug)
+      .map(mapMockEventToCalendarEvent)
+      .filter(Boolean);
+    const programmingEvents = (database.events || [])
+      .filter((event) => event?.nodeSlug === nodeSlug)
+      .map((event) => mapMockEventToCalendarEvent({ ...event, source: "mock" }))
+      .filter(Boolean);
+
+    const events = dedupeCalendarEvents([...googleEvents, ...programmingEvents]).sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+    );
+
+    return res.json({
+      source: "google",
+      warning: "Using local mock Google Calendar feed plus mock programming/Luma events.",
+      events,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to read mock calendar events",
+    });
+  }
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -214,6 +298,7 @@ if (require.main === module) {
         `Local mock API server running on http://localhost:${server.address().port}`,
       );
       console.log(`[local-mock] Database file: ${DATABASE_FILE}`);
+      console.log(`[local-mock] Calendar file: ${CALENDAR_FILE}`);
       console.log(`[local-mock] Luma events file: ${LUMA_FILE}`);
     });
     server.on("error", (err) => {
