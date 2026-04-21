@@ -130,7 +130,7 @@ const FIRST_BERLIN_RESIDENTS_DAY_ISO = "2026-04-23";
  * public open house. Lives in code (not Luma); injected on the Berlin page
  * alongside Luma-backed events.
  *
- * Schedule: 12:00–17:00 local (Berlin), CET/CEST per date. Series starts
+ * Schedule: 10:00–17:00 local (Berlin), CET/CEST per date. Series starts
  * {@link FIRST_BERLIN_RESIDENTS_DAY_ISO} (nothing earlier on the calendar).
  */
 function berlinWeeklyCoworking(
@@ -147,9 +147,9 @@ function berlinWeeklyCoworking(
       nodeSlug: "berlin",
       title: "Coworking / Resident's Day (Nodees)",
       description:
-        "Internal coworking and resident day for Nodees at the Berlin Node — 12:00–17:00, every Thursday that isn't a German public holiday.",
+        "Internal coworking and resident day for Nodees at the Berlin Node — 10:00–17:00, every Thursday that isn't a German public holiday.",
       location: "Berlin Node",
-      startAt: `${iso}T12:00:00${offset}`,
+      startAt: `${iso}T10:00:00${offset}`,
       endAt: `${iso}T17:00:00${offset}`,
       type: "coworking",
       tags: ["recurring", "coworking", "residents-day", "nodees"],
