@@ -51,6 +51,20 @@ export function AppHeader({
   const isProfileRoute = route === "/profile";
   const isConnectionsRoute = route === "/connections";
   const subtext = "Internal tool — connect with grantees, fellows and nodees.";
+  /** Tiny beta marker — visible but unobtrusive; tuned for small screens first. */
+  const betaMark = (
+    <span
+      className={cn(
+        "inline-flex shrink-0 select-none items-center rounded-full border border-stone-200/90",
+        "bg-gradient-to-b from-white to-stone-50/95 px-2 py-0.5",
+        "text-[10px] font-medium leading-none tracking-tight text-stone-500",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] sm:text-[11px] sm:px-2 sm:py-0.5",
+      )}
+      aria-label="Beta — this app is still in development"
+    >
+      (beta)
+    </span>
+  );
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -108,31 +122,39 @@ export function AppHeader({
         paddingRight: "env(safe-area-inset-right, 0px)",
       }}
     >
-      <div className="px-4 md:px-8 pb-4 md:pb-5">
-        <div className="flex flex-nowrap items-center justify-between gap-3 min-h-0">
-          {/* Logo + title — on mobile allow wrap so full text is readable */}
-          <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+      <div className="px-3 sm:px-4 md:px-8 pb-3.5 sm:pb-4 md:pb-5">
+        <div className="flex min-h-0 flex-nowrap items-start justify-between gap-2 sm:gap-3 md:items-center">
+          {/* Logo + title — mobile-first: readable sizes, natural wrap, no harsh truncation */}
+          <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3 md:items-center md:gap-4">
             <button
               type="button"
               onClick={() => {
                 navigate("/");
                 onNavigateHome?.();
               }}
-              className="flex-shrink-0 flex items-center gap-3 md:gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 rounded cursor-pointer hover:opacity-90 transition-opacity"
+              className="flex shrink-0 cursor-pointer items-center rounded-md transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
               aria-label="Back to map"
             >
-              <img src={foresightLogo} alt="Foresight Institute" className="h-9 md:h-12" />
+              <img src={foresightLogo} alt="Foresight Institute" className="h-8 w-auto sm:h-9 md:h-12" />
             </button>
-            <div className="border-l border-gray-300 pl-3 md:pl-4 min-w-0">
-              <h1 className="text-gray-900 text-sm md:text-xl font-heading md:truncate line-clamp-2 md:line-clamp-none">
-                <span className="inline-flex items-baseline gap-2">
-                  <span>Foresight map &amp; Node programming</span>
-                  <span className="text-[11px] md:text-sm font-medium tracking-tight text-gray-500" aria-label="Beta">
-                    (beta)
+            <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
+              <h1 className="font-heading font-semibold tracking-tight text-gray-900 text-balance">
+                {/* One heading in the DOM; layout shifts at 360px so narrow phones get a readable two-line lockup */}
+                <span className="flex min-w-0 flex-col items-start gap-1 min-[360px]:flex-row min-[360px]:flex-wrap min-[360px]:items-baseline min-[360px]:gap-x-2 min-[360px]:gap-y-1">
+                  <span className="min-w-0 text-[0.9375rem] leading-snug min-[360px]:inline sm:text-base md:flex-1 md:truncate md:text-xl md:leading-tight">
+                    <span className="min-[360px]:hidden">
+                      Foresight map &amp;
+                      <br />
+                      Node programming
+                    </span>
+                    <span className="hidden min-[360px]:inline">
+                      Foresight map &amp; Node programming
+                    </span>
                   </span>
+                  {betaMark}
                 </span>
               </h1>
-              <p className="text-xs md:text-sm text-gray-600 line-clamp-2 md:truncate md:line-clamp-none mt-0.5">
+              <p className="mt-1.5 max-w-[min(100%,38rem)] text-pretty text-[0.8125rem] leading-relaxed text-gray-600 sm:text-[0.8125rem] md:mt-2 md:text-sm md:leading-relaxed">
                 {subtext}
               </p>
             </div>
