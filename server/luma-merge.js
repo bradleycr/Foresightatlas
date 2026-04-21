@@ -35,15 +35,62 @@ function mapLumaType(lumaEvent) {
   return "other";
 }
 
+/**
+ * Decide which Foresight node a Luma event belongs to.
+ *
+ * We layer signals from strongest to weakest so regional events consistently
+ * land on the right page:
+ *
+ *   1. Structured geo_address_info (city, region, country) — most reliable
+ *   2. Event timezone (IANA id) — reliable second signal for virtual-with-region
+ *   3. Full address / name keywords — handles "SF Node Launch", "Berlin Salon"
+ *   4. Description keywords — last resort (weakest)
+ *
+ * Anything that doesn't match a physical node is treated as "global", which is
+ * also the bucket for fully virtual events. Callers still force "global" when
+ * the resolved location is TBA / unspecified (see isLocationUnspecified).
+ */
 function guessNode(lumaEvent) {
-  const loc = [
-    lumaEvent.geo_address_info?.city || "",
-    lumaEvent.geo_address_info?.region || "",
-    lumaEvent.name || "",
-    lumaEvent.description || "",
-  ].join(" ").toLowerCase();
-  if (loc.includes("berlin") || loc.includes("germany")) return "berlin";
-  if (loc.includes("san francisco") || loc.includes("sf") || loc.includes("bay area")) return "sf";
+  const geo = lumaEvent.geo_address_info || {};
+  const city = String(geo.city || "").toLowerCase().trim();
+  const region = String(geo.region || "").toLowerCase().trim();
+  const country = String(geo.country || "").toLowerCase().trim();
+  const countryCode = String(geo.country_code || "").toLowerCase().trim();
+  const full = String(geo.full_address || geo.address || "").toLowerCase();
+  const name = String(lumaEvent.name || "").toLowerCase();
+  const desc = String(lumaEvent.description || "").toLowerCase();
+  const tz = String(lumaEvent.timezone || "").toLowerCase();
+
+  // ── Berlin / Germany signals ────────────────────────────────────────
+  const isBerlin =
+    city === "berlin" ||
+    /\bberlin\b/.test(full) ||
+    /\bberlin\b/.test(name) ||
+    country === "germany" ||
+    country === "deutschland" ||
+    countryCode === "de" ||
+    tz === "europe/berlin";
+  if (isBerlin) return "berlin";
+
+  // ── San Francisco / Bay Area signals ────────────────────────────────
+  const bayAreaCities = new Set([
+    "san francisco", "oakland", "berkeley", "palo alto", "mountain view",
+    "menlo park", "san jose", "sunnyvale", "san mateo", "redwood city",
+    "emeryville", "daly city", "south san francisco", "fremont", "cupertino",
+    "santa clara", "hayward", "richmond", "alameda",
+  ]);
+  const isSf =
+    bayAreaCities.has(city) ||
+    /\bsan francisco\b|\bbay area\b|\bsilicon valley\b|\boakland\b|\bberkeley\b|\bpalo alto\b/.test(full) ||
+    /\bsan francisco\b|\bbay area\b|\bsf\b/.test(name) ||
+    region === "california" ||
+    tz === "america/los_angeles";
+  if (isSf) return "sf";
+
+  // ── Description keywords (weakest; only if nothing else matched) ────
+  if (/\bberlin\b/.test(desc)) return "berlin";
+  if (/\bsan francisco\b|\bbay area\b/.test(desc)) return "sf";
+
   return "global";
 }
 
@@ -137,7 +184,9 @@ function mergeEvents(sheetEvents, lumaEvents) {
       const lumaEv = lumaById.get(sheetEv._lumaEventId);
       matchedLumaIds.add(sheetEv._lumaEventId);
       const location = lumaEv.location;
-      let nodeSlug = sheetEv.nodeSlug || lumaEv.nodeSlug;
+      // Sheet wins when it asserts a node; otherwise prefer Luma's geo-based guess.
+      // Leave "global" as the last-resort default so the event still shows somewhere.
+      let nodeSlug = sheetEv.nodeSlug || lumaEv.nodeSlug || "global";
       if (isLocationUnspecified(location)) nodeSlug = "global";
       merged.push({
         id: sheetEv.id,
@@ -157,6 +206,8 @@ function mergeEvents(sheetEvents, lumaEvents) {
       });
     } else {
       const { _lumaEventId, ...clean } = sheetEv;
+      // Sheet row without a Luma link: never leave nodeSlug null, default to global.
+      if (!clean.nodeSlug) clean.nodeSlug = "global";
       merged.push(clean);
     }
   }

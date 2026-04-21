@@ -136,11 +136,24 @@ function rowToEvent(row) {
   const idx = (name) => EVENTS_HEADERS.indexOf(name);
   const rawNodeSlug = get(row, idx("nodeSlug"));
   const location = get(row, idx("location")) || "";
-  const nodeSlug = isLocationUnspecified(location)
-    ? "global"
-    : rawNodeSlug === "sf" || rawNodeSlug === "global"
-      ? rawNodeSlug
-      : "berlin";
+  /*
+   * Resolve nodeSlug from the sheet row. When a row is linked to a Luma
+   * event (via lumaEventId) we want Luma's richer geo data to win if the
+   * sheet didn't explicitly assign a node. We therefore leave nodeSlug
+   * null here unless the sheet is unambiguous; the merge step in
+   * luma-merge.js then fills in from the Luma event, ultimately falling
+   * back to "global" if neither side can decide.
+   */
+  let nodeSlug = null;
+  if (isLocationUnspecified(location)) {
+    nodeSlug = "global";
+  } else if (
+    rawNodeSlug === "berlin" ||
+    rawNodeSlug === "sf" ||
+    rawNodeSlug === "global"
+  ) {
+    nodeSlug = rawNodeSlug;
+  }
   const cap = get(row, idx("capacity"));
   const tags = parseJsonSafe(get(row, idx("tags")), []);
   return {
