@@ -24,6 +24,7 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 
 import { Button } from "../components/ui/button";
 import { NanowheelBadge } from "../components/NanowheelBadge";
+import { NanowheelBurst } from "../components/NanowheelBurst";
 import type { Identity } from "../services/identity";
 import type { Person } from "../types";
 import type { CheckIn, NodeSlug } from "../types/events";
@@ -58,6 +59,13 @@ export function CheckInPage({
   const [alreadyHere, setAlreadyHere] = useState(false);
   const [peopleHere, setPeopleHere] = useState<CheckIn[]>([]);
   const [summary, setSummary] = useState<NanowheelSummary | null>(null);
+  /**
+   * Plays the one-shot celebration overlay on a successful check-in. We keep
+   * it in local state (rather than firing on re-render) so it only triggers
+   * in response to an explicit tap, not when the page is revisited after
+   * someone has already checked in earlier in the day.
+   */
+  const [celebrating, setCelebrating] = useState(false);
 
   /* Keep the "already here" flag + daily list in sync with identity + date. */
   useEffect(() => {
@@ -104,6 +112,7 @@ export function CheckInPage({
       setPeopleHere(getCheckInsForDay(nodeSlug, today));
       const nano = await getNanowheelSummary(signedInPerson.id);
       setSummary(nano);
+      setCelebrating(true);
       toast.success("You're in. +1 nanowheel earned.", {
         description: "Thanks for being at the node today.",
       });
@@ -165,6 +174,11 @@ export function CheckInPage({
   const othersHere = peopleHere.filter((p) => p.personId !== signedInPerson.id);
 
   return (
+    <>
+    <NanowheelBurst
+      visible={celebrating}
+      onComplete={() => setCelebrating(false)}
+    />
     <div
       className="flex flex-1 items-start justify-center px-4 py-10 sm:py-16"
       style={{ background: gradient }}
@@ -269,6 +283,7 @@ export function CheckInPage({
         </div>
       </div>
     </div>
+    </>
   );
 }
 

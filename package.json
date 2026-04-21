@@ -85,7 +85,6 @@
         "concurrently": "^8.2.2",
         "dotenv": "^17.3.1",
         "playwright": "^1.58.2",
-        "qrcode": "^1.5.4",
         "tailwindcss": "^4.2.1",
         "vercel": "^50.35.0",
         "vite": "6.3.5"
@@ -114,7 +113,6 @@
         "copyover-report": "node scripts/copyover-test-to-real-report.js",
         "copyover-report:csv": "node scripts/copyover-test-to-real-report.js --csv",
         "test:signal-checkin": "node scripts/test-signal-checkin.js",
-        "qr": "node scripts/generate-qr.js",
         "setup:events-tab": "node scripts/create-events-tab.js",
         "seed:berlin-coworking": "node scripts/seed-berlin-coworking.js",
         "sync:fellows": "node scripts/sync-fellows-from-website.js",

@@ -1,10 +1,11 @@
 /**
  * QRCheckIn — printable QR code card for physical node offices.
  *
- * Generates a QR code that encodes `/{nodeSlug}?tab=table&checkin=true`.
- * When scanned, the user lands on the programming page's Table tab and
- * can finish check-in after signing in via the profile menu. If identity is
- * already remembered in localStorage, the check-in completes automatically.
+ * Generates a QR code that encodes `/checkin/{nodeSlug}` — the dedicated
+ * single-screen tap-to-check-in landing page. When scanned, the visitor lands
+ * on a celebratory one-tap flow (sign in if needed, confirm arrival, +1
+ * nanowheel). This URL is the unified source of truth for all check-in QR
+ * codes so the printed poster and in-app modal never drift apart.
  *
  * Rendered as a full-screen modal overlay with a white card that prints
  * cleanly on paper.
@@ -28,7 +29,7 @@ interface QRCheckInProps {
 export function QRCheckIn({ nodeSlug, nodeName, theme, onClose }: QRCheckInProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const checkInUrl = `${window.location.origin}${buildFullPath(`/${nodeSlug}`)}?tab=table&checkin=true`;
+  const checkInUrl = `${window.location.origin}${buildFullPath(`/checkin/${nodeSlug}`)}`;
 
   const handlePrint = () => {
     const card = cardRef.current;
