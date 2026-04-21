@@ -19,6 +19,13 @@ export interface SharedCalendarResult {
   source: CalendarSource;
   warning?: string;
   events: SharedCalendarEvent[];
+  /**
+   * True when the backing Google Calendar for this node isn't configured yet
+   * (no calendar ID + no read credentials). We treat this as a friendly
+   * "calendar coming soon" state rather than a hard error so the page doesn't
+   * scream red banners at users on a fresh deploy.
+   */
+  notConfigured?: boolean;
 }
 
 const cacheByNode: Partial<Record<NodeSlug, SharedCalendarResult>> = {};
@@ -70,6 +77,18 @@ export async function getSharedCalendarEvents(
     const params = new URLSearchParams({ nodeSlug });
     const response = await fetch(`${getApiBase()}/calendar-events?${params}`);
     if (!response.ok) {
+      // 503 is reserved for "Google Calendar is not configured yet". Treat it as
+      // a friendly empty state so unsigned deploys don't look broken.
+      if (response.status === 503) {
+        const friendly: SharedCalendarResult = {
+          source: "mock",
+          events: [],
+          notConfigured: true,
+        };
+        cacheByNode[nodeSlug] = friendly;
+        return friendly;
+      }
+
       let detail = "";
       try {
         const payload = await response.json();

@@ -94,6 +94,7 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
   const [warning, setWarning] = useState(null as string | null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null as string | null);
+  const [notConfigured, setNotConfigured] = useState(false);
   const [view, setView] = useState(DEFAULT_VIEW as CalendarView);
   const [selectedEvent, setSelectedEvent] = useState(null as SharedCalendarEvent | null);
 
@@ -103,12 +104,14 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
     setIsLoading(true);
     setError(null);
     setWarning(null);
+    setNotConfigured(false);
     void getSharedCalendarEvents(nodeSlug)
       .then((result) => {
         if (cancelled) return;
         setCalendarEvents(result.events);
         setSource(result.source);
         setWarning(result.warning || null);
+        setNotConfigured(Boolean(result.notConfigured));
       })
       .catch((err) => {
         if (cancelled) return;
@@ -137,6 +140,38 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
           <Button className="mt-6" onClick={onOpenProfile}>
             Open profile sign-in
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Friendly "coming soon" state when the node calendar backend isn't set up.
+  // Shown instead of the calendar grid so an unconfigured deploy doesn't look broken.
+  if (notConfigured) {
+    return (
+      <div className="flex-1 overflow-auto bg-gray-100">
+        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-10 shadow-sm text-center sm:px-8 sm:py-12">
+            <CalendarDays className="mx-auto mb-4 size-8 text-gray-400" />
+            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">
+              {pageNode?.city || "Global"} shared calendar — coming soon
+            </h1>
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-gray-600">
+              The shared node calendar isn&apos;t connected to Google yet. In the meantime,
+              you can still invite members individually from their profiles, or open your own calendar.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Button onClick={onOpenProfile} variant="outline">
+                Open your profile
+              </Button>
+              <Button asChild>
+                <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer">
+                  Open Google Calendar
+                  <ExternalLink className="size-4" />
+                </a>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
