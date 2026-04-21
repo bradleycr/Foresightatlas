@@ -35,6 +35,7 @@ const {
   LUMA_FILE,
 } = require("./local-storage");
 const { getDirectorySessionFromRequest } = require("./directory-auth");
+const { assertPublicWriteSecret } = require("./public-write-secret");
 
 const app = express();
 const DEFAULT_PORT = 3001;
@@ -199,6 +200,7 @@ app.get("/api/rsvps", async (_req, res) => {
 });
 
 app.post("/api/rsvps", async (req, res) => {
+  if (!assertPublicWriteSecret(req, res)) return;
   try {
     const row = await appendLocalRsvp(req.body || {});
     return res.status(201).json(row);
@@ -225,6 +227,7 @@ app.get("/api/checkins", async (req, res) => {
 });
 
 app.post("/api/checkins", async (req, res) => {
+  if (!assertPublicWriteSecret(req, res)) return;
   try {
     const row = await appendLocalCheckin(req.body || {});
     return res.status(201).json(row);

@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { google } = require("googleapis");
 const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
+const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_SUGGESTIONS = "Suggestions";
@@ -50,10 +51,21 @@ function generateId() {
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-Foresight-Write-Secret, Authorization",
+  );
   if (req.method === "OPTIONS") return res.status(204).end();
 
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  /*
+   * The Suggestions sheet is append-only from the public UI, so — like RSVPs
+   * and check-ins — we gate writes with the optional shared secret. Keeping
+   * the same guard across public-write endpoints avoids accidental abuse
+   * vectors when FORESIGHT_PUBLIC_WRITE_SECRET is set in the environment.
+   */
+  if (!assertPublicWriteSecret(req, res)) return;
 
   const sheets = await getSheetsClient();
   if (!sheets) return res.status(503).json({ error: "Suggestions not configured (missing GOOGLE_SERVICE_ACCOUNT_KEY)" });

@@ -24,15 +24,32 @@ const {
 } = require("./directory-auth");
 const calendarEventsHandler = require("../api/calendar-events");
 
+/*
+ * Route handlers that live in `/api/*` are plain (req, res) functions written
+ * for Vercel's Node runtime. They already handle their own CORS, auth, and
+ * shape validation, so we mount them verbatim on Express to keep dev (sheet
+ * backend) and prod (Vercel) in perfect parity. Without this, routes like
+ * /api/rsvps silently 404 in dev whenever the sheet server entrypoint is
+ * picked over the mock server.
+ */
+const rsvpsHandler = require("../api/rsvps");
+const checkinsHandler = require("../api/checkins");
+const suggestionsHandler = require("../api/suggestions");
+
 const app = express();
 const DEFAULT_PORT = 3001;
 
-// Middleware
 app.use(
   cors({
     origin: true,
     methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      /* Allow the optional public-write-secret header when the API is called
+       * cross-origin (e.g. from a custom tunnel URL, not just Vite's proxy). */
+      "X-Foresight-Write-Secret",
+    ],
   }),
 );
 app.use(express.json());
@@ -166,7 +183,14 @@ app.post("/api/profile", async (req, res) => {
 
 app.get("/api/calendar-events", calendarEventsHandler);
 
-// Health check endpoint
+/*
+ * Shared Vercel handlers — mounted for GET, POST, and OPTIONS so CORS preflight
+ * and read/write both work identically in local dev and on production.
+ */
+app.all("/api/rsvps", rsvpsHandler);
+app.all("/api/checkins", checkinsHandler);
+app.all("/api/suggestions", suggestionsHandler);
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
