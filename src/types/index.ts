@@ -1,6 +1,12 @@
 // Data models for Foresight Fellows Map & Timeline
 
-export type RoleType = "Fellow" | "Grantee" | "Prize Winner" | "Senior Fellow" | "Nodee";
+export type RoleType =
+  | "Fellow"
+  | "Grantee"
+  | "Prize Winner"
+  | "Senior Fellow"
+  | "Nodee"
+  | "Foresight Team";
 export type PrimaryNode = "Global" | "Berlin Node" | "Bay Area Node" | "Alumni";
 export type TravelWindowType = "Residency" | "Conference" | "Workshop" | "Visit" | "Other";
 export type SuggestionStatus = "Pending" | "Accepted" | "Rejected";

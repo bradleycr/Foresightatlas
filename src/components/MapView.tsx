@@ -19,8 +19,9 @@ import type { NodeEvent } from "../types/events";
 import { getPersonRSVPs } from "../services/rsvp";
 import { FellowCard, type AttendingEvent } from "./FellowCard";
 import { InlineFilters } from "./InlineFilters";
-import { List, X } from "lucide-react";
+import { ArrowLeft, List, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
+import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
@@ -47,6 +48,9 @@ interface MapViewProps {
   filters?: Filters;
   onFiltersChange?: (f: Filters) => void;
   defaultYear?: number;
+  /** Same mobile nav menu as App header — list sheet toggles it from the top bar */
+  mobileMenuOpen?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
 /**
@@ -184,7 +188,14 @@ function MapResizer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
 }
 
 // Canonical order for segment layout so the badge always looks consistent
-const ROLE_ORDER: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner", "Nodee"];
+const ROLE_ORDER: RoleType[] = [
+  "Fellow",
+  "Senior Fellow",
+  "Grantee",
+  "Prize Winner",
+  "Nodee",
+  "Foresight Team",
+];
 type CommunityStatus = "current" | "alumni" | "mixed";
 
 function getCommunityStatus(people: Person[]): CommunityStatus {
@@ -650,6 +661,8 @@ export function MapView({
   filters,
   onFiltersChange,
   defaultYear,
+  mobileMenuOpen = false,
+  onMobileMenuToggle,
 }: MapViewProps) {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
@@ -1192,9 +1205,24 @@ export function MapView({
                     Show all
                   </button>
                 )}
-                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 bg-white/80" onClick={() => setIsSidebarOpen(false)}>
-                  Back to map
-                </Button>
+                {onMobileMenuToggle && (
+                  <button
+                    type="button"
+                    onClick={onMobileMenuToggle}
+                    className={cn(
+                      "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all touch-manipulation shrink-0",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2",
+                      mobileMenuOpen
+                        ? "bg-app-tab-active text-gray-900 shadow-sm border-white/50"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm",
+                    )}
+                    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={mobileMenuOpen}
+                    aria-haspopup="dialog"
+                  >
+                    {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+                  </button>
+                )}
               </div>
             </div>
           </header>
@@ -1203,7 +1231,27 @@ export function MapView({
             {/* Sticky block: search + filters stay visible when scrolling the list */}
             <div className="sticky top-0 z-10 px-4 pt-3 pb-4 border-b border-gray-200 bg-app-sidebar">
               {filters && onFiltersChange && defaultYear !== undefined && (
-                <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} expanded={filtersExpanded} onExpandedChange={setFiltersExpanded} />
+                <InlineFilters
+                  filters={filters}
+                  onFiltersChange={onFiltersChange}
+                  defaultYear={defaultYear}
+                  resultCount={sidebarPeople.length}
+                  expanded={filtersExpanded}
+                  onExpandedChange={setFiltersExpanded}
+                  filterToggleStartSlot={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 border-gray-300 text-gray-700 bg-white/90 text-xs sm:text-sm px-2.5 sm:px-3 touch-manipulation"
+                      onClick={() => setIsSidebarOpen(false)}
+                    >
+                      <ArrowLeft className="size-3.5 sm:size-4 mr-1 sm:mr-1.5 opacity-80" aria-hidden />
+                      <span className="hidden min-[360px]:inline">Back to map</span>
+                      <span className="min-[360px]:hidden">Map</span>
+                    </Button>
+                  }
+                />
               )}
             </div>
             <div className="p-4 space-y-3">

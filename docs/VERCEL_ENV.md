@@ -69,9 +69,7 @@ So for “people can go in and update their profile,” you **must** set **GOOGL
 
 - **GET /api/checkins** (node check-in table): same read credentials as RSVPs — **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY**. If you only use the service account key (no API key), check-ins still load.
 
-### Optional: RSVP / check-in write secret
-
-If you set **`FORESIGHT_PUBLIC_WRITE_SECRET`** on the server, **`POST /api/rsvps`** and **`POST /api/checkins`** require header **`X-Foresight-Write-Secret`** with the same value (or `Authorization: Bearer …`). For the SPA to send it, set **`VITE_FORESIGHT_WRITE_SECRET`** to the **same** value in Vercel at build time. This is a light abuse deterrent (the value is in the client bundle); combine with rate limiting for stronger protection.
+RSVP and check-in **POST** endpoints work with **GOOGLE_SERVICE_ACCOUNT_KEY** alone; you do not need any extra client or “write secret” env vars for normal use.
 
 ### Directory auth in production
 

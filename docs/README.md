@@ -1,9 +1,10 @@
 # Documentation index
 
-Start here if you are setting up locally, deploying, or integrating another backend.
+This folder supplements the root **[README.md](../README.md)** and **[CONTRIBUTING.md](../CONTRIBUTING.md)**. Use it when you are setting up locally, deploying to Vercel, or integrating another backend.
 
 | Doc | Purpose |
 |-----|---------|
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | How to fork, run the app (with or without sheet keys), and open PRs. |
 | [LOCAL_SETUP.md](LOCAL_SETUP.md) | One-page local runbook (env, ports, troubleshooting). |
 | [SHEETS_SYNC.md](SHEETS_SYNC.md) | Google Sheet tabs, migration, sync scripts, column schema. |
 | [EVENTS_SOURCE.md](EVENTS_SOURCE.md) | Where programming events come from (sheet + optional Luma). |
@@ -14,6 +15,8 @@ Start here if you are setting up locally, deploying, or integrating another back
 | [VERCEL_CLI.md](VERCEL_CLI.md) | Using the Vercel CLI with this repo. |
 | [MANUAL_UX_CHECKLIST.md](MANUAL_UX_CHECKLIST.md) | Smoke-test checklist before a release. |
 
-Project root **[README.md](../README.md)** is the main overview. **[AGENTS.md](../AGENTS.md)** summarizes behavior for tools and contributors (ports, sheet as source of truth, scripts).
+Project root **[README.md](../README.md)** is the main product overview. **[AGENTS.md](../AGENTS.md)** is a concise runbook (ports, sheet as source of truth, Vite base path) aimed at maintainers and AI-assisted workflows.
+
+**Security:** Report vulnerabilities per **[.github/SECURITY.md](../.github/SECURITY.md)**, not public issues.
 
 Maintainer-only reports (audit / sheet comparison) are written under **`reports/`** when you run `pnpm run audit:realdata`, `compare:sheet`, or `copyover-report` — see **`reports/README.md`**.

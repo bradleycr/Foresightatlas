@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Filters, RoleType } from "../types";
 import { Badge } from "./ui/badge";
 import { cn } from "./ui/utils";
@@ -22,6 +22,8 @@ interface InlineFiltersProps {
   /** Controlled expand/collapse of the filter section (e.g. collapse when user selects from map). */
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  /** Rendered beside the Filters toggle (e.g. mobile “Back to map”). */
+  filterToggleStartSlot?: React.ReactNode;
 }
 
 const FOCUS_AREAS = [
@@ -34,9 +36,24 @@ const FOCUS_AREAS = [
   "Other",
 ];
 
-const PROGRAMS: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner", "Nodee"];
+const PROGRAMS: RoleType[] = [
+  "Fellow",
+  "Senior Fellow",
+  "Grantee",
+  "Prize Winner",
+  "Nodee",
+  "Foresight Team",
+];
 
-export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCount, expanded: controlledExpanded, onExpandedChange }: InlineFiltersProps) {
+export function InlineFilters({
+  filters,
+  onFiltersChange,
+  defaultYear,
+  resultCount,
+  expanded: controlledExpanded,
+  onExpandedChange,
+  filterToggleStartSlot,
+}: InlineFiltersProps) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isControlled = controlledExpanded !== undefined;
   const expanded = isControlled ? controlledExpanded : internalExpanded;
@@ -96,32 +113,48 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
       </div>
 
       {/* Result count + prominent Filters button */}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium text-neutral-500">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        <p className="text-xs font-medium text-neutral-500 min-w-0">
           {resultCount} {resultCount === 1 ? "person" : "people"}
         </p>
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className={cn(
-            "inline-filters__toggle relative flex items-center gap-2 rounded-lg border font-medium text-sm transition-all min-h-[2.75rem] sm:min-h-[2.25rem] px-4 py-2 touch-manipulation",
-            "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-400",
-            expanded || activeCount > 0
-              ? "border-teal-300/80 text-gray-900 shadow-sm"
-              : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900"
-          )}
-          style={expanded || activeCount > 0 ? { background: activeToggle, borderColor: "rgba(255,255,255,0.5)" } : undefined}
-          aria-label={expanded ? "Collapse filters" : "Expand filters"}
-          aria-expanded={expanded}
-        >
-          <SlidersHorizontal className="size-4 shrink-0" aria-hidden />
-          <span>Filters</span>
-          {activeCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 text-[11px] font-semibold text-white">
-              {activeCount}
+        <div className="flex items-center gap-2 shrink-0">
+          {filterToggleStartSlot}
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className={cn(
+              "inline-filters__toggle relative flex items-center gap-2 rounded-lg border font-medium text-sm transition-all min-h-[2.75rem] sm:min-h-[2.25rem] px-3 sm:px-4 py-2 touch-manipulation",
+              "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-400",
+              expanded || activeCount > 0
+                ? "border-teal-300/80 text-gray-900 shadow-sm"
+                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900",
+            )}
+            style={expanded || activeCount > 0 ? { background: activeToggle, borderColor: "rgba(255,255,255,0.5)" } : undefined}
+            aria-label={expanded ? "Close filters" : "Expand filters"}
+            aria-expanded={expanded}
+          >
+            {expanded ? (
+              <X className="size-4 shrink-0" aria-hidden />
+            ) : (
+              <SlidersHorizontal className="size-4 shrink-0" aria-hidden />
+            )}
+            <span>
+              {expanded ? (
+                <>
+                  <span className="sm:hidden">Close</span>
+                  <span className="hidden sm:inline">Close filters</span>
+                </>
+              ) : (
+                "Filters"
+              )}
             </span>
-          )}
-        </button>
+            {activeCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 text-[11px] font-semibold text-white">
+                {activeCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Expanded quick-filters */}

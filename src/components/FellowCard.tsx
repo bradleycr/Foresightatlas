@@ -7,6 +7,7 @@ import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
+import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 
 /** Compact event reference for "Attending" line on the card. */
 export interface AttendingEvent {
@@ -42,6 +43,7 @@ export function FellowCard({
     person.affiliationOrInstitution?.trim() ||
     "";
   const nodeLabel = getNodeLabel(person.primaryNode);
+  const avatarUrl = getEffectiveProfileImageUrl(person);
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -75,9 +77,9 @@ export function FellowCard({
         {/* Header: optional avatar, name/role left, profile action top-right */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 flex items-start gap-3">
-            {person.profileImageUrl && (
+            {avatarUrl && (
               <img
-                src={person.profileImageUrl}
+                src={avatarUrl}
                 alt=""
                 className="size-10 sm:size-12 rounded-full object-cover border border-gray-200 flex-shrink-0"
                 referrerPolicy="no-referrer"

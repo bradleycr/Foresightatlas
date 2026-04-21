@@ -8,7 +8,7 @@ React + TypeScript UI: map, programming pages, profiles, and community features.
 - **Programming** — Node event calendars, RSVPs, and check-ins when the API provides them.
 - **Profile / directory** — Sheet-backed member profiles and auth via `/api/*`.
 
-For full-stack setup, environment variables, and deploy, see the **root [README.md](../README.md)** and **[docs/README.md](../docs/README.md)**.
+For full-stack setup, environment variables, deploy, and how to contribute, see the root **[README.md](../README.md)**, **[CONTRIBUTING.md](../CONTRIBUTING.md)**, and **[docs/README.md](../docs/README.md)**.
 
 ## Project structure (this folder)
 

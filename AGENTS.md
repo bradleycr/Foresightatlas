@@ -40,3 +40,7 @@
   - `pnpm sync:sheet` — Sheet → `public/data/database.json` (optional backup/export; needs `GOOGLE_SHEETS_API_KEY`).
   - `pnpm migrate:sheet` — `database.json` → Sheet (one-time populate; needs `GOOGLE_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`).
 - **Deploy.** **Vercel** is the primary deploy target (push to `main` → Vercel builds and deploys). Ensure sheet credentials are set in Vercel env so the serverless API can read the sheet.
+
+### Open-source contributors (humans)
+
+For onboarding, environment setup (including running **without** production Google keys via the local mock API), and PR expectations, see **[CONTRIBUTING.md](CONTRIBUTING.md)** and **[docs/README.md](docs/README.md)**. This file stays focused on technical facts for tools and maintainers.

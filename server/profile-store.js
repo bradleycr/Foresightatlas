@@ -18,6 +18,7 @@ const VALID_ROLE_TYPES = new Set([
   "Prize Winner",
   "Senior Fellow",
   "Nodee",
+  "Foresight Team",
 ]);
 
 const VALID_PRIMARY_NODES = new Set([

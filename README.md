@@ -2,7 +2,7 @@
 
 A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they are traveling. Built for the Foresight community to see who is where and when.
 
-**Open source** — Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and the [documentation index](docs/README.md).
+**Open source (MIT)** — Issues and pull requests are welcome. New here? Read **[CONTRIBUTING.md](CONTRIBUTING.md)**, the **[documentation index](docs/README.md)**, and **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)**. Security-sensitive reports: **[.github/SECURITY.md](.github/SECURITY.md)** (do not use public issues for undisclosed vulnerabilities).
 
 ## What it does
 
@@ -48,15 +48,12 @@ Split server entrypoints:
 
 ## Deploy on Vercel
 
-This app is **Vite + React** (not Next.js). Vercel supports it out of the box.
+This app is **Vite + React** (not Next.js). [vercel.json](vercel.json) sets the build (`pnpm run build`), output directory (`dist`), install command, and SPA rewrites for client-side routes.
 
-1. Import the repo in [vercel.com](https://vercel.com) → **Add New Project**.
-2. **Build:** defaults plus `vercel.json` (may run sheet sync before `pnpm run build` — see repo config).
-3. **Output directory:** `dist`.
-4. **Install:** `pnpm install`.
-5. **Environment variables** for live data: `GOOGLE_SHEETS_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_KEY`, and optionally `SPREADSHEET_ID`. Profile save and writes need the service account — see [docs/VERCEL_ENV.md](docs/VERCEL_ENV.md).
+1. Import the repo in [vercel.com](https://vercel.com) → **Add New Project** (or use the [Vercel CLI](docs/VERCEL_CLI.md): `pnpm run vercel:link`).
+2. **Environment variables** for production: at minimum **SPREADSHEET_ID** and **GOOGLE_SERVICE_ACCOUNT_KEY** so the map loads and profiles/RSVPs/check-ins can write to the sheet. See [docs/VERCEL_ENV.md](docs/VERCEL_ENV.md). Quick status check: `pnpm run vercel:status` (after linking).
 
-**GitHub Pages:** An optional manual workflow is described in [DEPLOYMENT.md](DEPLOYMENT.md). Primary deploy is Vercel.
+**GitHub Pages:** An optional manual workflow is in [DEPLOYMENT.md](DEPLOYMENT.md). The primary production deploy for this project is Vercel.
 
 ## Tech stack
 
@@ -110,7 +107,9 @@ The Signal integration is **optional**. If you are helping finish or operate the
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Before a release, [docs/MANUAL_UX_CHECKLIST.md](docs/MANUAL_UX_CHECKLIST.md) is a practical smoke-test list.
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup (including **running without Google credentials** via the local mock API), branch/PR expectations, and where to ask questions. Use **Issues** for bugs and **Discussions** for open-ended topics when enabled. Before a release, maintainers use [docs/MANUAL_UX_CHECKLIST.md](docs/MANUAL_UX_CHECKLIST.md) as a smoke-test list.
+
+By contributing, you agree that your contributions are licensed under the **same license as the project** ([LICENSE](LICENSE) — MIT).
 
 ## License
 

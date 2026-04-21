@@ -672,12 +672,19 @@ async function listLocalCheckins(filters) {
 async function appendLocalCheckin(input) {
   const db = await getLocalDatabase();
   const now = new Date().toISOString();
+  const rawType = String(input.type || "").trim().toLowerCase();
+  const type =
+    rawType === "planned"
+      ? "planned"
+      : rawType === "withdrawn"
+        ? "withdrawn"
+        : "checkin";
   const row = {
     personId: String(input.personId || "").trim(),
     fullName: String(input.fullName || "").trim(),
     nodeSlug: String(input.nodeSlug || "").trim(),
     date: String(input.date || "").trim(),
-    type: input.type === "planned" ? "planned" : "checkin",
+    type,
     createdAt: now,
     updatedAt: now,
   };

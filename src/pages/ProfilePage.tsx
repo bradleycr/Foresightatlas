@@ -9,7 +9,11 @@ import type { Person, PrimaryNode, RoleType } from "../types";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
 import { getPersonRSVPs } from "../services/rsvp";
 import { fetchRSVPsFromAPI } from "../services/rsvp";
-import { getEventById } from "../data/events";
+import { getEventById, isCoworkingLike } from "../data/events";
+import {
+  getProfileImageOverride,
+  setProfileImageOverride,
+} from "../services/profileImageOverride";
 import { getNode } from "../data/nodes";
 import { buildFullPath } from "../utils/router";
 import { Button } from "../components/ui/button";
@@ -36,6 +40,7 @@ const ROLE_OPTIONS: RoleType[] = [
   "Grantee",
   "Prize Winner",
   "Nodee",
+  "Foresight Team",
 ];
 
 /** Location-only nodes for the form; "Alumni" is a separate program-status field. */
@@ -78,6 +83,7 @@ const EMPTY_PERSON: Person = {
   shortProjectTagline: "",
   expandedProjectDescription: "",
   isAlumni: false,
+  profileImageUrl: null,
 };
 
 interface ProfilePageProps {
@@ -147,6 +153,8 @@ export function ProfilePage({
   });
   /** Tick to refresh "Events I'm attending" after RSVP fetch (e.g. on profile load). */
   const [rsvpTick, setRsvpTick] = useState(0);
+  /** Local-only profile photo URL (see Details section); synced with localStorage per person id. */
+  const [profileImageUrlLocal, setProfileImageUrlLocal] = useState("");
 
   useEffect(() => {
     if (createMode && !identity) return;
@@ -181,6 +189,18 @@ export function ProfilePage({
     if (!identity?.personId) return;
     fetchRSVPsFromAPI().then(() => setRsvpTick((t) => t + 1));
   }, [identity?.personId]);
+
+  useEffect(() => {
+    if (!draft?.id) return;
+    setProfileImageUrlLocal(getProfileImageOverride(draft.id) ?? "");
+  }, [draft?.id]);
+
+  const effectiveHeaderAvatar = useMemo(() => {
+    if (!draft?.id) return null;
+    const local = profileImageUrlLocal.trim();
+    if (local) return local;
+    return draft.profileImageUrl?.trim() || null;
+  }, [draft?.id, draft?.profileImageUrl, profileImageUrlLocal]);
 
   /**
    * Validate the map location as the user types.
@@ -772,11 +792,22 @@ export function ProfilePage({
             className="border-b border-gray-200/80 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
             style={{ background: `linear-gradient(135deg, ${"#f0f9ff"} 0%, ${"#ecfdf5"} 50%, ${"#faf5ff"} 100%)` }}
           >
-            <div className="flex min-w-0 items-start justify-between gap-4 sm:gap-5">
+            <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 sm:gap-5">
               <div className="flex min-w-0 items-start gap-4 sm:gap-5">
                 <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16">
-                  <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
-                  <span className="relative z-10 text-sm font-medium text-sky-700/85 sm:text-base">{initials}</span>
+                  {effectiveHeaderAvatar ? (
+                    <img
+                      src={effectiveHeaderAvatar}
+                      alt=""
+                      className="absolute inset-0 size-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <>
+                      <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                      <span className="relative z-10 text-sm font-medium text-sky-700/85 sm:text-base">{initials}</span>
+                    </>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wider text-sky-600/90 sm:text-sm">
@@ -973,6 +1004,24 @@ export function ProfilePage({
                       updateDraft("shortProjectTagline", event.target.value)
                     }
                     placeholder="One clear sentence about your work"
+                  />
+                </Field>
+
+                <Field
+                  label="Profile photo URL (optional)"
+                  description="Paste a direct image link (https://…). Stored only in this browser—nothing is saved to the directory. Clears when you remove the text."
+                >
+                  <Input
+                    value={profileImageUrlLocal}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProfileImageUrlLocal(v);
+                      if (draft.id.trim()) setProfileImageOverride(draft.id, v.trim() || null);
+                    }}
+                    placeholder="https://example.com/photo.jpg"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
                   />
                 </Field>
 
@@ -1260,15 +1309,18 @@ function ProfileEventsAttending({
   rsvpTick: number;
 }) {
   void rsvpTick; // refresh when RSVPs are re-fetched
-  const attending = useMemo(() => {
+  const { coworkingCount, otherEvents } = useMemo(() => {
     const rsvps = getPersonRSVPs(personId).filter((r) => r.status === "going");
-    return rsvps
+    const events = rsvps
       .map((r) => getEventById(r.eventId))
       .filter((e): e is NonNullable<typeof e> => e != null)
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    const coworking = events.filter((e) => isCoworkingLike(e));
+    const other = events.filter((e) => !isCoworkingLike(e));
+    return { coworkingCount: coworking.length, otherEvents: other };
   }, [personId, rsvpTick]);
 
-  if (attending.length === 0) {
+  if (coworkingCount === 0 && otherEvents.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-600">
         <p>You haven&apos;t said you&apos;re <strong>going</strong> to any events yet. Use &quot;Going&quot; (not just &quot;Interested&quot;) on the programming page to confirm.</p>
@@ -1302,31 +1354,42 @@ function ProfileEventsAttending({
 
   return (
     <div className="space-y-3">
-      <ul className="space-y-2">
-        {attending.map((event) => {
-          const node = getNode(event.nodeSlug);
-          const nodeLabel = node ? `${node.city}` : event.location;
-          const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
-          const programPath = event.nodeSlug === "global" ? "global" : event.nodeSlug === "berlin" ? "berlin" : "sf";
-          return (
-            <li key={event.id}>
-              <a
-                href={buildFullPath(`/${programPath}`)}
-                className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-sky-200 hover:bg-sky-50/80"
-              >
-                <span className="font-medium text-gray-900">{event.title}</span>
-                <span className="text-gray-500">
-                  {dateStr} · {nodeLabel}
-                </span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+      {coworkingCount > 0 ? (
+        <div className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2.5 text-sm">
+          <span className="font-medium text-gray-900">Co-working / residence days</span>
+          <span className="text-gray-600">
+            {" "}
+            — {coworkingCount} {coworkingCount === 1 ? "date" : "dates"} you&apos;re going to
+          </span>
+        </div>
+      ) : null}
+      {otherEvents.length > 0 ? (
+        <ul className="space-y-2">
+          {otherEvents.map((event) => {
+            const node = getNode(event.nodeSlug);
+            const nodeLabel = node ? `${node.city}` : event.location;
+            const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+            const programPath = event.nodeSlug === "global" ? "global" : event.nodeSlug === "berlin" ? "berlin" : "sf";
+            return (
+              <li key={event.id}>
+                <a
+                  href={buildFullPath(`/${programPath}`)}
+                  className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-sky-200 hover:bg-sky-50/80"
+                >
+                  <span className="font-medium text-gray-900">{event.title}</span>
+                  <span className="text-gray-500">
+                    {dateStr} · {nodeLabel}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
       <p className="text-xs text-gray-500">
         To change attendance, go to{" "}
         <a href={buildFullPath("berlin")} className="text-sky-600 underline hover:text-sky-700">Berlin</a>
@@ -1397,12 +1460,9 @@ function LocationCheckNotice({ state }: { state: LocationCheckState }) {
 /* ── NanowheelHero ────────────────────────────────────────────────────
  *
  * Shown in the profile page header for the signed-in member. Loads the live
- * nanowheel total from the API in the background and renders the badge at
- * hero size so it's the first thing a returning member sees on their profile.
- *
- * When the count is zero we still show the zero — it's a gentle nudge toward
- * the first check-in rather than a hidden stat — but muted slightly so it
- * doesn't shout.
+ * nanowheel total from the API and shows a spinner until the real count is
+ * known (avoids flashing a misleading 0). Visible on all breakpoints, including
+ * phones — the map sidebar badge is desktop-only, but your own count belongs here.
  */
 function NanowheelHero({ personId }: { personId: string }) {
   const [summary, setSummary] = useState<NanowheelSummary | null>(null);
@@ -1421,10 +1481,21 @@ function NanowheelHero({ personId }: { personId: string }) {
     };
   }, [personId]);
 
-  const count = summary?.total ?? 0;
+  if (!personId) return null;
+
+  if (summary === null) {
+    return (
+      <div className="flex shrink-0 items-center gap-2 rounded-xl border border-sky-200/70 bg-white/90 px-3 py-2 text-sky-800 shadow-sm">
+        <Loader2 className="size-5 animate-spin text-sky-600/70" aria-hidden />
+        <span className="sr-only">Loading nanowheels</span>
+      </div>
+    );
+  }
+
+  const count = summary.total;
 
   return (
-    <div className="hidden shrink-0 sm:block">
+    <div className="shrink-0">
       <NanowheelBadge
         count={count}
         size="lg"

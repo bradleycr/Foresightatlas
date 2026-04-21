@@ -9,7 +9,7 @@
  * white cards with subtle borders/shadows, node-specific pastel accents,
  * and a soft gradient tint on the page header.
  *
- * Berlin → indigo–rose palette  |  SF → amber–sky palette
+ * Berlin → amber–sky palette  |  SF → indigo–rose palette
  */
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -175,19 +175,23 @@ export function NodeProgrammingPage({
     clearUrlParams();
 
     const today = toDateKey(new Date());
-    void doCheckIn(identity.personId, identity.fullName, activeNode, today, "checkin")
-      .then(() => {
+    void (async () => {
+      try {
+        await doCheckIn(identity.personId, identity.fullName, activeNode, today, "checkin");
+        const weekDates = getWeekDates(new Date());
+        await fetchCheckInsFromAPI(activeNode, weekDates[0], weekDates[6]);
         setCheckInTick((t) => t + 1);
+        setActiveTab("table");
         toast.success(`Checked in at ${getNode(activeNode)?.city ?? activeNode}!`, {
           description: `Welcome, ${identity.fullName}`,
         });
-      })
-      .catch((e) => {
+      } catch (e) {
         setCheckInTick((t) => t + 1);
         toast.error("Check-in not synced", {
           description: e instanceof Error ? e.message : "Saved on this device only.",
         });
-      });
+      }
+    })();
   }, [activeNode, identity, isGlobal]);
 
   useEffect(() => {
@@ -312,7 +316,12 @@ export function NodeProgrammingPage({
   ];
 
   const tabBar = (
-    <div className={cn("flex-shrink-0 sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm", pageShellClassName)}>
+    <div
+      className={cn(
+        "flex-shrink-0 sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm",
+        pageShellClassName,
+      )}
+    >
       <div className="flex gap-1">
         {tabTabs.map(({ id, label, icon: Icon }) => (
           <button

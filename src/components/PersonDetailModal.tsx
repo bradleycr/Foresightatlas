@@ -10,9 +10,27 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
-import { 
-  X, ChevronLeft, ChevronRight, MapPin, Calendar, ExternalLink, Mail, Globe,
-  Edit, Save, Trash2, Plus, XCircle, Users, CalendarDays, MapPinCheck, Copy, ChevronDown, Bookmark
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Calendar,
+  ExternalLink,
+  Mail,
+  Globe,
+  Edit,
+  Save,
+  Trash2,
+  Plus,
+  XCircle,
+  Users,
+  CalendarDays,
+  MapPinCheck,
+  Copy,
+  ChevronDown,
+  Bookmark,
+  Loader2,
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
@@ -70,6 +88,7 @@ import { isConnected, toggleConnection } from "../services/connections";
 import { buildGoogleCalendarTemplateUrl } from "../utils/googleCalendarTemplate";
 import { NanowheelBadge } from "./NanowheelBadge";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
+import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 
 /** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
 function looksLikeContact(value: string | null | undefined): boolean {
@@ -183,6 +202,7 @@ export function PersonDetailModal({
       cancelled = true;
     };
   }, [isOpen, person?.id]);
+
   const isMobile = useIsMobile();
 
   // Lock body scroll when modal is open
@@ -472,6 +492,12 @@ export function PersonDetailModal({
 
   const displayPerson = isEditing && editingPerson ? editingPerson : person;
 
+  const headerProfileImageSrc = person
+    ? isEditing && editingPerson
+      ? editingPerson.profileImageUrl?.trim() || getEffectiveProfileImageUrl(person)
+      : getEffectiveProfileImageUrl(person)
+    : null;
+
   // Whether the person has any project content worth showing a project section for
   const hasProject = !!(
     isEditing ||
@@ -639,15 +665,15 @@ export function PersonDetailModal({
 
               {/* Name + metadata block (optional profile image from foresight.org) */}
               <header className="person-detail-content__head">
-                <div className={cn("mb-3 sm:mb-4", (displayPerson.profileImageUrl || (isEditing && editingPerson?.profileImageUrl)) && "flex items-start gap-4")}>
-                  {(displayPerson.profileImageUrl || (isEditing && editingPerson?.profileImageUrl)) && (
+                <div className={cn("mb-3 sm:mb-4", headerProfileImageSrc && "flex items-start gap-4")}>
+                  {headerProfileImageSrc ? (
                     <img
-                      src={isEditing && editingPerson?.profileImageUrl ? editingPerson.profileImageUrl! : displayPerson.profileImageUrl!}
+                      src={headerProfileImageSrc}
                       alt=""
                       className="size-16 sm:size-20 rounded-full object-cover border border-gray-200 flex-shrink-0"
                       referrerPolicy="no-referrer"
                     />
-                  )}
+                  ) : null}
                   <div className="min-w-0 flex-1">
                   {isEditing && editingPerson ? (
                     <Input
@@ -661,14 +687,18 @@ export function PersonDetailModal({
                       <h2 className="person-detail-title">
                         {displayPerson.fullName}
                       </h2>
-                      {/* Inline nanowheel count — quiet until someone has at least one wheel. */}
-                      {nanowheelSummary && nanowheelSummary.total > 0 && (
+                      {nanowheelSummary === null ? (
+                        <Loader2
+                          className="size-4 shrink-0 animate-spin text-sky-600/60"
+                          aria-label="Loading nanowheels"
+                        />
+                      ) : nanowheelSummary.total > 0 ? (
                         <NanowheelBadge
                           count={nanowheelSummary.total}
                           size="sm"
                           ariaLabel={`${displayPerson.fullName} has earned ${nanowheelSummary.total} nanowheels`}
                         />
-                      )}
+                      ) : null}
                     </div>
                   )}
                   </div>
@@ -684,6 +714,7 @@ export function PersonDetailModal({
                           <SelectItem value="Grantee">Grantee</SelectItem>
                           <SelectItem value="Prize Winner">Prize Winner</SelectItem>
                           <SelectItem value="Nodee">Nodee</SelectItem>
+                          <SelectItem value="Foresight Team">Foresight Team</SelectItem>
                         </SelectContent>
                       </Select>
                       <Select value={String(editingPerson.fellowshipCohortYear)} onValueChange={(v) => setEditingPerson({ ...editingPerson, fellowshipCohortYear: v === "0" ? 0 : parseInt(v, 10) || 0 })}>

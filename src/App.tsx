@@ -85,6 +85,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentityState] = useState<Identity | null>(() => getIdentity());
+  /** Shared with MapView so the mobile list sheet can open the same nav menu as the header hamburger. */
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Filter state
   const today = useMemo(() => new Date(), []);
@@ -567,6 +569,8 @@ export default function App() {
           filters={filters}
           onFiltersChange={setFilters}
           defaultYear={today.getFullYear()}
+          mobileMenuOpen={mobileMenuOpen}
+          onMobileMenuToggle={() => setMobileMenuOpen((o) => !o)}
         />
       </div>
     </>
@@ -590,6 +594,8 @@ export default function App() {
           onSignIn={handleDirectorySignIn}
           onSignOut={handleIdentityClear}
           onNavigateHome={() => setMapFilterIds(null)}
+          mobileMenuOpen={mobileMenuOpen}
+          onMobileMenuOpenChange={setMobileMenuOpen}
           suggestFormUrl={SUGGEST_FORM_URL}
         />
 

@@ -26,16 +26,29 @@ The **Vercel CLI** is a dev dependency. Use it to link the repo, manage env vars
 
    Reads project env from Vercel into `.env.vercel.local` (add that filename to `.gitignore` if you use it — it is not in the repo by default).
 
+## Verify CLI + project (any time)
+
+From the repo root:
+
+```bash
+pnpm run vercel:status
+```
+
+This prints the logged-in Vercel user and lists **variable names** (not values) for the linked project. You should see **SPREADSHEET_ID** and **GOOGLE_SERVICE_ACCOUNT_KEY** at minimum for sheet-backed production; see [VERCEL_ENV.md](./VERCEL_ENV.md) for the full checklist.
+
+If you are not logged in, run `pnpm run vercel:login` first. If the project is not linked, run `pnpm run vercel:link` (creates `.vercel/` locally; it is gitignored).
+
 ## Common commands
 
 | Goal | Command |
 |------|---------|
+| Whoami + env names | `pnpm run vercel:status` |
 | Deploy preview | `pnpm run vercel:deploy` |
 | Deploy production | `pnpm run vercel:prod` |
 | List env names | `pnpm exec vercel env ls` |
 | Add a variable | `pnpm exec vercel env add VARIABLE_NAME production` |
 
-Sensitive values (e.g. `GOOGLE_SERVICE_ACCOUNT_KEY`): when prompted, paste the value and mark as sensitive.
+When adding a key, paste the value when prompted.
 
 See also [VERCEL_ENV.md](./VERCEL_ENV.md) for which variables to set.
 

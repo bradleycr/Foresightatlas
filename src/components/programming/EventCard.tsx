@@ -53,7 +53,7 @@ function EventCoverImage({
   const isBanner = layout === "banner";
 
   return isBanner ? (
-    <div className="absolute inset-x-0 top-0 h-32 sm:h-40 overflow-hidden">
+    <div className="absolute inset-x-0 top-0 z-[1] h-32 sm:h-40 overflow-hidden">
       <img
         src={url}
         alt=""
@@ -70,7 +70,7 @@ function EventCoverImage({
   ) : (
     /* Square tile: previous sizing (5.5rem / 7rem) felt stamp-like — this
      * gives the Luma artwork room to breathe without crowding the title. */
-    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 size-24 sm:size-36 rounded-xl overflow-hidden border border-gray-200/90 bg-gray-50 shadow-sm ring-1 ring-black/5">
+    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[1] size-24 sm:size-36 rounded-xl overflow-hidden border border-gray-200/90 bg-gray-50 shadow-sm ring-1 ring-black/5">
       <img
         src={url}
         alt=""

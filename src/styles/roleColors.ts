@@ -44,6 +44,12 @@ export const ROLE_COLORS: Record<RoleType, RoleColorSpec> = {
     text: "#8d5228",
     solid: "#e29463",
   },
+  "Foresight Team": {
+    start: "#e8f5e9",
+    end: "#c8e6c9",
+    text: "#1b4520",
+    solid: "#66bb6a",
+  },
 };
 
 /**
@@ -66,6 +72,7 @@ export const getRolePillClass = (role: RoleType): string => {
     "Prize Winner": "role-pill-prize",
     "Senior Fellow": "role-pill-senior-fellow",
     Nodee: "role-pill-nodee",
+    "Foresight Team": "role-pill-foresight-team",
   };
   return map[role] ?? "role-pill-fellow";
 };

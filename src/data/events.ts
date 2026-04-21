@@ -460,7 +460,7 @@ export function getEventsByNodeForDisplay(
 }
 
 /** Heuristic: Luma events we'd consider the "same" as the seeded Coworking / Resident's Day. */
-function isCoworkingLike(e: NodeEvent): boolean {
+export function isCoworkingLike(e: NodeEvent): boolean {
   if (e.type === "coworking") return true;
   const t = e.title.toLowerCase();
   return /coworking|resident'?s day|residency day|residence day/.test(t);

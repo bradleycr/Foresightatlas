@@ -122,7 +122,8 @@
         "vercel:link": "vercel link",
         "vercel:pull": "vercel env pull .env.vercel.local",
         "vercel:deploy": "vercel",
-        "vercel:prod": "vercel --prod"
+        "vercel:prod": "vercel --prod",
+        "vercel:status": "vercel whoami && vercel env ls"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

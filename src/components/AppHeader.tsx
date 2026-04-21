@@ -18,6 +18,9 @@ interface AppHeaderProps {
   navigate: (path: string) => void;
   /** Clear map-only overlays (e.g. event RSVP filter) when user returns to the map via header. */
   onNavigateHome?: () => void;
+  /** Mobile hamburger menu — lifted to App so the map list sheet can share the same menu. */
+  mobileMenuOpen: boolean;
+  onMobileMenuOpenChange: (open: boolean) => void;
   suggestFormUrl?: string;
   people: Person[];
   identity: Identity | null;
@@ -30,6 +33,8 @@ export function AppHeader({
   route,
   navigate,
   onNavigateHome,
+  mobileMenuOpen,
+  onMobileMenuOpenChange,
   suggestFormUrl,
   people,
   identity,
@@ -38,12 +43,11 @@ export function AppHeader({
   onSignOut,
 }: AppHeaderProps) {
   const [nodeMenuOpen, setNodeMenuOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const closeMobileMenu = () => onMobileMenuOpenChange(false);
   const closeNodeMenu = () => setNodeMenuOpen(false);
 
   const isMapRoute = route === "/";
@@ -85,7 +89,7 @@ export function AppHeader({
     if (!mobileMenuOpen) return;
     const close = (e: MouseEvent) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node))
-        setMobileMenuOpen(false);
+        onMobileMenuOpenChange(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
@@ -112,7 +116,7 @@ export function AppHeader({
 
   const handleAccountButtonClick = () => {
     setAccountDialogOpen(true);
-    setMobileMenuOpen(false);
+    onMobileMenuOpenChange(false);
   };
 
   const closeAccountDialog = () => setAccountDialogOpen(false);
@@ -310,7 +314,7 @@ export function AppHeader({
             </button>
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => onMobileMenuOpenChange(!mobileMenuOpen)}
               className={cn(
                 "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all touch-manipulation",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2",

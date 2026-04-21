@@ -64,7 +64,18 @@ async function fetchPersonCheckIns(personId: string): Promise<CheckIn[]> {
     const res = await fetch(`${getApiBase()}/checkins?${params}`);
     if (!res.ok) return [];
     const list = (await res.json()) as CheckIn[];
-    return Array.isArray(list) ? list.filter((c) => c.personId === personId) : [];
+    if (!Array.isArray(list)) return [];
+    const mine = list.filter((c) => c.personId === personId);
+    /* Sheet is append-only: collapse to latest row per (node, day); drop withdrawals. */
+    const byDay = new Map<string, CheckIn>();
+    for (const c of mine) {
+      const k = `${c.nodeSlug}|${c.date}`;
+      const prev = byDay.get(k);
+      if (!prev || new Date(c.updatedAt) >= new Date(prev.updatedAt)) {
+        byDay.set(k, c);
+      }
+    }
+    return [...byDay.values()].filter((c) => c.type !== "withdrawn");
   } catch {
     return [];
   }

@@ -36,8 +36,8 @@ export type RSVPStatus = "going" | "interested" | "not-going" | "withdrawn";
  * Per-node colour palette — all values are complete Tailwind utility strings
  * (so JIT picks them up) or raw CSS for inline styles.
  *
- * Berlin: indigo → soft rose  (softer, European feel)
- * SF:     warm amber  → clear sky   (lighter, West-Coast feel)
+ * Berlin: warm amber → clear sky  (former SF palette)
+ * SF:     indigo → soft rose     (former Berlin palette)
  */
 export interface NodeColorTheme {
   /** Decorative CSS gradient — used as inline style on header strips */
@@ -129,7 +129,8 @@ export interface RSVPSummary {
 
 /* ── Node Table / Check-in ──────────────────────────────────────────── */
 
-export type CheckInType = "checkin" | "planned";
+/** `withdrawn` is append-only cancellation — latest row per (person, node, day) wins. */
+export type CheckInType = "checkin" | "planned" | "withdrawn";
 
 /** A single person × date presence record at a node. */
 export interface CheckIn {

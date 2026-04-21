@@ -817,6 +817,7 @@ function PersonEditForm({
               <SelectItem value="Grantee">Grantee</SelectItem>
               <SelectItem value="Prize Winner">Prize Winner</SelectItem>
               <SelectItem value="Nodee">Nodee</SelectItem>
+              <SelectItem value="Foresight Team">Foresight Team</SelectItem>
             </SelectContent>
           </Select>
         </div>

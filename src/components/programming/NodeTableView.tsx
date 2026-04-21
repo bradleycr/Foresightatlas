@@ -19,7 +19,7 @@ import type { Person } from "../../types";
 import type { Identity } from "../../services/identity";
 import {
   checkIn,
-  removeCheckIn,
+  withdrawCheckIn,
   getCheckInsForDay,
   getWeekDates,
   toDateKey,
@@ -124,7 +124,13 @@ export function NodeTableView({
   const handleToggle = useCallback(async () => {
     if (!identity) return;
     if (isPersonCheckedIn(identity.personId, nodeSlug, selectedDate)) {
-      removeCheckIn(identity.personId, nodeSlug, selectedDate);
+      try {
+        await withdrawCheckIn(identity.personId, identity.fullName, nodeSlug, selectedDate);
+      } catch (e) {
+        toast.error("Could not update The Table", {
+          description: e instanceof Error ? e.message : "Try again when online.",
+        });
+      }
     } else {
       try {
         await checkIn(
@@ -135,8 +141,8 @@ export function NodeTableView({
           isToday ? "checkin" : "planned",
         );
       } catch (e) {
-        toast.error("Check-in not synced", {
-          description: e instanceof Error ? e.message : "Saved on this device only.",
+        toast.error("Check-in not saved to the sheet", {
+          description: e instanceof Error ? e.message : "Try again when online.",
         });
       }
     }
