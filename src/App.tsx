@@ -29,12 +29,26 @@ import {
 } from "./utils/router";
 import {
   clearIdentity,
+  forgetLastSignedInName,
   getIdentity,
+  isIdentityExpired,
   setIdentity as persistIdentity,
+  shouldRefreshIdentity,
   updateIdentity as persistIdentityUpdates,
   type Identity,
 } from "./services/identity";
-import { authenticateDirectoryMember } from "./services/memberAuth";
+import {
+  authenticateDirectoryMember,
+  refreshDirectorySession,
+} from "./services/memberAuth";
+import { consumePostLoginReturnUrl } from "./services/returnUrl";
+
+/**
+ * How often the open tab asks the server to roll the session forward.
+ * 6 hours is far below the 30-day TTL but frequent enough that a phone
+ * left on a kiosk at the node never drifts into the expiry window.
+ */
+const SESSION_REFRESH_INTERVAL_MS = 1000 * 60 * 60 * 6;
 
 /**
  * Replace with a real Google Form (or similar) URL when ready.
@@ -112,6 +126,65 @@ export default function App() {
     }
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
+  /**
+   * Keep the directory session alive across device reboots and long breaks.
+   *
+   * On mount we:
+   *   • silently drop any truly-expired token so the UI matches reality
+   *   • refresh tokens nearing expiry (< 7 days left) so returning members
+   *     never get surprised by a sign-out during a check-in
+   *
+   * Then every {@link SESSION_REFRESH_INTERVAL_MS} while the tab stays open
+   * we roll the token forward again, which means a phone pinned to the node
+   * as a kiosk stays signed in forever. Refresh failures (network blips,
+   * server errors) are ignored until the token actually expires — only a
+   * 401 from the server forces a sign-out.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const runRefresh = async () => {
+      const current = getIdentity();
+      if (!current) return;
+
+      if (isIdentityExpired(current)) {
+        clearIdentity();
+        if (!cancelled) setIdentityState(null);
+        return;
+      }
+
+      if (!shouldRefreshIdentity(current)) return;
+
+      try {
+        const result = await refreshDirectorySession(current.token);
+        if (cancelled) return;
+        persistIdentity({
+          personId: result.person.id,
+          fullName: result.person.fullName,
+          token: result.auth.token,
+          expiresAt: result.auth.expiresAt,
+          mustChangePassword: result.auth.mustChangePassword,
+        });
+        setIdentityState(getIdentity());
+      } catch (error) {
+        // Treat an auth rejection as a signal to stop pretending we're signed in.
+        // Transport errors are silently ignored — the next tick will try again.
+        const message = error instanceof Error ? error.message : "";
+        if (/session/i.test(message) || /expired/i.test(message) || /401/.test(message)) {
+          clearIdentity();
+          if (!cancelled) setIdentityState(null);
+        }
+      }
+    };
+
+    runRefresh();
+    const interval = window.setInterval(runRefresh, SESSION_REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   const loadData = async () => {
@@ -274,6 +347,10 @@ export default function App() {
 
   const handleIdentityClear = useCallback(() => {
     clearIdentity();
+    // Explicit sign-out is the one moment where we also drop the remembered
+    // name — on subsequent visits we want the login screen to feel fresh
+    // rather than implying this device "belongs" to a specific person.
+    forgetLastSignedInName();
     setIdentityState(null);
     // Signed-out users shouldn't be left stranded on an auth-gated page.
     // Redirect from profile, calendar, and the check-in landing routes.
@@ -298,6 +375,15 @@ export default function App() {
           mustChangePassword: result.auth.mustChangePassword,
         });
         setIdentityState(getIdentity());
+
+        // If the member arrived from a deep link that required auth (e.g. a
+        // check-in QR code while signed out), send them back where they
+        // meant to be so the flow feels like one seamless tap.
+        const returnUrl = consumePostLoginReturnUrl();
+        if (returnUrl) {
+          navigate(returnUrl);
+        }
+
         return { ok: true as const };
       } catch (error) {
         return {
@@ -306,7 +392,7 @@ export default function App() {
         };
       }
     },
-    [],
+    [navigate],
   );
 
   const handleProfileSaved = useCallback((

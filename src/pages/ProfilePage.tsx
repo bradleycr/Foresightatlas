@@ -17,6 +17,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
+import { getLastSignedInName } from "../services/identity";
 // Foresight pin icon (same as map markers)
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NanowheelBadge } from "../components/NanowheelBadge";
@@ -613,6 +614,7 @@ export function ProfilePage({
                 title="Sign in to edit your directory profile"
                 description="Use your full name and password."
                 submitLabel="Sign in"
+                initialName={getLastSignedInName()}
                 onSubmit={onSignIn}
                 onAddYourself={onAddYourself}
               />

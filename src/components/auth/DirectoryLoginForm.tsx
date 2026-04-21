@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, HelpCircle, Loader2, Lock, Search, UserCircle2, UserPlus } from "lucide-react";
 import type { Person } from "../../types";
 import { Button } from "../ui/button";
@@ -25,6 +25,13 @@ interface DirectoryLoginFormProps {
   onCancel?: () => void;
   /** When the user can't find their name and wants to add a new profile from scratch. */
   onAddYourself?: () => void;
+  /**
+   * Optional full name to pre-populate the form with. Typically wired to
+   * {@link getLastSignedInName} so returning members only have to type a
+   * password — even if their previous session token was wiped by privacy
+   * heuristics or they're signing in on a friend's freshly-cleared device.
+   */
+  initialName?: string | null;
 }
 
 function normalizeQuery(value: string): string {
@@ -39,12 +46,31 @@ export function DirectoryLoginForm({
   onSubmit,
   onCancel,
   onAddYourself,
+  initialName,
 }: DirectoryLoginFormProps) {
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(initialName ?? "");
   const [password, setPassword] = useState("");
-  const [selectedMatch, setSelectedMatch] = useState<Person | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<Person | null>(() => {
+    if (!initialName) return null;
+    const normalized = initialName.trim().toLowerCase();
+    return (
+      people.find((person) => person.fullName.toLowerCase() === normalized) ??
+      null
+    );
+  });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // If the people directory loads after the form was mounted with a remembered
+  // name, retry the selection so the user lands straight on the password step.
+  useEffect(() => {
+    if (selectedMatch || !initialName) return;
+    const normalized = initialName.trim().toLowerCase();
+    const match = people.find(
+      (person) => person.fullName.toLowerCase() === normalized,
+    );
+    if (match) setSelectedMatch(match);
+  }, [people, initialName, selectedMatch]);
 
   const suggestions = useMemo(() => {
     if (selectedMatch) return [];

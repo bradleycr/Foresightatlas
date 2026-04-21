@@ -232,10 +232,38 @@ function getDirectorySessionFromRequest(req) {
   return verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
 }
 
+/**
+ * Refresh an existing directory session — verify the caller's token, then
+ * re-issue a new one with a fresh TTL so active members never have to sign
+ * in again as long as they return within the expiry window.
+ *
+ * This is the server side of the client's rolling-refresh strategy: the SPA
+ * calls this on boot (when the token is within ~7 days of expiry) and then
+ * periodically while the tab stays open, so day-to-day check-ins at the node
+ * never interrupt the person at the door with a re-login prompt.
+ */
+async function refreshDirectorySession(token) {
+  const session = verifyDirectorySessionToken(token);
+
+  const { records } = await loadRealDataRecords();
+  const match = records.find((record) => record.person.id === session.personId);
+  if (!match) {
+    const err = new Error("We could not find your RealData row.");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return {
+    person: match.person,
+    auth: issueDirectorySession(match),
+  };
+}
+
 module.exports = {
   DEFAULT_DIRECTORY_PASSWORD,
   authenticateDirectoryLogin,
   changeDirectoryPassword,
+  refreshDirectorySession,
   getDirectorySessionFromRequest,
   issueDirectorySession,
   verifyDirectorySessionToken,

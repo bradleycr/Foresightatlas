@@ -18,7 +18,9 @@ const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const {
   authenticateDirectoryLogin,
   changeDirectoryPassword,
+  refreshDirectorySession,
   getDirectorySessionFromRequest,
+  readDirectoryTokenFromRequest,
 } = require("./directory-auth");
 const calendarEventsHandler = require("../api/calendar-events");
 
@@ -80,6 +82,27 @@ app.post("/api/member-login", async (req, res) => {
   } catch (error) {
     res.status(401).json({
       error: error instanceof Error ? error.message : "Sign-in failed",
+    });
+  }
+});
+
+/**
+ * POST /api/member-refresh
+ * Rolling refresh for directory sessions — clients call this before expiry
+ * to obtain a new token with a fresh TTL so active members stay signed in.
+ */
+app.post("/api/member-refresh", async (req, res) => {
+  try {
+    const token = readDirectoryTokenFromRequest(req);
+    const result = await refreshDirectorySession(token);
+    res.json(result);
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 401;
+    res.status(status).json({
+      error: error instanceof Error ? error.message : "Session refresh failed",
     });
   }
 });

@@ -18,6 +18,7 @@ const {
   getMockCalendarEvents,
   authenticateLocalMember,
   changeLocalMemberPassword,
+  refreshLocalMemberSession,
   createLocalProfile,
   saveLocalProfile,
   listLocalRsvps,
@@ -135,6 +136,22 @@ app.post("/api/member-password", async (req, res) => {
       error && typeof error === "object" && error.statusCode === 401 ? 401 : 400;
     res.status(status).json({
       error: error instanceof Error ? error.message : "Failed to change password",
+    });
+  }
+});
+
+app.post("/api/member-refresh", async (req, res) => {
+  try {
+    const session = getDirectorySessionFromRequest(req);
+    const result = await refreshLocalMemberSession(session);
+    res.json(result);
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 401;
+    res.status(status).json({
+      error: error instanceof Error ? error.message : "Session refresh failed",
     });
   }
 });

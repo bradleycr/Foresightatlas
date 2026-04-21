@@ -57,3 +57,22 @@ export async function changeDirectoryPassword(
     token,
   );
 }
+
+/**
+ * Ask the server to re-issue the current session with a fresh 30-day window.
+ *
+ * The caller is expected to have a still-cryptographically-valid token (the
+ * server rejects expired ones with 401). The returned envelope carries the
+ * new token + expiry which the client should persist in place of the old
+ * one — this is the backbone of the rolling-refresh strategy that keeps
+ * members signed in for as long as they keep returning to the app.
+ */
+export async function refreshDirectorySession(
+  token: string,
+): Promise<DirectoryAuthResult> {
+  return postJson<DirectoryAuthResult>(
+    `${getApiBase()}/member-refresh`,
+    {},
+    token,
+  );
+}

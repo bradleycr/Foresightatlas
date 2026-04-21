@@ -37,6 +37,7 @@ import {
 } from "../services/checkin";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { getProgrammingPageConfig } from "../data/nodes";
+import { setPostLoginReturnUrl } from "../services/returnUrl";
 
 interface CheckInPageProps {
   nodeSlug: NodeSlug;
@@ -135,6 +136,18 @@ export function CheckInPage({
       : nodeSlug === "sf"
         ? "linear-gradient(135deg, #fef3c7 0%, #e0f2fe 55%, #fef9c3 100%)"
         : "linear-gradient(135deg, #ecfeff 0%, #e0f2fe 55%, #f0f9ff 100%)";
+
+  /**
+   * Remember the exact check-in path the moment the page renders so the
+   * post-login redirect can bring the member right back here. We do this
+   * unconditionally (rather than only on the button tap) so even if they
+   * sign in via the header menu or a different entry point, the check-in
+   * experience still feels like one continuous flow.
+   */
+  useEffect(() => {
+    if (identity && signedInPerson) return;
+    setPostLoginReturnUrl(`/checkin/${nodeSlug}`);
+  }, [identity, signedInPerson, nodeSlug]);
 
   /* ── Unauthenticated state ─────────────────────────────────────────── */
 

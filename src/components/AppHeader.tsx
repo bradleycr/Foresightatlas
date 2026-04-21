@@ -8,6 +8,7 @@ import type { Identity } from "../services/identity";
 import type { Person } from "../types";
 import { Button } from "./ui/button";
 import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
+import { getLastSignedInName } from "../services/identity";
 import { cn } from "./ui/utils";
 
 interface AppHeaderProps {
@@ -49,7 +50,7 @@ export function AppHeader({
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
   const isConnectionsRoute = route === "/connections";
-  const subtext = "A tool to help you connect to other grantees, fellows and nodees";
+  const subtext = "Internal tool — connect with grantees, fellows and nodees.";
 
   useEffect(() => {
     if (!nodeMenuOpen) return;
@@ -124,7 +125,12 @@ export function AppHeader({
             </button>
             <div className="border-l border-gray-300 pl-3 md:pl-4 min-w-0">
               <h1 className="text-gray-900 text-sm md:text-xl font-heading md:truncate line-clamp-2 md:line-clamp-none">
-                Grantees and Fellows Map and Programming
+                <span className="inline-flex items-baseline gap-2">
+                  <span>Foresight map &amp; Node programming</span>
+                  <span className="text-[11px] md:text-sm font-medium tracking-tight text-gray-500" aria-label="Beta">
+                    (beta)
+                  </span>
+                </span>
               </h1>
               <p className="text-xs md:text-sm text-gray-600 line-clamp-2 md:truncate md:line-clamp-none mt-0.5">
                 {subtext}
@@ -418,6 +424,7 @@ export function AppHeader({
                     title="Sign in to your profile"
                     description="Use your full name and password."
                     submitLabel="Sign in"
+                    initialName={getLastSignedInName()}
                     onCancel={closeAccountDialog}
                     onAddYourself={() => {
                       closeAccountDialog();

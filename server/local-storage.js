@@ -460,6 +460,28 @@ async function authenticateLocalMember(fullName, password) {
   return { person, auth: session };
 }
 
+/**
+ * Rolling-refresh equivalent for the mock/local storage backend — mirrors
+ * {@link refreshDirectorySession} in server/directory-auth.js so the client's
+ * refresh flow behaves identically against local dev and Vercel.
+ */
+async function refreshLocalMemberSession(session) {
+  const db = await getLocalDatabase();
+  const auth = await getLocalAuth();
+  const person = db.people.find((entry) => entry.id === session.personId);
+  if (!person) {
+    const err = new Error("We could not find your local profile.");
+    err.statusCode = 404;
+    throw err;
+  }
+  const entry = auth[person.id] || {};
+  const fresh = issueDirectorySession({
+    person,
+    auth: { mustChangePassword: Boolean(entry.mustChangePassword) },
+  });
+  return { person, auth: fresh };
+}
+
 async function changeLocalMemberPassword(session, currentPassword, newPassword) {
   const auth = await getLocalAuth();
   const db = await getLocalDatabase();
@@ -689,6 +711,7 @@ module.exports = {
   getLocalDatabase,
   authenticateLocalMember,
   changeLocalMemberPassword,
+  refreshLocalMemberSession,
   createLocalProfile,
   saveLocalProfile,
   listLocalRsvps,
