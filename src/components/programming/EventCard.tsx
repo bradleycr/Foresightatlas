@@ -6,7 +6,7 @@
  * gets indigo–rose accents and SF gets amber–sky accents — no hardcoded teal.
  */
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, type SyntheticEvent } from "react";
 import { Calendar, MapPin, ChevronDown, Users, ExternalLink, Ticket } from "lucide-react";
 import { NodeEvent, NodeColorTheme, RSVPStatus, RSVPSummary } from "../../types/events";
 import { Person } from "../../types";
@@ -21,6 +21,65 @@ import { BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID } from "../../data/events";
 /** Show "Read more" when description is clamped (overflow) or when it's long enough that it likely wraps (fallback for HTML content). */
 const READ_MORE_MIN_LENGTH = 60;
 const READ_MORE_LENGTH_FALLBACK = 160;
+
+/** Wide landscape covers stay as a top banner; square-ish art (typical Luma thumbnails) uses a small tile so nothing is cropped. */
+const COVER_WIDE_ASPECT_THRESHOLD = 1.4;
+
+type CoverLayoutMode = "banner" | "square";
+
+/**
+ * Renders the optional event cover: panoramic images fill the top band; square or
+ * portrait images sit in a fixed square at the top-right with `object-contain` so
+ * the full artwork is always visible. Until dimensions are known we assume square
+ * (typical Luma thumbnail) to avoid a wide crop flash.
+ */
+function EventCoverImage({
+  url,
+  onLayout,
+}: {
+  url: string;
+  onLayout: (mode: CoverLayoutMode) => void;
+}) {
+  const [layout, setLayout] = useState<CoverLayoutMode | null>(null);
+
+  const handleLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (!w || !h) return;
+    const mode: CoverLayoutMode = w / h >= COVER_WIDE_ASPECT_THRESHOLD ? "banner" : "square";
+    setLayout(mode);
+    onLayout(mode);
+  };
+
+  const isBanner = layout === "banner";
+
+  return isBanner ? (
+    <div className="absolute inset-x-0 top-0 h-32 sm:h-40 overflow-hidden">
+      <img
+        src={url}
+        alt=""
+        className="w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
+        onLoad={handleLoad}
+      />
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent pointer-events-none"
+        aria-hidden
+      />
+    </div>
+  ) : (
+    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 size-[5.5rem] sm:size-28 rounded-xl overflow-hidden border border-gray-200/90 bg-gray-50 shadow-sm ring-1 ring-black/5">
+      <img
+        src={url}
+        alt=""
+        className="size-full object-contain object-center"
+        loading="lazy"
+        decoding="async"
+        onLoad={handleLoad}
+      />
+    </div>
+  );
+}
 
 const TYPE_BADGE: Record<string, { bg: string; text: string; gradient?: boolean }> = {
   coworking:    { bg: "bg-sky-100",    text: "text-sky-700" },
@@ -86,6 +145,8 @@ export function EventCard({
 }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
+  /** `null` until the cover image loads — we default to square layout (typical Luma art). */
+  const [coverLayout, setCoverLayout] = useState<CoverLayoutMode | null>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const badge = badgeStyle(event.type);
   const { date, time } = formatTime(event.startAt, event.endAt);
@@ -143,6 +204,10 @@ export function EventCard({
     };
   }, [event.description, expanded, isRoutineResidentsDay]);
 
+  useEffect(() => {
+    setCoverLayout(null);
+  }, [event.coverImageUrl, event.id]);
+
   return (
     <div
       className={cn(
@@ -152,19 +217,17 @@ export function EventCard({
           : "bg-white border-gray-200 shadow hover:shadow-lg",
       )}
     >
-      {/* Optional cover image from Luma — only when present; cards without stay unchanged */}
+      {/* Optional cover: wide → top banner; square-ish → small top-right tile, full image visible */}
       {event.coverImageUrl && (
-        <div className="absolute inset-x-0 top-0 h-32 sm:h-40 overflow-hidden">
-          <img
-            src={event.coverImageUrl}
-            alt=""
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent pointer-events-none" aria-hidden />
-        </div>
+        <EventCoverImage url={event.coverImageUrl} onLayout={setCoverLayout} />
       )}
-      <div className={cn(event.coverImageUrl && "pt-28 sm:pt-36")}>
+      <div
+        className={cn(
+          event.coverImageUrl && coverLayout === "banner" && "pt-28 sm:pt-36",
+          event.coverImageUrl && coverLayout !== "banner" &&
+            "pr-[6.75rem] sm:pr-[8.25rem]",
+        )}
+      >
       {isLumaEvent && !isRoutineResidentsDay && (
         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: badgeGradient }} aria-hidden />
       )}
