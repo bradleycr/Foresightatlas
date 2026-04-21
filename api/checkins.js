@@ -133,14 +133,26 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
 
   if (req.method === "GET") {
-    const sheets = await getSheetsClientForRead();
-    if (!sheets)
-      return res.status(503).json({
-        error:
-          "CheckIn read not configured (missing GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY)",
-      });
-
     const { nodeSlug, startDate, endDate } = req.query || {};
+
+    /*
+     * Check-ins are a soft-sync feature: the UI already keeps a localStorage
+     * cache and works without the sheet. Any failure to read (missing tab,
+     * bad credentials, transient Google API hiccups) should degrade to "no
+     * server rows for now" rather than cascade into the app-wide
+     * "Couldn't sync with the server" toast. We log every failure server-
+     * side so operators still see what's wrong, but we always respond 200
+     * with an array — empty when we can't read anything, partial when we
+     * can. This keeps the front-end honest and its users undistracted.
+     */
+    const sheets = await getSheetsClientForRead();
+    if (!sheets) {
+      console.warn(
+        "GET /api/checkins: sheet credentials missing (GOOGLE_SHEETS_API_KEY / GOOGLE_SERVICE_ACCOUNT_KEY). Returning [].",
+      );
+      return res.status(200).json([]);
+    }
+
     try {
       const { data } = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -155,12 +167,16 @@ module.exports = async function handler(req, res) {
     } catch (e) {
       if (isMissingSheetOrRangeError(e)) {
         console.warn(
-          "GET /api/checkins: CheckIns tab missing or unreadable; returning []. Add tab CheckIns with headers personId, fullName, nodeSlug, date, type, createdAt, updatedAt. See docs/ARCHITECTURE.md.",
+          "GET /api/checkins: CheckIns tab missing; returning []. Add a tab named CheckIns with row 1: personId, fullName, nodeSlug, date, type, createdAt, updatedAt. See docs/ARCHITECTURE.md.",
         );
-        return res.status(200).json([]);
+      } else {
+        console.error(
+          "GET /api/checkins: sheet read failed; returning [].",
+          e?.code ?? "",
+          e?.message ?? e,
+        );
       }
-      console.error("GET /api/checkins", e.message);
-      return res.status(500).json({ error: "Failed to read check-ins" });
+      return res.status(200).json([]);
     }
   }
 

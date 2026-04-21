@@ -49,20 +49,25 @@ export function AppHeader({
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
-  const isConnectionsRoute = route === "/connections";
+  /*
+   * Connections is no longer a top-level destination in the header — the profile
+   * dialog surfaces it instead. The route itself is still live and reachable
+   * from the profile menu; it just doesn't need a nav pill of its own.
+   */
   const subtext = "Internal tool — connect with grantees, fellows and nodees.";
-  /** Tiny beta marker — visible but unobtrusive; tuned for small screens first. */
+  /*
+   * Tiny beta marker — an inline sibling of the title text so it always sits
+   * on the same baseline as "Foresight map & Node programming". Using a
+   * gradient pill with the text made it feel like a separate component that
+   * sometimes drifted; a minimal parenthetical, typographically tied to the
+   * title, reads as an extension of the wordmark.
+   */
   const betaMark = (
     <span
-      className={cn(
-        "inline-flex shrink-0 select-none items-center rounded-full border border-stone-200/90",
-        "bg-gradient-to-b from-white to-stone-50/95 px-2 py-0.5",
-        "text-[10px] font-medium leading-none tracking-tight text-stone-500",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] sm:text-[11px] sm:px-2 sm:py-0.5",
-      )}
+      className="align-baseline text-[0.65em] font-medium uppercase tracking-wide text-stone-400"
       aria-label="Beta — this app is still in development"
     >
-      (beta)
+      &nbsp;(beta)
     </span>
   );
 
@@ -135,23 +140,32 @@ export function AppHeader({
               className="flex shrink-0 cursor-pointer items-center rounded-md transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
               aria-label="Back to map"
             >
-              <img src={foresightLogo} alt="Foresight Institute" className="h-8 w-auto sm:h-9 md:h-12" />
+              <img
+                src={foresightLogo}
+                alt="Foresight Institute"
+                /* Bumped from h-8/9/12: the wordmark is the identity anchor; previous sizing
+                 * felt cramped next to the chunky nav pills. New sizes stay in proportion
+                 * with the title's line-height so nothing reflows. */
+                className="h-11 w-auto sm:h-12 md:h-14"
+              />
             </button>
             <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
               <h1 className="font-heading font-semibold tracking-tight text-gray-900 text-balance">
-                {/* Two-line lockup below `sm`; single line + beta from `sm` up. Use core `sm:` breakpoints — arbitrary `min-[360px]:` utilities are not emitted in our Tailwind v4 build, which left the title permanently `hidden`. */}
-                <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
-                  <span className="min-w-0 text-[0.9375rem] leading-snug sm:text-base md:flex-1 md:truncate md:text-xl md:leading-tight">
-                    <span className="sm:hidden">
-                      Foresight map &amp;
-                      <br />
-                      Node programming
-                    </span>
-                    <span className="hidden sm:inline">
-                      Foresight map &amp; Node programming
-                    </span>
+                {/*
+                 * Two-line title on narrow viewports, single line from `sm` up.
+                 * The (beta) marker is a sibling of the title text so it reads
+                 * as part of the name rather than a detached chip. It stays on
+                 * the same line as the last word via non-breaking space.
+                 */}
+                <span className="min-w-0 text-[0.9375rem] leading-snug sm:text-base md:text-xl md:leading-tight">
+                  <span className="sm:hidden">
+                    Foresight map &amp;
+                    <br />
+                    Node programming{betaMark}
                   </span>
-                  {betaMark}
+                  <span className="hidden sm:inline">
+                    Foresight map &amp; Node programming{betaMark}
+                  </span>
                 </span>
               </h1>
               <p className="mt-1.5 max-w-[min(100%,38rem)] text-pretty text-[0.8125rem] leading-relaxed text-gray-600 sm:text-[0.8125rem] md:mt-2 md:text-sm md:leading-relaxed">
@@ -233,16 +247,7 @@ export function AppHeader({
               )}
             </div>
 
-            <button
-              onClick={() => navigate("/connections")}
-              className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
-                isConnectionsRoute
-                  ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent"
-              }`}
-            >
-              Connections
-            </button>
+            {/* Connections intentionally omitted from the header — surfaced in the profile dialog instead. */}
 
             {suggestFormUrl && (
               <a
@@ -586,21 +591,7 @@ export function AppHeader({
                     Global programming
                   </button>
                 </li>
-                <li>
-                  <button
-                    onClick={() => {
-                      navigate("/connections");
-                      closeMobileMenu();
-                    }}
-                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${
-                      isConnectionsRoute
-                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
-                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
-                    }`}
-                  >
-                    Connections
-                  </button>
-                </li>
+                {/* Connections removed from nav; users reach it from the profile dialog. */}
                 {suggestFormUrl && (
                   <li className="pt-2 mt-2 border-t border-gray-100">
                     <a

@@ -13,7 +13,7 @@
 import type { CheckIn, CheckInType, NodeSlug, DayCheckInSummary } from "../types/events";
 
 import { getApiBase } from "./api-base";
-import { publishDataChanged, reportSyncError } from "./sync";
+import { publishDataChanged } from "./sync";
 
 const STORAGE_KEY = "foresightmap_checkins";
 
@@ -48,6 +48,16 @@ function saveLocal(store: Store): void {
 
 /* ── API communication ─────────────────────────────────────────────── */
 
+/*
+ * Fetch server check-ins for a (node, date-range) window.
+ *
+ * Check-ins are soft-sync: the UI always has a full localStorage cache, and
+ * the server-side sheet read can fail for benign reasons (missing tab, API
+ * quota, transient network). Surfacing those as app-wide "Couldn't sync with
+ * the server" toasts is misleading — the rest of the app is fine. So we log
+ * every failure to the console for engineers and silently return `null`,
+ * letting callers fall back to local data without alarming the user.
+ */
 export async function fetchCheckInsFromAPI(
   nodeSlug: NodeSlug,
   startDate: string,
@@ -57,15 +67,13 @@ export async function fetchCheckInsFromAPI(
     const params = new URLSearchParams({ nodeSlug, startDate, endDate });
     const res = await fetch(`${getApiBase()}/checkins?${params}`);
     if (!res.ok) {
-      reportSyncError({
-        scope: "checkins",
-        message: `GET /api/checkins failed with ${res.status}`,
-      });
+      console.warn(
+        `[checkins] GET /api/checkins returned ${res.status}; using local cache only.`,
+      );
       return null;
     }
     const list = (await res.json()) as CheckIn[];
     const valid = Array.isArray(list) ? list : [];
-    // Merge into cache — keep entries outside this window, replace within
     apiCheckIns = [
       ...apiCheckIns.filter(
         (c) => !(c.nodeSlug === nodeSlug && c.date >= startDate && c.date <= endDate),
@@ -74,12 +82,10 @@ export async function fetchCheckInsFromAPI(
     ];
     return valid;
   } catch (err) {
-    reportSyncError({
-      scope: "checkins",
-      message:
-        err instanceof Error && err.message ? err.message : "Could not reach the check-ins API.",
-      cause: err,
-    });
+    console.warn(
+      "[checkins] GET /api/checkins network error; using local cache only.",
+      err,
+    );
     return null;
   }
 }
