@@ -139,15 +139,15 @@ export function AppHeader({
             </button>
             <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
               <h1 className="font-heading font-semibold tracking-tight text-gray-900 text-balance">
-                {/* One heading in the DOM; layout shifts at 360px so narrow phones get a readable two-line lockup */}
-                <span className="flex min-w-0 flex-col items-start gap-1 min-[360px]:flex-row min-[360px]:flex-wrap min-[360px]:items-baseline min-[360px]:gap-x-2 min-[360px]:gap-y-1">
-                  <span className="min-w-0 text-[0.9375rem] leading-snug min-[360px]:inline sm:text-base md:flex-1 md:truncate md:text-xl md:leading-tight">
-                    <span className="min-[360px]:hidden">
+                {/* Two-line lockup below `sm`; single line + beta from `sm` up. Use core `sm:` breakpoints — arbitrary `min-[360px]:` utilities are not emitted in our Tailwind v4 build, which left the title permanently `hidden`. */}
+                <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
+                  <span className="min-w-0 text-[0.9375rem] leading-snug sm:text-base md:flex-1 md:truncate md:text-xl md:leading-tight">
+                    <span className="sm:hidden">
                       Foresight map &amp;
                       <br />
                       Node programming
                     </span>
-                    <span className="hidden min-[360px]:inline">
+                    <span className="hidden sm:inline">
                       Foresight map &amp; Node programming
                     </span>
                   </span>
