@@ -118,38 +118,45 @@ function nonHolidayThursdays(start: Date, end: Date): Date[] {
 
 /* ── Berlin: recurring Coworking / Resident's Day ─────────────────────── */
 
+/** Injected recurring series id — used by EventCard / calendar for muted “routine” styling. */
+export const BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID = "berlin-coworking-residents-day";
+
+/** First Thursday with this programme (rollout); no occurrences before this date. */
+const FIRST_BERLIN_RESIDENTS_DAY_ISO = "2026-04-23";
+
 /**
- * The Berlin Node hosts an open **Coworking / Resident's Day** every Thursday
- * that isn't a German public holiday. It's the one recurring event that lives
- * in code (not Luma), so we always inject it into the Berlin programming page
- * alongside anything coming from the Luma calendar.
+ * The Berlin Node hosts **Coworking / Resident's Day (Nodees)** every Thursday
+ * that isn't a German public holiday — internal residents and nodees, not a
+ * public open house. Lives in code (not Luma); injected on the Berlin page
+ * alongside Luma-backed events.
  *
- * Schedule: 12:00–17:00 local (Berlin), using the correct CET/CEST offset
- * for that date so calendar apps and sorting behave correctly across the
- * DST boundary.
+ * Schedule: 12:00–17:00 local (Berlin), CET/CEST per date. Series starts
+ * {@link FIRST_BERLIN_RESIDENTS_DAY_ISO} (nothing earlier on the calendar).
  */
 function berlinWeeklyCoworking(
   start: Date = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1)),
   end: Date = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 11, 31)),
 ): NodeEvent[] {
-  return nonHolidayThursdays(start, end).map((d) => {
+  return nonHolidayThursdays(start, end)
+    .filter((d) => ymd(d) >= FIRST_BERLIN_RESIDENTS_DAY_ISO)
+    .map((d) => {
     const iso = ymd(d);
     const offset = berlinOffset(iso);
     return {
       id: eid("berlin", "coworking-residents-day", iso),
       nodeSlug: "berlin",
-      title: "Coworking / Resident's Day",
+      title: "Coworking / Resident's Day (Nodees)",
       description:
-        "Open coworking and resident's day at the Berlin Node. Drop in to work, meet residents and fellows, share lunch, and find collaborators. Every Thursday that isn't a German public holiday.",
+        "Internal coworking and resident day for Nodees at the Berlin Node — 12:00–17:00, every Thursday that isn't a German public holiday.",
       location: "Berlin Node",
       startAt: `${iso}T12:00:00${offset}`,
       endAt: `${iso}T17:00:00${offset}`,
       type: "coworking",
-      tags: ["recurring", "open", "coworking", "residents-day"],
+      tags: ["recurring", "coworking", "residents-day", "nodees"],
       visibility: "internal",
       capacity: null,
       externalLink: null,
-      recurrenceGroupId: "berlin-coworking-residents-day",
+      recurrenceGroupId: BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID,
     };
   });
 }

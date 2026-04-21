@@ -14,6 +14,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, X, MapPin, Clock, ExternalLink, Ticket, CalendarPlus } from "lucide-react";
 import { NodeEvent, EventType } from "../../types/events";
+import { BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID } from "../../data/events";
 import { cn } from "../ui/utils";
 import { useIsMobile } from "../ui/use-mobile";
 import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
@@ -53,17 +54,37 @@ const TYPE_CHIP_STYLE: Record<EventType | string, { bg: string; text: string; bo
   other:        { bg: "bg-gray-50",   text: "text-gray-600",   border: "border-gray-200" },
 };
 
+/** Muted chip/dot for injected weekly Berlin resident days (vs Luma “real” events). */
+const ROUTINE_RESIDENTS_CHIP = {
+  bg: "bg-stone-100/90",
+  text: "text-stone-600",
+  border: "border-stone-200/80",
+} as const;
+const ROUTINE_RESIDENTS_DOT = "bg-stone-400";
+
 /** Maximum event chips shown per day cell before "+N more". */
 const MAX_DESKTOP_CHIPS = 3;
 
 /* ─── helpers ───────────────────────────────────────────────── */
 
+function isRoutineBerlinResidentsDay(ev: NodeEvent): boolean {
+  return ev.recurrenceGroupId === BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID;
+}
+
 function dotColor(type: string) {
   return TYPE_DOT_COLOR[type] ?? TYPE_DOT_COLOR.other;
 }
 
+function dotColorForEvent(ev: NodeEvent): string {
+  return isRoutineBerlinResidentsDay(ev) ? ROUTINE_RESIDENTS_DOT : dotColor(ev.type);
+}
+
 function chipStyle(type: string) {
   return TYPE_CHIP_STYLE[type] ?? TYPE_CHIP_STYLE.other;
+}
+
+function chipStyleForEvent(ev: NodeEvent) {
+  return isRoutineBerlinResidentsDay(ev) ? ROUTINE_RESIDENTS_CHIP : chipStyle(ev.type);
 }
 
 function formatChipTime(iso: string): string {
@@ -119,7 +140,7 @@ function calendarGrid(year: number, month: number) {
 
 /** A single event chip inside a desktop day cell — always clickable (opens popover). */
 function EventChip({ event }: { event: NodeEvent }) {
-  const style = chipStyle(event.type);
+  const style = chipStyleForEvent(event);
   const time = formatChipTime(event.startAt);
 
   return (
@@ -131,7 +152,7 @@ function EventChip({ event }: { event: NodeEvent }) {
       )}
       title={`${time} — ${event.title}`}
     >
-      <span className={cn("size-1.5 rounded-full flex-shrink-0", dotColor(event.type))} />
+      <span className={cn("size-1.5 rounded-full flex-shrink-0", dotColorForEvent(event))} />
       <span className="truncate">
         <span className="font-semibold">{time}</span>{" "}
         {event.title}
@@ -151,7 +172,7 @@ function EventPopover({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const style = chipStyle(event.type);
+  const style = chipStyleForEvent(event);
   const timeRange = formatTimeRange(event.startAt, event.endAt);
   const externalLink = normalizeExternalUrl(event.externalLink);
   const luma = isLumaUrl(externalLink);
@@ -178,7 +199,7 @@ function EventPopover({
   return (
     <div ref={ref} className="fixed z-[100]" style={posStyle}>
       <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 overflow-hidden">
-        <div className={cn("h-1", dotColor(event.type))} />
+        <div className={cn("h-1", dotColorForEvent(event))} />
 
         <div className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
@@ -248,7 +269,7 @@ function googleCalUrl(ev: NodeEvent): string {
 
 /** Mobile detail card for a single event on the selected day. */
 function MobileEventRow({ event }: { event: NodeEvent }) {
-  const style = chipStyle(event.type);
+  const style = chipStyleForEvent(event);
   const time = formatChipTime(event.startAt);
   const href = normalizeExternalUrl(event.externalLink);
 
@@ -260,7 +281,7 @@ function MobileEventRow({ event }: { event: NodeEvent }) {
         href && "hover:brightness-[0.97] cursor-pointer",
       )}
     >
-      <span className={cn("mt-1.5 size-2 rounded-full flex-shrink-0", dotColor(event.type))} />
+      <span className={cn("mt-1.5 size-2 rounded-full flex-shrink-0", dotColorForEvent(event))} />
       <div className="min-w-0 flex-1">
         <p className={cn("text-sm font-semibold leading-snug", style.text)}>
           {event.title}

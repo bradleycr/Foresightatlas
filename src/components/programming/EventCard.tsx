@@ -16,6 +16,7 @@ import { cn } from "../ui/utils";
 import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
 import { badgeGradient } from "../../styles/gradients";
 import { formatEventDescriptionToHtml } from "./eventDescription";
+import { BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID } from "../../data/events";
 
 /** Show "Read more" when description is clamped (overflow) or when it's long enough that it likely wraps (fallback for HTML content). */
 const READ_MORE_MIN_LENGTH = 60;
@@ -90,8 +91,12 @@ export function EventCard({
   const { date, time } = formatTime(event.startAt, event.endAt);
   const externalLink = normalizeExternalUrl(event.externalLink);
   const isLumaEvent = isLumaUrl(externalLink);
+  /** Injected weekly Berlin resident day — calmer card, no “Read more” theatrics. */
+  const isRoutineResidentsDay =
+    event.recurrenceGroupId === BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID;
 
   const showReadMore =
+    !isRoutineResidentsDay &&
     event.description &&
     event.description.length >= READ_MORE_MIN_LENGTH &&
     (isClamped || expanded || event.description.length >= READ_MORE_LENGTH_FALLBACK);
@@ -111,6 +116,10 @@ export function EventCard({
     rsvpSummary.interested > 0;
 
   useEffect(() => {
+    if (isRoutineResidentsDay) {
+      setIsClamped(false);
+      return;
+    }
     if (!event.description || event.description.length < READ_MORE_MIN_LENGTH) {
       setIsClamped(false);
       return;
@@ -132,10 +141,17 @@ export function EventCard({
       clearTimeout(timeoutId);
       ro.disconnect();
     };
-  }, [event.description, expanded]);
+  }, [event.description, expanded, isRoutineResidentsDay]);
 
   return (
-    <div className="relative bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition-shadow p-6 sm:p-7 overflow-hidden">
+    <div
+      className={cn(
+        "relative rounded-2xl border transition-shadow p-6 sm:p-7 overflow-hidden",
+        isRoutineResidentsDay
+          ? "bg-stone-50/95 border-stone-200/90 shadow-sm hover:shadow-md"
+          : "bg-white border-gray-200 shadow hover:shadow-lg",
+      )}
+    >
       {/* Optional cover image from Luma — only when present; cards without stay unchanged */}
       {event.coverImageUrl && (
         <div className="absolute inset-x-0 top-0 h-32 sm:h-40 overflow-hidden">
@@ -149,13 +165,21 @@ export function EventCard({
         </div>
       )}
       <div className={cn(event.coverImageUrl && "pt-28 sm:pt-36")}>
-      {isLumaEvent && (
+      {isLumaEvent && !isRoutineResidentsDay && (
         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: badgeGradient }} aria-hidden />
       )}
       {/* Badges row — comfortable padding so text isn’t cramped */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
-        <span className={cn("px-3 py-1.5 rounded-full text-xs font-semibold", !badge.gradient && badge.bg, badge.text)} style={badge.gradient ? { background: badgeGradient } : undefined}>
-          {typeLabel(event.type)}
+        <span
+          className={cn(
+            "px-3 py-1.5 rounded-full text-xs font-semibold",
+            isRoutineResidentsDay
+              ? "bg-stone-200/80 text-stone-700 border border-stone-300/60"
+              : cn(!badge.gradient && badge.bg, badge.text),
+          )}
+          style={!isRoutineResidentsDay && badge.gradient ? { background: badgeGradient } : undefined}
+        >
+          {isRoutineResidentsDay ? "Resident day" : typeLabel(event.type)}
         </span>
         {isLumaEvent && (
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
@@ -177,12 +201,22 @@ export function EventCard({
       </div>
 
       {/* Title */}
-      <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-snug mb-3">
+      <h3
+        className={cn(
+          "text-base sm:text-lg font-semibold leading-snug mb-3",
+          isRoutineResidentsDay ? "text-stone-700 font-medium" : "text-gray-900",
+        )}
+      >
         {event.title}
       </h3>
 
       {/* Date & location */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-sm text-gray-500 mb-4">
+      <div
+        className={cn(
+          "flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-sm mb-4",
+          isRoutineResidentsDay ? "text-stone-500" : "text-gray-500",
+        )}
+      >
         <span className="inline-flex items-center gap-2">
           <Calendar className="size-4 text-gray-400 flex-shrink-0" />
           <span>{date}{time ? ` · ${time}` : ""}</span>
@@ -226,33 +260,39 @@ export function EventCard({
       {/* Description: truncate with max-height when collapsed so Read more / Show less works (line-clamp fails with inner <p>). */}
       {event.description && (
         <div className="mb-4">
-          <div
-            ref={descriptionRef}
-            className="text-sm text-gray-600 leading-relaxed event-card-description"
-            style={
-              !expanded
-                ? { maxHeight: "4.5rem", overflow: "hidden" }
-                : undefined
-            }
-            dangerouslySetInnerHTML={{ __html: formatEventDescriptionToHtml(event.description) }}
-          />
-            {showReadMore && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setExpanded((prev) => !prev);
-                }}
-                className={cn(
-                  "mt-2 inline-flex items-center gap-1 text-sm font-medium rounded",
-                  "focus:outline-none focus:ring-2 focus:ring-offset-1",
-                  theme.linkText, theme.linkHover, theme.ctaFocusRing,
-                )}
-              >
-                {expanded ? "Show less" : "Read more"}
-                <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
-              </button>
-            )}
+          {isRoutineResidentsDay ? (
+            <p className="text-sm text-stone-600 leading-relaxed">{event.description}</p>
+          ) : (
+            <>
+              <div
+                ref={descriptionRef}
+                className="text-sm text-gray-600 leading-relaxed event-card-description"
+                style={
+                  !expanded
+                    ? { maxHeight: "4.5rem", overflow: "hidden" }
+                    : undefined
+                }
+                dangerouslySetInnerHTML={{ __html: formatEventDescriptionToHtml(event.description) }}
+              />
+              {showReadMore && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setExpanded((prev) => !prev);
+                  }}
+                  className={cn(
+                    "mt-2 inline-flex items-center gap-1 text-sm font-medium rounded",
+                    "focus:outline-none focus:ring-2 focus:ring-offset-1",
+                    theme.linkText, theme.linkHover, theme.ctaFocusRing,
+                  )}
+                >
+                  {expanded ? "Show less" : "Read more"}
+                  <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
 
