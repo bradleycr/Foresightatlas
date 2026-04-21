@@ -44,6 +44,9 @@ const {
   EVENTS_HEADERS,
   isLocationUnspecified,
 } = require("./sheet-schema.js");
+const {
+  applyBerlinSecureWorkshopSheetOverrides,
+} = require("../server/event-corrections");
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
@@ -379,10 +382,11 @@ function mergeEvents(sheetEvents, lumaEvents) {
 async function main() {
   console.log("Syncing events…");
 
-  const [sheetEvents, lumaEvents] = await Promise.all([
+  const [rawSheetEvents, lumaEvents] = await Promise.all([
     fetchSheetEvents(),
     fetchLumaEvents(),
   ]);
+  const sheetEvents = applyBerlinSecureWorkshopSheetOverrides(rawSheetEvents);
 
   console.log(`  Sheet: ${sheetEvents.length} events, Luma: ${lumaEvents.length} events.`);
 

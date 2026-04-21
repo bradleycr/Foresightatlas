@@ -17,7 +17,7 @@ Events on the **Berlin** and **SF Programming** pages come from one of two place
 ## 2. Seed data in code (fallback)
 
 - If `public/data/events.json` is **missing or empty** (e.g. no sync run, or first load), the app uses **hardcoded seed events** in **`src/data/events.ts`**.
-- That includes Berlin’s **“Weekly Coworking Lunch & Session”** (Thursdays 12–16h from April 2026), Open Houses, Node Launch, AI for Science Workshop, and SF’s monthly demo days.
+- That includes Berlin’s **“Weekly Coworking Lunch & Session”** (Thursdays 12–16h from April 2026), Open Houses, Node Launch, the **Secure & Sovereign AI Workshop** (Jul 18–19, 2026), and SF’s monthly demo days.
 - To change titles, descriptions, or add/remove these, edit **`src/data/events.ts`** and redeploy.
 
 **Summary**

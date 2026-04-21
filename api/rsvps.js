@@ -15,6 +15,7 @@ if (credPath && !fs.existsSync(path.resolve(credPath))) {
 const { google } = require("googleapis");
 const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
 const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
+const { normalizeBerlinSecureWorkshopRsvps } = require("../server/event-corrections");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_RSVPS = "RSVPs";
@@ -112,7 +113,7 @@ module.exports = async function handler(req, res) {
         spreadsheetId: SPREADSHEET_ID,
         range: `'${SHEET_RSVPS}'!A:G`,
       });
-      const rsvps = parseRsvpRows(data.values || []);
+      const rsvps = normalizeBerlinSecureWorkshopRsvps(parseRsvpRows(data.values || []));
       return res.status(200).json(rsvps);
     } catch (e) {
       console.error("GET /api/rsvps", e.message);

@@ -14,6 +14,10 @@ const fs = require("fs").promises;
 const cors = require("cors");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const {
+  applyBerlinSecureWorkshopSheetOverrides,
+  normalizeBerlinSecureWorkshopRsvps,
+} = require("./event-corrections");
+const {
   getLocalDatabase,
   getMockCalendarEvents,
   authenticateLocalMember,
@@ -92,6 +96,8 @@ app.use(express.json());
 app.get("/api/database", async (req, res) => {
   try {
     const database = await getLocalDatabase();
+    database.events = applyBerlinSecureWorkshopSheetOverrides(database.events || []);
+    database.rsvps = normalizeBerlinSecureWorkshopRsvps(database.rsvps || []);
     database.events = await mergeSheetEventsWithLuma(database.events || []);
     return res.json(database);
   } catch (error) {
@@ -184,7 +190,7 @@ app.post("/api/profile", async (req, res) => {
 
 app.get("/api/rsvps", async (_req, res) => {
   try {
-    return res.json(await listLocalRsvps());
+    return res.json(normalizeBerlinSecureWorkshopRsvps(await listLocalRsvps()));
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Failed to read RSVPs",

@@ -20,6 +20,10 @@ const {
   EVENTS_HEADERS,
   isLocationUnspecified,
 } = require("../scripts/sheet-schema.js");
+const {
+  applyBerlinSecureWorkshopSheetOverrides,
+  normalizeBerlinSecureWorkshopRsvps,
+} = require("./event-corrections");
 
 function parseJsonSafe(value, fallback) {
   if (value == null || String(value).trim() === "") return fallback;
@@ -232,8 +236,10 @@ async function getFullDatabaseFromSheet() {
   const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) => rowToTravelWindow(row));
   const suggestions = rowsToObjects(suggestionsRows, SUGGESTIONS_HEADERS, (row) => rowToSuggestion(row));
   const adminUsers = rowsToObjects(adminRows, ADMIN_USERS_HEADERS, (row) => rowToAdminUser(row));
-  const rsvps = rowsToRSVPs(rsvpsRows);
-  const events = rowsToEvents(eventsRows);
+  let rsvps = rowsToRSVPs(rsvpsRows);
+  let events = rowsToEvents(eventsRows);
+  events = applyBerlinSecureWorkshopSheetOverrides(events);
+  rsvps = normalizeBerlinSecureWorkshopRsvps(rsvps);
 
   return {
     people,
