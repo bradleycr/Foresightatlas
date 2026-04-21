@@ -8,14 +8,29 @@
  * POST expects JSON body with at minimum: personId, fullName, nodeSlug, date.
  */
 
+// If GOOGLE_APPLICATION_CREDENTIALS points to a missing file (e.g. local path on Vercel), clear it
+// before loading googleapis so we avoid ENOENT / lstat from the auth library.
 const fs = require("fs");
 const path = require("path");
+const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+if (credPath && !fs.existsSync(path.resolve(credPath))) {
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
 const { google } = require("googleapis");
 const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
 const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_CHECKINS = "CheckIns";
+
+/** Google Sheets returns 400 when the tab name does not exist — same as server/sheet-database.js. */
+function isMissingSheetOrRangeError(err) {
+  return (
+    err?.code === 400 &&
+    typeof err?.message === "string" &&
+    err.message.includes("Unable to parse range")
+  );
+}
 
 function parseCheckInRows(values, filters) {
   if (!values || values.length < 2) return [];
@@ -138,6 +153,12 @@ module.exports = async function handler(req, res) {
       });
       return res.status(200).json(checkins);
     } catch (e) {
+      if (isMissingSheetOrRangeError(e)) {
+        console.warn(
+          "GET /api/checkins: CheckIns tab missing or unreadable; returning []. Add tab CheckIns with headers personId, fullName, nodeSlug, date, type, createdAt, updatedAt. See docs/ARCHITECTURE.md.",
+        );
+        return res.status(200).json([]);
+      }
       console.error("GET /api/checkins", e.message);
       return res.status(500).json({ error: "Failed to read check-ins" });
     }
@@ -187,6 +208,12 @@ module.exports = async function handler(req, res) {
         updatedAt: now,
       });
     } catch (e) {
+      if (isMissingSheetOrRangeError(e)) {
+        return res.status(503).json({
+          error:
+            "CheckIns sheet tab is missing. Add a tab named CheckIns with row 1: personId, fullName, nodeSlug, date, type, createdAt, updatedAt. See docs/ARCHITECTURE.md.",
+        });
+      }
       console.error("POST /api/checkins", e.message);
       return res.status(500).json({ error: "Failed to save check-in" });
     }
