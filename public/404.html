@@ -8,17 +8,36 @@
       // and store the requested path so the SPA can restore it (deep links).
       // Known SPA routes mean we're at site root (/) — redirect to / and let the app restore path.
       // Otherwise the first segment is the repo/base (e.g. Foresightmap) — redirect to /base/.
+      // Safety rails for the infinite-redirect case: if we land here from a
+      // nested deep link (e.g. /checkin/berlin), we must redirect to the real
+      // SPA root — NOT to the first URL segment, which caused a loop when
+      // the segment itself wasn't a known top-level route.
       (function () {
         var path = window.location.pathname.replace(/\/+$/, '') || '/';
         var segments = path.replace(/^\//, '').split('/').filter(Boolean);
-        var baseSegment = segments[0] || '';
-        var knownRoutes = ['berlin', 'sf', 'global', 'profile', 'connections'];
-        var isAppRoute = knownRoutes.indexOf(baseSegment) !== -1;
-        var base = isAppRoute ? '/' : (baseSegment ? '/' + baseSegment + '/' : '/');
+        var firstSegment = segments[0] || '';
+        // Every top-level SPA route this app actually handles. Anything not in
+        // this list is treated as a GitHub-Pages style sub-path base (repo name)
+        // and we redirect into that base. This prevents the 404 page from ever
+        // deciding that something like "checkin" is a base path of its own.
+        var knownRoutes = [
+          'berlin', 'sf', 'global',
+          'profile', 'connections', 'calendar',
+          'checkin',
+        ];
+        var isAppRoute = knownRoutes.indexOf(firstSegment) !== -1;
+        var base = isAppRoute || !firstSegment
+          ? '/'
+          : '/' + firstSegment + '/';
         try {
           sessionStorage.setItem('foresightmap_redirect', path);
         } catch (e) {}
-        window.location.replace(window.location.origin + base);
+        var target = window.location.origin + base;
+        // Last line of defence: never redirect to the exact URL we're already on.
+        if (window.location.origin + window.location.pathname.replace(/\/+$/, '') === target.replace(/\/+$/, '')) {
+          target = window.location.origin + '/';
+        }
+        window.location.replace(target);
       })();
     </script>
   </head>

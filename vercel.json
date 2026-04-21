@@ -2,5 +2,14 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "rewrites": [
+    { "source": "/checkin/:slug*", "destination": "/index.html" },
+    { "source": "/berlin", "destination": "/index.html" },
+    { "source": "/sf", "destination": "/index.html" },
+    { "source": "/global", "destination": "/index.html" },
+    { "source": "/profile", "destination": "/index.html" },
+    { "source": "/connections", "destination": "/index.html" },
+    { "source": "/calendar", "destination": "/index.html" }
+  ]
 }
