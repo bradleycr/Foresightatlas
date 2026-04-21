@@ -203,8 +203,10 @@ function rowToAdminUser(row) {
 function rowToRSVP(row) {
   const get = (i) => (row[i] != null ? String(row[i]).trim() : "");
   const idx = (name) => RSVPS_HEADERS.indexOf(name);
-  const rawStatus = get(idx("status"));
-  const status = rawStatus === "interested" || rawStatus === "not-going" ? rawStatus : "going";
+  const rawStatus = String(get(idx("status")) || "").trim();
+  // Mirrors api/rsvps.js / server/sheet-database.js: include `withdrawn`.
+  const VALID = new Set(["going", "interested", "not-going", "withdrawn"]);
+  const status = VALID.has(rawStatus) ? rawStatus : "going";
   return {
     eventId: get(idx("eventId")),
     eventTitle: get(idx("eventTitle")),

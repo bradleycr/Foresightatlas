@@ -22,7 +22,15 @@ export type EventType =
 
 export type EventVisibility = "public" | "internal";
 
-export type RSVPStatus = "going" | "interested" | "not-going";
+/**
+ * RSVP status values. The sheet is append-only, so the latest row for a
+ * (eventId, personId) pair wins. `"withdrawn"` exists so a user who un-clicks
+ * their own RSVP produces a new row that supersedes the previous "going" /
+ * "interested" choice — otherwise the old row would be the latest and the
+ * UI would keep showing them as attending. Treated as "no selection" in the
+ * UI and excluded from all counts.
+ */
+export type RSVPStatus = "going" | "interested" | "not-going" | "withdrawn";
 
 /**
  * Per-node colour palette — all values are complete Tailwind utility strings

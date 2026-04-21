@@ -8,7 +8,16 @@ import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getPresetFocusTags } from "./data/focusAreas";
 import { effectiveIsAlumni } from "./utils/cohortLabel";
-import { getAllPeople, getAllTravelWindows } from "./services/database";
+import {
+  getAllPeople,
+  getAllTravelWindows,
+  invalidateDatabaseCache,
+} from "./services/database";
+import {
+  subscribeToDataChanges,
+  subscribeToSyncErrors,
+  type DataChangeMessage,
+} from "./services/sync";
 import { loadEvents } from "./data/events";
 import type { NodeEvent } from "./types/events";
 import { toast } from "sonner";
@@ -96,6 +105,48 @@ export default function App() {
   // Load data on mount
   useEffect(() => {
     loadData();
+  }, []);
+
+  /*
+   * Cross-tab sync & focus refresh.
+   *
+   * `publishDataChanged(...)` runs after every successful profile save, RSVP,
+   * or check-in. It dispatches locally *and* via BroadcastChannel to every
+   * other tab. We listen here so the map, programming pages, and calendar
+   * all stay fresh without a manual reload.
+   *
+   * Separately, when the tab has been hidden for more than a minute and then
+   * becomes visible, sync.ts emits `reason: "focus"` and we refetch so the
+   * user's first impression back in the tab is the current world, not a
+   * stale snapshot.
+   *
+   * Sync errors are surfaced once as a subtle toast; console.warn in sync.ts
+   * keeps the devtools view for engineers.
+   */
+  useEffect(() => {
+    const onChange = (msg: DataChangeMessage) => {
+      if (msg.scope !== "people" && msg.scope !== "all") return;
+      invalidateDatabaseCache();
+      void loadData();
+    };
+    const unsubChange = subscribeToDataChanges(onChange);
+
+    let lastToastAt = 0;
+    const unsubError = subscribeToSyncErrors((err) => {
+      // Rate-limit: one sync error toast per 10 seconds per tab.
+      const now = Date.now();
+      if (now - lastToastAt < 10_000) return;
+      lastToastAt = now;
+      toast.error("Couldn't sync with the server", {
+        description: err.message,
+        duration: 4000,
+      });
+    });
+
+    return () => {
+      unsubChange();
+      unsubError();
+    };
   }, []);
 
   // Restore path after 404 redirect (deep links on GitHub Pages)

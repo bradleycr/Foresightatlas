@@ -614,23 +614,42 @@ async function listLocalRsvps() {
   return dedupeLatest(db.rsvps, (r) => `${r.eventId}\t${r.personId}`);
 }
 
+const VALID_RSVP_STATUSES = new Set(["going", "interested", "not-going", "withdrawn"]);
+
 async function appendLocalRsvp(input) {
   const db = await getLocalDatabase();
   const now = new Date().toISOString();
-  const status =
-    input.status === "interested" || input.status === "not-going" ? input.status : "going";
-  const row = {
-    eventId: String(input.eventId || "").trim(),
-    eventTitle: String(input.eventTitle || "").trim(),
-    personId: String(input.personId || "").trim(),
-    fullName: String(input.fullName || "").trim(),
-    status,
-    createdAt: now,
-    updatedAt: now,
-  };
-  if (!row.eventId || !row.personId) {
+  const rawStatus = String(input.status || "").trim();
+  const status = VALID_RSVP_STATUSES.has(rawStatus) ? rawStatus : "going";
+  const eventId = String(input.eventId || "").trim();
+  const personId = String(input.personId || "").trim();
+  if (!eventId || !personId) {
     throw new Error("eventId and personId required");
   }
+
+  /*
+   * Match production semantics: preserve the earliest createdAt across any
+   * existing rows for this (eventId, personId) so updates don't reset the
+   * "first RSVP'd on" timestamp.
+   */
+  let createdAt = now;
+  for (const existing of db.rsvps) {
+    if (existing.eventId !== eventId || existing.personId !== personId) continue;
+    if (!existing.createdAt) continue;
+    const ts = new Date(existing.createdAt).getTime();
+    if (!Number.isFinite(ts)) continue;
+    if (new Date(createdAt).getTime() > ts) createdAt = existing.createdAt;
+  }
+
+  const row = {
+    eventId,
+    eventTitle: String(input.eventTitle || "").trim(),
+    personId,
+    fullName: String(input.fullName || "").trim(),
+    status,
+    createdAt,
+    updatedAt: now,
+  };
   db.rsvps.push(row);
   await saveLocalDatabase(db);
   return row;

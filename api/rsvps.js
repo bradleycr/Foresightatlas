@@ -20,39 +20,84 @@ const { normalizeBerlinSecureWorkshopRsvps } = require("../server/event-correcti
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_RSVPS = "RSVPs";
 
+/**
+ * Allowed RSVP statuses. `withdrawn` lets a user un-click their own RSVP by
+ * writing a new row that supersedes the previous "going" / "interested" choice
+ * — the sheet is append-only and latest row wins, so a soft delete is the only
+ * consistent way to clear an RSVP across tabs and devices.
+ *
+ * Historic/junk values (empty, unrecognised) default to "going" to preserve
+ * the old permissive behaviour.
+ */
+const VALID_RSVP_STATUSES = new Set(["going", "interested", "not-going", "withdrawn"]);
+const normaliseStatus = (raw) => {
+  const s = String(raw || "").trim();
+  return VALID_RSVP_STATUSES.has(s) ? s : "going";
+};
+
+/**
+ * Parse raw sheet rows into RSVP records.
+ *
+ * Returns every row (not just the latest) from the helper, but keys the final
+ * map by (eventId, personId) to collapse the append-only log into a single
+ * current-state record per user per event. `allRows` is returned alongside
+ * so callers that want history (e.g. `preserve createdAt`) don't need a second
+ * pass.
+ */
 function parseRsvpRows(values) {
-  if (!values || values.length < 2) return [];
+  if (!values || values.length < 2) return { latest: [], allRows: [] };
   const [headerRow, ...rows] = values;
   const col = (name) => {
     const i = headerRow.findIndex((c) => String(c).trim().toLowerCase() === name.toLowerCase());
     return i >= 0 ? i : -1;
   };
-  const validStatus = (s) => (s === "interested" || s === "not-going" ? s : "going");
-  const list = rows
+  const allRows = rows
     .map((row) => {
       const eventId = row[col("eventId")] != null ? String(row[col("eventId")]).trim() : "";
       const personId = row[col("personId")] != null ? String(row[col("personId")]).trim() : "";
       if (!eventId || !personId) return null;
-      const rawStatus = row[col("status")] != null ? String(row[col("status")]).trim() : "";
       return {
         eventId,
         eventTitle: row[col("eventTitle")] != null ? String(row[col("eventTitle")]).trim() : "",
         personId,
         fullName: row[col("fullName")] != null ? String(row[col("fullName")]).trim() : "",
-        status: validStatus(rawStatus || "going"),
-        createdAt: row[col("createdAt")] != null ? String(row[col("createdAt")]).trim() : new Date().toISOString(),
-        updatedAt: row[col("updatedAt")] != null ? String(row[col("updatedAt")]).trim() : new Date().toISOString(),
+        status: normaliseStatus(row[col("status")]),
+        createdAt:
+          row[col("createdAt")] != null
+            ? String(row[col("createdAt")]).trim()
+            : new Date().toISOString(),
+        updatedAt:
+          row[col("updatedAt")] != null
+            ? String(row[col("updatedAt")]).trim()
+            : new Date().toISOString(),
       };
     })
     .filter(Boolean);
   // Sheet is append-only: same person can have multiple rows per event. Keep one per (eventId, personId), latest by updatedAt.
   const byKey = new Map();
-  for (const r of list) {
+  for (const r of allRows) {
     const key = `${r.eventId}\t${r.personId}`;
     const existing = byKey.get(key);
     if (!existing || new Date(r.updatedAt) > new Date(existing.updatedAt)) byKey.set(key, r);
   }
-  return Array.from(byKey.values());
+  return { latest: Array.from(byKey.values()), allRows };
+}
+
+/**
+ * When a user updates an existing RSVP, we want the sheet row's `createdAt`
+ * to reflect when they first RSVP'd — not the time of every edit. Returns
+ * the earliest `createdAt` across all prior rows for (eventId, personId),
+ * falling back to a default (typically "now") when no prior row exists.
+ */
+function pickEarliestCreatedAt(allRows, eventId, personId, fallback) {
+  let best = null;
+  for (const row of allRows) {
+    if (row.eventId !== eventId || row.personId !== personId) continue;
+    const ts = new Date(row.createdAt).getTime();
+    if (!Number.isFinite(ts)) continue;
+    if (best === null || ts < best.ts) best = { ts, iso: row.createdAt };
+  }
+  return best ? best.iso : fallback;
 }
 
 async function getSheetsClientForRead() {
@@ -113,7 +158,8 @@ module.exports = async function handler(req, res) {
         spreadsheetId: SPREADSHEET_ID,
         range: `'${SHEET_RSVPS}'!A:G`,
       });
-      const rsvps = normalizeBerlinSecureWorkshopRsvps(parseRsvpRows(data.values || []));
+      const { latest } = parseRsvpRows(data.values || []);
+      const rsvps = normalizeBerlinSecureWorkshopRsvps(latest);
       return res.status(200).json(rsvps);
     } catch (e) {
       console.error("GET /api/rsvps", e.message);
@@ -127,10 +173,41 @@ module.exports = async function handler(req, res) {
     if (!sheets) return res.status(503).json({ error: "RSVP write not configured (missing GOOGLE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS)" });
     const { eventId, eventTitle, personId, fullName, status } = req.body || {};
     if (!eventId || !personId) return res.status(400).json({ error: "eventId and personId required" });
-    const validStatus = (s) => (s === "interested" || s === "not-going" ? s : "going");
-    const statusToSave = validStatus(status || "going");
+    const statusToSave = normaliseStatus(status || "going");
     const now = new Date().toISOString();
-    const row = [eventId, eventTitle != null ? String(eventTitle).trim() : "", personId, fullName || "", statusToSave, now, now];
+
+    /*
+     * Preserve the original RSVP's `createdAt`. The sheet is append-only, so
+     * each update writes a new row — without this lookup, every edit would
+     * show the same timestamp in both columns and we'd lose the "first RSVP'd
+     * on..." signal that UIs and reports can use.
+     *
+     * The extra GET adds a single round-trip per write; for a small community
+     * sheet this is acceptable. If we ever grow out of Google Sheets this
+     * disappears entirely (a DB would just `UPDATE ... RETURNING createdAt`).
+     */
+    let createdAt = now;
+    try {
+      const { data } = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${SHEET_RSVPS}'!A:G`,
+      });
+      const { allRows } = parseRsvpRows(data.values || []);
+      createdAt = pickEarliestCreatedAt(allRows, eventId, personId, now);
+    } catch (e) {
+      // Non-fatal: fall back to `now` and continue with the write.
+      console.warn("POST /api/rsvps: could not preload rows for createdAt lookup:", e.message);
+    }
+
+    const row = [
+      eventId,
+      eventTitle != null ? String(eventTitle).trim() : "",
+      personId,
+      fullName || "",
+      statusToSave,
+      createdAt,
+      now,
+    ];
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
@@ -145,7 +222,7 @@ module.exports = async function handler(req, res) {
         personId,
         fullName: fullName || "",
         status: statusToSave,
-        createdAt: now,
+        createdAt,
         updatedAt: now,
       });
     } catch (e) {

@@ -98,10 +98,17 @@ function rowToAdminUser(row) {
   };
 }
 
+/**
+ * Valid RSVP statuses mirror `api/rsvps.js` and the client TypeScript enum.
+ * `withdrawn` exists so users can clear an RSVP without us having to delete
+ * rows from an append-only sheet.
+ */
+const VALID_RSVP_STATUSES = new Set(["going", "interested", "not-going", "withdrawn"]);
+
 function rowToRSVP(row) {
   const idx = (name) => RSVPS_HEADERS.indexOf(name);
-  const rawStatus = get(row, idx("status"));
-  const status = rawStatus === "interested" || rawStatus === "not-going" ? rawStatus : "going";
+  const rawStatus = String(get(row, idx("status")) || "").trim();
+  const status = VALID_RSVP_STATUSES.has(rawStatus) ? rawStatus : "going";
   return {
     eventId: get(row, idx("eventId")),
     eventTitle: get(row, idx("eventTitle")),

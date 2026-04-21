@@ -22,8 +22,8 @@ import { getEventsByNodeForDisplay, getEventsSheetLoadError, loadEvents } from "
 import type { Identity } from "../services/identity";
 import {
   setRSVP,
-  removeRSVP,
-  getRSVP,
+  withdrawRSVP,
+  getUserRSVPStatus,
   getEventRSVPSummary,
   fetchRSVPsFromAPI,
   setAPIRsvpsFromBuild,
@@ -35,6 +35,7 @@ import {
   toDateKey,
 } from "../services/checkin";
 import { getRsvps } from "../services/database";
+import { subscribeToDataChanges, type DataChangeMessage } from "../services/sync";
 import { MonthNavigator } from "../components/programming/MonthNavigator";
 import { EventCard } from "../components/programming/EventCard";
 import { NodeTableView } from "../components/programming/NodeTableView";
@@ -141,6 +142,28 @@ export function NodeProgrammingPage({
     );
   }, [activeNode, isGlobal]);
 
+  /*
+   * Cross-tab / focus sync: when any tab publishes an RSVP or check-in change
+   * we refetch the affected dataset and bump the appropriate tick so memoised
+   * selectors (`summaryOf`, `userStatusOf`, the table view) rebuild.
+   *
+   * Scope `"all"` arrives on focus-resume after idle; we refresh both.
+   */
+  useEffect(() => {
+    const onChange = (msg: DataChangeMessage) => {
+      if (msg.scope === "rsvps" || msg.scope === "all") {
+        void fetchRSVPsFromAPI().then(() => setRsvpTick((t) => t + 1));
+      }
+      if ((msg.scope === "checkins" || msg.scope === "all") && !isGlobal) {
+        const weekDates = getWeekDates(new Date());
+        void fetchCheckInsFromAPI(activeNode, weekDates[0], weekDates[6]).then(() =>
+          setCheckInTick((t) => t + 1),
+        );
+      }
+    };
+    return subscribeToDataChanges(onChange);
+  }, [activeNode, isGlobal]);
+
   /* ── QR auto-check-in flow ───────────────────────────────────────── */
 
   useEffect(() => {
@@ -214,19 +237,28 @@ export function NodeProgrammingPage({
   const handleRSVPChange = useCallback(
     (eventId: string, status: RSVPStatus | null, eventTitle?: string) => {
       if (!identity) return;
-      if (status === null) {
-        removeRSVP(eventId, identity.personId);
-        setRsvpTick((t) => t + 1);
-      } else {
-        void setRSVP(eventId, identity.personId, status, identity.fullName, eventTitle)
-          .then(() => setRsvpTick((t) => t + 1))
-          .catch((e) => {
-            toast.error("RSVP not synced", {
-              description: e instanceof Error ? e.message : "Saved on this device only.",
-            });
-            setRsvpTick((t) => t + 1);
+      /*
+       * "Clear my RSVP" used to be a local-only delete, which silently kept
+       * the previous "going" row as the latest on the sheet — so the user
+       * still showed up as attending from other devices and to other users.
+       *
+       * We now persist a `withdrawn` row instead. The sheet is append-only,
+       * so this new row becomes the authoritative latest state and every
+       * other tab / returning session treats the RSVP as cleared.
+       */
+      const writePromise =
+        status === null
+          ? withdrawRSVP(eventId, identity.personId, identity.fullName, eventTitle)
+          : setRSVP(eventId, identity.personId, status, identity.fullName, eventTitle);
+
+      void writePromise
+        .then(() => setRsvpTick((t) => t + 1))
+        .catch((e) => {
+          toast.error("RSVP not synced", {
+            description: e instanceof Error ? e.message : "Saved on this device only.",
           });
-      }
+          setRsvpTick((t) => t + 1);
+        });
     },
     [identity],
   );
@@ -240,7 +272,7 @@ export function NodeProgrammingPage({
     (eventId: string): RSVPStatus | null => {
       void rsvpTick;
       if (!identity) return null;
-      return getRSVP(eventId, identity.personId)?.status ?? null;
+      return getUserRSVPStatus(eventId, identity.personId);
     },
     [identity, rsvpTick],
   );

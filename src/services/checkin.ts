@@ -13,6 +13,7 @@
 import type { CheckIn, CheckInType, NodeSlug, DayCheckInSummary } from "../types/events";
 
 import { getApiBase } from "./api-base";
+import { publishDataChanged, reportSyncError } from "./sync";
 
 const STORAGE_KEY = "foresightmap_checkins";
 
@@ -55,7 +56,13 @@ export async function fetchCheckInsFromAPI(
   try {
     const params = new URLSearchParams({ nodeSlug, startDate, endDate });
     const res = await fetch(`${getApiBase()}/checkins?${params}`);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      reportSyncError({
+        scope: "checkins",
+        message: `GET /api/checkins failed with ${res.status}`,
+      });
+      return null;
+    }
     const list = (await res.json()) as CheckIn[];
     const valid = Array.isArray(list) ? list : [];
     // Merge into cache — keep entries outside this window, replace within
@@ -66,7 +73,13 @@ export async function fetchCheckInsFromAPI(
       ...valid,
     ];
     return valid;
-  } catch {
+  } catch (err) {
+    reportSyncError({
+      scope: "checkins",
+      message:
+        err instanceof Error && err.message ? err.message : "Could not reach the check-ins API.",
+      cause: err,
+    });
     return null;
   }
 }
@@ -143,6 +156,7 @@ export async function checkIn(
       (c) => !(c.personId === personId && c.nodeSlug === nodeSlug && c.date === date),
     );
     apiCheckIns.push(created);
+    publishDataChanged("checkins");
   } catch (e) {
     const net =
       e instanceof TypeError ||

@@ -10,16 +10,34 @@ import type { RSVPRecord } from "../types/events";
 import type { NodeEvent } from "../types/events";
 
 import { getApiBase } from "./api-base";
+import { publishDataChanged } from "./sync";
 
-/** Cached database so we only fetch once per session. */
-let cachedDatabase: {
+/**
+ * In-memory cache of the last /api/database response.
+ *
+ * Rather than "fetch once per session" (the original behaviour) we now track
+ * `fetchedAt` so cross-tab invalidation and focus refreshes can bust the
+ * cache. Writers call {@link invalidateDatabaseCache} after every successful
+ * mutation; subscribers to `sync.ts` do the same on remote changes.
+ */
+interface CachedDatabase {
   people: Person[];
   travelWindows: TravelWindow[];
   suggestions: LocationSuggestion[];
   adminUsers: AdminUser[];
   rsvps?: RSVPRecord[];
   events?: NodeEvent[];
-} | null = null;
+}
+
+let cachedDatabase: CachedDatabase | null = null;
+let cachedAt = 0;
+
+/**
+ * De-duplicates concurrent callers. If two components mount at the same
+ * time and both call `getAllPeople()`, they'll share a single in-flight
+ * network request instead of hammering the sheet twice.
+ */
+let inFlightFetch: Promise<CachedDatabase> | null = null;
 
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -62,35 +80,59 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
-async function fetchDatabase() {
+async function fetchDatabase(): Promise<CachedDatabase> {
   if (cachedDatabase) return cachedDatabase;
+  if (inFlightFetch) return inFlightFetch;
+
   const apiBase = getApiBase();
   const apiUrl = `${apiBase}/database`.replace(/([^:]\/)\/+/g, "$1");
 
-  const response = await fetchWithTimeout(apiUrl);
-  if (!response.ok) {
-    const text = await response.text();
-    let message = `Failed to load data (${response.status}).`;
+  inFlightFetch = (async () => {
     try {
-      const json = JSON.parse(text);
-      if (json?.error) message = json.error;
-    } catch {
-      if (text) message = text.slice(0, 200);
-    }
-    throw new Error(message);
-  }
+      const response = await fetchWithTimeout(apiUrl);
+      if (!response.ok) {
+        const text = await response.text();
+        let message = `Failed to load data (${response.status}).`;
+        try {
+          const json = JSON.parse(text);
+          if (json?.error) message = json.error;
+        } catch {
+          if (text) message = text.slice(0, 200);
+        }
+        throw new Error(message);
+      }
 
-  const raw = await response.json();
-  if (!raw || typeof raw !== "object" || !Array.isArray(raw.people)) {
-    throw new Error("Invalid response: missing or non-array 'people'.");
-  }
-  raw.people = dedupePeople(raw.people as unknown[]);
-  cachedDatabase = raw as typeof cachedDatabase;
-  return cachedDatabase;
+      const raw = await response.json();
+      if (!raw || typeof raw !== "object" || !Array.isArray(raw.people)) {
+        throw new Error("Invalid response: missing or non-array 'people'.");
+      }
+      raw.people = dedupePeople(raw.people as unknown[]);
+      cachedDatabase = raw as CachedDatabase;
+      cachedAt = Date.now();
+      return cachedDatabase;
+    } finally {
+      inFlightFetch = null;
+    }
+  })();
+
+  return inFlightFetch;
 }
 
+/**
+ * Drop the in-memory cache so the next read refetches from the server.
+ * Safe to call at any time; idempotent.
+ */
 export function clearDatabaseCache(): void {
   cachedDatabase = null;
+  cachedAt = 0;
+}
+
+/** Alias with a less ambiguous name, used from writers. */
+export const invalidateDatabaseCache = clearDatabaseCache;
+
+/** When the cache was last populated — useful for tests and UI diagnostics. */
+export function getDatabaseCachedAt(): number {
+  return cachedAt;
 }
 
 /** Normalize person: optional fields default; migrate legacy homeBase → current. */
@@ -308,6 +350,12 @@ export async function createPerson(
   if (cachedDatabase) {
     cachedDatabase.people.push(normalized);
   }
+  /*
+   * Notify every open tab — including this one's other components — so they
+   * refetch and see the new member. `reason: "write"` is implicit; remote
+   * tabs will receive `reason: "remote"` and can show a subtler UX.
+   */
+  publishDataChanged("people");
 
   return {
     person: normalized,
@@ -365,6 +413,13 @@ export async function updatePerson(
       cachedDatabase.people.push(normalized);
     }
   }
+  /*
+   * Fan the update out to every tab. Other tabs will drop their cache and
+   * refetch; this tab's components also re-render via the same channel,
+   * so edits made on /profile show up immediately on /berlin and the map
+   * without a manual reload.
+   */
+  publishDataChanged("people");
 
   return {
     person: normalized,
