@@ -8,7 +8,7 @@
 
 The app includes:
 
-- **Map** — Interactive world map with markers for current location and travel. Click markers to see who is at each place.
+- **Map** — Interactive world map with **one marker per person** at their profile location; search and filters; open people from the map or the list. Travel and RSVPs appear on cards as context (they do not add extra pins).
 - **Programming** — Per-node event calendars (e.g. Berlin, San Francisco) with RSVPs and check-ins where configured.
 - **Calendar** — Signed-in members get a large shared-node calendar view powered by React Big Calendar and `/api/calendar-events` (Google Calendar with mock fallback).
 - **Timeline** — Tab exists in the UI; full timeline experience is still **coming soon** (see [AGENTS.md](AGENTS.md)).
