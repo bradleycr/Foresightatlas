@@ -105,6 +105,23 @@ function sanitizeContact(value) {
   return null;
 }
 
+function sanitizeCalendarEmail(value) {
+  const s = normalizeString(value);
+  if (!s) return null;
+  if (s.length > 120) return null;
+  // Require a real email (not @handle).
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return null;
+  return s;
+}
+
+function sanitizeAvailabilityUrl(value) {
+  const s = normalizeString(value);
+  if (!s) return null;
+  if (s.length > 220) return null;
+  if (!/^https?:\/\/[^\s]+$/i.test(s)) return null;
+  return s;
+}
+
 function normalizeStringArray(value) {
   const source = Array.isArray(value)
     ? value
@@ -225,6 +242,8 @@ function rowToPersonRecord(orderedRow, rowNumber) {
     profileUrl: normalizeString(orderedRow[idx("profileUrl")]),
     profileImageUrl: sanitizeProfileImageUrl(orderedRow[idx("profileImageUrl")]),
     contactUrlOrHandle: sanitizeContact(orderedRow[idx("contactUrlOrHandle")]),
+    calendarEmail: sanitizeCalendarEmail(orderedRow[idx("calendarEmail")]),
+    availabilityUrl: sanitizeAvailabilityUrl(orderedRow[idx("availabilityUrl")]),
     shortProjectTagline: normalizeString(orderedRow[idx("shortProjectTagline")]),
     expandedProjectDescription: sanitizeBio(
       orderedRow[idx("expandedProjectDescription")],
@@ -268,6 +287,8 @@ function personRecordToRow(record) {
     person.profileUrl ?? "",
     person.profileImageUrl ?? "",
     person.contactUrlOrHandle ?? "",
+    person.calendarEmail ?? "",
+    person.availabilityUrl ?? "",
     person.shortProjectTagline ?? "",
     person.expandedProjectDescription ?? "",
     person.isAlumni ? "TRUE" : "FALSE",

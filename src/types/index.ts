@@ -26,6 +26,10 @@ export interface Person {
   /** Optional profile/avatar image URL (e.g. from foresight.org); not hosted by us. */
   profileImageUrl: string | null;
   contactUrlOrHandle: string | null;
+  /** Email address others can invite for meetings/events (not used for auth). */
+  calendarEmail?: string | null;
+  /** Optional availability link (Calendly, Google appointment schedule, etc.). */
+  availabilityUrl?: string | null;
   shortProjectTagline: string;
   expandedProjectDescription: string;
   isAlumni: boolean;

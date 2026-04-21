@@ -118,6 +118,8 @@ function normalizePerson(
     profileUrl: p.profileUrl ?? "",
     profileImageUrl: p.profileImageUrl ?? null,
     contactUrlOrHandle: p.contactUrlOrHandle ?? null,
+    calendarEmail: p.calendarEmail ?? null,
+    availabilityUrl: p.availabilityUrl ?? null,
     shortProjectTagline: p.shortProjectTagline ?? "",
     expandedProjectDescription: p.expandedProjectDescription ?? "",
     isAlumni: p.isAlumni ?? false,

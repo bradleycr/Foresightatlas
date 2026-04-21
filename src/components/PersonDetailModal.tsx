@@ -67,6 +67,7 @@ import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { isConnected, toggleConnection } from "../services/connections";
+import { buildGoogleCalendarTemplateUrl } from "../utils/googleCalendarTemplate";
 
 /** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
 function looksLikeContact(value: string | null | undefined): boolean {
@@ -77,6 +78,18 @@ function looksLikeContact(value: string | null | undefined): boolean {
   if (/^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220) return true;
   if (/^@[\w]+$/i.test(s) && s.length <= 50) return true;
   return false;
+}
+
+function looksLikeEmail(value: string | null | undefined): boolean {
+  const s = (value ?? "").trim();
+  if (!s) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120;
+}
+
+function looksLikeUrl(value: string | null | undefined): boolean {
+  const s = (value ?? "").trim();
+  if (!s) return false;
+  return /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220;
 }
 
 /** Cohort years 2017–current plus 0 for Unknown. */
@@ -862,6 +875,42 @@ export function PersonDetailModal({
                           <Label className="text-xs text-gray-600">Email, URL, or LinkedIn</Label>
                           <Input value={editingPerson.contactUrlOrHandle || ""} onChange={(e) => setEditingPerson({ ...editingPerson, contactUrlOrHandle: e.target.value || null })} placeholder="you@example.com, https://linkedin.com/in/you, or profile URL" className="mt-1" />
                         </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <Label className="text-xs text-gray-600">Calendar invite email</Label>
+                            <Input
+                              value={editingPerson.calendarEmail || ""}
+                              onChange={(e) =>
+                                setEditingPerson({
+                                  ...editingPerson,
+                                  calendarEmail: e.target.value.trim() || null,
+                                })
+                              }
+                              placeholder="name@gmail.com"
+                              className="mt-1"
+                              inputMode="email"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600">Availability link</Label>
+                            <Input
+                              value={editingPerson.availabilityUrl || ""}
+                              onChange={(e) =>
+                                setEditingPerson({
+                                  ...editingPerson,
+                                  availabilityUrl: e.target.value.trim() || null,
+                                })
+                              }
+                              placeholder="https://calendly.com/…"
+                              className="mt-1"
+                              inputMode="url"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                            />
+                          </div>
+                        </div>
                         <div>
                           <Label className="text-xs text-gray-600">Profile URL</Label>
                           <Input type="url" value={editingPerson.profileUrl} onChange={(e) => setEditingPerson({ ...editingPerson, profileUrl: e.target.value })} placeholder="https://..." className="mt-1" />
@@ -939,6 +988,36 @@ export function PersonDetailModal({
                           <Globe className="h-4 w-4" />
                           foresight.org/about
                         </a>
+
+                        {looksLikeEmail(displayPerson.calendarEmail) ? (
+                          <a
+                            href={buildGoogleCalendarTemplateUrl({
+                              title: `Meet: ${displayPerson.fullName}`,
+                              details: `Inviting ${displayPerson.fullName}.`,
+                              addGuests: [displayPerson.calendarEmail],
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
+                            aria-label={`Create a Google Calendar invite for ${displayPerson.fullName}`}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                            Invite via Google Calendar
+                          </a>
+                        ) : null}
+
+                        {looksLikeUrl(displayPerson.availabilityUrl) ? (
+                          <a
+                            href={displayPerson.availabilityUrl!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
+                            aria-label={`Open ${displayPerson.fullName}'s availability`}
+                          >
+                            <Calendar className="h-4 w-4" />
+                            Availability
+                          </a>
+                        ) : null}
                       </div>
                     )}
                   </section>

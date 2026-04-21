@@ -51,6 +51,16 @@ const PEOPLE_PUBLIC_HEADERS = [
   "profileUrl",
   "profileImageUrl",
   "contactUrlOrHandle",
+  /**
+   * Calendar contact fields:
+   * - calendarEmail: the email address others should invite to meetings/events.
+   * - availabilityUrl: optional booking/availability link (Calendly, Google appointment schedule, etc.)
+   *
+   * These are intentionally simple strings so we can support “invite me” workflows
+   * without requiring per-user Google OAuth.
+   */
+  "calendarEmail",
+  "availabilityUrl",
   "shortProjectTagline",
   "expandedProjectDescription",
   "isAlumni",

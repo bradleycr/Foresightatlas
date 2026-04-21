@@ -64,6 +64,8 @@ function normalizePerson(input) {
     primaryNode: normalizeString(input?.primaryNode) || "Global",
     profileUrl: normalizeString(input?.profileUrl),
     contactUrlOrHandle: normalizeNullableString(input?.contactUrlOrHandle),
+    calendarEmail: normalizeNullableString(input?.calendarEmail),
+    availabilityUrl: normalizeNullableString(input?.availabilityUrl),
     shortProjectTagline: normalizeString(input?.shortProjectTagline),
     expandedProjectDescription: normalizeString(
       input?.expandedProjectDescription,
@@ -102,6 +104,22 @@ function normalizePerson(input) {
     throw new Error("Invalid primary node.");
   }
 
+  if (person.calendarEmail) {
+    const email = person.calendarEmail.trim();
+    if (email.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("Calendar email must be a valid email address.");
+    }
+    person.calendarEmail = email;
+  }
+
+  if (person.availabilityUrl) {
+    const url = person.availabilityUrl.trim();
+    if (url.length > 220 || !/^https?:\/\/[^\s]+$/i.test(url)) {
+      throw new Error("Availability link must be a valid https:// URL.");
+    }
+    person.availabilityUrl = url;
+  }
+
   return person;
 }
 
@@ -136,6 +154,8 @@ function normalizePersonForCreate(input) {
     primaryNode: normalizeString(input?.primaryNode) || "Global",
     profileUrl: normalizeString(input?.profileUrl),
     contactUrlOrHandle: normalizeNullableString(input?.contactUrlOrHandle),
+    calendarEmail: normalizeNullableString(input?.calendarEmail),
+    availabilityUrl: normalizeNullableString(input?.availabilityUrl),
     shortProjectTagline: normalizeString(input?.shortProjectTagline),
     expandedProjectDescription: normalizeString(
       input?.expandedProjectDescription,

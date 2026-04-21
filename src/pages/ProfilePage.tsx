@@ -70,6 +70,8 @@ const EMPTY_PERSON: Person = {
   primaryNode: "Global",
   profileUrl: "",
   contactUrlOrHandle: null,
+  calendarEmail: null,
+  availabilityUrl: null,
   shortProjectTagline: "",
   expandedProjectDescription: "",
   isAlumni: false,
@@ -496,6 +498,45 @@ export function ProfilePage({
                     placeholder="you@example.com, https://linkedin.com/in/you, or profile URL"
                   />
                 </Field>
+              </ProfileSection>
+
+              <ProfileSection
+                title="Calendar & availability"
+                description="Make it easy for others to invite you. This does not grant access to your calendar."
+                icon={<CalendarDays className="size-4 text-sky-500" />}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Calendar invite email">
+                    <Input
+                      value={createDraft.calendarEmail ?? ""}
+                      onChange={(e) =>
+                        updateCreateDraft("calendarEmail", e.target.value.trim() || null)
+                      }
+                      placeholder="name@gmail.com"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Others can use this to add you as a guest on a Google Calendar event.
+                    </p>
+                  </Field>
+                  <Field label="Availability link (optional)">
+                    <Input
+                      value={createDraft.availabilityUrl ?? ""}
+                      onChange={(e) =>
+                        updateCreateDraft("availabilityUrl", e.target.value.trim() || null)
+                      }
+                      placeholder="https://calendly.com/…"
+                      inputMode="url"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      A public booking page or schedule link (Calendly, Google appointment schedule, etc.).
+                    </p>
+                  </Field>
+                </div>
               </ProfileSection>
 
               <ProfileSection
@@ -1077,6 +1118,45 @@ export function ProfilePage({
                     placeholder="https://your-site-or-profile"
                   />
                 </Field>
+              </ProfileSection>
+
+              <ProfileSection
+                title="Calendar & availability"
+                description="Make it easy for others to invite you. This does not grant access to your calendar."
+                icon={<CalendarDays className="size-4 text-sky-500" />}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Calendar invite email">
+                    <Input
+                      value={draft.calendarEmail ?? ""}
+                      onChange={(e) =>
+                        updateDraft("calendarEmail", e.target.value.trim() || null)
+                      }
+                      placeholder="name@gmail.com"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Others can use this to add you as a guest on a Google Calendar event.
+                    </p>
+                  </Field>
+                  <Field label="Availability link (optional)">
+                    <Input
+                      value={draft.availabilityUrl ?? ""}
+                      onChange={(e) =>
+                        updateDraft("availabilityUrl", e.target.value.trim() || null)
+                      }
+                      placeholder="https://calendly.com/…"
+                      inputMode="url"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      A public booking page or schedule link (Calendly, Google appointment schedule, etc.).
+                    </p>
+                  </Field>
+                </div>
               </ProfileSection>
             </section>
           </div>
