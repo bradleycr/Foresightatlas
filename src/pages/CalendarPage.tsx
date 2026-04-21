@@ -19,9 +19,20 @@ import {
 } from "../components/ui/dialog";
 
 const localizer = dayjsLocalizer(dayjs);
-const FALLBACK_INVITE_EMAIL = "user@foresight.com";
 type CalendarView = "month" | "week" | "day" | "agenda";
 const DEFAULT_VIEW: CalendarView = "month";
+
+/**
+ * Returns the shared-calendar invite address when it's been configured via
+ * `VITE_CALENDAR_INVITE_EMAIL`, or `null` when absent. We return null (instead
+ * of a placeholder like "user@foresight.com") so a misconfigured deploy never
+ * instructs members to invite a non-existent address. The UI hides the whole
+ * invite explainer card when this is null.
+ */
+function getConfiguredInviteEmail(): string | null {
+  const raw = (import.meta.env.VITE_CALENDAR_INVITE_EMAIL as string | undefined)?.trim();
+  return raw && raw.length > 0 ? raw : null;
+}
 
 const NODE_FROM_PRIMARY: Record<PrimaryNode, NodeSlug> = {
   "Berlin Node": "berlin",
@@ -75,7 +86,7 @@ function getEventLinkLabel(event: SharedCalendarEvent): string {
 }
 
 export function CalendarPage({ identity, signedInPerson, onOpenProfile }: CalendarPageProps) {
-  const inviteEmail = (import.meta.env.VITE_CALENDAR_INVITE_EMAIL || FALLBACK_INVITE_EMAIL).trim() || FALLBACK_INVITE_EMAIL;
+  const inviteEmail = getConfiguredInviteEmail();
   const nodeSlug = getNodeSlugForPerson(signedInPerson);
   const pageNode = getProgrammingPageConfig(nodeSlug);
   const [calendarEvents, setCalendarEvents] = useState([] as SharedCalendarEvent[]);
@@ -134,6 +145,7 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
   return (
     <div className="flex-1 overflow-auto bg-gray-100">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {/* Header card — two variants so a misconfigured deploy never shows a fake invite address. */}
         <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 size-5 text-sky-600" />
@@ -141,11 +153,17 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
               <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
                 {pageNode?.city || "Global"} Shared Calendar
               </h1>
-              <p className="mt-1 text-sm leading-relaxed text-gray-600">
-                Add events to this shared calendar by inviting{" "}
-                <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-800">{inviteEmail}</code>{" "}
-                to your Google Calendar event. Once invited, your event appears here for members in your node.
-              </p>
+              {inviteEmail ? (
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                  Add events to this shared calendar by inviting{" "}
+                  <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-800">{inviteEmail}</code>{" "}
+                  to your Google Calendar event. Once invited, your event appears here for members in your node.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                  Browse upcoming events for your node. Contact a node organizer to have events added.
+                </p>
+              )}
             </div>
           </div>
         </div>
