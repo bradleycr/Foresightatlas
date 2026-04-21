@@ -1,6 +1,6 @@
 {
-  "name": "Foresight map & Node programming (beta)",
-  "short_name": "Foresight map",
+  "name": "Foresight Atlas (beta)",
+  "short_name": "Foresight Atlas",
   "icons": [
     {
       "src": "./android-chrome-192x192.png",

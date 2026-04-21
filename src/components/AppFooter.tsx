@@ -29,7 +29,7 @@ export function AppFooter() {
             ·
           </span>
           <span className="text-pretty">
-            Foresight map &amp; Node programming
+            Foresight Atlas
             <span className="ml-1.5 inline-block rounded-full border border-stone-200/80 bg-gradient-to-b from-white to-stone-50/95 px-1.5 py-px text-[9px] font-medium tracking-tight text-stone-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] sm:text-[10px]">
               (beta)
             </span>

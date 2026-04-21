@@ -1,6 +1,6 @@
-# Grantees and Fellows Map and Programming
+# Foresight Atlas
 
-A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located and where they are traveling. Built for the Foresight community to see who is where and when.
+**Internal tool** — connecting grantees, fellows, nodees, and our programming. A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located, where they are traveling, and what’s on at each node.
 
 **Open source (MIT)** — Issues and pull requests are welcome. New here? Read **[CONTRIBUTING.md](CONTRIBUTING.md)**, the **[documentation index](docs/README.md)**, and **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)**. Security-sensitive reports: **[.github/SECURITY.md](.github/SECURITY.md)** (do not use public issues for undisclosed vulnerabilities).
 

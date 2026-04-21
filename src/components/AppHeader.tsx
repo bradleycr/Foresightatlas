@@ -58,13 +58,11 @@ export function AppHeader({
    * dialog surfaces it instead. The route itself is still live and reachable
    * from the profile menu; it just doesn't need a nav pill of its own.
    */
-  const subtext = "Internal tool — connect with grantees, fellows and nodees.";
+  const subtext =
+    "Internal tool — Connecting Grantees, Fellows, Nodees, and our programming";
   /*
-   * Tiny beta marker — an inline sibling of the title text so it always sits
-   * on the same baseline as "Foresight map & Node programming". Using a
-   * gradient pill with the text made it feel like a separate component that
-   * sometimes drifted; a minimal parenthetical, typographically tied to the
-   * title, reads as an extension of the wordmark.
+   * Tiny beta marker — inline sibling of the title so it sits on the same
+   * baseline as “Foresight Atlas”.
    */
   const betaMark = (
     <span
@@ -162,14 +160,7 @@ export function AppHeader({
                  * the same line as the last word via non-breaking space.
                  */}
                 <span className="min-w-0 text-[0.9375rem] leading-snug sm:text-base md:text-xl md:leading-tight">
-                  <span className="sm:hidden">
-                    Foresight map &amp;
-                    <br />
-                    Node programming{betaMark}
-                  </span>
-                  <span className="hidden sm:inline">
-                    Foresight map &amp; Node programming{betaMark}
-                  </span>
+                  Foresight Atlas{betaMark}
                 </span>
               </h1>
               <p className="mt-1.5 max-w-[min(100%,38rem)] text-pretty text-[0.8125rem] leading-relaxed text-gray-600 sm:text-[0.8125rem] md:mt-2 md:text-sm md:leading-relaxed">
@@ -547,7 +538,7 @@ export function AppHeader({
                         : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
-                    Foresight map
+                    Map
                   </button>
                 </li>
                 <li>

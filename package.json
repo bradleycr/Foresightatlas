@@ -1,7 +1,7 @@
 {
     "name": "foresightmap",
     "version": "0.1.0",
-    "description": "Grantees and Fellows Map and Programming — interactive map and event calendars for Foresight Institute community",
+    "description": "Foresight Atlas — internal directory, map, and node programming for the Foresight Institute community",
     "private": true,
     "license": "MIT",
     "repository": {
