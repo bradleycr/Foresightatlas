@@ -19,7 +19,7 @@ If you have the GitHub CLI (`gh`) installed, you can set everything up with thes
 git init
 
 # 2. Create a new GitHub repository and push your code
-gh repo create foresightmap --public --source=. --remote=origin --push
+gh repo create foresightatlas --public --source=. --remote=origin --push
 
 # 3. Enable GitHub Pages in the repository settings
 gh api repos/:owner/:repo/pages -X POST -f source='{"branch":"gh-pages","path":"/root"}' || echo "Note: You may need to enable Pages manually in Settings > Pages"
@@ -34,12 +34,12 @@ gh repo view --web
 
 1. **Create a GitHub repository** (if you haven't already):
    - Go to https://github.com/new
-   - Create a new repository named `foresightmap` (or your preferred name)
+   - Create a new repository named `foresightatlas` (or your preferred name)
    - Don't initialize with README, .gitignore, or license (if you already have local files)
 
 2. **Push your code to GitHub**:
    ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/foresightmap.git
+   git remote add origin https://github.com/YOUR_USERNAME/foresightatlas.git
    git branch -M main
    git push -u origin main
    ```
@@ -51,7 +51,7 @@ gh repo view --web
    - The workflow runs only when triggered manually (see above). To deploy on every push, edit `.github/workflows/deploy.yml` and add `push: branches: [main]` to the trigger
 
 4. **Access your site**:
-   - Your site will be available at: `https://YOUR_USERNAME.github.io/foresightmap/`
+   - Your site will be available at: `https://YOUR_USERNAME.github.io/foresightatlas/`
    - Note: It may take a few minutes for the first deployment to complete
 
 ## How It Works
@@ -60,8 +60,8 @@ gh repo view --web
   - Syncs sheet → JSON and events (if secrets are set)
   - Builds your Vite app with `VITE_BASE_PATH=/${{ repo name }}/`
   - Deploys the `dist/` output to GitHub Pages
-- The app uses **base-path-aware routing** (`src/utils/router.ts`), so links and history work correctly at e.g. `https://username.github.io/Foresightmap/`.
-- **Deep links**: Visiting a path that doesn’t exist as a file (e.g. `.../Foresightmap/berlin`) triggers GitHub’s 404 page. The included `404.html` redirects to the app root and stores the path in `sessionStorage` so the SPA can restore the route (e.g. Berlin page) without a second load.
+- The app uses **base-path-aware routing** (`src/utils/router.ts`), so links and history work correctly at e.g. `https://username.github.io/foresightatlas/`.
+- **Deep links**: Visiting a path that doesn’t exist as a file (e.g. `.../foresightatlas/berlin`) triggers GitHub’s 404 page. The included `404.html` redirects to the app root and stores the path in `sessionStorage` so the SPA can restore the route (e.g. Berlin page) without a second load.
 
 ## Local Development
 

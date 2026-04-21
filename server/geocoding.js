@@ -9,7 +9,7 @@
  */
 
 const NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org";
-const USER_AGENT = "ForesightMap/1.0 (directory profile sync)";
+const USER_AGENT = "ForesightAtlas/1.0 (directory profile sync)";
 
 const COUNTRY_TYPO_MAP = {
   germabny: "Germany",

@@ -10,6 +10,9 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { migrateLegacyLocalStorageKeys } from "./services/storageLegacyMigration";
+
+migrateLegacyLocalStorageKeys();
 
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Missing #root");

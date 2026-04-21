@@ -13,7 +13,7 @@ We release updates for the current major version. Security fixes may be backport
 If you believe you’ve found a security vulnerability, please report it responsibly:
 
 - **Do not** open a public issue for security-sensitive bugs.
-- Email the maintainers or open a **private** security advisory on GitHub: [Security tab → Advisories → New draft security advisory](https://github.com/bradleycr/Foresightmap/security/advisories/new).
+- Email the maintainers or open a **private** security advisory on GitHub: [Security tab → Advisories → New draft security advisory](https://github.com/bradleycr/foresightatlas/security/advisories/new).
 
 Include:
 

@@ -94,8 +94,8 @@ The repo includes a **Dockerfile** for self-hosted deployment. The app does **no
 **Build and run:**
 
 ```bash
-docker build -t foresightmap .
-docker run --env-file .env.local -p 3001:3001 foresightmap
+docker build -t foresightatlas .
+docker run --env-file .env.local -p 3001:3001 foresightatlas
 ```
 
 **Required env at runtime** (pass via `--env-file` or `-e`):

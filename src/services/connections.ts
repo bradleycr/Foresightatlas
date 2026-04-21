@@ -6,7 +6,7 @@
  * has its own list. No server round-trip — purely client-side for now.
  */
 
-const STORAGE_PREFIX = "foresightmap_connections_";
+const STORAGE_PREFIX = "foresightatlas_connections_";
 
 function storageKey(personId: string): string {
   return `${STORAGE_PREFIX}${personId}`;

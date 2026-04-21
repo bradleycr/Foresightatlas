@@ -30,7 +30,7 @@ const DEFAULT_DIRECTORY_PASSWORD =
 const SESSION_SECRET =
   process.env.DIRECTORY_SESSION_SECRET ||
   process.env.SESSION_SECRET ||
-  "foresightmap-directory-session-secret";
+  "foresightatlas-directory-session-secret";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
 function base64UrlEncode(value) {

@@ -72,7 +72,7 @@ type SyncErrorListener = (err: SyncError) => void;
 const STALE_AFTER_HIDDEN_MS = 60_000;
 
 /** Channel name — must be unique per app so it doesn't collide with other SPAs. */
-const CHANNEL_NAME = "foresight-map-data-sync";
+const CHANNEL_NAME = "foresight-atlas-data-sync";
 
 const dataChangeListeners = new Set<DataChangeListener>();
 const syncErrorListeners = new Set<SyncErrorListener>();

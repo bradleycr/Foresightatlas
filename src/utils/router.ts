@@ -1,12 +1,12 @@
 /**
  * Base-path-aware routing for static deployment (e.g. GitHub Pages).
- * Vite sets BASE_URL to e.g. "/" or "/Foresightmap/" so we normalize and use it for all history APIs.
+ * Vite sets BASE_URL to e.g. "/" or "/foresightatlas/" so we normalize and use it for all history APIs.
  */
 
 const raw = import.meta.env.BASE_URL ?? "/";
 const BASE = raw.endsWith("/") ? raw : raw + "/";
 
-/** Full base path with trailing slash (e.g. "/" or "/Foresightmap/") */
+/** Full base path with trailing slash (e.g. "/" or "/foresightatlas/") */
 export function getBasePath(): string {
   return BASE;
 }
@@ -33,12 +33,14 @@ export function buildFullPath(logicalPath: string): string {
 
 /** Restore path stored by 404.html so deep links work after redirect. Returns path to set or null. */
 export function consumeRedirectPath(): string | null {
+  const keys = ["foresightatlas_redirect", "foresightmap_redirect"] as const;
   try {
-    const key = "foresightmap_redirect";
-    const stored = sessionStorage.getItem(key);
-    if (stored) {
-      sessionStorage.removeItem(key);
-      return stored;
+    for (const key of keys) {
+      const stored = sessionStorage.getItem(key);
+      if (stored) {
+        for (const k of keys) sessionStorage.removeItem(k);
+        return stored;
+      }
     }
   } catch {
     /* ignore */

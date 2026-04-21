@@ -176,7 +176,7 @@ async function geocodeCityOneQuery(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
       {
         headers: {
-          "User-Agent": "ForesightMap/1.0", // Required by Nominatim
+          "User-Agent": "ForesightAtlas/1.0", // Required by Nominatim
         },
       }
     );
@@ -276,7 +276,7 @@ export async function reverseGeocode(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=${zoom}&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'ForesightMap/1.0', // Required by Nominatim
+            'User-Agent': 'ForesightAtlas/1.0', // Required by Nominatim
           },
         }
       );

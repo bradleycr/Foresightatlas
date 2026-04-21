@@ -18,7 +18,7 @@ import type { CheckIn, CheckInType, NodeSlug, DayCheckInSummary } from "../types
 import { getApiBase } from "./api-base";
 import { publishDataChanged } from "./sync";
 
-const STORAGE_KEY = "foresightmap_checkins";
+const STORAGE_KEY = "foresightatlas_checkins";
 
 function writeHeaders(): HeadersInit {
   const h: Record<string, string> = { "Content-Type": "application/json" };

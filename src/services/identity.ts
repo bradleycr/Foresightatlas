@@ -21,8 +21,8 @@
  * the session token itself.
  */
 
-const STORAGE_KEY = "foresightmap_identity";
-const LAST_NAME_KEY = "foresightmap_last_signed_in_name";
+const STORAGE_KEY = "foresightatlas_identity";
+const LAST_NAME_KEY = "foresightatlas_last_signed_in_name";
 
 /** Refresh the token whenever it has fewer than this many ms left. */
 const REFRESH_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 7; // 7 days

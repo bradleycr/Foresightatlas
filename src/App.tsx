@@ -67,7 +67,7 @@ const SUGGEST_FORM_URL: string | undefined = undefined;
 
 export default function App() {
   const isMobileLayout = useIsMobile();
-  // Base-path-aware routing (works on GitHub Pages e.g. /Foresightmap/)
+  // Base-path-aware routing (works on GitHub Pages e.g. /foresightatlas/)
   const [route, setRoute] = useState(() => getRoutePath());
 
   // Modal state

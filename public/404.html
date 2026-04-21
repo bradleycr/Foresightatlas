@@ -2,12 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Foresight Map</title>
+    <title>Foresight Atlas</title>
     <script>
       // GitHub Pages (or static host) serves this for unknown routes. Redirect to app root
       // and store the requested path so the SPA can restore it (deep links).
       // Known SPA routes mean we're at site root (/) — redirect to / and let the app restore path.
-      // Otherwise the first segment is the repo/base (e.g. Foresightmap) — redirect to /base/.
+      // Otherwise the first segment is the repo/base (e.g. foresightatlas) — redirect to /base/.
       // Safety rails for the infinite-redirect case: if we land here from a
       // nested deep link (e.g. /checkin/berlin), we must redirect to the real
       // SPA root — NOT to the first URL segment, which caused a loop when
@@ -30,7 +30,7 @@
           ? '/'
           : '/' + firstSegment + '/';
         try {
-          sessionStorage.setItem('foresightmap_redirect', path);
+          sessionStorage.setItem('foresightatlas_redirect', path);
         } catch (e) {}
         var target = window.location.origin + base;
         // Last line of defence: never redirect to the exact URL we're already on.

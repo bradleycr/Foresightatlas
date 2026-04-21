@@ -6,7 +6,7 @@
 
 import type { Person } from "../types";
 
-const STORAGE_PREFIX = "foresight_profileImageUrl_";
+const STORAGE_PREFIX = "foresightatlas_profileImageUrl_";
 
 export function getProfileImageOverride(personId: string): string | null {
   if (typeof window === "undefined") return null;

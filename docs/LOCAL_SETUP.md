@@ -1,6 +1,6 @@
 # Run the whole app locally (handoff for tech)
 
-One-page guide to get the Foresight Map app running and served on a single machine.
+One-page guide to get the Foresight Atlas app running and served on a single machine.
 
 ---
 
@@ -14,8 +14,8 @@ One-page guide to get the Foresight Map app running and served on a single machi
 ## 2. Repo and install
 
 ```bash
-git clone https://github.com/bradleycr/Foresightmap.git
-cd Foresightmap
+git clone https://github.com/bradleycr/foresightatlas.git
+cd foresightatlas
 pnpm install
 ```
 
@@ -130,8 +130,8 @@ Then open **http://localhost:5173** (Vite default) or **http://localhost:3000** 
 Build and run with env from `.env.local` (use **GOOGLE_SERVICE_ACCOUNT_KEY** with the full JSON in `.env.local`, since the key file in `keys/` is not copied into the image):
 
 ```bash
-docker build -t foresightmap .
-docker run --env-file .env.local -p 3001:3001 foresightmap
+docker build -t foresightatlas .
+docker run --env-file .env.local -p 3001:3001 foresightatlas
 ```
 
 Open **http://localhost:3001**. The app talks only to the Google Sheet.
@@ -139,7 +139,7 @@ Open **http://localhost:3001**. The app talks only to the Google Sheet.
 **Using the key file with Docker:** mount the `keys` folder and set the path inside the container:
 
 ```bash
-docker run -v "$(pwd)/keys:/app/keys" -e SPREADSHEET_ID=your-sheet-id -e GOOGLE_APPLICATION_CREDENTIALS=/app/keys/service-account.json -p 3001:3001 foresightmap
+docker run -v "$(pwd)/keys:/app/keys" -e SPREADSHEET_ID=your-sheet-id -e GOOGLE_APPLICATION_CREDENTIALS=/app/keys/service-account.json -p 3001:3001 foresightatlas
 ```
 
 ---

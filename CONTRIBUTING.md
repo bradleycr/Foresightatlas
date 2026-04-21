@@ -4,7 +4,7 @@ Thank you for helping improve this project. By participating, you agree to uphol
 
 ## Ways to contribute
 
-- **Report bugs** — Open an [issue](https://github.com/bradleycr/Foresightmap/issues); use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml) when it helps.
+- **Report bugs** — Open an [issue](https://github.com/bradleycr/foresightatlas/issues); use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml) when it helps.
 - **Suggest features** — Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml) or a clear free-form issue.
 - **Documentation** — Fixes and clarifications in `docs/`, `README.md`, and `AGENTS.md` are welcome.
 - **Code** — Pull requests should be **focused** (one logical change per PR is easiest to review).
@@ -14,8 +14,8 @@ Thank you for helping improve this project. By participating, you agree to uphol
 1. **Fork and clone** (or clone directly if you have access)
 
    ```bash
-   git clone https://github.com/bradleycr/Foresightmap.git
-   cd Foresightmap
+   git clone https://github.com/bradleycr/foresightatlas.git
+   cd foresightatlas
    pnpm install
    ```
 
@@ -70,6 +70,6 @@ Maintainers will review when they can; smaller PRs tend to merge faster.
 
 ## Questions
 
-Open a [GitHub issue](https://github.com/bradleycr/Foresightmap/issues) for concrete bugs or tasks. If the repo has **Discussions** enabled, you can use those for broader questions.
+Open a [GitHub issue](https://github.com/bradleycr/foresightatlas/issues) for concrete bugs or tasks. If the repo has **Discussions** enabled, you can use those for broader questions.
 
 Thanks for contributing.

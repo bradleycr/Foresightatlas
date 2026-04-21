@@ -1,17 +1,17 @@
 {
-    "name": "foresightmap",
+    "name": "foresightatlas",
     "version": "0.1.0",
     "description": "Foresight Atlas — internal directory, map, and node programming for the Foresight Institute community",
     "private": true,
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/bradleycr/Foresightmap.git"
+        "url": "https://github.com/bradleycr/foresightatlas.git"
     },
     "bugs": {
-        "url": "https://github.com/bradleycr/Foresightmap/issues"
+        "url": "https://github.com/bradleycr/foresightatlas/issues"
     },
-    "homepage": "https://github.com/bradleycr/Foresightmap#readme",
+    "homepage": "https://github.com/bradleycr/foresightatlas#readme",
     "keywords": [
         "foresight",
         "map",

@@ -16,7 +16,7 @@
  * a browser-wide session.
  */
 
-const RETURN_URL_KEY = "foresightmap_return_url";
+const RETURN_URL_KEY = "foresightatlas_return_url";
 
 /** Persist the URL the member should come back to after signing in. */
 export function setPostLoginReturnUrl(pathAndQuery: string): void {

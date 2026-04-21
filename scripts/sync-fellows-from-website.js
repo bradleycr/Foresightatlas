@@ -65,7 +65,7 @@ function slugify(value) {
     .slice(0, 80);
 }
 
-const UA = "ForesightMap-Sync/1.0 (sync-fellows-from-website)";
+const UA = "ForesightAtlas-Sync/1.0 (sync-fellows-from-website)";
 
 /** Reject bios that are boolean, menu text, or breadcrumb-only. */
 function isValidBio(s) {

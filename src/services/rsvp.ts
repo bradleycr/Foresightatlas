@@ -25,7 +25,7 @@ import { RSVPRecord, RSVPStatus, RSVPSummary } from "../types/events";
 import { getApiBase } from "./api-base";
 import { publishDataChanged, reportSyncError } from "./sync";
 
-const STORAGE_KEY = "foresightmap_rsvps";
+const STORAGE_KEY = "foresightatlas_rsvps";
 
 /**
  * Build headers for write requests. Includes the optional shared secret
