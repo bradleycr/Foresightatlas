@@ -68,6 +68,14 @@ function normalizeLumaEventUrl(value) {
   return `https://lu.ma/${raw.replace(/^\/+/, "")}`;
 }
 
+function isUrlLikeLocation(value) {
+  const s = String(value || "").trim().toLowerCase();
+  if (!s) return false;
+  if (/^https?:\/\//.test(s)) return true;
+  if (s.includes("zoom.us/") || s.includes("meet.google.com/")) return true;
+  return false;
+}
+
 /** Map a Luma event type string to our EventType enum. */
 function mapLumaType(lumaEvent) {
   const name = (lumaEvent.name || "").toLowerCase();
@@ -81,17 +89,53 @@ function mapLumaType(lumaEvent) {
   return "other";
 }
 
-/** Guess the node slug from a Luma event's location or geo fields. If no node-specific location, returns "global". */
+/**
+ * Decide which Foresight node a Luma event belongs to.
+ *
+ * Keep this in sync with the server's live merge (`server/luma-merge.js`) so
+ * deploy-time `events.json` and runtime API results agree.
+ */
 function guessNode(lumaEvent) {
-  const loc = [
-    lumaEvent.geo_address_info?.city || "",
-    lumaEvent.geo_address_info?.region || "",
-    lumaEvent.name || "",
-    lumaEvent.description || "",
-  ].join(" ").toLowerCase();
+  const geo = lumaEvent.geo_address_info || {};
+  const city = String(geo.city || "").toLowerCase().trim();
+  const region = String(geo.region || "").toLowerCase().trim();
+  const country = String(geo.country || "").toLowerCase().trim();
+  const countryCode = String(geo.country_code || "").toLowerCase().trim();
+  const full = String(geo.full_address || geo.city_state || geo.address || "").toLowerCase();
+  const name = String(lumaEvent.name || "").toLowerCase();
+  const desc = String(lumaEvent.description || "").toLowerCase();
+  const tz = String(lumaEvent.timezone || "").toLowerCase();
 
-  if (loc.includes("berlin") || loc.includes("germany")) return "berlin";
-  if (loc.includes("san francisco") || loc.includes("sf") || loc.includes("bay area")) return "sf";
+  // ── Berlin / Germany signals ────────────────────────────────────────
+  const isBerlin =
+    city === "berlin" ||
+    /\bberlin\b/.test(full) ||
+    /\bberlin\b/.test(name) ||
+    country === "germany" ||
+    country === "deutschland" ||
+    countryCode === "de" ||
+    tz === "europe/berlin";
+  if (isBerlin) return "berlin";
+
+  // ── San Francisco / Bay Area signals ────────────────────────────────
+  const bayAreaCities = new Set([
+    "san francisco", "oakland", "berkeley", "palo alto", "mountain view",
+    "menlo park", "san jose", "sunnyvale", "san mateo", "redwood city",
+    "emeryville", "daly city", "south san francisco", "fremont", "cupertino",
+    "santa clara", "hayward", "richmond", "alameda",
+  ]);
+  const isSf =
+    bayAreaCities.has(city) ||
+    /\bsan francisco\b|\bbay area\b|\bsilicon valley\b|\boakland\b|\bberkeley\b|\bpalo alto\b/.test(full) ||
+    /\bsan francisco\b|\bbay area\b|\bsf\b/.test(name) ||
+    region === "california" ||
+    tz === "america/los_angeles";
+  if (isSf) return "sf";
+
+  // ── Description keywords (weakest; only if nothing else matched) ────
+  if (/\bberlin\b/.test(desc)) return "berlin";
+  if (/\bsan francisco\b|\bbay area\b/.test(desc)) return "sf";
+
   return "global";
 }
 
@@ -211,11 +255,26 @@ async function fetchLumaEvents() {
   return allEvents.map((ev) => {
     const urlLink = normalizeLumaEventUrl(ev.url);
     const externalLink = urlLink || (ev.api_id ? `https://lu.ma/e/${ev.api_id}` : null);
-    const location = ev.geo_address_info?.full_address
-      || ev.geo_address_info?.city
-      || ev.meeting_url
-      || "TBA";
-    const nodeSlug = isLocationUnspecified(location) ? "global" : guessNode(ev);
+    const location =
+      ev.geo_address_info?.full_address ||
+      ev.geo_address_info?.city_state ||
+      ev.geo_address_info?.address ||
+      ev.geo_address_info?.city ||
+      ev.meeting_url ||
+      "TBA";
+    const geoHasSignal = Boolean(
+      ev.geo_address_info?.full_address ||
+      ev.geo_address_info?.city_state ||
+      ev.geo_address_info?.address ||
+      ev.geo_address_info?.city ||
+      ev.geo_address_info?.region ||
+      ev.geo_address_info?.country ||
+      ev.geo_address_info?.country_code,
+    );
+    const nodeSlug =
+      isLocationUnspecified(location) || (isUrlLikeLocation(location) && !geoHasSignal)
+        ? "global"
+        : guessNode(ev);
     const coverUrl = (ev.cover_url && String(ev.cover_url).trim()) || null;
     return {
       _lumaApiId: ev.api_id,

@@ -23,6 +23,14 @@ function normalizeLumaEventUrl(value) {
   return `https://lu.ma/${raw.replace(/^\/+/, "")}`;
 }
 
+function isUrlLikeLocation(value) {
+  const s = String(value || "").trim().toLowerCase();
+  if (!s) return false;
+  if (/^https?:\/\//.test(s)) return true;
+  if (s.includes("zoom.us/") || s.includes("meet.google.com/")) return true;
+  return false;
+}
+
 function mapLumaType(lumaEvent) {
   const name = (lumaEvent.name || "").toLowerCase();
   if (name.includes("coworking")) return "coworking";
@@ -56,7 +64,7 @@ function guessNode(lumaEvent) {
   const region = String(geo.region || "").toLowerCase().trim();
   const country = String(geo.country || "").toLowerCase().trim();
   const countryCode = String(geo.country_code || "").toLowerCase().trim();
-  const full = String(geo.full_address || geo.address || "").toLowerCase();
+  const full = String(geo.full_address || geo.city_state || geo.address || "").toLowerCase();
   const name = String(lumaEvent.name || "").toLowerCase();
   const desc = String(lumaEvent.description || "").toLowerCase();
   const tz = String(lumaEvent.timezone || "").toLowerCase();
@@ -144,10 +152,24 @@ async function fetchLumaEvents() {
     const externalLink = urlLink || (ev.api_id ? `https://lu.ma/e/${ev.api_id}` : null);
     const location =
       ev.geo_address_info?.full_address ||
+      ev.geo_address_info?.city_state ||
+      ev.geo_address_info?.address ||
       ev.geo_address_info?.city ||
       ev.meeting_url ||
       "TBA";
-    const nodeSlug = isLocationUnspecified(location) ? "global" : guessNode(ev);
+    const geoHasSignal = Boolean(
+      ev.geo_address_info?.full_address ||
+      ev.geo_address_info?.city_state ||
+      ev.geo_address_info?.address ||
+      ev.geo_address_info?.city ||
+      ev.geo_address_info?.region ||
+      ev.geo_address_info?.country ||
+      ev.geo_address_info?.country_code,
+    );
+    const nodeSlug =
+      isLocationUnspecified(location) || (isUrlLikeLocation(location) && !geoHasSignal)
+        ? "global"
+        : guessNode(ev);
     const coverUrl = (ev.cover_url && String(ev.cover_url).trim()) || null;
     return {
       _lumaApiId: ev.api_id,
