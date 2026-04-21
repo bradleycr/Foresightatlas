@@ -19,6 +19,8 @@ import { Textarea } from "../components/ui/textarea";
 import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
 // Foresight pin icon (same as map markers)
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
+import { NanowheelBadge } from "../components/NanowheelBadge";
+import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import {
   Select,
   SelectContent,
@@ -768,22 +770,26 @@ export function ProfilePage({
             className="border-b border-gray-200/80 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
             style={{ background: `linear-gradient(135deg, ${"#f0f9ff"} 0%, ${"#ecfdf5"} 50%, ${"#faf5ff"} 100%)` }}
           >
-            <div className="flex min-w-0 items-start gap-4 sm:gap-5">
-              <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16">
-                <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
-                <span className="relative z-10 text-sm font-medium text-sky-700/85 sm:text-base">{initials}</span>
+            <div className="flex min-w-0 items-start justify-between gap-4 sm:gap-5">
+              <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+                <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16">
+                  <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
+                  <span className="relative z-10 text-sm font-medium text-sky-700/85 sm:text-base">{initials}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-sky-600/90 sm:text-sm">
+                    Your directory profile
+                  </p>
+                  <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+                    {draft.fullName}
+                  </h1>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
+                    Edit below; Save and Sign out are at the bottom.
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-sky-600/90 sm:text-sm">
-                  Your directory profile
-                </p>
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
-                  {draft.fullName}
-                </h1>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-                  Edit below; Save and Sign out are at the bottom.
-                </p>
-              </div>
+              {/* Nanowheel hero — your running count of node check-ins + RSVPs. */}
+              <NanowheelHero personId={draft.id} />
             </div>
           </div>
 
@@ -1382,6 +1388,47 @@ function LocationCheckNotice({ state }: { state: LocationCheckState }) {
         aria-hidden
       />
       <span>{state.message}</span>
+    </div>
+  );
+}
+
+/* ── NanowheelHero ────────────────────────────────────────────────────
+ *
+ * Shown in the profile page header for the signed-in member. Loads the live
+ * nanowheel total from the API in the background and renders the badge at
+ * hero size so it's the first thing a returning member sees on their profile.
+ *
+ * When the count is zero we still show the zero — it's a gentle nudge toward
+ * the first check-in rather than a hidden stat — but muted slightly so it
+ * doesn't shout.
+ */
+function NanowheelHero({ personId }: { personId: string }) {
+  const [summary, setSummary] = useState<NanowheelSummary | null>(null);
+
+  useEffect(() => {
+    if (!personId) {
+      setSummary(null);
+      return;
+    }
+    let cancelled = false;
+    void getNanowheelSummary(personId).then((result) => {
+      if (!cancelled) setSummary(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [personId]);
+
+  const count = summary?.total ?? 0;
+
+  return (
+    <div className="hidden shrink-0 sm:block">
+      <NanowheelBadge
+        count={count}
+        size="lg"
+        ariaLabel={`You have ${count} nanowheels`}
+        className={count === 0 ? "opacity-75" : undefined}
+      />
     </div>
   );
 }

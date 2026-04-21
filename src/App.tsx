@@ -20,6 +20,7 @@ import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
 import { CalendarPage } from "./pages/CalendarPage";
+import { CheckInPage } from "./pages/CheckInPage";
 import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
@@ -97,7 +98,15 @@ export default function App() {
     const handlePop = () => setRoute(getRoutePath());
     const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar"];
     const current = getRoutePath();
-    if (!knownRoutes.includes(current)) {
+    // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
+    // so we match them with a prefix rather than an exact list entry. Bare
+    // "/checkin" falls through to the map home; users hit it from the QR code.
+    const isCheckInRoute =
+      current === "/checkin" ||
+      current === "/checkin/berlin" ||
+      current === "/checkin/sf" ||
+      current === "/checkin/global";
+    if (!knownRoutes.includes(current) && !isCheckInRoute) {
       window.history.replaceState({}, "", buildFullPath("/"));
       setRoute("/");
     }
@@ -266,7 +275,13 @@ export default function App() {
   const handleIdentityClear = useCallback(() => {
     clearIdentity();
     setIdentityState(null);
-    if (route === "/profile" || route === "/calendar") {
+    // Signed-out users shouldn't be left stranded on an auth-gated page.
+    // Redirect from profile, calendar, and the check-in landing routes.
+    if (
+      route === "/profile" ||
+      route === "/calendar" ||
+      route.startsWith("/checkin")
+    ) {
       navigate("/");
     }
   }, [navigate, route]);
@@ -355,6 +370,20 @@ export default function App() {
   const isProfileRoute = route === "/profile";
   const isConnectionsRoute = route === "/connections";
   const isCalendarRoute = route === "/calendar";
+  /**
+   * Check-in route detection. Supports the three canonical slugs plus a bare
+   * "/checkin" (we default to Berlin when signed in to avoid a dead-end 404;
+   * admins can always tap the explicit URL on their QR signage).
+   */
+  const checkInSlug: NodeSlug | null =
+    route === "/checkin" || route === "/checkin/berlin"
+      ? "berlin"
+      : route === "/checkin/sf"
+        ? "sf"
+        : route === "/checkin/global"
+          ? "global"
+          : null;
+  const isCheckInRoute = checkInSlug !== null;
   const profileCreateMode =
     isProfileRoute &&
     typeof window !== "undefined" &&
@@ -406,6 +435,14 @@ export default function App() {
       identity={identity}
       signedInPerson={signedInPerson}
       onOpenProfile={() => navigate("/profile")}
+    />
+  ) : isCheckInRoute && checkInSlug ? (
+    <CheckInPage
+      nodeSlug={checkInSlug}
+      identity={identity}
+      signedInPerson={signedInPerson}
+      onOpenProfile={() => navigate("/profile")}
+      onNavigateHome={() => navigate("/")}
     />
   ) : (
     <>

@@ -68,6 +68,8 @@ import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { isConnected, toggleConnection } from "../services/connections";
 import { buildGoogleCalendarTemplateUrl } from "../utils/googleCalendarTemplate";
+import { NanowheelBadge } from "./NanowheelBadge";
+import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 
 /** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
 function looksLikeContact(value: string | null | undefined): boolean {
@@ -157,9 +159,30 @@ export function PersonDetailModal({
   /** When true, show full expanded project description; otherwise truncate with "Show more". */
   const [projectDescriptionExpanded, setProjectDescriptionExpanded] = useState(false);
 
+  /**
+   * Nanowheel totals for the currently viewed person. Loaded lazily whenever
+   * a different person is opened so the modal doesn't block on the API when
+   * users are rapid-clicking through map pins.
+   */
+  const [nanowheelSummary, setNanowheelSummary] = useState<NanowheelSummary | null>(null);
+
   useEffect(() => {
     setProjectDescriptionExpanded(false);
   }, [person?.id]);
+
+  useEffect(() => {
+    // Only fetch when a person is actually on screen; clear between swaps so
+    // the previous person's badge doesn't flash during the transition.
+    setNanowheelSummary(null);
+    if (!isOpen || !person?.id) return;
+    let cancelled = false;
+    void getNanowheelSummary(person.id).then((summary) => {
+      if (!cancelled) setNanowheelSummary(summary);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, person?.id]);
   const isMobile = useIsMobile();
 
   // Lock body scroll when modal is open
@@ -634,9 +657,19 @@ export function PersonDetailModal({
                       placeholder="Full Name"
                     />
                   ) : (
-                    <h2 className="person-detail-title">
-                      {displayPerson.fullName}
-                    </h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="person-detail-title">
+                        {displayPerson.fullName}
+                      </h2>
+                      {/* Inline nanowheel count — quiet until someone has at least one wheel. */}
+                      {nanowheelSummary && nanowheelSummary.total > 0 && (
+                        <NanowheelBadge
+                          count={nanowheelSummary.total}
+                          size="sm"
+                          ariaLabel={`${displayPerson.fullName} has earned ${nanowheelSummary.total} nanowheels`}
+                        />
+                      )}
+                    </div>
                   )}
                   </div>
                 </div>
