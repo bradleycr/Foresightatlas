@@ -96,7 +96,7 @@ function mapLumaType(lumaEvent) {
  * deploy-time `events.json` and runtime API results agree.
  */
 function guessNode(lumaEvent) {
-  const geo = lumaEvent.geo_address_info || {};
+  const geo = lumaEvent.geo_address_json || lumaEvent.geo_address_info || {};
   const city = String(geo.city || "").toLowerCase().trim();
   const region = String(geo.region || "").toLowerCase().trim();
   const country = String(geo.country || "").toLowerCase().trim();
@@ -126,15 +126,15 @@ function guessNode(lumaEvent) {
   ]);
   const isSf =
     bayAreaCities.has(city) ||
-    /\bsan francisco\b|\bbay area\b|\bsilicon valley\b|\boakland\b|\bberkeley\b|\bpalo alto\b/.test(full) ||
-    /\bsan francisco\b|\bbay area\b|\bsf\b/.test(name) ||
+    /\bsan frans?cisco\b|\bbay ar(?:ea|e)\b|\bsilicon valley\b|\boakland\b|\bberkeley\b|\bpalo alto\b|\bthe fold\b/.test(full) ||
+    /\bsan frans?cisco\b|\bbay ar(?:ea|e)\b|\bsf\b|\bthe fold\b/.test(name) ||
     region === "california" ||
     tz === "america/los_angeles";
   if (isSf) return "sf";
 
   // ── Description keywords (weakest; only if nothing else matched) ────
   if (/\bberlin\b/.test(desc)) return "berlin";
-  if (/\bsan francisco\b|\bbay area\b/.test(desc)) return "sf";
+  if (/\bsan frans?cisco\b|\bbay ar(?:ea|e)\b|\bthe fold\b/.test(desc)) return "sf";
 
   return "global";
 }
@@ -256,6 +256,10 @@ async function fetchLumaEvents() {
     const urlLink = normalizeLumaEventUrl(ev.url);
     const externalLink = urlLink || (ev.api_id ? `https://lu.ma/e/${ev.api_id}` : null);
     const location =
+      ev.geo_address_json?.full_address ||
+      ev.geo_address_json?.city_state ||
+      ev.geo_address_json?.address ||
+      ev.geo_address_json?.city ||
       ev.geo_address_info?.full_address ||
       ev.geo_address_info?.city_state ||
       ev.geo_address_info?.address ||
@@ -263,6 +267,13 @@ async function fetchLumaEvents() {
       ev.meeting_url ||
       "TBA";
     const geoHasSignal = Boolean(
+      ev.geo_address_json?.full_address ||
+      ev.geo_address_json?.city_state ||
+      ev.geo_address_json?.address ||
+      ev.geo_address_json?.city ||
+      ev.geo_address_json?.region ||
+      ev.geo_address_json?.country ||
+      ev.geo_address_json?.country_code ||
       ev.geo_address_info?.full_address ||
       ev.geo_address_info?.city_state ||
       ev.geo_address_info?.address ||
