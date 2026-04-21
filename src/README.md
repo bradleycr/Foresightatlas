@@ -1,4 +1,4 @@
-# Foresight Atlas (frontend)
+# The Foresight Atlas (frontend)
 
 React + TypeScript UI: map, programming pages, profiles, and community features.
 

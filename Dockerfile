@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Foresight Atlas — self-hosted production image
+# The Foresight Atlas — self-hosted production image
 #
 # Runs the Express API server (port 3001) and, when SIGNAL_* env vars are set,
 # the Signal check-in poller inside the same process. Data is read/written to

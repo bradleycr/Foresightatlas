@@ -4,14 +4,14 @@
 
 ### Overview
 
-**Foresight Atlas** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF, Global) for event calendars. **The Google Sheet is the single source of truth.** The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime.
+**The Foresight Atlas** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF, Global) for event calendars. **The Google Sheet is the single source of truth.** The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime.
 
 ### Naming and copy
 
-- **App title:** “Foresight Atlas” (with optional “(beta)” marker in the header/footer).
+- **App title:** “The Foresight Atlas” (with optional “(beta)” marker in the header/footer).
 - **Subtext:** “Internal tool — Connecting Grantees, Fellows, Nodees, and our programming”.
 - **Nav:** Desktop = “Map” + “Programming” (dropdown: Berlin, San Francisco, Global). Mobile hamburger = “Map”, “Berlin node”, “SF node”, “Global programming”.
-- **Footer:** “Foresight Institute · Foresight Atlas · {year}”.
+- **Footer:** “Foresight Institute · The Foresight Atlas · {year}”.
 
 ### Services
 

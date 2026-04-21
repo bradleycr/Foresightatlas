@@ -62,7 +62,7 @@ export function AppHeader({
     "Internal tool — Connecting Grantees, Fellows, Nodees, and our programming";
   /*
    * Tiny beta marker — inline sibling of the title so it sits on the same
-   * baseline as “Foresight Atlas”.
+   * baseline as “The Foresight Atlas”.
    */
   const betaMark = (
     <span
@@ -160,7 +160,7 @@ export function AppHeader({
                  * the same line as the last word via non-breaking space.
                  */}
                 <span className="min-w-0 text-[0.9375rem] leading-snug sm:text-base md:text-xl md:leading-tight">
-                  Foresight Atlas{betaMark}
+                  The Foresight Atlas{betaMark}
                 </span>
               </h1>
               <p className="mt-1.5 max-w-[min(100%,38rem)] text-pretty text-[0.8125rem] leading-relaxed text-gray-600 sm:text-[0.8125rem] md:mt-2 md:text-sm md:leading-relaxed">

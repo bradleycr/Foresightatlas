@@ -1,4 +1,4 @@
-# Foresight Atlas
+# The Foresight Atlas
 
 **Internal tool** — connecting grantees, fellows, nodees, and our programming. A web app for visualizing where Foresight Institute grantees, fellows, and prize winners are located, where they are traveling, and what’s on at each node.
 

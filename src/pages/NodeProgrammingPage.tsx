@@ -5,7 +5,7 @@
  *   1. Events  — calendar of upcoming programming (existing)
  *   2. The Table — week-view grid showing who is at the node each day
  *
- * Design language mirrors the main map (Foresight Atlas) pastel-gradient sidebar:
+ * Design language mirrors the main map (The Foresight Atlas) pastel-gradient sidebar:
  * white cards with subtle borders/shadows, node-specific pastel accents,
  * and a soft gradient tint on the page header.
  *

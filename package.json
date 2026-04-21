@@ -1,7 +1,7 @@
 {
     "name": "foresightatlas",
     "version": "0.1.0",
-    "description": "Foresight Atlas — internal directory, map, and node programming for the Foresight Institute community",
+    "description": "The Foresight Atlas — internal directory, map, and node programming for the Foresight Institute community",
     "private": true,
     "license": "MIT",
     "repository": {
