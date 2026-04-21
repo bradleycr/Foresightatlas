@@ -1,7 +1,8 @@
 /**
  * Express API for local development (and optional static hosting of dist/).
  *
- * Reads and writes the Google Sheet as source of truth. Production on Vercel uses `api/` handlers.
+ * Sheet-backed entrypoint. Production on Vercel uses `api/` handlers.
+ * For file-backed local mock storage, use `server/index.mock.js`.
  */
 
 const path = require("path");
@@ -19,6 +20,7 @@ const {
   changeDirectoryPassword,
   getDirectorySessionFromRequest,
 } = require("./directory-auth");
+const calendarEventsHandler = require("../api/calendar-events");
 
 const app = express();
 const DEFAULT_PORT = 3001;
@@ -139,6 +141,8 @@ app.post("/api/profile", async (req, res) => {
   }
 });
 
+app.get("/api/calendar-events", calendarEventsHandler);
+
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -167,7 +171,8 @@ app.get("*", (req, res, next) => {
 // Start server
 if (require.main === module) {
   const portMin = Number(process.env.PORT) || DEFAULT_PORT;
-  const portMax = Math.min(portMin + 9, 3010);
+  const hasExplicitPort = Number.isFinite(Number(process.env.PORT)) && String(process.env.PORT).trim() !== "";
+  const portMax = hasExplicitPort ? portMin : Math.min(portMin + 9, 3010);
 
   function tryListen(port) {
     const server = app.listen(port, () => {

@@ -10,6 +10,7 @@ const LUMA_BASE = "https://public-api.luma.com";
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 const { isLocationUnspecified } = require("../scripts/sheet-schema.js");
+const { isLocalMockMode, getMockLumaEvents } = require("./local-storage");
 
 /** Cache Luma fetch only; sheet events are always merged fresh (avoids stale sheet rows). */
 let cache = null; // { lumaEvents: Array, expiresAt: number }
@@ -48,7 +49,10 @@ function guessNode(lumaEvent) {
 
 async function fetchLumaEvents() {
   const apiKey = process.env.LUMA_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) {
+    if (isLocalMockMode()) return getMockLumaEvents();
+    return [];
+  }
 
   const headers = { "x-luma-api-key": apiKey };
   const allEvents = [];

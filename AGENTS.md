@@ -33,6 +33,7 @@
 - **Vite port.** Dev server runs on port **3000** (set in `vite.config.ts`), not Vite’s default 5173.
 - **Routes.** `/` = map, `/berlin` = Berlin Programming, `/sf` = SF Programming. Base-path-aware for GitHub Pages.
 - **Mobile map behavior.** On mobile, when the filtered marker set is small (≤50), the map fits the view to those markers so users don’t have to pan to find grantees or event RSVPs.
+- **Mock strategy (important).** Follow existing config-driven backend injection: `pnpm dev` selects `server/index.js` (sheet-backed) vs `server/index.mock.js` (file-backed) based on credentials in `scripts/start-dev.js`. Frontend services should stay API-first and should not add separate frontend-only mock toggles for core data flows.
 - **Google Sheets.** Source of truth for people and directory auth. See `docs/SHEETS_SYNC.md`.
   - **Runtime:** GET `/api/database` and directory login read from the sheet. No static database.json.
   - **Events:** Programming events (including Berlin coworking Wednesdays) live on the **Events** tab. Edit events directly in the sheet; no scripts needed. See `docs/LUMA_INTEGRATION.md`.

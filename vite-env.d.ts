@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_FORESIGHT_WRITE_SECRET?: string;
   /** Absolute API origin (no trailing slash), e.g. https://partner.example.com */
   readonly VITE_API_ORIGIN?: string;
+  /** Invite this email to contribute to the shared node calendar. */
+  readonly VITE_CALENDAR_INVITE_EMAIL?: string;
 }
 
 interface ImportMeta {

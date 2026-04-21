@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark } from "lucide-react";
+import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark, CalendarDays } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
@@ -11,7 +11,7 @@ import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
 import { cn } from "./ui/utils";
 
 interface AppHeaderProps {
-  /** Current route path: "/", "/berlin", "/sf" */
+  /** Current route path: "/", "/berlin", "/sf", "/calendar", etc. */
   route: string;
   /** Navigate to a path (updates history and scroll) */
   navigate: (path: string) => void;
@@ -376,6 +376,18 @@ export function AppHeader({
                     >
                       <Bookmark className="size-4" />
                       Connections
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        closeAccountDialog();
+                        navigate("/calendar");
+                      }}
+                      className="min-h-[44px] w-full"
+                    >
+                      <CalendarDays className="size-4" />
+                      Calendar
                     </Button>
                     <Button
                       type="button"
