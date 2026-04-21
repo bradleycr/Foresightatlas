@@ -1057,56 +1057,118 @@ export function PersonDetailModal({
                 </div>
               </div>
 
-              {/* Events, travel & residencies — full width below grid; events first, then travel windows */}
-              <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                  <h3 className="person-detail-section-title flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 shrink-0" />
-                    Events, travel & residencies
-                  </h3>
-                  {isEditing && isAdmin && (
-                    <Button size="sm" onClick={handleAddTravelWindow} className="bg-teal-600 hover:bg-teal-700">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add travel
-                    </Button>
-                  )}
-                </div>
-                {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
-                {editingTravelWindow ? (
-                  <TravelWindowEditForm travelWindow={editingTravelWindow} onChange={setEditingTravelWindow} onSave={handleSaveTravelWindow} onCancel={() => setEditingTravelWindow(null)} isSaving={isSaving} />
-                ) : (
-                  <div className="space-y-3">
-                    {personTravelWindows.length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">No travel windows</p>
-                    ) : (
-                      personTravelWindows.map((tw) => (
-                        <div key={tw.id} className="p-4 sm:p-5 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold text-gray-900">{tw.title}</h4>
-                              <p className="text-sm text-gray-600 mt-0.5">{tw.city}, {tw.country}</p>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
-                                <Calendar className="h-3 w-3" />
-                                {formatDateRange(tw.startDate, tw.endDate)}
+              {/*
+               * Events, travel & residencies
+               * ----------------------------
+               * Two separate, independent streams live here:
+               *
+               *   1. Events the person is going to (RSVPs with status="going"),
+               *      rendered by <PersonEventRSVPs/>. Hides itself when empty.
+               *   2. Travel windows — admin-curated residencies/visits stored
+               *      on the person. Purely informational: they do not move
+               *      the person's pin on the map.
+               *
+               * The whole section is suppressed when both streams are empty
+               * (and we're not actively editing) so we don't show a lonely
+               * "No travel windows" line on a card that has nothing to say.
+               * When editing as admin we always show the section so the
+               * "Add travel" action is reachable.
+               */}
+              {(() => {
+                const hasTravelWindows = personTravelWindows.length > 0;
+                const isAdminEditing = isEditing && isAdmin;
+                const shouldRenderTravelList =
+                  isAdminEditing || (!isEditing && hasTravelWindows) || !!editingTravelWindow;
+                const shouldRenderSection =
+                  !isEditing || isAdminEditing || !!editingTravelWindow;
+                if (!shouldRenderSection) return null;
+                return (
+                  <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                      <h3 className="person-detail-section-title flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        Events, travel &amp; residencies
+                      </h3>
+                      {isAdminEditing && (
+                        <Button
+                          size="sm"
+                          onClick={handleAddTravelWindow}
+                          className="bg-teal-600 hover:bg-teal-700"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add travel
+                        </Button>
+                      )}
+                    </div>
+                    {!isEditing && <PersonEventRSVPs personId={person.id} events={events} />}
+                    {editingTravelWindow ? (
+                      <TravelWindowEditForm
+                        travelWindow={editingTravelWindow}
+                        onChange={setEditingTravelWindow}
+                        onSave={handleSaveTravelWindow}
+                        onCancel={() => setEditingTravelWindow(null)}
+                        isSaving={isSaving}
+                      />
+                    ) : shouldRenderTravelList ? (
+                      <div className="space-y-3">
+                        {hasTravelWindows
+                          ? personTravelWindows.map((tw) => (
+                              <div
+                                key={tw.id}
+                                className="p-4 sm:p-5 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-gray-100/60 transition-colors"
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="font-semibold text-gray-900">{tw.title}</h4>
+                                    <p className="text-sm text-gray-600 mt-0.5">
+                                      {tw.city}, {tw.country}
+                                    </p>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                      <Calendar className="h-3 w-3" />
+                                      {formatDateRange(tw.startDate, tw.endDate)}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {tw.type}
+                                    </Badge>
+                                    {isAdminEditing && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleEditTravelWindow(tw)}
+                                          className="h-8 w-8 p-0"
+                                        >
+                                          <Edit className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleDeleteTravelWindow(tw)}
+                                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                {tw.notes && (
+                                  <p className="text-sm text-gray-600 mt-3 italic">{tw.notes}</p>
+                                )}
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">{tw.type}</Badge>
-                              {isEditing && isAdmin && (
-                                <>
-                                  <Button size="sm" variant="outline" onClick={() => handleEditTravelWindow(tw)} className="h-8 w-8 p-0"><Edit className="h-3 w-3" /></Button>
-                                  <Button size="sm" variant="outline" onClick={() => handleDeleteTravelWindow(tw)} className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"><Trash2 className="h-3 w-3" /></Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {tw.notes && <p className="text-sm text-gray-600 mt-3 italic">{tw.notes}</p>}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </section>
+                            ))
+                          : isAdminEditing && (
+                              <p className="text-sm text-gray-500 italic">
+                                No travel windows yet. Use "Add travel" above to add one.
+                              </p>
+                            )}
+                      </div>
+                    ) : null}
+                  </section>
+                );
+              })()}
 
               {/* Node check-in schedule — upcoming days they plan to be at a node */}
               {!isEditing && <PersonCheckIns personId={person.id} />}

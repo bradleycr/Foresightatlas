@@ -169,7 +169,13 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
             </TogglePill>
           </QuickRow>
 
-          {/* Year */}
+          {/*
+           * Year filter is intentionally cohort-only — it narrows the people
+           * shown on the map by their cohort year, it does NOT move any pin.
+           * The former "View by month" pivot was removed with the map
+           * simplification: every person now appears at a single pin (their
+           * profile location) regardless of when you're looking.
+           */}
           <QuickRow label="Active in year">
             <TogglePill active={filters.year === null} activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => setYear(null)}>
               Any year
@@ -180,38 +186,6 @@ export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCou
               </TogglePill>
             ))}
           </QuickRow>
-
-          {/* Month (current year only) — see where people will be in a given month */}
-          {filters.year === currentYear && (
-            <QuickRow label="View by month">
-              <TogglePill
-                active={filters.granularity === "Year"}
-                activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
-                onClick={() => onFiltersChange({ ...filters, granularity: "Year" })}
-              >
-                Whole year
-              </TogglePill>
-              {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, i) => {
-                const isActive = filters.granularity === "Month" && filters.referenceDate && new Date(filters.referenceDate).getMonth() === i;
-                return (
-                  <TogglePill
-                    key={month}
-                    active={isActive}
-                    activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
-                    onClick={() =>
-                      onFiltersChange({
-                        ...filters,
-                        granularity: "Month",
-                        referenceDate: new Date(currentYear, i, 1).toISOString(),
-                      })
-                    }
-                  >
-                    {month}
-                  </TogglePill>
-                );
-              })}
-            </QuickRow>
-          )}
         </div>
       )}
     </div>

@@ -1,10 +1,22 @@
+/**
+ * MapView — a single pin per person, always at their profile location.
+ *
+ * Design intent (2026 simplification): we deliberately keep the map surface
+ * boring and predictable. A person shows up at **exactly one** place on the
+ * map: the city + coordinates they put in their profile. Travel windows and
+ * event RSVPs do not move pins; they are purely informational chrome on the
+ * person's card (next-travel teaser, "Attending" line). This eliminates a
+ * whole class of bugs (reverse-geocode mismatches, duplicate pins for a
+ * person with overlapping trips, stale month/week pivots) and matches the
+ * mental model people actually use: "where does this person live?"
+ */
+
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L, { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
 import { getPersonRSVPs } from "../services/rsvp";
-import { getNode } from "../data/nodes";
 import { FellowCard, type AttendingEvent } from "./FellowCard";
 import { InlineFilters } from "./InlineFilters";
 import { List, X } from "lucide-react";
@@ -19,11 +31,16 @@ import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
 interface MapViewProps {
   filteredPeople: Person[];
+  /**
+   * Still accepted so the sidebar's FellowCard can show a "next travel" teaser,
+   * but NEVER used to place pins on the map. One person = one pin = their
+   * profile location.
+   */
   filteredTravelWindows: TravelWindow[];
-  timeWindowStart: Date;
-  timeWindowEnd: Date;
-  granularity?: "Year" | "Month" | "Week";
-  /** Loaded events (from loadEvents) for showing RSVP-based locations in month/week view; null until loaded. */
+  /**
+   * Events the person is going to, used only for the "Attending" line on the
+   * card. Not used to move pins on the map.
+   */
   events?: NodeEvent[] | null;
   onViewPersonDetails?: (personId: string, context?: { peopleIds: string[]; label: string }) => void;
   /** Filters & setter so the sidebar can host inline quick-filters */
@@ -32,14 +49,17 @@ interface MapViewProps {
   defaultYear?: number;
 }
 
+/**
+ * A pin on the map = a location with 1..N people whose **profile** says they
+ * live there. We no longer track "why" a person is at a pin (travel window /
+ * event) because pins are only ever profile locations.
+ */
 interface MarkerData {
   city: string;
   country: string;
   coordinates: { lat: number; lng: number };
   people: Array<{
     person: Person;
-    travelWindow?: TravelWindow;
-    event?: NodeEvent;
   }>;
 }
 
@@ -288,31 +308,26 @@ function buildPopupHtml(marker: MarkerData): string {
         : `${currentCount} current · ${alumniCount} alumni`;
   const markerSummary = `${n} ${peopleWord} · ${escapeHtml(statusSummary)} — tap a name to see in list; tap profile icon for full profile`;
   const rows = marker.people
-    .map(({ person, travelWindow, event }) => {
+    .map(({ person }) => {
       const name = escapeHtml(person.fullName);
       const roleGradient = getRoleGradient(person.roleType);
       const roleStyle = `background:${roleGradient};color:${getRoleTextColor(person.roleType)}`;
-      const alumni = effectiveIsAlumni(person) ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium text-slate-50 shrink-0" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 1px solid rgba(100,116,139,0.4)">Alumni</span>' : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
+      const alumni = effectiveIsAlumni(person)
+        ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium text-slate-50 shrink-0" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 1px solid rgba(100,116,139,0.4)">Alumni</span>'
+        : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
       const focusTags = person.focusTags
         .slice(0, 3)
-        .map((tag) => `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`)
+        .map(
+          (tag) =>
+            `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`,
+        )
         .join("");
-      const travel =
-        travelWindow &&
-        `<span class="text-[11px] text-gray-500 shrink-0 truncate max-w-[90px]">${escapeHtml(
-          `${new Date(travelWindow.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${new Date(travelWindow.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-        )}</span>`;
-      const eventLabel =
-        event &&
-        `<span class="text-[11px] text-teal-600 shrink-0 truncate max-w-[120px]" title="${escapeHtml(event.title)}">${escapeHtml(event.title)} · ${escapeHtml(new Date(event.startAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}</span>`;
       return `<button type="button" class="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1 cursor-pointer" data-person-id="${escapeHtml(person.id)}">
         <span class="text-sm font-medium text-gray-900 truncate">${name}</span>
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0" style="${roleStyle}">${escapeHtml(person.roleType)}</span>
           ${alumni}
           ${focusTags}
-          ${travel || ""}
-          ${eventLabel || ""}
         </div>
       </button>`;
     })
@@ -630,9 +645,6 @@ function ImperativeMarkerClusters({
 export function MapView({
   filteredPeople,
   filteredTravelWindows,
-  timeWindowStart,
-  timeWindowEnd,
-  granularity = "Year",
   events,
   onViewPersonDetails,
   filters,
@@ -669,134 +681,75 @@ export function MapView({
     setSelectedMarkerFromList(false);
   }, [filteredPeople]);
 
-  // Reverse geocode coordinates to get actual city names (for cases where city data doesn't match coordinates)
-  // CRITICAL: We ALWAYS reverse geocode ALL coordinates to ensure popup shows the city where the pin actually is
+  /*
+   * Reverse-geocode every profile coordinate so each popup title reflects
+   * the city actually at that pin (not whatever string the sheet has). Rate
+   * limited to ~1 req/sec (Nominatim policy) and capped at 20 fresh lookups
+   * per render — plenty for the list view without hammering the API.
+   *
+   * Profile coordinates are the only source of truth for map pins, so this
+   * is blissfully straightforward: one request per unique (lat, lng).
+   */
   useEffect(() => {
     const geocodeCoordinates = async () => {
-      // Map of coordinates to expected city/country for validation
-      const coordsToGeocode = new Map<string, { expectedCity?: string; expectedCountry?: string }>();
-      
-      // Collect all unique coordinates that need geocoding, along with expected values
-      filteredPeople.forEach((person) => {
-        if (granularity === "Year") {
-          const coordinates = person.currentCoordinates;
-          if (coordinates.lat !== 0 && coordinates.lng !== 0) {
-            // ALWAYS reverse geocode to get the actual city at these coordinates
-            // This ensures popup shows the city where the pin is, not the person's data
-            const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
-            if (!geocodedCities.has(geocodeKey)) {
-              // Store expected values for validation
-              const expectedCity = person.currentCity;
-              const expectedCountry = person.currentCountry;
-              
-              // If coordinate already in map, merge expected values (take first non-empty)
-              const existing = coordsToGeocode.get(geocodeKey);
-              if (!existing || (!existing.expectedCity && expectedCity)) {
-                coordsToGeocode.set(geocodeKey, {
-                  expectedCity: existing?.expectedCity || expectedCity,
-                  expectedCountry: existing?.expectedCountry || expectedCountry,
-                });
-              }
-            }
-          }
-        } else {
-          // Month/Week view: also geocode coordinates for people without trips
-          const personTravelWindows = filteredTravelWindows.filter(
-            (tw) =>
-              tw.personId === person.id &&
-              new Date(tw.startDate) <= timeWindowEnd &&
-              new Date(tw.endDate) >= timeWindowStart
-          );
+      const coordsToGeocode = new Map<
+        string,
+        { expectedCity?: string; expectedCountry?: string }
+      >();
 
-          if (personTravelWindows.length === 0) {
-            // No trips, use current location coordinates
-            const coordinates = person.currentCoordinates;
-            if (coordinates.lat !== 0 && coordinates.lng !== 0) {
-              const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
-              if (!geocodedCities.has(geocodeKey)) {
-                const expectedCity = person.currentCity;
-                const expectedCountry = person.currentCountry;
-                const existing = coordsToGeocode.get(geocodeKey);
-                if (!existing || (!existing.expectedCity && expectedCity)) {
-                  coordsToGeocode.set(geocodeKey, {
-                    expectedCity: existing?.expectedCity || expectedCity,
-                    expectedCountry: existing?.expectedCountry || expectedCountry,
-                  });
-                }
-              }
-            }
-          } else {
-            // Also geocode trip coordinates to verify they match
-            personTravelWindows.forEach((tw) => {
-              if (tw.coordinates.lat !== 0 && tw.coordinates.lng !== 0) {
-                const geocodeKey = `${tw.coordinates.lat},${tw.coordinates.lng}`;
-                if (!geocodedCities.has(geocodeKey)) {
-                  // For travel windows, use the travel window city/country as expected
-                  const expectedCity = tw.city;
-                  const expectedCountry = tw.country;
-                  const existing = coordsToGeocode.get(geocodeKey);
-                  if (!existing || (!existing.expectedCity && expectedCity)) {
-                    coordsToGeocode.set(geocodeKey, {
-                      expectedCity: existing?.expectedCity || expectedCity,
-                      expectedCountry: existing?.expectedCountry || expectedCountry,
-                    });
-                  }
-                }
-              }
-            });
-          }
+      filteredPeople.forEach((person) => {
+        const coordinates = person.currentCoordinates;
+        if (coordinates.lat === 0 && coordinates.lng === 0) return;
+        const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
+        if (geocodedCities.has(geocodeKey)) return;
+        const existing = coordsToGeocode.get(geocodeKey);
+        if (!existing || (!existing.expectedCity && person.currentCity)) {
+          coordsToGeocode.set(geocodeKey, {
+            expectedCity: existing?.expectedCity || person.currentCity,
+            expectedCountry: existing?.expectedCountry || person.currentCountry,
+          });
         }
       });
-      
-      // Only geocode if we have new coordinates to process
+
       if (coordsToGeocode.size === 0) return;
-      
-      // Reverse geocode coordinates with rate limiting (Nominatim allows 1 req/sec)
-      // Process sequentially with delays to respect API limits
+
       const results: Array<{ coordKey: string; city: string; country: string } | null> = [];
-      const coordsArray = Array.from(coordsToGeocode.entries()).slice(0, 20); // Increased limit for better coverage
-      
+      const coordsArray = Array.from(coordsToGeocode.entries()).slice(0, 20);
+
       for (let i = 0; i < coordsArray.length; i++) {
-        // Wait 1 second between requests to respect rate limits
         if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 1100));
+          await new Promise((resolve) => setTimeout(resolve, 1100));
         }
-        
         const [coordKey, { expectedCity, expectedCountry }] = coordsArray[i];
-        const [lat, lng] = coordKey.split(',').map(Number);
-        
-        // Call reverse geocode with expected values for validation
+        const [lat, lng] = coordKey.split(",").map(Number);
         const result = await reverseGeocode(lat, lng, expectedCity, expectedCountry);
-        
         if (result) {
           results.push({ coordKey, city: result.city, country: result.country });
         } else {
-          // If reverse geocoding failed or was invalid, we'll use fallback in marker creation
           results.push(null);
         }
       }
-      
-      // Check if we got any new results
-      const hasNewResults = results.some((result) => {
-        if (!result) return false;
-        return !geocodedCities.has(result.coordKey);
-      });
-      
+
+      const hasNewResults = results.some(
+        (result) => result && !geocodedCities.has(result.coordKey),
+      );
       if (hasNewResults) {
-        // Create a new Map instance so React detects the change
         const newGeocoded = new Map(geocodedCities);
         results.forEach((result) => {
           if (result) {
-            newGeocoded.set(result.coordKey, { city: result.city, country: result.country });
+            newGeocoded.set(result.coordKey, {
+              city: result.city,
+              country: result.country,
+            });
           }
         });
         setGeocodedCities(newGeocoded);
       }
     };
-    
+
     geocodeCoordinates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredPeople, filteredTravelWindows, granularity, timeWindowStart, timeWindowEnd]); // Don't include geocodedCities to avoid infinite loop
+  }, [filteredPeople]); // geocodedCities excluded on purpose — would cause a re-fetch loop
 
   // Forward geocode: people with city but missing coordinates (0,0) so they get a pin.
   // Update state after each successful geocode so pins appear incrementally. Do NOT include
@@ -835,245 +788,88 @@ export function MapView({
     run();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredPeople, granularity]);
+  }, [filteredPeople]);
 
-  // Calculate markers based on current time window and granularity.
-  // Year view: anyone with currentCity gets a pin when we have coordinates (stored lat/lng or forward-geocoded from city).
+  /*
+   * Markers: one pin per person at their profile's primary location.
+   *
+   * Coordinate resolution order:
+   *   1. `person.currentCoordinates` from the sheet (the truth)
+   *   2. Forward-geocoded lookup of `person.currentCity` (rescues people
+   *      whose lat/lng was never filled in)
+   *   3. Skip — no coordinates, no pin. We report the count to the user in
+   *      `peopleMissingLocationsCount` so they can see the data gap.
+   *
+   * The marker popup city/country prefers the reverse-geocoded label when
+   * it plausibly matches what the profile says; otherwise we trust the
+   * profile. This is intentionally lightweight — travel windows and event
+   * RSVPs no longer nudge pins around.
+   */
   const markers = useMemo(() => {
-    // Use coordinate-based keys to group markers by actual location, not city name
-    // This ensures the popup shows the city where the pin actually is
     const markerMap = new Map<string, MarkerData>();
 
     filteredPeople.forEach((person) => {
-      // For Year view: Show current location. For Month/Week: Show where they are (trip if in range, else current location).
-      if (granularity === "Year") {
-        // Year view: Show current location only (or forward-geocoded location when lat/lng missing)
-        const city = person.currentCity?.trim();
-        const country = person.currentCountry?.trim();
-        if (!city) return;
+      const city = person.currentCity?.trim();
+      const country = person.currentCountry?.trim();
+      if (!city) return;
 
-        const rawCoords = person.currentCoordinates;
-        const hasValidCoords = rawCoords.lat !== 0 || rawCoords.lng !== 0;
-        const forwardCoords = forwardGeocodedCoordinates.get(person.id);
-        const coordinates = hasValidCoords
-          ? rawCoords
-          : forwardCoords
-            ? { lat: forwardCoords.lat, lng: forwardCoords.lng }
-            : null;
-        if (!coordinates) return;
+      const rawCoords = person.currentCoordinates;
+      const hasValidCoords = rawCoords.lat !== 0 || rawCoords.lng !== 0;
+      const forwardCoords = forwardGeocodedCoordinates.get(person.id);
+      const coordinates = hasValidCoords
+        ? rawCoords
+        : forwardCoords
+          ? { lat: forwardCoords.lat, lng: forwardCoords.lng }
+          : null;
+      if (!coordinates) return;
 
-        const coordKey = getCoordinateKey(coordinates);
-        const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
-        const geocoded = geocodedCities.get(geocodeKey);
-        
-        let displayCity: string;
-        let displayCountry: string;
-        if (geocoded) {
-          const expectedCity = person.currentCity;
-          const expectedCountry = person.currentCountry;
-          const geocodedLower = geocoded.city.toLowerCase().trim();
-          const expectedLower = expectedCity?.toLowerCase().trim() || '';
-          const citiesMatch = expectedLower && (
-            geocodedLower === expectedLower ||
-            geocodedLower.includes(expectedLower) ||
-            expectedLower.includes(geocodedLower) ||
-            (geocodedLower.includes('san fran') && expectedLower.includes('san francisco')) ||
-            (geocodedLower.includes('berlin') && expectedLower.includes('berlin')) ||
-            (geocodedLower.includes('bangalore') && expectedLower.includes('bengaluru')) ||
-            (geocodedLower.includes('bengaluru') && expectedLower.includes('bangalore'))
-          );
-          if (expectedCity && expectedCountry && !citiesMatch) {
-            console.warn(`⚠️ City mismatch: coordinates suggest "${geocoded.city}, ${geocoded.country}" but person data says "${expectedCity}, ${expectedCountry}". Using person data.`);
-            displayCity = expectedCity;
-            displayCountry = expectedCountry;
-          } else {
-            displayCity = geocoded.city;
-            displayCountry = geocoded.country;
-          }
-        } else {
+      const coordKey = getCoordinateKey(coordinates);
+      const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
+      const geocoded = geocodedCities.get(geocodeKey);
+
+      let displayCity: string;
+      let displayCountry: string;
+      if (geocoded) {
+        const geocodedLower = geocoded.city.toLowerCase().trim();
+        const expectedLower = city.toLowerCase();
+        const citiesMatch =
+          geocodedLower === expectedLower ||
+          geocodedLower.includes(expectedLower) ||
+          expectedLower.includes(geocodedLower) ||
+          (geocodedLower.includes("san fran") && expectedLower.includes("san francisco")) ||
+          (geocodedLower.includes("berlin") && expectedLower.includes("berlin")) ||
+          (geocodedLower.includes("bangalore") && expectedLower.includes("bengaluru")) ||
+          (geocodedLower.includes("bengaluru") && expectedLower.includes("bangalore"));
+        if (country && !citiesMatch) {
+          // Reverse geocode disagrees with the profile — trust the profile.
           displayCity = city;
-          displayCountry = country || forwardCoords?.country || "";
-        }
-          
-          if (!markerMap.has(coordKey)) {
-            markerMap.set(coordKey, {
-              city: displayCity,
-              country: displayCountry,
-              coordinates: coordinates,
-              people: [],
-            });
-          } else {
-            // Update existing marker with reverse geocoded city if available
-            // This ensures popup always shows the city where the pin is
-            const existingMarker = markerMap.get(coordKey)!;
-            if (geocoded) {
-              existingMarker.city = geocoded.city;
-              existingMarker.country = geocoded.country;
-            }
-          }
-          markerMap.get(coordKey)!.people.push({ person });
-      } else {
-        // Month/Week view: Show where they are during the selected time period
-        // Get travel windows for this person in the time range
-        const personTravelWindows = filteredTravelWindows.filter(
-          (tw) =>
-            tw.personId === person.id &&
-            new Date(tw.startDate) <= timeWindowEnd &&
-            new Date(tw.endDate) >= timeWindowStart
-        );
-
-        if (personTravelWindows.length > 0) {
-          // Show trip locations - group by coordinates to aggregate people at same location
-          personTravelWindows.forEach((tw) => {
-            if (tw.coordinates.lat !== 0 && tw.coordinates.lng !== 0) {
-              const coordKey = getCoordinateKey(tw.coordinates);
-              const geocodeKey = `${tw.coordinates.lat},${tw.coordinates.lng}`;
-              const geocoded = geocodedCities.get(geocodeKey);
-              
-              // CRITICAL: Smart fallback - if reverse geocoded doesn't match travel window city, use travel window
-              let displayCity: string;
-              let displayCountry: string;
-              
-              if (geocoded) {
-                const geocodedLower = geocoded.city.toLowerCase().trim();
-                const twCityLower = tw.city.toLowerCase().trim();
-                
-                const citiesMatch = geocodedLower === twCityLower ||
-                  geocodedLower.includes(twCityLower) ||
-                  twCityLower.includes(geocodedLower);
-                
-                if (!citiesMatch) {
-                  // Cities don't match - coordinates might be wrong, use travel window city
-                  console.warn(`⚠️ Travel window city mismatch: coordinates suggest "${geocoded.city}" but travel window says "${tw.city}". Using travel window data.`);
-                  displayCity = tw.city;
-                  displayCountry = tw.country;
-                } else {
-                  // Cities match - use reverse geocoded
-                  displayCity = geocoded.city;
-                  displayCountry = geocoded.country;
-                }
-              } else {
-                // No reverse geocoding available yet - use travel window city
-                displayCity = tw.city;
-                displayCountry = tw.country;
-              }
-              
-              if (!markerMap.has(coordKey)) {
-                markerMap.set(coordKey, {
-                  city: displayCity,
-                  country: displayCountry,
-                  coordinates: tw.coordinates,
-                  people: [],
-                });
-              } else {
-                // Update existing marker with reverse geocoded city if available
-                const existingMarker = markerMap.get(coordKey)!;
-                if (geocoded) {
-                  existingMarker.city = geocoded.city;
-                  existingMarker.country = geocoded.country;
-                }
-              }
-              markerMap.get(coordKey)!.people.push({ person, travelWindow: tw });
-            }
-          });
+          displayCountry = country;
         } else {
-          // No trips in this time period, show current location
-          const rawCoordinates = person.currentCoordinates;
-          const hasCurrentCoordinates = rawCoordinates.lat !== 0 || rawCoordinates.lng !== 0;
-          const forwardCoords = forwardGeocodedCoordinates.get(person.id);
-          const coordinates = hasCurrentCoordinates
-            ? rawCoordinates
-            : forwardCoords
-              ? { lat: forwardCoords.lat, lng: forwardCoords.lng }
-              : null;
-          if (coordinates) {
-            const coordKey = getCoordinateKey(coordinates);
-            const geocodeKey = `${coordinates.lat},${coordinates.lng}`;
-            const geocoded = geocodedCities.get(geocodeKey);
-            
-            let displayCity: string;
-            let displayCountry: string;
-            
-            if (geocoded) {
-              const expectedCity = person.currentCity;
-              const expectedCountry = person.currentCountry;
-              
-              const geocodedLower = geocoded.city.toLowerCase().trim();
-              const expectedLower = expectedCity?.toLowerCase().trim() || '';
-              
-              const citiesMatch = expectedLower && (
-                geocodedLower === expectedLower ||
-                geocodedLower.includes(expectedLower) ||
-                expectedLower.includes(geocodedLower) ||
-                (geocodedLower.includes('san fran') && expectedLower.includes('san francisco')) ||
-                (geocodedLower.includes('berlin') && expectedLower.includes('berlin')) ||
-                (geocodedLower.includes('bangalore') && expectedLower.includes('bengaluru')) ||
-                (geocodedLower.includes('bengaluru') && expectedLower.includes('bangalore'))
-              );
-              
-              if (expectedCity && expectedCountry && !citiesMatch) {
-                console.warn(`⚠️ City mismatch (Month/Week): coordinates suggest "${geocoded.city}" but person data says "${expectedCity}". Using person data.`);
-                displayCity = expectedCity;
-                displayCountry = expectedCountry;
-              } else {
-                displayCity = geocoded.city;
-                displayCountry = geocoded.country;
-              }
-            } else if (person.currentCity) {
-              displayCity = forwardCoords?.city || person.currentCity;
-              displayCountry = person.currentCountry || forwardCoords?.country || "";
-            } else {
-              return; // Skip if no location data
-            }
-            
-            if (!markerMap.has(coordKey)) {
-              markerMap.set(coordKey, {
-                city: displayCity,
-                country: displayCountry,
-                coordinates: coordinates,
-                people: [],
-              });
-            } else {
-              // Update existing marker with reverse geocoded city if available
-              const existingMarker = markerMap.get(coordKey)!;
-              if (geocoded) {
-                existingMarker.city = geocoded.city;
-                existingMarker.country = geocoded.country;
-              }
-            }
-            markerMap.get(coordKey)!.people.push({ person });
-          }
+          displayCity = geocoded.city;
+          displayCountry = geocoded.country;
         }
+      } else {
+        displayCity = city;
+        displayCountry = country || forwardCoords?.country || "";
       }
+
+      if (!markerMap.has(coordKey)) {
+        markerMap.set(coordKey, {
+          city: displayCity,
+          country: displayCountry,
+          coordinates,
+          people: [],
+        });
+      } else if (geocoded) {
+        const existingMarker = markerMap.get(coordKey)!;
+        existingMarker.city = geocoded.city;
+        existingMarker.country = geocoded.country;
+      }
+      markerMap.get(coordKey)!.people.push({ person });
     });
 
-    // Month/Week view: add locations from event RSVPs (going) when event falls in time window
-    if (granularity !== "Year" && events?.length) {
-      filteredPeople.forEach((person) => {
-        const goingRsvps = getPersonRSVPs(person.id).filter((r) => r.status === "going");
-        goingRsvps.forEach((r) => {
-          const event = events.find((e) => e.id === r.eventId);
-          if (!event) return;
-          const eventStart = new Date(event.startAt);
-          if (eventStart < timeWindowStart || eventStart > timeWindowEnd) return;
-          const node = getNode(event.nodeSlug);
-          if (!node || (node.coordinates.lat === 0 && node.coordinates.lng === 0)) return;
-          const coordKey = getCoordinateKey(node.coordinates);
-          if (!markerMap.has(coordKey)) {
-            markerMap.set(coordKey, {
-              city: node.city,
-              country: node.country,
-              coordinates: node.coordinates,
-              people: [],
-            });
-          }
-          markerMap.get(coordKey)!.people.push({ person, event });
-        });
-      });
-    }
-
     return Array.from(markerMap.values()).map(dedupeMarkerEntries);
-  }, [filteredPeople, filteredTravelWindows, timeWindowStart, timeWindowEnd, granularity, geocodedCities, forwardGeocodedCoordinates, events]);
+  }, [filteredPeople, geocodedCities, forwardGeocodedCoordinates]);
 
   // Get next travel window for each person
   const getNextTravel = (personId: string): TravelWindow | undefined => {
@@ -1111,24 +907,20 @@ export function MapView({
     return Array.from(deduped.values()).sort((a, b) => a.fullName.localeCompare(b.fullName));
   }, [selectedMarker, filteredPeople]);
 
+  /*
+   * Count of filtered people whose profile location can't be plotted yet —
+   * no stored coords and no successful forward-geocode of their city. This
+   * is purely an informational count for the "N people missing locations"
+   * hint; no travel-window or event-RSVP fallbacks anymore.
+   */
   const peopleMissingLocationsCount = useMemo(() => {
     return filteredPeople.filter((person) => {
       const hasCurrentCoordinates =
         person.currentCoordinates.lat !== 0 || person.currentCoordinates.lng !== 0;
       const hasForwardCoordinates = forwardGeocodedCoordinates.has(person.id);
-      if (granularity === "Year") {
-        return !hasCurrentCoordinates && !hasForwardCoordinates;
-      }
-      const hasTravelCoordinates = filteredTravelWindows.some(
-        (tw) =>
-          tw.personId === person.id &&
-          new Date(tw.startDate) <= timeWindowEnd &&
-          new Date(tw.endDate) >= timeWindowStart &&
-          (tw.coordinates.lat !== 0 || tw.coordinates.lng !== 0),
-      );
-      return !hasTravelCoordinates && !hasCurrentCoordinates && !hasForwardCoordinates;
+      return !hasCurrentCoordinates && !hasForwardCoordinates;
     }).length;
-  }, [filteredPeople, filteredTravelWindows, forwardGeocodedCoordinates, granularity, timeWindowEnd, timeWindowStart]);
+  }, [filteredPeople, forwardGeocodedCoordinates]);
 
   const openSidebarAndScrollToPerson = (personId: string) => {
     setSelectedPerson(personId);

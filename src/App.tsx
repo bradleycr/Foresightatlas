@@ -335,56 +335,6 @@ export default function App() {
     return out;
   }, [travelWindows, filteredPeople, filters.cities, filters.year]);
 
-  // ── Time window for map ────────────────────────────────────────────
-
-  const timeWindowStart = useMemo(() => {
-    if (filters.year === null) {
-      if (filters.granularity === "Month" || filters.granularity === "Week") {
-        const ref = new Date(filters.referenceDate);
-        const m = ref.getMonth(), d = ref.getDate();
-        if (filters.granularity === "Month") return new Date(ref.getFullYear(), m, 1);
-        const base = new Date(ref.getFullYear(), m, d);
-        base.setDate(base.getDate() - base.getDay());
-        return base;
-      }
-      return new Date(1900, 0, 1);
-    }
-    const ref = new Date(filters.referenceDate);
-    const m = ref.getMonth(), d = ref.getDate();
-    if (filters.granularity === "Month") return new Date(filters.year, m, 1);
-    if (filters.granularity === "Week") {
-      const base = new Date(filters.year, m, d);
-      base.setDate(base.getDate() - base.getDay());
-      return base;
-    }
-    return new Date(filters.year, 0, 1);
-  }, [filters.year, filters.granularity, filters.referenceDate]);
-
-  const timeWindowEnd = useMemo(() => {
-    if (filters.year === null) {
-      if (filters.granularity === "Month" || filters.granularity === "Week") {
-        const ref = new Date(filters.referenceDate);
-        const m = ref.getMonth(), d = ref.getDate();
-        if (filters.granularity === "Month") return new Date(ref.getFullYear(), m + 1, 0, 23, 59, 59, 999);
-        const base = new Date(ref.getFullYear(), m, d);
-        base.setDate(base.getDate() + (6 - base.getDay()));
-        base.setHours(23, 59, 59, 999);
-        return base;
-      }
-      return new Date(2100, 11, 31);
-    }
-    const ref = new Date(filters.referenceDate);
-    const m = ref.getMonth(), d = ref.getDate();
-    if (filters.granularity === "Month") return new Date(filters.year, m + 1, 0, 23, 59, 59, 999);
-    if (filters.granularity === "Week") {
-      const base = new Date(filters.year, m, d);
-      base.setDate(base.getDate() + (6 - base.getDay()));
-      base.setHours(23, 59, 59, 999);
-      return base;
-    }
-    return new Date(filters.year, 11, 31, 23, 59, 59, 999);
-  }, [filters.year, filters.granularity, filters.referenceDate]);
-
   // ── Navigation ─────────────────────────────────────────────────────
 
   const navigate = useCallback((path: string) => {
@@ -602,10 +552,13 @@ export default function App() {
       <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-hidden">
         <MapView
           filteredPeople={mapPeople}
+          /*
+           * Travel windows are still passed through so the sidebar FellowCard
+           * can show a "next travel" teaser, but MapView never uses them to
+           * place pins on the map. One person = one pin = their profile
+           * location.
+           */
           filteredTravelWindows={filteredTravelWindows}
-          timeWindowStart={timeWindowStart}
-          timeWindowEnd={timeWindowEnd}
-          granularity={filters.granularity}
           events={events}
           onViewPersonDetails={(id, context) => {
             setSelectedPersonId(id);
