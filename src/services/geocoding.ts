@@ -62,6 +62,32 @@ function correctCountryTypo(country: string): string {
 }
 
 /**
+ * Common city shorthand users type into the profile form.
+ * Keep this small and high-signal; it is only meant to prevent the “why didn’t
+ * this resolve?” footguns for popular abbreviations.
+ */
+const CITY_ALIAS_MAP: Record<string, { city: string; countryHint?: string }> = {
+  sf: { city: "San Francisco", countryHint: "United States" },
+  "san fran": { city: "San Francisco", countryHint: "United States" },
+  "bay area": { city: "San Francisco", countryHint: "United States" },
+  la: { city: "Los Angeles", countryHint: "United States" },
+  nyc: { city: "New York", countryHint: "United States" },
+  "new york city": { city: "New York", countryHint: "United States" },
+  dc: { city: "Washington, DC", countryHint: "United States" },
+  "washington dc": { city: "Washington, DC", countryHint: "United States" },
+};
+
+function applyCityAlias(rawCity: string, rawCountry: string): { city: string; country: string } {
+  const key = rawCity.trim().toLowerCase().replace(/\s+/g, " ");
+  const alias = CITY_ALIAS_MAP[key];
+  if (!alias) return { city: rawCity.trim(), country: rawCountry.trim() };
+  return {
+    city: alias.city,
+    country: rawCountry.trim() || alias.countryHint || "",
+  };
+}
+
+/**
  * Normalize city names for comparison (lowercase, remove common suffixes)
  */
 function normalizeCityName(city: string): string {
@@ -280,8 +306,9 @@ export async function geocodeCity(
 ): Promise<GeocodeResult | null> {
   if (!cityName.trim()) return null;
 
-  const city = cityName.trim();
-  const rawCountry = (country ?? "").trim();
+  const aliased = applyCityAlias(cityName, country ?? "");
+  const city = aliased.city;
+  const rawCountry = aliased.country;
   const correctedCountry = rawCountry ? correctCountryTypo(rawCountry) : "";
   const ttl = typeof options?.cacheTtlMs === "number" ? options.cacheTtlMs : 10 * 60 * 1000;
   const signal = options?.signal;
