@@ -218,13 +218,15 @@ export function ProfilePage({
       return;
     }
 
+    const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
       setLocationCheck({
         status: "checking",
         message: "Checking whether we can place your map pin…",
       });
 
-      const result = await geocodeCity(city, country || undefined);
+      const result = await geocodeCity(city, country || undefined, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       if (!result) {
         setLocationCheck({
           status: "error",
@@ -253,9 +255,12 @@ export function ProfilePage({
         status: "success",
         message: `Map pin found near ${resolvedLabel}.`,
       });
-    }, 450);
+    }, 900);
 
-    return () => window.clearTimeout(timeout);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
   }, [draft?.currentCity, draft?.currentCountry]);
 
   const initials = useMemo(() => {

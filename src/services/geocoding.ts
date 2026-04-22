@@ -13,6 +13,19 @@ export interface GeocodeResult {
   city?: string;
 }
 
+export interface GeocodeCityOptions {
+  /**
+   * Abort signal for caller-driven cancellation (e.g. user keeps typing).
+   * When aborted, geocoding returns null without logging noisy errors.
+   */
+  signal?: AbortSignal;
+  /**
+   * Cache TTL in ms for identical queries. Defaults to 10 minutes.
+   * This is purely a UI/perf cache; it does not persist across reloads.
+   */
+  cacheTtlMs?: number;
+}
+
 /** Common country name typos → canonical name for geocoding. */
 const COUNTRY_TYPO_MAP: Record<string, string> = {
   germabny: "Germany",
@@ -169,15 +182,18 @@ export function validateReverseGeocodeResult(
  * Single-query Nominatim search. Returns null on no results or error.
  */
 async function geocodeCityOneQuery(
-  query: string
+  query: string,
+  options?: { signal?: AbortSignal },
 ): Promise<GeocodeResult | null> {
   try {
+    if (options?.signal?.aborted) return null;
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
       {
         headers: {
           "User-Agent": "ForesightAtlas/1.0", // Required by Nominatim
         },
+        signal: options?.signal,
       }
     );
 
@@ -201,6 +217,57 @@ async function geocodeCityOneQuery(
   }
 }
 
+/* ── Lightweight in-memory cache + rate limiting ───────────────────── */
+
+type CacheEntry = { value: GeocodeResult | null; expiresAt: number };
+const geocodeCache = new Map<string, CacheEntry>();
+
+/**
+ * Nominatim politely asks clients to keep to ~1 request/second.
+ * We serialize requests through a tiny scheduler so typing-driven UI does
+ * not accidentally burst and get intermittent 429s.
+ */
+let nominatimChain: Promise<void> = Promise.resolve();
+let nextNominatimAtMs = 0;
+const NOMINATIM_MIN_INTERVAL_MS = 1100;
+
+async function scheduleNominatimSlot(signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return;
+  const startAfter = Math.max(nextNominatimAtMs, Date.now());
+  nextNominatimAtMs = startAfter + NOMINATIM_MIN_INTERVAL_MS;
+  const waitMs = startAfter - Date.now();
+  if (waitMs <= 0) return;
+  await new Promise<void>((resolve, reject) => {
+    const t = window.setTimeout(resolve, waitMs);
+    if (!signal) return;
+    const onAbort = () => {
+      window.clearTimeout(t);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  }).catch((e) => {
+    if (e?.name === "AbortError") return;
+    throw e;
+  });
+}
+
+async function nominatimGeocode(query: string, options?: { signal?: AbortSignal }): Promise<GeocodeResult | null> {
+  const signal = options?.signal;
+  if (signal?.aborted) return null;
+
+  // Ensure requests run sequentially with spacing.
+  const run = async () => {
+    await scheduleNominatimSlot(signal);
+    if (signal?.aborted) return null;
+    return geocodeCityOneQuery(query, { signal });
+  };
+
+  const p = nominatimChain.then(run, run) as unknown as Promise<GeocodeResult | null>;
+  // Keep chain alive even if a request fails/aborts.
+  nominatimChain = p.then(() => undefined, () => undefined);
+  return p;
+}
+
 /**
  * Geocode a city name to get coordinates and country.
  * Tries: (1) "city, corrected country" (fixes common typos like Germabny→Germany),
@@ -208,13 +275,17 @@ async function geocodeCityOneQuery(
  */
 export async function geocodeCity(
   cityName: string,
-  country?: string
+  country?: string,
+  options?: GeocodeCityOptions,
 ): Promise<GeocodeResult | null> {
   if (!cityName.trim()) return null;
 
   const city = cityName.trim();
   const rawCountry = (country ?? "").trim();
   const correctedCountry = rawCountry ? correctCountryTypo(rawCountry) : "";
+  const ttl = typeof options?.cacheTtlMs === "number" ? options.cacheTtlMs : 10 * 60 * 1000;
+  const signal = options?.signal;
+  if (signal?.aborted) return null;
 
   // Build query list: prefer corrected country, then city-only for fallback
   const queries: string[] = [];
@@ -227,12 +298,17 @@ export async function geocodeCity(
   queries.push(city);
 
   for (let i = 0; i < queries.length; i++) {
-    const result = await geocodeCityOneQuery(queries[i]);
-    if (result) return result;
-    // Nominatim allows 1 req/sec; wait between fallbacks
-    if (i < queries.length - 1) {
-      await new Promise((r) => setTimeout(r, 1100));
+    const q = queries[i];
+    const cached = geocodeCache.get(q);
+    if (cached && cached.expiresAt > Date.now()) {
+      if (cached.value) return cached.value;
+      continue;
     }
+
+    const result = await nominatimGeocode(q, { signal });
+    if (result) return result;
+
+    geocodeCache.set(q, { value: null, expiresAt: Date.now() + Math.min(ttl, 60_000) });
   }
 
   return null;

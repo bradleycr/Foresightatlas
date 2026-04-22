@@ -205,6 +205,10 @@ export async function checkIn(
       } catch {
         /* ignore */
       }
+      if (res.status === 403 && msg === "Write secret required") {
+        msg =
+          "Check-in write is currently locked. Set FORESIGHT_PUBLIC_WRITE_SECRET on the API and VITE_FORESIGHT_WRITE_SECRET on the frontend build (same value), or remove the write secret requirement to allow check-ins.";
+      }
       throw new Error(msg);
     }
     const created = (await res.json()) as CheckIn;
@@ -280,6 +284,10 @@ export async function withdrawCheckIn(
         if (typeof j?.error === "string") msg = j.error;
       } catch {
         /* ignore */
+      }
+      if (res.status === 403 && msg === "Write secret required") {
+        msg =
+          "Check-in write is currently locked. Set FORESIGHT_PUBLIC_WRITE_SECRET on the API and VITE_FORESIGHT_WRITE_SECRET on the frontend build (same value), or remove the write secret requirement to allow check-in withdrawals.";
       }
       throw new Error(msg);
     }
