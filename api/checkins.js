@@ -32,6 +32,42 @@ function isMissingSheetOrRangeError(err) {
   );
 }
 
+async function ensureCheckInsSheetExists(sheets) {
+  const { data } = await sheets.spreadsheets.get({
+    spreadsheetId: SPREADSHEET_ID,
+    fields: "sheets.properties(sheetId,title)",
+  });
+  const existing = (data.sheets || []).some(
+    (s) => String(s?.properties?.title || "") === SHEET_CHECKINS,
+  );
+  if (!existing) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: SHEET_CHECKINS } } }],
+      },
+    });
+  }
+
+  // Ensure header row exists (idempotent overwrite of row 1).
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `'${SHEET_CHECKINS}'!A1:G1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[
+        "personId",
+        "fullName",
+        "nodeSlug",
+        "date",
+        "type",
+        "createdAt",
+        "updatedAt",
+      ]],
+    },
+  });
+}
+
 function parseCheckInRows(values, filters) {
   if (!values || values.length < 2) return [];
   const [headerRow, ...rows] = values;
@@ -225,10 +261,35 @@ module.exports = async function handler(req, res) {
       });
     } catch (e) {
       if (isMissingSheetOrRangeError(e)) {
-        return res.status(503).json({
-          error:
-            "CheckIns sheet tab is missing. Add a tab named CheckIns with row 1: personId, fullName, nodeSlug, date, type, createdAt, updatedAt. See docs/ARCHITECTURE.md.",
-        });
+        try {
+          await ensureCheckInsSheetExists(sheets);
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: SPREADSHEET_ID,
+            range: `'${SHEET_CHECKINS}'!A:G`,
+            valueInputOption: "USER_ENTERED",
+            insertDataOption: "INSERT_ROWS",
+            requestBody: { values: [row] },
+          });
+          return res.status(201).json({
+            personId,
+            fullName: fullName || "",
+            nodeSlug,
+            date,
+            type: type || "checkin",
+            createdAt: now,
+            updatedAt: now,
+          });
+        } catch (inner) {
+          console.error(
+            "POST /api/checkins: failed to create missing CheckIns tab",
+            inner?.code ?? "",
+            inner?.message ?? inner,
+          );
+          return res.status(503).json({
+            error:
+              "Check-ins could not be saved because the CheckIns tab is missing and the API could not create it. Ensure the service account has edit access to the sheet.",
+          });
+        }
       }
       console.error("POST /api/checkins", e.message);
       return res.status(500).json({ error: "Failed to save check-in" });

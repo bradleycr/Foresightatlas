@@ -18,9 +18,17 @@ function getProvidedSecret(req) {
 }
 
 function publicWriteSecretOk(req) {
-  const required = process.env.FORESIGHT_PUBLIC_WRITE_SECRET;
-  if (!required || String(required).trim() === "") return true;
-  return getProvidedSecret(req) === String(required);
+  /**
+   * Public-write secret was an optional abuse-mitigation layer for anonymous
+   * endpoints (RSVPs / check-ins / suggestions). The product direction is to
+   * keep the app open for now and eventually protect the whole app, so we
+   * treat these endpoints as intentionally public and do not gate them.
+   *
+   * Leaving the function in place avoids churn in the API handlers while
+   * making the behavior explicit: always allow writes.
+   */
+  void req;
+  return true;
 }
 
 /**
@@ -29,9 +37,9 @@ function publicWriteSecretOk(req) {
  * @returns {boolean} true if request may proceed
  */
 function assertPublicWriteSecret(req, res) {
-  if (publicWriteSecretOk(req)) return true;
-  res.status(403).json({ error: "Write secret required" });
-  return false;
+  void req;
+  void res;
+  return true;
 }
 
 module.exports = {
