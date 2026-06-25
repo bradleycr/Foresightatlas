@@ -249,6 +249,8 @@ function rowToPersonRecord(orderedRow, rowNumber) {
       orderedRow[idx("expandedProjectDescription")],
     ),
     isAlumni: normalizeBoolean(orderedRow[idx("isAlumni")]),
+    // Opt-out flag for the public atlas. Missing column (legacy rows) → false.
+    isPrivate: normalizeBoolean(orderedRow[idx("isPrivate")]),
   };
 
   if (!person.id && person.fullName) {
@@ -297,6 +299,8 @@ function personRecordToRow(record) {
     auth.claimedAt ?? "",
     auth.lastProfileUpdatedAt ?? "",
     auth.lastPasswordChangedAt ?? "",
+    // Extended fields (appended last to match PEOPLE_EXTENDED_HEADERS order).
+    person.isPrivate ? "TRUE" : "FALSE",
   ];
 }
 

@@ -85,6 +85,14 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentityState] = useState<Identity | null>(() => getIdentity());
+  /**
+   * The signed-in member's own full record, sourced from the auth response
+   * (login + session refresh) rather than the public directory. This is what
+   * lets members who are hidden from the public atlas (Senior Fellows or
+   * anyone who toggled their profile private) still see and edit themselves —
+   * their record is intentionally absent from the public /api/database list.
+   */
+  const [selfPerson, setSelfPerson] = useState<Person | null>(null);
   /** Shared with MapView so the mobile list sheet can open the same nav menu as the header hamburger. */
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -198,17 +206,25 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
 
-    const runRefresh = async () => {
+    /**
+     * @param force When true (cold boot) we always hit the server so we can
+     *   hydrate {@link selfPerson} even if the token isn't near expiry. The
+     *   periodic tick passes false and only refreshes near the expiry window.
+     */
+    const runRefresh = async (force: boolean) => {
       const current = getIdentity();
       if (!current) return;
 
       if (isIdentityExpired(current)) {
         clearIdentity();
-        if (!cancelled) setIdentityState(null);
+        if (!cancelled) {
+          setIdentityState(null);
+          setSelfPerson(null);
+        }
         return;
       }
 
-      if (!shouldRefreshIdentity(current)) return;
+      if (!force && !shouldRefreshIdentity(current)) return;
 
       try {
         const result = await refreshDirectorySession(current.token);
@@ -221,19 +237,24 @@ export default function App() {
           mustChangePassword: result.auth.mustChangePassword,
         });
         setIdentityState(getIdentity());
+        // Keep our own record fresh so hidden members can still edit it.
+        setSelfPerson(result.person);
       } catch (error) {
         // Treat an auth rejection as a signal to stop pretending we're signed in.
         // Transport errors are silently ignored — the next tick will try again.
         const message = error instanceof Error ? error.message : "";
         if (/session/i.test(message) || /expired/i.test(message) || /401/.test(message)) {
           clearIdentity();
-          if (!cancelled) setIdentityState(null);
+          if (!cancelled) {
+            setIdentityState(null);
+            setSelfPerson(null);
+          }
         }
       }
     };
 
-    runRefresh();
-    const interval = window.setInterval(runRefresh, SESSION_REFRESH_INTERVAL_MS);
+    void runRefresh(true);
+    const interval = window.setInterval(() => void runRefresh(false), SESSION_REFRESH_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
@@ -355,6 +376,7 @@ export default function App() {
     // rather than implying this device "belongs" to a specific person.
     forgetLastSignedInName();
     setIdentityState(null);
+    setSelfPerson(null);
     // Signed-out users shouldn't be left stranded on an auth-gated page.
     // Redirect from profile, calendar, and the check-in landing routes.
     if (
@@ -378,6 +400,8 @@ export default function App() {
           mustChangePassword: result.auth.mustChangePassword,
         });
         setIdentityState(getIdentity());
+        // Remember our own record so a hidden profile remains editable.
+        setSelfPerson(result.person);
 
         // If the member arrived from a deep link that required auth (e.g. a
         // check-in QR code while signed out), send them back where they
@@ -411,6 +435,9 @@ export default function App() {
     });
 
     if (identity?.personId === updatedPerson.id) {
+      // Mirror the edit into our own-record cache so a profile that was just
+      // toggled private (and thus dropped from the public list) stays editable.
+      setSelfPerson(updatedPerson);
       const nextIdentity = persistIdentityUpdates({
         fullName: updatedPerson.fullName,
         ...(auth ?? {}),
@@ -477,8 +504,16 @@ export default function App() {
     isProfileRoute &&
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("new") === "1";
-  const signedInPerson =
-    identity ? people.find((person) => person.id === identity.personId) ?? null : null;
+  /*
+   * Resolve the signed-in member's record. Prefer the public directory copy
+   * (kept in sync by edits across tabs), but fall back to the auth-sourced
+   * `selfPerson` so members hidden from the public atlas (Senior Fellows or
+   * private profiles, absent from `people`) can still open and edit theirs.
+   */
+  const signedInPerson = identity
+    ? people.find((person) => person.id === identity.personId) ??
+      (selfPerson && selfPerson.id === identity.personId ? selfPerson : null)
+    : null;
 
   const mainContent = isConnectionsRoute ? (
     <ConnectionsPage

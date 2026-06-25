@@ -74,7 +74,25 @@ const PEOPLE_AUTH_HEADERS = [
   "lastPasswordChangedAt",
 ];
 
-const PEOPLE_HEADERS = [...PEOPLE_PUBLIC_HEADERS, ...PEOPLE_AUTH_HEADERS];
+/**
+ * Extended profile fields added after the original column layout.
+ *
+ * IMPORTANT: new columns are **appended at the very end** of the sheet so that
+ * existing rows keep every column in place. Inserting a column mid-layout would
+ * shift the auth columns and corrupt password/session data on the next write
+ * (ensureRealDataHeaders rewrites the header row but not the data cells).
+ *
+ * - isPrivate: when TRUE the member opted their profile out of the public
+ *   atlas. The public /api/database response omits these people entirely; the
+ *   owner can still see and edit their own profile when signed in.
+ */
+const PEOPLE_EXTENDED_HEADERS = ["isPrivate"];
+
+const PEOPLE_HEADERS = [
+  ...PEOPLE_PUBLIC_HEADERS,
+  ...PEOPLE_AUTH_HEADERS,
+  ...PEOPLE_EXTENDED_HEADERS,
+];
 
 const TRAVEL_WINDOWS_HEADERS = [
   "id",
@@ -191,6 +209,7 @@ module.exports = {
   REAL_DATA_TAB_NAMES,
   PEOPLE_PUBLIC_HEADERS,
   PEOPLE_AUTH_HEADERS,
+  PEOPLE_EXTENDED_HEADERS,
   PEOPLE_HEADERS,
   PEOPLE_SHEET_WIDTH,
   TRAVEL_WINDOWS_HEADERS,

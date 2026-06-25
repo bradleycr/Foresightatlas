@@ -239,7 +239,24 @@ async function getFullDatabaseFromSheet() {
     fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:G"),
     fetchSheetRange(sheets, SHEET_NAMES.EVENTS, "A:O"),
   ]);
-  const people = (loaded.records || []).map((r) => r.person).filter((p) => p && p.fullName);
+  /*
+   * Public atlas privacy gate. Two classes of people are withheld from the
+   * public /api/database response so their information is never served to
+   * anonymous visitors:
+   *
+   *   1. Senior Fellows — their profiles are not meant to be publicly listed.
+   *   2. Members who opted out via the "make my profile private" setting.
+   *
+   * Note this only affects the public directory payload. Sign-in and profile
+   * editing read from RealData directly (loadRealDataRecords), and the client
+   * keeps the signed-in member's own record from the auth response, so a
+   * hidden member can still see and edit their own profile.
+   */
+  const people = (loaded.records || [])
+    .map((r) => r.person)
+    .filter((p) => p && p.fullName)
+    .filter((p) => p.roleType !== "Senior Fellow")
+    .filter((p) => p.isPrivate !== true);
   const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) => rowToTravelWindow(row));
   const suggestions = rowsToObjects(suggestionsRows, SUGGESTIONS_HEADERS, (row) => rowToSuggestion(row));
   const adminUsers = rowsToObjects(adminRows, ADMIN_USERS_HEADERS, (row) => rowToAdminUser(row));

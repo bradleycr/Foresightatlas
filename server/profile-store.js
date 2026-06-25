@@ -72,6 +72,7 @@ function normalizePerson(input) {
       input?.expandedProjectDescription,
     ),
     isAlumni: normalizeBoolean(input?.isAlumni),
+    isPrivate: normalizeBoolean(input?.isPrivate),
   };
 
   if (!person.id) {
@@ -162,6 +163,7 @@ function normalizePersonForCreate(input) {
       input?.expandedProjectDescription,
     ),
     isAlumni: normalizeBoolean(input?.isAlumni),
+    isPrivate: normalizeBoolean(input?.isPrivate),
   };
 
   if (!person.fullName) {

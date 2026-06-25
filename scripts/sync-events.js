@@ -246,6 +246,9 @@ async function fetchLumaEvents() {
 
     for (const entry of entries) {
       const ev = entry.event || entry;
+      // Public events only — private / unlisted Luma events must never be
+      // written to the public events.json fallback (mirrors luma-merge.js).
+      if (String(ev?.visibility || "").trim().toLowerCase() !== "public") continue;
       allEvents.push(ev);
     }
 
@@ -253,7 +256,7 @@ async function fetchLumaEvents() {
     cursor = data.next_cursor;
   }
 
-  console.log(`  Fetched ${allEvents.length} events from Luma.`);
+  console.log(`  Fetched ${allEvents.length} public events from Luma.`);
 
   return allEvents.map((ev) => {
     const urlLink = normalizeLumaEventUrl(ev.url);

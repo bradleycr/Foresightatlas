@@ -97,6 +97,11 @@ app.use(express.json());
 app.get("/api/database", async (req, res) => {
   try {
     const database = await getLocalDatabase();
+    // Mirror the production privacy gate (see server/sheet-database.js): never
+    // serve Senior Fellows or private profiles on the public directory.
+    database.people = (database.people || []).filter(
+      (p) => p && p.roleType !== "Senior Fellow" && p.isPrivate !== true,
+    );
     database.events = applyBerlinSecureWorkshopSheetOverrides(database.events || []);
     database.rsvps = normalizeBerlinSecureWorkshopRsvps(database.rsvps || []);
     database.events = await mergeSheetEventsWithLuma(database.events || []);

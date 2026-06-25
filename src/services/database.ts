@@ -165,6 +165,7 @@ function normalizePerson(
     shortProjectTagline: p.shortProjectTagline ?? "",
     expandedProjectDescription: p.expandedProjectDescription ?? "",
     isAlumni: p.isAlumni ?? false,
+    isPrivate: p.isPrivate ?? false,
   } as Person;
 }
 

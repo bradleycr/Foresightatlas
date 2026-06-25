@@ -39,6 +39,12 @@ export interface Person {
   shortProjectTagline: string;
   expandedProjectDescription: string;
   isAlumni: boolean;
+  /**
+   * When true the member has opted their profile out of the public atlas.
+   * The public API omits these people; only the signed-in owner sees their
+   * own record (sourced from the auth response, not the public directory).
+   */
+  isPrivate?: boolean;
 }
 
 export interface TravelWindow {

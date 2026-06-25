@@ -36,9 +36,13 @@ const FOCUS_AREAS = [
   "Other",
 ];
 
+/**
+ * Program filter chips. "Senior Fellow" is intentionally omitted: those
+ * profiles are withheld from the public atlas, so a chip for them would only
+ * ever return zero results.
+ */
 const PROGRAMS: RoleType[] = [
   "Fellow",
-  "Senior Fellow",
   "Grantee",
   "Prize Winner",
   "Nodee",

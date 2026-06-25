@@ -31,6 +31,19 @@ function isUrlLikeLocation(value) {
   return false;
 }
 
+/**
+ * Only surface **public** Luma events on the map and programming pages.
+ *
+ * Luma's event `visibility` can be "public", "private", "unlisted", etc.
+ * Anything that isn't explicitly public is a member-only / invite-only event
+ * that we must never expose on the public atlas, so we drop it at ingestion
+ * (before it can even be matched to a sheet row). When Luma omits the field
+ * we err on the side of privacy and treat the event as non-public.
+ */
+function isPublicLumaEvent(lumaEvent) {
+  return String(lumaEvent?.visibility || "").trim().toLowerCase() === "public";
+}
+
 function mapLumaType(lumaEvent) {
   const name = (lumaEvent.name || "").toLowerCase();
   if (name.includes("coworking")) return "coworking";
@@ -133,6 +146,10 @@ async function fetchLumaEvents() {
 
     for (const entry of entries) {
       const ev = entry.event || entry;
+      // Skip private / unlisted Luma events entirely — they must never reach
+      // the public atlas, and dropping them here also stops them being merged
+      // onto a sheet row via lumaEventId.
+      if (!isPublicLumaEvent(ev)) continue;
       allEvents.push(ev);
     }
 

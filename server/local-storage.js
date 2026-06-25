@@ -426,6 +426,7 @@ function normalizePersonForCreate(input) {
     shortProjectTagline: String(input?.shortProjectTagline || "").trim(),
     expandedProjectDescription: String(input?.expandedProjectDescription || "").trim(),
     isAlumni: Boolean(input?.isAlumni),
+    isPrivate: Boolean(input?.isPrivate),
   };
 
   if (!person.fullName) throw new Error("Full name is required.");

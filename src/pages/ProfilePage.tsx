@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, KeyRound, Loader2, Link2, LogOut, Save, Sparkles, User, UserPlus, CheckCircle, AlertCircle, CalendarDays } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, Link2, LogOut, Save, Sparkles, User, UserPlus, CheckCircle, AlertCircle, CalendarDays, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { createPerson, updatePerson } from "../services/database";
@@ -83,6 +83,7 @@ const EMPTY_PERSON: Person = {
   shortProjectTagline: "",
   expandedProjectDescription: "",
   isAlumni: false,
+  isPrivate: false,
   profileImageUrl: null,
 };
 
@@ -1074,6 +1075,32 @@ export function ProfilePage({
                   />
                 </Field>
                 <LocationCheckNotice state={locationCheck} />
+              </ProfileSection>
+
+              <ProfileSection
+                title="Privacy"
+                description="Choose whether your profile appears on the public map and directory. You can change this any time."
+                icon={<EyeOff className="size-4 text-sky-500" />}
+              >
+                <Field
+                  label="Profile visibility"
+                  description={
+                    draft.isPrivate
+                      ? "Your profile is hidden from the public atlas. You can still see and edit it here while signed in."
+                      : "Your profile is visible to everyone browsing the map and directory."
+                  }
+                >
+                  <Select
+                    value={draft.isPrivate ? "private" : "public"}
+                    onValueChange={(v) => updateDraft("isPrivate", v === "private")}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public — show me on the atlas</SelectItem>
+                      <SelectItem value="private">Private — hide me from the atlas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
               </ProfileSection>
 
               <ProfileSection
