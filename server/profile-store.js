@@ -164,6 +164,7 @@ function normalizePersonForCreate(input) {
     ),
     isAlumni: normalizeBoolean(input?.isAlumni),
     isPrivate: normalizeBoolean(input?.isPrivate),
+    email: normalizeString(input?.email),
   };
 
   if (!person.fullName) {
@@ -257,6 +258,9 @@ async function syncPersonToSheets(person, authContext) {
   const enrichedPerson = await enrichLocation(person);
   const updated = cloneRecord(match);
   updated.person = enrichedPerson;
+  // Email is stripped from the client payload, so it never round-trips through
+  // the edit form. Preserve the roster email already on file.
+  updated.person.email = match.person.email || "";
   updated.auth.lastProfileUpdatedAt = now;
 
   await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updated);

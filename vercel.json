@@ -11,6 +11,7 @@
     { "source": "/profile", "destination": "/index.html" },
     { "source": "/connections", "destination": "/index.html" },
     { "source": "/calendar", "destination": "/index.html" },
-    { "source": "/claim", "destination": "/index.html" }
+    { "source": "/claim", "destination": "/index.html" },
+    { "source": "/join", "destination": "/index.html" }
   ]
 }

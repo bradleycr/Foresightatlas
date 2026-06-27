@@ -36,7 +36,12 @@ const {
   CALENDAR_FILE,
   LUMA_FILE,
 } = require("./local-storage");
-const { getDirectorySessionFromRequest } = require("./directory-auth");
+const {
+  getDirectorySessionFromRequest,
+  verifyDirectorySessionToken,
+  readDirectoryTokenFromRequest,
+  verifyRegisterToken,
+} = require("./directory-auth");
 const { assertPublicWriteSecret } = require("./public-write-secret");
 
 const app = express();
@@ -96,7 +101,25 @@ app.use(
 );
 app.use(express.json());
 
+app.get("/api/directory-names", async (req, res) => {
+  try {
+    const database = await getLocalDatabase();
+    const people = (database.people || [])
+      .filter((p) => p && p.fullName && p.roleType !== "Senior Fellow" && p.isPrivate !== true)
+      .map((p) => ({ id: p.id, fullName: p.fullName }));
+    res.json({ people });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || "Failed to load names" });
+  }
+});
+
 app.get("/api/database", async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  try {
+    verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
+  } catch {
+    return res.status(401).json({ error: "Sign in to view the directory." });
+  }
   try {
     const database = await getLocalDatabase();
     // Mirror the production privacy gate (see server/sheet-database.js): never
@@ -193,12 +216,17 @@ app.post("/api/member-claim", async (req, res) => {
 
 app.post("/api/member-register", async (req, res) => {
   try {
-    const { person, password } = req.body || {};
+    const { person, password, inviteToken } = req.body || {};
+    verifyRegisterToken(inviteToken);
     const result = await createLocalProfile(person, password);
     return res.json(result);
   } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
     const message = error instanceof Error ? error.message : "Registration failed";
-    res.status(400).json({ error: message });
+    res.status(status).json({ error: message });
   }
 });
 

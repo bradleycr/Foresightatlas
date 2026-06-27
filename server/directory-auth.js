@@ -118,6 +118,11 @@ function verifyDirectorySessionToken(token) {
   } catch {
     throw unauthorized("Invalid directory session.");
   }
+  // A session must identify a person and must NOT be a claim/register link
+  // (those are signed with the same secret but are not access tokens).
+  if (!payload.personId || payload.purpose) {
+    throw unauthorized("Invalid directory session.");
+  }
   if (!payload.exp || new Date(payload.exp).getTime() <= Date.now()) {
     throw unauthorized("Your directory session has expired. Please sign in again.");
   }
@@ -312,6 +317,62 @@ function verifyClaimToken(token) {
   return payload;
 }
 
+/* ── New-account invite links ────────────────────────────────────────────
+ *
+ * A register token authorizes creating ONE brand-new profile (for people not
+ * yet on the roster). Unlike claim links it has no personId; it's time-limited
+ * instead of one-time, since there's no record yet to mark as used. Bradley
+ * mints these privately and sends them to new fellows — there is no public
+ * "create account" button.
+ */
+
+const REGISTER_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+
+function issueRegisterToken(ttlMs = REGISTER_TTL_MS) {
+  const payload = {
+    purpose: "register",
+    iat: Date.now(),
+    exp: new Date(Date.now() + ttlMs).toISOString(),
+  };
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  return `${encodedPayload}.${getSessionSignature(encodedPayload)}`;
+}
+
+function verifyRegisterToken(token) {
+  const unauthorized = (message) => {
+    const err = new Error(message);
+    err.statusCode = 401;
+    return err;
+  };
+
+  if (!token || typeof token !== "string" || !token.includes(".")) {
+    throw unauthorized("This invite link is invalid or incomplete.");
+  }
+  const [encodedPayload, signature] = token.split(".");
+  const expected = getSessionSignature(encodedPayload);
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(signature || "");
+  if (
+    expectedBuffer.length !== actualBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, actualBuffer)
+  ) {
+    throw unauthorized("This invite link is invalid.");
+  }
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw unauthorized("This invite link is invalid.");
+  }
+  if (payload.purpose !== "register") {
+    throw unauthorized("This invite link is invalid.");
+  }
+  if (!payload.exp || new Date(payload.exp).getTime() <= Date.now()) {
+    throw unauthorized("This invite link has expired. Ask for a fresh one.");
+  }
+  return payload;
+}
+
 /**
  * Peek at a claim link without consuming it — used by the claim page to greet
  * the member by name and tell them whether the profile is already set up.
@@ -415,4 +476,6 @@ module.exports = {
   verifyClaimToken,
   peekClaimToken,
   claimDirectoryProfile,
+  issueRegisterToken,
+  verifyRegisterToken,
 };

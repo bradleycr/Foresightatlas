@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, HelpCircle, Loader2, Lock, Search, UserCircle2, UserPlus } from "lucide-react";
+import { ChevronLeft, HelpCircle, Loader2, Lock, Search, UserCircle2 } from "lucide-react";
 import type { Person } from "../../types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -20,8 +20,6 @@ interface DirectoryLoginFormProps {
     password: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   onCancel?: () => void;
-  /** When the user can't find their name and wants to add a new profile from scratch. */
-  onAddYourself?: () => void;
   /**
    * Optional full name to pre-populate the form with. Typically wired to
    * {@link getLastSignedInName} so returning members only have to type a
@@ -42,7 +40,6 @@ export function DirectoryLoginForm({
   submitLabel = "Sign in",
   onSubmit,
   onCancel,
-  onAddYourself,
   initialName,
 }: DirectoryLoginFormProps) {
   const [username, setUsername] = useState(initialName ?? "");
@@ -227,19 +224,22 @@ export function DirectoryLoginForm({
         </div>
       </div>
 
-      {onAddYourself && !hasSelection && (
+      {/*
+        New accounts are invite-only — there is intentionally no public
+        "Add yourself" button. People who aren't in the directory are pointed
+        to Bradley, who can send a private join link.
+      */}
+      {!hasSelection && (
         <div className="rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3">
           <p className="text-sm text-gray-600">
-            Can’t find your name?
+            Can’t find your name?{" "}
+            <a
+              href="mailto:bradley@foresight.org?subject=Foresight%20map%20access"
+              className="font-medium text-sky-600 transition-colors hover:text-sky-800"
+            >
+              Contact bradley@foresight.org
+            </a>
           </p>
-          <button
-            type="button"
-            onClick={onAddYourself}
-            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-sky-600 transition-colors hover:text-sky-800"
-          >
-            <UserPlus className="size-4" />
-            Add yourself
-          </button>
         </div>
       )}
 

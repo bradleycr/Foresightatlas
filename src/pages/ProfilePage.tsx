@@ -101,8 +101,12 @@ interface ProfilePageProps {
   ) => void;
   /** After creating a new profile, leave create mode (e.g. navigate to /profile). */
   onExitCreateMode: () => void;
-  /** User chose "Add yourself" from the login form. */
-  onAddYourself?: () => void;
+  /**
+   * Signed invite token from the /join?token=… link. Required to create a new
+   * account — registration is invite-only, so without it the server rejects
+   * the request. Undefined for the normal (existing-member) profile view.
+   */
+  inviteToken?: string | null;
 }
 
 type LocationCheckState =
@@ -128,7 +132,7 @@ export function ProfilePage({
   onSignOut,
   onProfileSaved,
   onExitCreateMode,
-  onAddYourself,
+  inviteToken,
 }: ProfilePageProps) {
   const [draft, setDraft] = useState<Person | null>(person);
   const [isSaving, setIsSaving] = useState(false);
@@ -282,6 +286,12 @@ export function ProfilePage({
         setDraft((current) => (current ? { ...current, [key]: value } : current));
       };
       const handleCreate = async () => {
+        if (!inviteToken) {
+          toast.error("This page needs a valid invite link.", {
+            description: "Ask Bradley for a personal join link to create an account.",
+          });
+          return;
+        }
         if (!createDraft.fullName.trim()) {
           toast.error("Full name is required.");
           return;
@@ -300,7 +310,7 @@ export function ProfilePage({
             ...createDraft,
             focusTags: [...createSelectedPresets, ...parseFocusTags(createCustomFocusStr)],
           };
-          const result = await createPerson(payload, createPassword.password);
+          const result = await createPerson(payload, createPassword.password, inviteToken);
           onProfileSaved(result.person, result.auth);
           onExitCreateMode();
           toast.success("Profile created", {
@@ -642,7 +652,6 @@ export function ProfilePage({
                 submitLabel="Sign in"
                 initialName={getLastSignedInName()}
                 onSubmit={onSignIn}
-                onAddYourself={onAddYourself}
               />
             </div>
           </section>

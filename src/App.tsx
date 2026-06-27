@@ -12,7 +12,9 @@ import {
   getAllPeople,
   getAllTravelWindows,
   invalidateDatabaseCache,
+  UnauthorizedError,
 } from "./services/database";
+import { AuthGate } from "./components/auth/AuthGate";
 import {
   subscribeToDataChanges,
   subscribeToSyncErrors,
@@ -114,10 +116,16 @@ export default function App() {
     timelineViewMode: "location",
   });
 
-  // Load data on mount
+  // Load the gated directory only once we have a member session. Anonymous
+  // visitors see the AuthGate (or the claim/join pages), which don't need it.
   useEffect(() => {
+    if (!identity) {
+      setIsLoading(false);
+      return;
+    }
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity?.personId]);
 
   /*
    * Cross-tab sync & focus refresh.
@@ -173,7 +181,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/claim"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/claim", "/join"];
     const current = getRoutePath();
     // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
     // so we match them with a prefix rather than an exact list entry. Bare
@@ -276,6 +284,14 @@ export default function App() {
       setTravelWindows(travelWindowsData);
       setEvents(eventsData);
     } catch (err) {
+      // A rejected session means the directory is gated and our token is
+      // gone/expired — drop identity so the AuthGate takes over cleanly.
+      if (err instanceof UnauthorizedError) {
+        clearIdentity();
+        setIdentityState(null);
+        setSelfPerson(null);
+        return;
+      }
       const errorMessage = err instanceof Error ? err.message : "Failed to load data";
       setError(errorMessage);
       toast.error("Failed to load data", { description: errorMessage });
@@ -532,10 +548,16 @@ export default function App() {
     isClaimRoute && typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("token")
       : null;
-  const profileCreateMode =
-    isProfileRoute &&
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("new") === "1";
+  /**
+   * New-account creation is invite-only and lives at /join?token=… . There is
+   * no public "Add yourself" — Bradley mints these links privately. The token
+   * is re-validated server-side on submit, so a tampered link simply fails.
+   */
+  const isJoinRoute = route === "/join";
+  const joinToken =
+    isJoinRoute && typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("token")
+      : null;
   /*
    * Resolve the signed-in member's record. Prefer the public directory copy
    * (kept in sync by edits across tabs), but fall back to the auth-sourced
@@ -578,13 +600,12 @@ export default function App() {
       identity={identity}
       people={people}
       person={signedInPerson}
-      createMode={profileCreateMode}
+      createMode={false}
       onNavigateHome={() => navigate("/")}
       onSignIn={handleDirectorySignIn}
       onSignOut={handleIdentityClear}
       onProfileSaved={handleProfileSaved}
       onExitCreateMode={() => navigate("/profile")}
-      onAddYourself={() => navigate("/profile?new=1")}
     />
   ) : isCalendarRoute ? (
     <CalendarPage
@@ -606,6 +627,19 @@ export default function App() {
       onClaim={handleClaimProfile}
       onClaimed={() => navigate("/profile")}
       onNavigateHome={() => navigate("/")}
+    />
+  ) : isJoinRoute ? (
+    <ProfilePage
+      identity={identity}
+      people={people}
+      person={null}
+      createMode={true}
+      inviteToken={joinToken}
+      onNavigateHome={() => navigate("/")}
+      onSignIn={handleDirectorySignIn}
+      onSignOut={handleIdentityClear}
+      onProfileSaved={handleProfileSaved}
+      onExitCreateMode={() => navigate("/")}
     />
   ) : (
     <>
@@ -649,6 +683,21 @@ export default function App() {
       </div>
     </>
   );
+
+  /*
+   * Whole-app auth gate. This is an internal tool: nothing renders until a
+   * member is signed in. The only exceptions are the magic-link flows that a
+   * signed-out person legitimately needs — claiming an existing profile and
+   * the invite-only join page — which carry their own signed tokens.
+   */
+  if (!identity && !isClaimRoute && !isJoinRoute) {
+    return (
+      <>
+        <AuthGate onSignIn={handleDirectorySignIn} />
+        <Toaster />
+      </>
+    );
+  }
 
   return (
     <>

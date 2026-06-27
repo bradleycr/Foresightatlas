@@ -256,7 +256,9 @@ async function getFullDatabaseFromSheet() {
     .map((r) => r.person)
     .filter((p) => p && p.fullName)
     .filter((p) => p.roleType !== "Senior Fellow")
-    .filter((p) => p.isPrivate !== true);
+    .filter((p) => p.isPrivate !== true)
+    // Roster email is server-side only — never broadcast it to the client.
+    .map(({ email, ...rest }) => rest);
   const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) => rowToTravelWindow(row));
   const suggestions = rowsToObjects(suggestionsRows, SUGGESTIONS_HEADERS, (row) => rowToSuggestion(row));
   const adminUsers = rowsToObjects(adminRows, ADMIN_USERS_HEADERS, (row) => rowToAdminUser(row));
@@ -275,6 +277,24 @@ async function getFullDatabaseFromSheet() {
   };
 }
 
+/**
+ * Minimal directory for the (unauthenticated) sign-in picker: id + fullName
+ * only, filtered to the same set as the public atlas (no Senior Fellows, no
+ * private profiles). This is the ONLY person data served before login; the
+ * full database (locations, projects, connections, emails) requires a session.
+ * Hidden members can still sign in by typing their exact name.
+ */
+async function getDirectoryNamesFromSheet() {
+  const loaded = await loadRealDataRecords();
+  return (loaded.records || [])
+    .map((r) => r.person)
+    .filter((p) => p && p.fullName)
+    .filter((p) => p.roleType !== "Senior Fellow")
+    .filter((p) => p.isPrivate !== true)
+    .map((p) => ({ id: p.id, fullName: p.fullName }));
+}
+
 module.exports = {
   getFullDatabaseFromSheet,
+  getDirectoryNamesFromSheet,
 };

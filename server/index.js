@@ -13,7 +13,7 @@ const express = require("express");
 const fs = require("fs").promises;
 const cors = require("cors");
 const { saveProfile, createProfile } = require("./profile-store");
-const { getFullDatabaseFromSheet } = require("./sheet-database");
+const { getFullDatabaseFromSheet, getDirectoryNamesFromSheet } = require("./sheet-database");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const {
   authenticateDirectoryLogin,
@@ -21,8 +21,10 @@ const {
   refreshDirectorySession,
   getDirectorySessionFromRequest,
   readDirectoryTokenFromRequest,
+  verifyDirectorySessionToken,
   peekClaimToken,
   claimDirectoryProfile,
+  verifyRegisterToken,
 } = require("./directory-auth");
 const calendarEventsHandler = require("../api/calendar-events");
 
@@ -62,6 +64,13 @@ app.use(express.json());
  * Requires GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY.
  */
 app.get("/api/database", async (req, res) => {
+  // Internal tool: a valid member session is required to read the directory.
+  res.setHeader("Cache-Control", "private, no-store");
+  try {
+    verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
+  } catch {
+    return res.status(401).json({ error: "Sign in to view the directory." });
+  }
   try {
     const database = await getFullDatabaseFromSheet();
     database.events = await mergeSheetEventsWithLuma(database.events || []);
@@ -85,6 +94,21 @@ app.post("/api/database", async (req, res) => {
   res.status(410).json({
     error: "POST /api/database is deprecated. The Google Sheet is the source of truth; use the profile page to edit data.",
   });
+});
+
+/**
+ * GET /api/directory-names
+ * Public minimal sign-in picker (id + fullName only) for the login form.
+ */
+app.get("/api/directory-names", async (req, res) => {
+  try {
+    const people = await getDirectoryNamesFromSheet();
+    res.json({ people });
+  } catch (error) {
+    res.status(503).json({
+      error: error instanceof Error ? error.message : "Failed to load directory names",
+    });
+  }
 });
 
 /**
@@ -179,13 +203,19 @@ app.post("/api/member-password", async (req, res) => {
  */
 app.post("/api/member-register", async (req, res) => {
   try {
-    const { person, password } = req.body || {};
+    const { person, password, inviteToken } = req.body || {};
+    // Registration is invite-only — gated behind a signed register link.
+    verifyRegisterToken(inviteToken);
     const result = await createProfile(person, password);
     return res.json(result);
   } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
     const message =
       error instanceof Error ? error.message : "Registration failed";
-    res.status(400).json({ error: message });
+    res.status(status).json({ error: message });
   }
 });
 

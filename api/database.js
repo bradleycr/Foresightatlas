@@ -19,6 +19,10 @@ if (credPath && !fs.existsSync(path.resolve(credPath))) {
 
 const { getFullDatabaseFromSheet } = require("../server/sheet-database");
 const { mergeSheetEventsWithLuma } = require("../server/luma-merge");
+const {
+  verifyDirectorySessionToken,
+  readDirectoryTokenFromRequest,
+} = require("../server/directory-auth");
 
 const CACHE_TTL_MS = 60 * 1000; // 60s per instance (Vercel serverless may reuse the same instance)
 let cached = null;
@@ -27,11 +31,19 @@ let cachedAt = 0;
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  // Member data is private — never let a CDN or shared cache hold it.
+  res.setHeader("Cache-Control", "private, no-store");
 
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+
+  // The atlas is an internal tool: a valid member session is required.
+  try {
+    verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
+  } catch {
+    return res.status(401).json({ error: "Sign in to view the directory." });
+  }
 
   try {
     const now = Date.now();

@@ -11,6 +11,15 @@ import type { NodeEvent } from "../types/events";
 
 import { getApiBase } from "./api-base";
 import { publishDataChanged } from "./sync";
+import { getIdentity } from "./identity";
+
+/** Thrown when the API rejects our session — App clears identity and shows login. */
+export class UnauthorizedError extends Error {
+  constructor(message = "Sign in to view the directory.") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
 
 /**
  * In-memory cache of the last /api/database response.
@@ -73,7 +82,11 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    // The directory is gated — attach the member session when we have one.
+    const identity = getIdentity();
+    const headers: Record<string, string> = {};
+    if (identity?.token) headers.Authorization = `Bearer ${identity.token}`;
+    const res = await fetch(url, { signal: controller.signal, headers });
     return res;
   } finally {
     clearTimeout(timeout);
@@ -90,6 +103,9 @@ async function fetchDatabase(): Promise<CachedDatabase> {
   inFlightFetch = (async () => {
     try {
       const response = await fetchWithTimeout(apiUrl);
+      if (response.status === 401) {
+        throw new UnauthorizedError();
+      }
       if (!response.ok) {
         const text = await response.text();
         let message = `Failed to load data (${response.status}).`;
@@ -270,6 +286,27 @@ export async function getAllPeople(): Promise<Person[]> {
   return (db.people || []).map(normalizePerson);
 }
 
+/**
+ * Minimal sign-in picker: id + fullName only, from the public
+ * /api/directory-names endpoint. This is the one person query that works
+ * before authentication, so the login form can offer name autocomplete
+ * without exposing the gated directory.
+ */
+export async function getDirectoryNames(): Promise<Person[]> {
+  const url = `${getApiBase()}/directory-names`.replace(/([^:]\/)\/+/g, "$1");
+  const response = await fetchWithTimeout(url);
+  if (!response.ok) {
+    throw new Error(`Failed to load directory (${response.status}).`);
+  }
+  const raw = await response.json();
+  const people = Array.isArray(raw?.people) ? raw.people : [];
+  return people
+    .filter((p: unknown): p is { id: string; fullName: string } =>
+      Boolean(p && typeof (p as { fullName?: unknown }).fullName === "string"),
+    )
+    .map((p: { id: string; fullName: string }) => normalizePerson(p));
+}
+
 export async function getAllTravelWindows(): Promise<TravelWindow[]> {
   const db = await fetchDatabase();
   return (db.travelWindows || []).map((tw) =>
@@ -322,12 +359,13 @@ export async function addPerson(_person: Person): Promise<void> {}
 export async function createPerson(
   person: Partial<Person> & Pick<Person, "fullName" | "roleType" | "primaryNode">,
   password: string,
+  inviteToken: string,
 ): Promise<{ person: Person; auth: { token: string; expiresAt: string; mustChangePassword: boolean } }> {
   const url = `${getApiBase()}/member-register`;
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ person, password }),
+    body: JSON.stringify({ person, password, inviteToken }),
   });
 
   const payload = await response.json().catch(() => ({}));

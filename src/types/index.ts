@@ -45,6 +45,12 @@ export interface Person {
    * own record (sourced from the auth response, not the public directory).
    */
   isPrivate?: boolean;
+  /**
+   * Canonical roster email. Stored server-side only and stripped from the
+   * public /api/database payload, so this is normally undefined on the client.
+   * Present on the server record for the official roster, dedupe, and links.
+   */
+  email?: string;
 }
 
 export interface TravelWindow {

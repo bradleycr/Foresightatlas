@@ -448,10 +448,6 @@ export function AppHeader({
                     submitLabel="Sign in"
                     initialName={getLastSignedInName()}
                     onCancel={closeAccountDialog}
-                    onAddYourself={() => {
-                      closeAccountDialog();
-                      navigate("/profile?new=1");
-                    }}
                     onSubmit={async (username, password) => {
                       const result = await onSignIn(username, password);
                       if (result.ok) {

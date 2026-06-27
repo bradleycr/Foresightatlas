@@ -85,8 +85,12 @@ const PEOPLE_AUTH_HEADERS = [
  * - isPrivate: when TRUE the member opted their profile out of the public
  *   atlas. The public /api/database response omits these people entirely; the
  *   owner can still see and edit their own profile when signed in.
+ * - email: the member's canonical roster email. Stored server-side only and
+ *   STRIPPED from the /api/database payload (see server/sheet-database.js) so
+ *   it is never broadcast to the client. Used for the official roster, dedupe,
+ *   and sending claim / invite links.
  */
-const PEOPLE_EXTENDED_HEADERS = ["isPrivate"];
+const PEOPLE_EXTENDED_HEADERS = ["isPrivate", "email"];
 
 const PEOPLE_HEADERS = [
   ...PEOPLE_PUBLIC_HEADERS,
