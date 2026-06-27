@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, HelpCircle, Loader2, Lock, Search, UserCircle2, UserPlus } from "lucide-react";
 import type { Person } from "../../types";
 import { Button } from "../ui/button";
@@ -61,10 +61,19 @@ export function DirectoryLoginForm({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If the people directory loads after the form was mounted with a remembered
-  // name, retry the selection so the user lands straight on the password step.
+  /**
+   * The remembered name is only ever auto-selected ONCE. Without this guard the
+   * effect would re-fire the moment `selectedMatch` returns to null — which is
+   * exactly what happens when the user taps "Choose someone else", trapping
+   * them on the prefilled person. The ref lets the prefill run a single time
+   * (e.g. after the directory finishes loading) and then step out of the way.
+   */
+  const didApplyInitialName = useRef(false);
   useEffect(() => {
-    if (selectedMatch || !initialName) return;
+    if (didApplyInitialName.current) return;
+    if (!initialName || people.length === 0) return;
+    didApplyInitialName.current = true;
+    if (selectedMatch) return;
     const normalized = initialName.trim().toLowerCase();
     const match = people.find(
       (person) => person.fullName.toLowerCase() === normalized,
@@ -110,6 +119,7 @@ export function DirectoryLoginForm({
 
   const handleChooseSomeoneElse = () => {
     setSelectedMatch(null);
+    setUsername("");
     setPassword("");
     setError(null);
   };
