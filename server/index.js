@@ -21,6 +21,8 @@ const {
   refreshDirectorySession,
   getDirectorySessionFromRequest,
   readDirectoryTokenFromRequest,
+  peekClaimToken,
+  claimDirectoryProfile,
 } = require("./directory-auth");
 const calendarEventsHandler = require("../api/calendar-events");
 
@@ -120,6 +122,31 @@ app.post("/api/member-refresh", async (req, res) => {
         : 401;
     res.status(status).json({
       error: error instanceof Error ? error.message : "Session refresh failed",
+    });
+  }
+});
+
+/**
+ * POST /api/member-claim
+ * Magic-link claim. Peek (token only) or claim (token + newPassword).
+ */
+app.post("/api/member-claim", async (req, res) => {
+  const token = req.body?.token;
+  const newPassword = req.body?.newPassword;
+  try {
+    if (typeof newPassword === "string" && newPassword.length > 0) {
+      const result = await claimDirectoryProfile(token, newPassword);
+      return res.json(result);
+    }
+    const result = await peekClaimToken(token);
+    return res.json(result);
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
+    return res.status(status).json({
+      error: error instanceof Error ? error.message : "Claim failed",
     });
   }
 });

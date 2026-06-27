@@ -30,6 +30,7 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { CheckInPage } from "./pages/CheckInPage";
+import { ClaimPage } from "./pages/ClaimPage";
 import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
@@ -49,6 +50,7 @@ import {
 import {
   authenticateDirectoryMember,
   refreshDirectorySession,
+  claimProfile,
 } from "./services/memberAuth";
 import { consumePostLoginReturnUrl } from "./services/returnUrl";
 
@@ -171,7 +173,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/claim"];
     const current = getRoutePath();
     // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
     // so we match them with a prefix rather than an exact list entry. Bare
@@ -422,6 +424,30 @@ export default function App() {
     [navigate],
   );
 
+  const handleClaimProfile = useCallback(
+    async (token: string, newPassword: string) => {
+      try {
+        const result = await claimProfile(token, newPassword);
+        persistIdentity({
+          personId: result.person.id,
+          fullName: result.person.fullName,
+          token: result.auth.token,
+          expiresAt: result.auth.expiresAt,
+          mustChangePassword: result.auth.mustChangePassword,
+        });
+        setIdentityState(getIdentity());
+        setSelfPerson(result.person);
+        return { ok: true as const };
+      } catch (error) {
+        return {
+          ok: false as const,
+          error: error instanceof Error ? error.message : "Could not set up profile.",
+        };
+      }
+    },
+    [],
+  );
+
   const handleProfileSaved = useCallback((
     updatedPerson: Person,
     auth?: { token: string; expiresAt: string; mustChangePassword: boolean },
@@ -500,6 +526,12 @@ export default function App() {
           ? "global"
           : null;
   const isCheckInRoute = checkInSlug !== null;
+  const isClaimRoute = route === "/claim";
+  /** Claim token lives in the ?token= query of the magic link. */
+  const claimToken =
+    isClaimRoute && typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("token")
+      : null;
   const profileCreateMode =
     isProfileRoute &&
     typeof window !== "undefined" &&
@@ -566,6 +598,13 @@ export default function App() {
       identity={identity}
       signedInPerson={signedInPerson}
       onOpenProfile={() => navigate("/profile")}
+      onNavigateHome={() => navigate("/")}
+    />
+  ) : isClaimRoute ? (
+    <ClaimPage
+      token={claimToken}
+      onClaim={handleClaimProfile}
+      onClaimed={() => navigate("/profile")}
       onNavigateHome={() => navigate("/")}
     />
   ) : (

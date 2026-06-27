@@ -9,6 +9,7 @@ const {
   issueDirectorySession,
   verifyPasswordHash,
   hashPassword,
+  verifyClaimToken,
 } = require("./directory-auth");
 
 const MOCK_DIR = path.resolve(__dirname, "../mock");
@@ -483,6 +484,57 @@ async function refreshLocalMemberSession(session) {
   return { person, auth: fresh };
 }
 
+/** Mock equivalent of peekClaimToken (see server/directory-auth.js). */
+async function peekLocalClaim(token) {
+  const payload = verifyClaimToken(token);
+  const db = await getLocalDatabase();
+  const auth = await getLocalAuth();
+  const person = db.people.find((entry) => entry.id === payload.personId);
+  if (!person) {
+    const err = new Error("We could not find the profile for this link.");
+    err.statusCode = 404;
+    throw err;
+  }
+  return {
+    person: { id: person.id, fullName: person.fullName },
+    alreadyClaimed: Boolean(auth[person.id]?.passwordHash),
+  };
+}
+
+/** Mock equivalent of claimDirectoryProfile (one-time-use). */
+async function claimLocalProfile(token, newPassword) {
+  const payload = verifyClaimToken(token);
+  const validated = validateNewPasswordForRegister(newPassword);
+  const db = await getLocalDatabase();
+  const auth = await getLocalAuth();
+  const person = db.people.find((entry) => entry.id === payload.personId);
+  if (!person) {
+    const err = new Error("We could not find the profile for this link.");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (auth[person.id]?.passwordHash) {
+    const err = new Error(
+      "This profile is already set up. Please sign in with your password instead.",
+    );
+    err.statusCode = 409;
+    throw err;
+  }
+  const now = new Date().toISOString();
+  auth[person.id] = {
+    ...(auth[person.id] || {}),
+    passwordHash: await hashPassword(validated),
+    mustChangePassword: false,
+    claimedAt: now,
+    lastPasswordChangedAt: now,
+  };
+  await saveLocalAuth(auth);
+  return {
+    person,
+    auth: issueDirectorySession({ person, auth: { mustChangePassword: false } }),
+  };
+}
+
 async function changeLocalMemberPassword(session, currentPassword, newPassword) {
   const auth = await getLocalAuth();
   const db = await getLocalDatabase();
@@ -739,6 +791,8 @@ module.exports = {
   authenticateLocalMember,
   changeLocalMemberPassword,
   refreshLocalMemberSession,
+  peekLocalClaim,
+  claimLocalProfile,
   createLocalProfile,
   saveLocalProfile,
   listLocalRsvps,

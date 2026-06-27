@@ -117,6 +117,7 @@
         "seed:berlin-coworking": "node scripts/seed-berlin-coworking.js",
         "sync:fellows": "node scripts/sync-fellows-from-website.js",
         "scrape:fellowship": "node scripts/scrape-fellowship-website.js",
+        "claim:links": "node scripts/generate-claim-links.js",
         "vercel": "vercel",
         "vercel:login": "vercel login",
         "vercel:link": "vercel link",

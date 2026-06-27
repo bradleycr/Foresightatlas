@@ -1,0 +1,276 @@
+/**
+ * ClaimPage — "set up your profile" landing at /claim?token=...
+ *
+ * This is the magic-link onboarding flow. Each member is sent a unique signed
+ * link; opening it identifies them (no name typing, no shared password) and
+ * lets them choose a password once. After that the link is spent and they sign
+ * in normally.
+ *
+ * Flow:
+ *   1. Peek the token → greet the member by name (or surface an invalid /
+ *      already-claimed link).
+ *   2. They pick a password (twice) → we claim the profile and sign them in.
+ *   3. Hand off to the profile editor so they can flesh out their details.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, KeyRound, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
+
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { peekClaim } from "../services/memberAuth";
+
+interface ClaimPageProps {
+  /** Raw token from the ?token= query parameter. */
+  token: string | null;
+  /** Set the first password + sign in. Returns ok/error like the sign-in flow. */
+  onClaim: (
+    token: string,
+    newPassword: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  /** Where to send the member once their profile is claimed. */
+  onClaimed: () => void;
+  onNavigateHome: () => void;
+}
+
+type PeekState =
+  | { status: "loading" }
+  | { status: "ready"; fullName: string }
+  | { status: "claimed"; fullName: string }
+  | { status: "error"; message: string };
+
+const GRADIENT =
+  "linear-gradient(135deg, #eef2ff 0%, #fdf2f8 55%, #f5f3ff 100%)";
+
+export function ClaimPage({
+  token,
+  onClaim,
+  onClaimed,
+  onNavigateHome,
+}: ClaimPageProps) {
+  const [peek, setPeek] = useState<PeekState>({ status: "loading" });
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!token) {
+      setPeek({ status: "error", message: "This sign-in link is missing its code." });
+      return;
+    }
+    setPeek({ status: "loading" });
+    peekClaim(token)
+      .then((result) => {
+        if (cancelled) return;
+        setPeek(
+          result.alreadyClaimed
+            ? { status: "claimed", fullName: result.person.fullName }
+            : { status: "ready", fullName: result.person.fullName },
+        );
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPeek({
+          status: "error",
+          message:
+            err instanceof Error ? err.message : "This sign-in link is invalid.",
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const canSubmit = useMemo(
+    () => peek.status === "ready" && password.length >= 8 && password === confirm,
+    [peek.status, password, confirm],
+  );
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!token) return;
+      setError(null);
+
+      if (password.length < 8) {
+        setError("Choose a password with at least 8 characters.");
+        return;
+      }
+      if (password !== confirm) {
+        setError("Password and confirmation do not match.");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const result = await onClaim(token, password);
+        if (!result.ok) {
+          setError(result.error ?? "We couldn't set up your profile.");
+          return;
+        }
+        toast.success("You're all set", {
+          description: "Your password is saved and you're signed in.",
+        });
+        onClaimed();
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [token, password, confirm, onClaim, onClaimed],
+  );
+
+  return (
+    <div
+      className="flex flex-1 items-start justify-center px-4 py-10 sm:py-16"
+      style={{ background: GRADIENT }}
+    >
+      <div className="w-full max-w-lg rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl backdrop-blur-md sm:p-10">
+        <button
+          type="button"
+          onClick={onNavigateHome}
+          className="inline-flex min-h-[44px] w-fit touch-manipulation items-center gap-2 rounded-lg py-2 pr-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:ring-offset-2 active:bg-gray-100 sm:min-h-0"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Back to map
+        </button>
+
+        <div className="mt-6 flex size-16 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-20">
+          <img
+            src={foresightIconUrl}
+            alt="Foresight"
+            className="size-10 object-contain opacity-80 sm:size-12"
+            aria-hidden
+          />
+        </div>
+
+        {peek.status === "loading" && (
+          <div className="mt-8 flex items-center gap-3 text-gray-600">
+            <Loader2 className="size-5 animate-spin" aria-hidden />
+            Checking your link…
+          </div>
+        )}
+
+        {peek.status === "error" && (
+          <div className="mt-6">
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              This link didn&apos;t work
+            </h1>
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {peek.message}
+            </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Ask whoever invited you for a fresh link, or head back to the map.
+            </p>
+            <Button className="mt-6" onClick={onNavigateHome}>
+              Back to map
+            </Button>
+          </div>
+        )}
+
+        {peek.status === "claimed" && (
+          <div className="mt-6">
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              You&apos;re already set up, {firstName(peek.fullName)}
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">
+              This profile already has a password. Sign in with it from the
+              profile page — this one-time link has done its job.
+            </p>
+            <Button className="mt-6" onClick={onClaimed}>
+              Go to sign in
+            </Button>
+          </div>
+        )}
+
+        {peek.status === "ready" && (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-sky-600/80">
+                Welcome
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+                Set up {firstName(peek.fullName)}&apos;s profile
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                You&apos;re claiming the profile for{" "}
+                <span className="font-medium text-gray-900">{peek.fullName}</span>.
+                Choose a password and you&apos;ll be signed in.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="claim-password">Choose a password</Label>
+              <div className="relative">
+                <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  id="claim-password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  className="h-11 pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="claim-confirm">Confirm password</Label>
+              <div className="relative">
+                <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  id="claim-confirm"
+                  type="password"
+                  value={confirm}
+                  onChange={(event) => setConfirm(event.target.value)}
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                  className="h-11 pl-10"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={!canSubmit || isSubmitting}
+              className="w-full min-h-[52px] text-base font-semibold"
+            >
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" /> Setting up…
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <Sparkles className="size-4" /> Set password &amp; sign in
+                </span>
+              )}
+            </Button>
+
+            <p className="flex items-center gap-2 text-xs text-gray-500">
+              <ShieldCheck className="size-3.5 text-emerald-500" aria-hidden />
+              Your password is hashed on the server — it&apos;s never stored in
+              plain text.
+            </p>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function firstName(fullName: string): string {
+  const first = fullName.trim().split(/\s+/)[0];
+  return first || fullName;
+}

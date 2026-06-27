@@ -23,6 +23,8 @@ const {
   authenticateLocalMember,
   changeLocalMemberPassword,
   refreshLocalMemberSession,
+  peekLocalClaim,
+  claimLocalProfile,
   createLocalProfile,
   saveLocalProfile,
   listLocalRsvps,
@@ -164,6 +166,27 @@ app.post("/api/member-refresh", async (req, res) => {
         : 401;
     res.status(status).json({
       error: error instanceof Error ? error.message : "Session refresh failed",
+    });
+  }
+});
+
+app.post("/api/member-claim", async (req, res) => {
+  const token = req.body?.token;
+  const newPassword = req.body?.newPassword;
+  try {
+    if (typeof newPassword === "string" && newPassword.length > 0) {
+      const result = await claimLocalProfile(token, newPassword);
+      return res.json(result);
+    }
+    const result = await peekLocalClaim(token);
+    return res.json(result);
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
+    return res.status(status).json({
+      error: error instanceof Error ? error.message : "Claim failed",
     });
   }
 });

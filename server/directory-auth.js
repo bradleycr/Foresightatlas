@@ -9,18 +9,35 @@ const {
   upsertRealDataRecord,
 } = require("./realdata-store");
 
+/**
+ * Onboarding model.
+ *
+ * By default members claim their profile through a **per-person magic link**
+ * (see {@link issueClaimToken}); there is no shared password anyone could use
+ * to grab someone else's account. The legacy shared-default-password flow is
+ * opt-in via DIRECTORY_ALLOW_DEFAULT_PASSWORD=true for anyone who still wants
+ * it, but it's off unless explicitly enabled.
+ */
+const ALLOW_DEFAULT_PASSWORD =
+  String(process.env.DIRECTORY_ALLOW_DEFAULT_PASSWORD || "")
+    .trim()
+    .toLowerCase() === "true";
+
 if (process.env.NODE_ENV === "production") {
   if (!process.env.DIRECTORY_SESSION_SECRET && !process.env.SESSION_SECRET) {
     throw new Error(
-      "Set DIRECTORY_SESSION_SECRET or SESSION_SECRET in production.",
+      "Set DIRECTORY_SESSION_SECRET or SESSION_SECRET in production (it signs both sessions and claim links).",
     );
   }
+  // The shared default password only needs to be configured when it's actually
+  // enabled; the magic-link flow doesn't use it.
   if (
-    !process.env.DIRECTORY_DEFAULT_PASSWORD ||
-    String(process.env.DIRECTORY_DEFAULT_PASSWORD).trim() === ""
+    ALLOW_DEFAULT_PASSWORD &&
+    (!process.env.DIRECTORY_DEFAULT_PASSWORD ||
+      String(process.env.DIRECTORY_DEFAULT_PASSWORD).trim() === "")
   ) {
     throw new Error(
-      "Set DIRECTORY_DEFAULT_PASSWORD in production (not the dev default).",
+      "DIRECTORY_ALLOW_DEFAULT_PASSWORD is on, so set DIRECTORY_DEFAULT_PASSWORD in production (not the dev default).",
     );
   }
 }
@@ -170,7 +187,18 @@ async function authenticateDirectoryLogin(fullName, password) {
   }
 
   const passwordHash = record.auth.passwordHash;
-  // No hash yet = first-time login: accept the default temporary password (password123).
+  if (!passwordHash && !ALLOW_DEFAULT_PASSWORD) {
+    // No password set and the shared default is disabled: this profile can only
+    // be set up through its personal magic link.
+    const err = new Error(
+      "This profile hasn't been set up yet. Open the personal sign-in link you were sent to choose a password.",
+    );
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // With a hash we verify it; otherwise (default explicitly enabled) the
+  // first-time temporary password is accepted.
   const isValid = passwordHash
     ? await verifyPasswordHash(submittedPassword, passwordHash)
     : submittedPassword === DEFAULT_DIRECTORY_PASSWORD;
@@ -232,6 +260,118 @@ function getDirectorySessionFromRequest(req) {
   return verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
 }
 
+/* ── Magic claim links ──────────────────────────────────────────────────
+ *
+ * A claim link carries a signed token that names exactly one person. Visiting
+ * it lets that person set their password and sign in — no shared secret, no
+ * name guessing. Tokens are signed with the same SESSION_SECRET (stateless,
+ * no storage), and are one-time-use: once a profile has a passwordHash the
+ * link stops working (the owner signs in normally from then on).
+ */
+
+function issueClaimToken(personId) {
+  const id = String(personId || "").trim();
+  if (!id) throw new Error("issueClaimToken requires a personId.");
+  const payload = { personId: id, purpose: "claim", iat: Date.now() };
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  return `${encodedPayload}.${getSessionSignature(encodedPayload)}`;
+}
+
+function verifyClaimToken(token) {
+  const unauthorized = (message) => {
+    const err = new Error(message);
+    err.statusCode = 401;
+    return err;
+  };
+
+  if (!token || typeof token !== "string" || !token.includes(".")) {
+    throw unauthorized("This sign-in link is invalid or incomplete.");
+  }
+
+  const [encodedPayload, signature] = token.split(".");
+  const expected = getSessionSignature(encodedPayload);
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(signature || "");
+  if (
+    expectedBuffer.length !== actualBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, actualBuffer)
+  ) {
+    throw unauthorized("This sign-in link is invalid.");
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
+  } catch {
+    throw unauthorized("This sign-in link is invalid.");
+  }
+  if (payload.purpose !== "claim" || !payload.personId) {
+    throw unauthorized("This sign-in link is invalid.");
+  }
+
+  return payload;
+}
+
+/**
+ * Peek at a claim link without consuming it — used by the claim page to greet
+ * the member by name and tell them whether the profile is already set up.
+ */
+async function peekClaimToken(token) {
+  const payload = verifyClaimToken(token);
+  const { records } = await loadRealDataRecords();
+  const match = records.find((record) => record.person.id === payload.personId);
+  if (!match) {
+    const err = new Error("We could not find the profile for this link.");
+    err.statusCode = 404;
+    throw err;
+  }
+  return {
+    person: { id: match.person.id, fullName: match.person.fullName },
+    alreadyClaimed: Boolean(match.auth.passwordHash),
+  };
+}
+
+/**
+ * Consume a claim link: set the member's first password and sign them in.
+ * One-time-use — rejected once the profile already has a password.
+ */
+async function claimDirectoryProfile(token, newPassword) {
+  const payload = verifyClaimToken(token);
+  const validatedPassword = validateNewPassword(newPassword);
+
+  const loaded = await loadRealDataRecords({ write: true });
+  const match = loaded.records.find(
+    (record) => record.person.id === payload.personId,
+  );
+  if (!match) {
+    const err = new Error("We could not find the profile for this link.");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (match.auth.passwordHash) {
+    const err = new Error(
+      "This profile is already set up. Please sign in with your password instead.",
+    );
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const now = new Date().toISOString();
+  const updated = cloneRecord(match);
+  updated.auth.passwordHash = await hashPassword(validatedPassword);
+  updated.auth.mustChangePassword = false;
+  updated.auth.claimedAt = now;
+  updated.auth.lastPasswordChangedAt = now;
+
+  await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updated);
+
+  return {
+    person: updated.person,
+    auth: issueDirectorySession(updated),
+  };
+}
+
 /**
  * Refresh an existing directory session — verify the caller's token, then
  * re-issue a new one with a fresh TTL so active members never have to sign
@@ -261,6 +401,7 @@ async function refreshDirectorySession(token) {
 
 module.exports = {
   DEFAULT_DIRECTORY_PASSWORD,
+  ALLOW_DEFAULT_PASSWORD,
   authenticateDirectoryLogin,
   changeDirectoryPassword,
   refreshDirectorySession,
@@ -270,4 +411,8 @@ module.exports = {
   readDirectoryTokenFromRequest,
   hashPassword,
   verifyPasswordHash,
+  issueClaimToken,
+  verifyClaimToken,
+  peekClaimToken,
+  claimDirectoryProfile,
 };

@@ -10,9 +10,6 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 
-/** Default temporary password for first-time directory sign-in (must match backend DEFAULT_DIRECTORY_PASSWORD). */
-const DEFAULT_TEMP_PASSWORD = "password123";
-
 interface DirectoryLoginFormProps {
   people: Person[];
   title: string;
@@ -208,10 +205,10 @@ export function DirectoryLoginForm({
                   <HelpCircle className="size-4" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent side="top" align="start" className="max-w-[260px]">
-                First time? Temporary password is{" "}
-                <span className="font-semibold text-teal-700">{DEFAULT_TEMP_PASSWORD}</span>
-                . You&apos;ll set your own after signing in.
+              <PopoverContent side="top" align="start" className="max-w-[280px]">
+                First time here? Open the personal sign-in link you were sent —
+                it lets you set your password and signs you in. After that, use
+                that password here.
               </PopoverContent>
             </Popover>
           </div>

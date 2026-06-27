@@ -11,6 +11,11 @@ export interface DirectoryAuthResult {
   };
 }
 
+export interface ClaimPeekResult {
+  person: { id: string; fullName: string };
+  alreadyClaimed: boolean;
+}
+
 async function postJson<T>(url: string, body: unknown, token?: string): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
@@ -75,4 +80,26 @@ export async function refreshDirectorySession(
     {},
     token,
   );
+}
+
+/**
+ * Look up who a claim link belongs to (without consuming it) so the claim
+ * page can greet the member by name and detect already-claimed profiles.
+ */
+export async function peekClaim(token: string): Promise<ClaimPeekResult> {
+  return postJson<ClaimPeekResult>(`${getApiBase()}/member-claim`, { token });
+}
+
+/**
+ * Consume a claim link: set the member's first password and sign them in.
+ * One-time-use — the server rejects it once the profile already has a password.
+ */
+export async function claimProfile(
+  token: string,
+  newPassword: string,
+): Promise<DirectoryAuthResult> {
+  return postJson<DirectoryAuthResult>(`${getApiBase()}/member-claim`, {
+    token,
+    newPassword,
+  });
 }
