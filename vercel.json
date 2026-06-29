@@ -4,6 +4,12 @@
   "framework": "vite",
   "installCommand": "pnpm install",
   "rewrites": [
+    { "source": "/api/member-login", "destination": "/api/member?route=login" },
+    { "source": "/api/member-refresh", "destination": "/api/member?route=refresh" },
+    { "source": "/api/member-claim", "destination": "/api/member?route=claim" },
+    { "source": "/api/member-password", "destination": "/api/member?route=password" },
+    { "source": "/api/member-register", "destination": "/api/member?route=register" },
+    { "source": "/api/directory-names", "destination": "/api/member?route=directory-names" },
     { "source": "/checkin/:slug*", "destination": "/index.html" },
     { "source": "/berlin", "destination": "/index.html" },
     { "source": "/sf", "destination": "/index.html" },
