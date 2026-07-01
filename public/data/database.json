@@ -405,7 +405,7 @@
       "id": "p18",
       "fullName": "Cosmo Mielke",
       "roleType": "Fellow",
-      "fellowshipCohortYear": 2017,
+      "fellowshipCohortYear": 2018,
       "focusTags": [
         "Longevity Biotechnology"
       ],
@@ -428,7 +428,7 @@
       "id": "p19",
       "fullName": "Berhane Temelso",
       "roleType": "Fellow",
-      "fellowshipCohortYear": 2017,
+      "fellowshipCohortYear": 2018,
       "focusTags": [
         "Longevity Biotechnology"
       ],
@@ -442,7 +442,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "berhane.temelso@furman.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -451,7 +451,7 @@
       "id": "p20",
       "fullName": "Kimberly Hamad-Schifferli",
       "roleType": "Fellow",
-      "fellowshipCohortYear": 2017,
+      "fellowshipCohortYear": 2018,
       "focusTags": [
         "Longevity Biotechnology"
       ],
@@ -465,7 +465,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "kimberly.hamad.schifferli@gmail.com",
+      "contactUrlOrHandle": "Kim.Hamad@umb.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -511,7 +511,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "ccy.pku@gmail.com",
+      "contactUrlOrHandle": "chuyang.cheng@scu.edu.cn",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -626,7 +626,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "erichinterman@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -672,7 +672,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "swordfish1313@hotmail.com",
+      "contactUrlOrHandle": "andres@oneskin.co",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -695,7 +695,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "gt3@berkeley.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -718,7 +718,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "pscheyer@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -741,7 +741,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "roman.yampolskiy@louisville.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -764,7 +764,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "ry.duff@gmail.com",
+      "contactUrlOrHandle": "ryan@careyryan.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -810,7 +810,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "dsluysmans@gmail.com",
+      "contactUrlOrHandle": "damien.sluysmans@uliege.be",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -856,7 +856,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "nusrat@cycaonco.com",
+      "contactUrlOrHandle": "nusrat@cygenica.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -879,7 +879,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "bharat.ramsundar@gmail.com",
+      "contactUrlOrHandle": "bharatramsundar@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -971,7 +971,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "brunette@uw.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1040,7 +1040,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "daniel@bojar.net",
+      "contactUrlOrHandle": "daniel.bojar@wyss.harvard.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1155,7 +1155,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "jeff.ladish@gmail.com",
+      "contactUrlOrHandle": "jeffrey@humanetech.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1178,7 +1178,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "matthew.r.ryder@outlook.com",
+      "contactUrlOrHandle": "matthew.ryder@ukaea.uk",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1212,7 +1212,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
       "focusTags": [
-        "Existential Hope"
+        "Secure AI"
       ],
       "homeBaseCity": "Global",
       "homeBaseCountry": "Global",
@@ -1235,7 +1235,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
       "focusTags": [
-        "Existential Hope"
+        "Nanotechnology"
       ],
       "homeBaseCity": "Oak Ridge",
       "homeBaseCountry": "USA",
@@ -1247,7 +1247,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "ziatdinovma@ornl.gov",
+      "contactUrlOrHandle": "maxim.ziatdinov@pnnl.gov",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1281,7 +1281,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
       "focusTags": [
-        "Existential Hope"
+        "Secure AI"
       ],
       "homeBaseCity": "Global",
       "homeBaseCountry": "Global",
@@ -1304,7 +1304,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
       "focusTags": [
-        "Longevity Biotechnology"
+        "Nanotechnology"
       ],
       "homeBaseCity": "Raleigh",
       "homeBaseCountry": "USA",
@@ -1316,7 +1316,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "tomschro@gmail.com",
+      "contactUrlOrHandle": "tschroe@ncsu.edu",
       "shortProjectTagline": "Assistant Professor at NC State in Textile Engineering. Research on polymers, transport processes, a",
       "expandedProjectDescription": "Assistant Professor at NC State in Textile Engineering. Research on polymers, transport processes, and phase changes.",
       "isAlumni": true
@@ -1442,7 +1442,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2021,
       "focusTags": [
-        "Secure AI"
+        "Longevity Biotechnology"
       ],
       "homeBaseCity": "Global",
       "homeBaseCountry": "Global",
@@ -1454,7 +1454,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "jj@tensorspace.ai",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1477,7 +1477,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "kate@agoric.com",
+      "contactUrlOrHandle": "katelynsills@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1500,7 +1500,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "jbach@uos.de",
+      "contactUrlOrHandle": "joscha.bach@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1546,7 +1546,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "jamesarthurcooper@gmail.com",
+      "contactUrlOrHandle": "james.cooper@reading.ac.uk",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1569,7 +1569,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "liang.feng@duke.edu",
+      "contactUrlOrHandle": "liang.feng@northwestern.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1603,7 +1603,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
       "focusTags": [
-        "Existential Hope"
+        "Longevity Biotechnology"
       ],
       "homeBaseCity": "Global",
       "homeBaseCountry": "Global",
@@ -1707,7 +1707,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "cody.ivey@gmail.com",
+      "contactUrlOrHandle": "Cody.Rasmussen_Ivey@tufts.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1753,7 +1753,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "larrieudelphine@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1776,7 +1776,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "tinkavidovic@hotmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -1891,7 +1891,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "zvonimir.vrselja@yale.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2063,7 +2063,7 @@
       "roleType": "Fellow",
       "fellowshipCohortYear": 2022,
       "focusTags": [
-        "Secure AI"
+        "Existential Hope"
       ],
       "homeBaseCity": "Global",
       "homeBaseCountry": "Global",
@@ -2259,7 +2259,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "dionis.minev@wyss.harvard.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2351,7 +2351,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "david.august@manchester.ac.uk",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2466,7 +2466,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "evans@utexas.edu",
+      "contactUrlOrHandle": "charlie.mcternan@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2512,7 +2512,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "AustinMichaelEvans@gmail.com",
+      "contactUrlOrHandle": "austinmichaelevans@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2604,7 +2604,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "ben@aue.rs",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2627,7 +2627,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "varun@trudiagnostic.com",
+      "contactUrlOrHandle": "varun.dwaraka@trudiagnostic.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2765,7 +2765,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "jordanbaechle@gmail.com",
+      "contactUrlOrHandle": "JBaechle@buckinstitute.org",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -2949,7 +2949,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "Jacob.Swett@blueprintbiosecurity.org",
+      "contactUrlOrHandle": "jacob.l.swett@gmail.com",
       "shortProjectTagline": "Executive Director and founder of Blueprint Biosecurity. PhD in Nanotechnology from Oxford.",
       "expandedProjectDescription": "Executive Director and founder of Blueprint Biosecurity. PhD in Nanotechnology from Oxford.",
       "isAlumni": true
@@ -2995,7 +2995,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "raianyromanni@gmail.com",
+      "contactUrlOrHandle": "raiany_romanni@hms.harvard.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3018,7 +3018,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "t.knopfer@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3041,7 +3041,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "aaronmayer@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3064,7 +3064,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "hrosspet@gmail.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3386,7 +3386,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "stacy.copp@uci.edu",
+      "contactUrlOrHandle": "copps@uci.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3409,7 +3409,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "yansong.ren@manchester.ac.uk",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3570,7 +3570,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "elena.meirzadeh@weizmann.ac.il",
+      "contactUrlOrHandle": "em3428@columbia.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3593,7 +3593,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "zoe.ashbridge@manchester.ac.uk",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3616,7 +3616,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "i.regeni@lic.leidenuniv.nl",
+      "contactUrlOrHandle": "regeni@unistra.fr",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3662,7 +3662,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "pavidhiman22@gmail.com",
+      "contactUrlOrHandle": "pavi@pragmaclin.com",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -3892,7 +3892,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "dulin.upenn@gmail.com",
+      "contactUrlOrHandle": "dulin@berkeley.edu",
       "shortProjectTagline": "",
       "expandedProjectDescription": "",
       "isAlumni": true
@@ -4108,7 +4108,7 @@
       "id": "p179",
       "fullName": "Louis Kokkinis",
       "roleType": "Fellow",
-      "fellowshipCohortYear": 2023,
+      "fellowshipCohortYear": 2020,
       "focusTags": [
         "Space"
       ],
@@ -4513,7 +4513,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "nora@pibbss.ai",
+      "contactUrlOrHandle": "to.nora.ammann@gmail.com",
       "shortProjectTagline": "Co-founder and head of PIBBSS. Research on AI risk, governance and alignment.",
       "expandedProjectDescription": "Co-founder and head of PIBBSS. Research on AI risk, governance and alignment.",
       "isAlumni": true
@@ -4651,7 +4651,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "sammercury@hotmail.co.uk",
+      "contactUrlOrHandle": "SamMercury@hotmail.co.uk",
       "shortProjectTagline": "Head of Research at London Politica. Expert in frontier geopolitics, space, Arctic, Antarctic.",
       "expandedProjectDescription": "Head of Research at London Politica. Expert in frontier geopolitics, space, Arctic, Antarctic.",
       "isAlumni": true
@@ -4683,7 +4683,7 @@
       "id": "p204",
       "fullName": "Alex Gilbert",
       "roleType": "Fellow",
-      "fellowshipCohortYear": 2024,
+      "fellowshipCohortYear": 2023,
       "focusTags": [
         "Space"
       ],
@@ -4720,7 +4720,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "priyank19@iiserbpr.ac.in",
       "shortProjectTagline": "BS-MS student in Physics and CS. Research on spacecraft attitude control and quantum computing.",
       "expandedProjectDescription": "BS-MS student in Physics and CS. Research on spacecraft attitude control and quantum computing.",
       "isAlumni": true
@@ -4835,7 +4835,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "campos.simeon@gmail.com",
+      "contactUrlOrHandle": "campossimeon@gmail.com",
       "shortProjectTagline": "President and founder of SaferAI. Working on AI auditing and risk management standards.",
       "expandedProjectDescription": "President and founder of SaferAI. Working on AI auditing and risk management standards.",
       "isAlumni": true
@@ -4973,7 +4973,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "virajcz@ucla.edu",
+      "contactUrlOrHandle": "virajcz@g.ucla.edu",
       "shortProjectTagline": "EE+CS Student at UCLA. Researching Computational Neuroscience at Levin Lab.",
       "expandedProjectDescription": "EE+CS Student at UCLA. Researching Computational Neuroscience at Levin Lab.",
       "isAlumni": true
@@ -5088,7 +5088,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "mmguar@caltech.edu",
+      "contactUrlOrHandle": "matteo.guareschi@gmail.com",
       "shortProjectTagline": "Graduate Student at Caltech with Dr. Paul Rothemund. Working on protein motors and DNA nanorobots.",
       "expandedProjectDescription": "Graduate Student at Caltech with Dr. Paul Rothemund. Working on protein motors and DNA nanorobots.",
       "isAlumni": true
@@ -5111,7 +5111,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "siyuan.wang@wyss.harvard.edu",
+      "contactUrlOrHandle": "Siyuan.Wang@wyss.harvard.edu",
       "shortProjectTagline": "Research on repurposing biological machinery for nanometer-scale control.",
       "expandedProjectDescription": "Research on repurposing biological machinery for nanometer-scale control.",
       "isAlumni": true
@@ -5157,7 +5157,7 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": "info@spec.tech",
+      "contactUrlOrHandle": "chris@spec.tech",
       "shortProjectTagline": "Biological engineer with PhD from Harvard. Working on synthetic biology and climate sustainability.",
       "expandedProjectDescription": "Biological engineer with PhD from Harvard. Working on synthetic biology and climate sustainability.",
       "isAlumni": true
@@ -5226,10 +5226,2371 @@
       },
       "primaryNode": "Global",
       "profileUrl": "",
-      "contactUrlOrHandle": null,
+      "contactUrlOrHandle": "martin.power@postgrad.manchester.ac.uk",
       "shortProjectTagline": "PhD student in Prof. David Leigh group at University of Manchester. Research on molecular machines.",
       "expandedProjectDescription": "PhD student in Prof. David Leigh group at University of Manchester. Research on molecular machines.",
       "isAlumni": true
+    },
+    {
+      "id": "p228",
+      "fullName": "Huixin Zhan",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "huixin.zhan@nmt.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p229",
+      "fullName": "Keith Patarroyo",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "keith.patarroyo@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p230",
+      "fullName": "Mateo Petel",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "mpetel@stanford.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p231",
+      "fullName": "Tianyi Alex Qiu",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "aq.alexqiu@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p232",
+      "fullName": "Vivek Nair",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "vivek.nair746@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p233",
+      "fullName": "Alex Plesa",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "alex.plesa@wyss.harvard.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p234",
+      "fullName": "Donnacha Fitzgerald",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "donnacha@origenity.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p235",
+      "fullName": "Gianluca Cidonio",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "gianluca.cidonio@uniroma1.it",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p236",
+      "fullName": "Jakub Lála",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "jakublala@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p237",
+      "fullName": "Léo Pio-Lopez",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "leo.pio.lopez@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p238",
+      "fullName": "Nicholas Schaum",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "nick@covalent.bio",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p239",
+      "fullName": "Abigail Olvera",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "olverabi@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p240",
+      "fullName": "Fin Moorhouse",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "finlaymoorhouse@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p241",
+      "fullName": "Mahlaqua Mila Noor",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "mahlaqanoor@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p242",
+      "fullName": "Ninon Lizé Masclef",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "ninon@mit.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p243",
+      "fullName": "Peggy Yin",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "peggyyin.research@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p244",
+      "fullName": "Ruairidh Battleday",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "battleday@thinkingaboutthinking.org",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p245",
+      "fullName": "Alberto Privitera",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "alberto.privitera@unifi.it",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p246",
+      "fullName": "Kathryn Shelley",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "ks427@uw.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p247",
+      "fullName": "Konlin Shen",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "Konlin.Shen@ucsf.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p248",
+      "fullName": "Qiancheng Xiong",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "qiancheng.xiong@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p249",
+      "fullName": "Avery Krieger",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "avery@constellationlab.io",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p250",
+      "fullName": "Constanze Albrecht",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "csophie@media.mit.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p251",
+      "fullName": "Elisa Kallioniemi",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "elisa.kallioniemi@njit.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p252",
+      "fullName": "Max Kanwal",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "kanwal@stanford.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p253",
+      "fullName": "Sven Truckenbrodt",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "sventruckenbrodt@googlemail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p254",
+      "fullName": "Philip Linden",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2026,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "lindenphilipj@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p255",
+      "fullName": "Abhinav Singh",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "admin@midfield.ai",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p256",
+      "fullName": "Daniele Palombi",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "daniele@20squares.xyz",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p257",
+      "fullName": "Felix Sosa",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "felixanthonysosa@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p258",
+      "fullName": "Gavin Leech",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "gleech@pm.me",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p259",
+      "fullName": "Max Langenkamp",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "maxslangenkamp@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p260",
+      "fullName": "Maxx Yung",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "maxxyung1@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p261",
+      "fullName": "Aydin Gokce",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "aydin@generalcybernetics.org",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p262",
+      "fullName": "Chiara Herzog",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "chiaraherzog@outlook.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p263",
+      "fullName": "Janet Guo",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "janetsxg@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p264",
+      "fullName": "Mariëlle van Kouten",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "marielle@powerhouse.bio",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p265",
+      "fullName": "Nirosha Murugan",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "nmurugan@wlu.ca",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p266",
+      "fullName": "Raghav Sehgal",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "raghav.sehgal@yale.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p267",
+      "fullName": "Zihao Ou",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "ozhmeow@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p268",
+      "fullName": "Janika Schmitt",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "janika.schmitt@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p269",
+      "fullName": "Jasper Götting",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "jasper.goetting@icloud.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p270",
+      "fullName": "Moritz von Knebel",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "moritz.vonknebel@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p271",
+      "fullName": "Natasha Karner",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "natasha.karner@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p272",
+      "fullName": "Nicolas Krink",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "n.krink@icloud.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p273",
+      "fullName": "Saheb Gulati",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "sahebg@stanford.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p274",
+      "fullName": "Baihao Shao",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "bshao@cuhk.edu.hk",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p275",
+      "fullName": "Dean Thomas",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "deant94@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p276",
+      "fullName": "Guanyu Lu",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "luguanyucn@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p277",
+      "fullName": "Penghao Li",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "penghaoeins@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p278",
+      "fullName": "Samarth Jajoo",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "samarth@jajoo.sh",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p279",
+      "fullName": "Sehr Zeb",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "sehrhamidzeb@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p280",
+      "fullName": "Akash Kulgod",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "akash@dognosis.tech",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p281",
+      "fullName": "Claire Wang",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "clara32356@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p282",
+      "fullName": "Daniel Burger",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "private@danielburger.online",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p283",
+      "fullName": "Jake Toth",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "jaketoth.personal@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p284",
+      "fullName": "Matthew Goodman",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "meawoppl@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p285",
+      "fullName": "Richie Kohman",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "rekohman@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p286",
+      "fullName": "Yasmeen Hmaidan",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "yasmeenhmaidan@hotmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p287",
+      "fullName": "Angadh Nanjangud",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "angadh.n@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p288",
+      "fullName": "Arushi Nath",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "astroarushi@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p289",
+      "fullName": "Bartu Kaleagasi",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "bartukaleagasi@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p290",
+      "fullName": "Gustavs Zilgalvis",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "gzilgalvis@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p291",
+      "fullName": "Ilenia Bruseghello",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "ilenia.bruseghello@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p292",
+      "fullName": "Matthew Allcock",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "matthewmallcock@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p293",
+      "fullName": "Nhat Thai Nguyen",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2025,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "nhatnguyen1405@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p294",
+      "fullName": "Dmitrii Usynin",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "dmitrii.usynin16@imperial.ac.uk",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p295",
+      "fullName": "Elena Sergeyeva",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "esegreeva@mgh.harvard.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p296",
+      "fullName": "AJ Kourabi",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2024,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "ajkourabi@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p297",
+      "fullName": "Ghada Almashaqbeh",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "ghada.ayed@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p298",
+      "fullName": "Mikayla Maki",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "mikayla.c.maki@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p299",
+      "fullName": "Kostas Konstantinidis",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "koskons@yahoo.gr",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p300",
+      "fullName": "Akash Patel",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "akashapatel2006@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p301",
+      "fullName": "Jim Seale",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "jamesseale2024@u.northwestern.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p302",
+      "fullName": "Logan Thrasher Collins",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "logan.phospholipid@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p303",
+      "fullName": "Murat Isik",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2023,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Neurotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "mrtisik@stanford.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p304",
+      "fullName": "Georgios Kaissis",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "g.kaissis@tum.de",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p305",
+      "fullName": "Lawrence Wu",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "lawrence.leon.wu@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p306",
+      "fullName": "Romain Fontyne",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "romain.fonteyne.rf@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p307",
+      "fullName": "Dr. Larissa K. S. von Krbek",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "larissa.vonkrbek@uni-bonn.de",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p308",
+      "fullName": "Victor Garcia-Lopez",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2022,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "vglopez@lsu.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p309",
+      "fullName": "Sidh Sikka",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "sidh@sidhsikka.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p310",
+      "fullName": "Yip Fai, Tse",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Existential Hope"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "tseyipfai@u.nus.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p311",
+      "fullName": "Yunyan Qiu",
+      "roleType": "Fellow",
+      "fellowshipCohortYear": 2021,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "yunyan.qiu@northwestern.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": true
+    },
+    {
+      "id": "p312",
+      "fullName": "Adam Brown",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "mr.adam.brown@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p313",
+      "fullName": "Anders Sandberg",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "anders@aleph.se",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p314",
+      "fullName": "Brad Templeton",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "bradtem@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p315",
+      "fullName": "Mark S. Miller",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "erights@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p316",
+      "fullName": "Richard Mallah",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Secure AI"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "richard@futureoflife.org",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p317",
+      "fullName": "Clarice D.Aiello",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "clarice@quantumbiology.tech",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p318",
+      "fullName": "Gregory M. Fahy",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "fahy@interveneimmune.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p319",
+      "fullName": "Karl Pfleger",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "kpfleger@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p320",
+      "fullName": "Morgan Levine",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Longevity Biotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "morgan.levine@yale.edu",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p321",
+      "fullName": "David A. Leigh",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "david.leigh@manchester.ac.uk",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p322",
+      "fullName": "Lee Cronin",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "Lee.Cronin@glasgow.ac.uk",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p323",
+      "fullName": "Martin Edelstein",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "martin@covalent.science",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p324",
+      "fullName": "Rob Meagley",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Nanotechnology"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "dr.rpm@one-nanotechnologies.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p325",
+      "fullName": "Chiara Marletto",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "chiara.marletto@physics.ox.ac.uk",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p326",
+      "fullName": "Creon Levit",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [
+        "Space"
+      ],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "mrcreonlevit@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p327",
+      "fullName": "Christine L. Peterson",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "peterson@foresight.org",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p328",
+      "fullName": "Robin D. Hanson",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "russellhanson@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p329",
+      "fullName": "Samo Burja",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "samo@bismarckanalysis.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
+    },
+    {
+      "id": "p330",
+      "fullName": "Zooko Wilcox",
+      "roleType": "Senior Fellow",
+      "fellowshipCohortYear": 2017,
+      "fellowshipEndYear": null,
+      "affiliationOrInstitution": null,
+      "focusTags": [],
+      "currentCity": "Global",
+      "currentCountry": "Global",
+      "currentCoordinates": {
+        "lat": 0,
+        "lng": 0
+      },
+      "primaryNode": "Global",
+      "profileUrl": "",
+      "contactUrlOrHandle": "zookog@gmail.com",
+      "shortProjectTagline": "",
+      "expandedProjectDescription": "",
+      "isAlumni": false
     }
   ],
   "travelWindows": [
