@@ -296,7 +296,7 @@ useEffect(() => {
 CREATE TABLE people (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   full_name TEXT NOT NULL,
-  role_type TEXT CHECK (role_type IN ('Fellow', 'Grantee', 'Prize Winner')),
+  role_type TEXT CHECK (role_type IN ('Fellow', 'Senior Fellow', 'Grantee', 'Prize Winner')),
   fellowship_cohort_year INTEGER,
   focus_tags TEXT[],
   home_base_city TEXT,

@@ -319,6 +319,11 @@ html {
   color: #374151;
 }
 
+.role-pill-senior {
+  background: linear-gradient(135deg, #fbcfe8 0%, #f0abfc 100%);
+  color: #374151;
+}
+
 .role-pill-grantee {
   background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
   color: #374151;

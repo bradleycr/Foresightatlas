@@ -130,6 +130,31 @@ export function PersonDetailModal({
     }
   }, [person, travelWindows]);
 
+  // Resolve navigation list: scoped subset when a context is active, full filtered list otherwise.
+  // Hoisted above the `person` early-return below (and kept hook-order-safe) since it only
+  // depends on allPeople/navigationContext, neither of which require an open modal.
+  const navigationList = useMemo(() => {
+    if (!navigationContext) return allPeople;
+    const idSet = new Set(navigationContext.peopleIds);
+    return allPeople.filter((p) => idSet.has(p.id));
+  }, [allPeople, navigationContext]);
+
+  // Human-readable summary of active filters for context display.
+  // Same hook-order rationale as navigationList above — depends only on `filters`.
+  const filterSummary = useMemo(() => {
+    if (!filters) return [];
+    const tags: string[] = [];
+    if (filters.year !== null) tags.push(`${filters.year}`);
+    if (filters.programs.length > 0) tags.push(...filters.programs);
+    if (filters.nodes.length > 0) tags.push(...filters.nodes.map(n => n.replace(" Node", "")));
+    if (filters.focusTags.length > 0) tags.push(...filters.focusTags.slice(0, 2));
+    if (filters.search) tags.push(`"${filters.search}"`);
+    return tags;
+  }, [filters]);
+
+  // IMPORTANT: all hooks above this line must run on every render regardless of
+  // `isOpen`/`person`, since this component stays mounted across selection changes.
+  // Anything below is plain derived state / handlers, safe to skip when there's no person.
   if (!isOpen || !person) return null;
 
   // Get travel windows for this person, sorted by start date
@@ -138,13 +163,6 @@ export function PersonDetailModal({
     : travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-  // Resolve navigation list: scoped subset when a context is active, full filtered list otherwise
-  const navigationList = useMemo(() => {
-    if (!navigationContext) return allPeople;
-    const idSet = new Set(navigationContext.peopleIds);
-    return allPeople.filter((p) => idSet.has(p.id));
-  }, [allPeople, navigationContext]);
 
   const currentIndex = navigationList.findIndex((p) => p.id === person.id);
   const hasPrevious = currentIndex > 0;
@@ -162,18 +180,6 @@ export function PersonDetailModal({
       onNavigate(navigationList[currentIndex + 1].id);
     }
   };
-
-  // Human-readable summary of active filters for context display
-  const filterSummary = useMemo(() => {
-    if (!filters) return [];
-    const tags: string[] = [];
-    if (filters.year !== null) tags.push(`${filters.year}`);
-    if (filters.programs.length > 0) tags.push(...filters.programs);
-    if (filters.nodes.length > 0) tags.push(...filters.nodes.map(n => n.replace(" Node", "")));
-    if (filters.focusTags.length > 0) tags.push(...filters.focusTags.slice(0, 2));
-    if (filters.search) tags.push(`"${filters.search}"`);
-    return tags;
-  }, [filters]);
 
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
@@ -529,6 +535,7 @@ export function PersonDetailModal({
                         <SelectTrigger className="w-28 sm:w-32"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Fellow">Fellow</SelectItem>
+                          <SelectItem value="Senior Fellow">Senior Fellow</SelectItem>
                           <SelectItem value="Grantee">Grantee</SelectItem>
                           <SelectItem value="Prize Winner">Prize Winner</SelectItem>
                         </SelectContent>

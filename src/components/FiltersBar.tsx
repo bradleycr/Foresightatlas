@@ -37,7 +37,7 @@ const FOCUS_AREAS = [
   "Other",
 ];
 
-const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+const PROGRAMS: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner"];
 const NODES: PrimaryNode[] = ["Global", "Berlin Node", "Bay Area Node"];
 
 export function FiltersBar({

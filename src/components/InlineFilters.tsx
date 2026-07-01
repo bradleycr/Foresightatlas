@@ -30,7 +30,7 @@ const FOCUS_AREAS = [
   "Other",
 ];
 
-const PROGRAMS: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+const PROGRAMS: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner"];
 
 export function InlineFilters({ filters, onFiltersChange, defaultYear, resultCount }: InlineFiltersProps) {
   const [expanded, setExpanded] = useState(false);

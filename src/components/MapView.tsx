@@ -192,7 +192,7 @@ function MapResizer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
 }
 
 // Canonical order for segment layout so the badge always looks consistent
-const ROLE_ORDER: RoleType[] = ["Fellow", "Grantee", "Prize Winner"];
+const ROLE_ORDER: RoleType[] = ["Fellow", "Senior Fellow", "Grantee", "Prize Winner"];
 
 /**
  * Badge background: one color for a single role type; segmented (halves or thirds)

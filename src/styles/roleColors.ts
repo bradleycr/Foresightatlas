@@ -8,6 +8,7 @@ import { RoleType } from "../types";
  */
 export const ROLE_COLORS: Record<RoleType, { start: string; end: string }> = {
   Fellow: { start: "#ddd6fe", end: "#c4b5fd" }, // Soft purple
+  "Senior Fellow": { start: "#fbcfe8", end: "#f0abfc" }, // Dusty rose — distinguishes long-term advisors from cohort fellows
   Grantee: { start: "#bfdbfe", end: "#93c5fd" }, // Sky blue
   "Prize Winner": { start: "#fde68a", end: "#fcd34d" }, // Warm gold
 };
@@ -25,6 +26,7 @@ export const getRoleGradient = (role: RoleType): string => {
 export const getRolePillClass = (role: RoleType): string => {
   const map: Record<RoleType, string> = {
     Fellow: "role-pill-fellow",
+    "Senior Fellow": "role-pill-senior",
     Grantee: "role-pill-grantee",
     "Prize Winner": "role-pill-prize",
   };

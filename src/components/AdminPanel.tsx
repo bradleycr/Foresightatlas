@@ -807,6 +807,7 @@ function PersonEditForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Fellow">Fellow</SelectItem>
+              <SelectItem value="Senior Fellow">Senior Fellow</SelectItem>
               <SelectItem value="Grantee">Grantee</SelectItem>
               <SelectItem value="Prize Winner">Prize Winner</SelectItem>
             </SelectContent>
