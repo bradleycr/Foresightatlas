@@ -9,6 +9,7 @@ import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { formatEventDateShort } from "../utils/eventTiming";
+import { PersonAvatar } from "./PersonAvatar";
 
 /** Compact event reference for the map sidebar card (upcoming only). */
 export interface AttendingEvent {
