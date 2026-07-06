@@ -17,6 +17,7 @@ import {
 } from "../utils/eventTiming";
 import {
   clearProfileImageOverride,
+  getEffectiveProfileImageUrl,
   getProfileImageOverride,
 } from "../services/profileImageOverride";
 import {
@@ -267,8 +268,8 @@ export function ProfilePage({
   }, [identity?.personId]);
 
   const effectiveHeaderAvatar = useMemo(
-    () => draft?.profileImageUrl?.trim() || null,
-    [draft?.profileImageUrl],
+    () => (draft ? getEffectiveProfileImageUrl(draft) : null),
+    [draft],
   );
 
   /**
@@ -842,7 +843,8 @@ export function ProfilePage({
       return;
     }
 
-    const photoUrl = draft.profileImageUrl?.trim() || "";
+    const photoUrl =
+      draft.profileImageUrl?.trim() || getProfileImageOverride(draft.id) || "";
     if (photoUrl) {
       if (profileImageCheck.status === "checking") {
         toast.error("Still checking your profile photo — wait a moment, then save again.");
@@ -860,11 +862,14 @@ export function ProfilePage({
     try {
       const payload = {
         ...draft,
+        profileImageUrl: photoUrl || null,
         focusTags: [...editSelectedPresets, ...parseFocusTags(editCustomFocusStr)],
       };
       const result = await updatePerson(draft.id, payload, identity.token);
       setDraft(result.person);
-      clearProfileImageOverride(draft.id);
+      if (result.person.profileImageUrl?.trim()) {
+        clearProfileImageOverride(draft.id);
+      }
       onProfileSaved(result.person, result.auth);
       if (result.person.currentCity?.trim()) {
         finishLocationSetup();

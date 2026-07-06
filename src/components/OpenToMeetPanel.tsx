@@ -8,6 +8,7 @@
 import { Calendar, ExternalLink, Users } from "lucide-react";
 import type { Person } from "../types";
 import { getOpenToMeetMembers, getOpenToMeetUrl } from "../utils/openToMeet";
+import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
 import { getRolePillClass } from "../styles/roleColors";
 import { cn } from "./ui/utils";
@@ -79,7 +80,7 @@ export function OpenToMeetPanel({
                       >
                         <PersonAvatar
                           name={person.fullName}
-                          src={person.profileImageUrl}
+                          src={getEffectiveProfileImageUrl(person)}
                           className="size-11 shrink-0 rounded-full ring-1 ring-gray-200/80"
                           textClassName="text-xs"
                         />
@@ -89,7 +90,7 @@ export function OpenToMeetPanel({
                       <>
                         <PersonAvatar
                           name={person.fullName}
-                          src={person.profileImageUrl}
+                          src={getEffectiveProfileImageUrl(person)}
                           className="size-11 shrink-0 rounded-full ring-1 ring-gray-200/80"
                           textClassName="text-xs"
                         />

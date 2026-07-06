@@ -7,6 +7,7 @@ const {
   loadRealDataRecords,
   upsertRealDataRecord,
   sanitizeProfileImageUrl,
+  profileImageUrlFromSheet,
 } = require("./realdata-store");
 const { geocodeCity } = require("./geocoding");
 const { issueDirectorySession, hashPassword } = require("./directory-auth");
@@ -49,12 +50,12 @@ function normalizeProfileImageUrlInput(value) {
   const trimmed = String(value).trim();
   if (!trimmed) return null;
   const sanitized = sanitizeProfileImageUrl(trimmed);
-  if (!sanitized) {
-    throw new Error(
-      "Profile photo must be a direct https:// image link (.jpg, .png, .webp, etc.) or a foresight.org image URL.",
-    );
-  }
-  return sanitized;
+  if (sanitized) return sanitized;
+  const lenient = profileImageUrlFromSheet(trimmed);
+  if (lenient) return lenient;
+  throw new Error(
+    "Profile photo must be a direct https:// image link (.jpg, .png, .webp, etc.) or a foresight.org image URL.",
+  );
 }
 
 function normalizePerson(input) {

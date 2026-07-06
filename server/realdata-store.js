@@ -84,8 +84,29 @@ function sanitizeProfileImageUrl(value) {
   if (!s) return null;
   if (!/^https?:\/\//i.test(s)) return null;
   if (/@/.test(s)) return null; // email, not URL
-  if (/foresight\.org/i.test(s) || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return s;
+  if (/foresight\.org/i.test(s)) return s;
+  if (/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(s)) return s;
+  // Profile CDNs often omit file extensions in the path.
+  if (
+    /googleusercontent\.com|licdn\.com|gravatar\.com|githubusercontent\.com|cloudinary\.com|wp\.com|amazonaws\.com|twimg\.com|fbcdn\.net|cdn\.discordapp\.com|images\.unsplash\.com|pbs\.twimg\.com/i.test(
+      s,
+    )
+  ) {
+    return s;
+  }
   return null;
+}
+
+/**
+ * Read profileImageUrl from the sheet without dropping legacy rows that predate
+ * strict sanitization — still https-only and length-capped.
+ */
+function profileImageUrlFromSheet(value) {
+  const sanitized = sanitizeProfileImageUrl(value);
+  if (sanitized) return sanitized;
+  const s = normalizeString(value);
+  if (!s || !/^https?:\/\//i.test(s) || /@/.test(s) || s.length > 500) return null;
+  return s;
 }
 
 /** Only accept values that look like real contact: email, URL, or @handle. Reject bio/description. */
@@ -240,7 +261,7 @@ function rowToPersonRecord(orderedRow, rowNumber) {
     },
     primaryNode: normalizeString(orderedRow[idx("primaryNode")]) || "Global",
     profileUrl: normalizeString(orderedRow[idx("profileUrl")]),
-    profileImageUrl: sanitizeProfileImageUrl(orderedRow[idx("profileImageUrl")]),
+    profileImageUrl: profileImageUrlFromSheet(orderedRow[idx("profileImageUrl")]),
     contactUrlOrHandle: sanitizeContact(orderedRow[idx("contactUrlOrHandle")]),
     calendarEmail: sanitizeCalendarEmail(orderedRow[idx("calendarEmail")]),
     availabilityUrl: sanitizeAvailabilityUrl(orderedRow[idx("availabilityUrl")]),
@@ -534,6 +555,7 @@ module.exports = {
   rowToPersonRecord,
   personRecordToRow,
   sanitizeProfileImageUrl,
+  profileImageUrlFromSheet,
   getSheetsClient,
   loadRealDataRecords,
   findRecordsByNormalizedName,
