@@ -26,8 +26,9 @@
  * ready to paste into a spreadsheet or mail merge.
  */
 
-require("dotenv").config({ path: ".env.local" });
-require("dotenv").config();
+// quiet: dotenv's banner goes to stdout and would corrupt piped CSV output.
+require("dotenv").config({ path: ".env.local", quiet: true });
+require("dotenv").config({ quiet: true });
 
 const { loadRealDataRecords } = require("../server/realdata-store");
 const { issueClaimToken } = require("../server/directory-auth");
@@ -90,17 +91,21 @@ async function main() {
 
   const rows = people.map((r) => {
     const token = issueClaimToken(r.person.id);
-    return { fullName: r.person.fullName, url: buildClaimUrl(args.base, token) };
+    return {
+      fullName: r.person.fullName,
+      email: r.person.email || "",
+      url: buildClaimUrl(args.base, token),
+    };
   });
 
   if (args.csv) {
-    console.log("Full name,Claim link");
+    console.log("Full name,Email,Claim link");
     for (const row of rows) {
-      console.log(`${csvCell(row.fullName)},${csvCell(row.url)}`);
+      console.log(`${csvCell(row.fullName)},${csvCell(row.email)},${csvCell(row.url)}`);
     }
   } else {
     for (const row of rows) {
-      console.log(`${row.fullName}\t${row.url}`);
+      console.log(`${row.fullName}\t${row.email}\t${row.url}`);
     }
   }
 
