@@ -1,8 +1,8 @@
 /**
- * <NanowheelBadge /> — the visible face of Foresight's internal currency.
+ * <NanowheelBadge /> — a playful count of community touch points.
  *
- * A nanowheel (◎) is the community's trust-based token: +1 each time a member
- * checks in at a node or RSVPs "going" to an event. This component renders the
+ * A nanowheel (◎) is collected each time a member checks in at a node or
+ * RSVPs "going" to an event. This component renders the
  * Foresight icon mark alongside a number, with a Radix tooltip that explains
  * what nanowheels are to first-time viewers.
  *
@@ -58,7 +58,7 @@ const SIZE_CLASSES: Record<NanowheelBadgeSize, {
 };
 
 const DEFAULT_TOOLTIP =
-  "Nanowheels — Foresight's community currency. Earn one each time you check in at a node or RSVP \"going\" to an event.";
+  "Nanowheels — collected by checking in at a node or RSVPing to an event.";
 
 export function NanowheelBadge({
   count,

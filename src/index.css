@@ -208,6 +208,20 @@ select optgroup {
   z-index: 10002; /* Z_INDEX_MODAL_DROPDOWN */
 }
 
+/*
+ * Sonner renders toast descriptions in its own muted gray, which lands nearly
+ * invisible on our white toast background ("Profile updated" body text was
+ * unreadable). Pin title and description to solid grays with enough contrast.
+ */
+[data-sonner-toast] [data-title] {
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+
+[data-sonner-toast] [data-description] {
+  color: var(--color-gray-700);
+}
+
 [data-slot="select-item"] {
   border-radius: calc(var(--radius) - 2px);
 }

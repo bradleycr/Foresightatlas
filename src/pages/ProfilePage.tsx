@@ -25,6 +25,7 @@ import { getLastSignedInName } from "../services/identity";
 // Foresight pin icon (same as map markers)
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NanowheelBadge } from "../components/NanowheelBadge";
+import { PersonAvatar } from "../components/PersonAvatar";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import {
   Select,
@@ -267,16 +268,6 @@ export function ProfilePage({
       window.clearTimeout(timeout);
     };
   }, [draft?.currentCity, draft?.currentCountry]);
-
-  const initials = useMemo(() => {
-    const source = draft?.fullName || identity?.fullName || "";
-    return source
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-  }, [draft?.fullName, identity?.fullName]);
 
   if (!identity) {
     /* Create mode: "Add yourself" flow — full form + password, then create and sign in. */
@@ -809,21 +800,12 @@ export function ProfilePage({
           >
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 sm:gap-5">
               <div className="flex min-w-0 items-start gap-4 sm:gap-5">
-                <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16">
-                  {effectiveHeaderAvatar ? (
-                    <img
-                      src={effectiveHeaderAvatar}
-                      alt=""
-                      className="absolute inset-0 size-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <>
-                      <img src={foresightIconUrl} alt="" className="absolute inset-0 size-full object-contain p-0.5 opacity-50 scale-125" aria-hidden />
-                      <span className="relative z-10 text-sm font-medium text-sky-700/85 sm:text-base">{initials}</span>
-                    </>
-                  )}
-                </div>
+                <PersonAvatar
+                  name={draft.fullName || identity?.fullName || ""}
+                  src={effectiveHeaderAvatar}
+                  className="size-14 shrink-0 rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-16"
+                  textClassName="text-sm sm:text-base"
+                />
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wider text-sky-600/90 sm:text-sm">
                     Your directory profile

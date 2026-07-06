@@ -1,5 +1,5 @@
 /**
- * Nanowheels — Foresight's trust-based internal currency.
+ * Nanowheels — a playful, trust-based count of community touch points.
  *
  * A nanowheel (◎) is earned any time a member shows up somewhere:
  *   • +1 per check-in at a node (CheckIns sheet)

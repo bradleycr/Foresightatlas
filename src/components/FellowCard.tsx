@@ -8,6 +8,7 @@ import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
+import { PersonAvatar } from "./PersonAvatar";
 
 /** Compact event reference for "Attending" line on the card. */
 export interface AttendingEvent {
@@ -78,11 +79,10 @@ export function FellowCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 flex items-start gap-3">
             {avatarUrl && (
-              <img
+              <PersonAvatar
+                name={person.fullName}
                 src={avatarUrl}
-                alt=""
-                className="size-10 sm:size-12 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                referrerPolicy="no-referrer"
+                className="size-10 sm:size-12 rounded-full border border-gray-200 flex-shrink-0"
               />
             )}
             <div className="min-w-0 flex-1">

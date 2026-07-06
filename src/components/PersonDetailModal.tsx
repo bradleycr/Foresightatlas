@@ -89,6 +89,7 @@ import { buildGoogleCalendarTemplateUrl } from "../utils/googleCalendarTemplate"
 import { NanowheelBadge } from "./NanowheelBadge";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
+import { PersonAvatar } from "./PersonAvatar";
 
 /** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
 function looksLikeContact(value: string | null | undefined): boolean {
@@ -667,11 +668,11 @@ export function PersonDetailModal({
               <header className="person-detail-content__head">
                 <div className={cn("mb-3 sm:mb-4", headerProfileImageSrc && "flex items-start gap-4")}>
                   {headerProfileImageSrc ? (
-                    <img
+                    <PersonAvatar
+                      name={displayPerson.fullName}
                       src={headerProfileImageSrc}
-                      alt=""
-                      className="size-16 sm:size-20 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                      referrerPolicy="no-referrer"
+                      className="size-16 sm:size-20 rounded-full border border-gray-200 flex-shrink-0"
+                      textClassName="text-base sm:text-lg"
                     />
                   ) : null}
                   <div className="min-w-0 flex-1">
