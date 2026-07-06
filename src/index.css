@@ -188,6 +188,26 @@ select optgroup {
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
 }
 
+/*
+ * Radix popovers (e.g. the password-hint on the login form) use Tailwind's
+ * bg-popover/text-popover-foreground, but no --color-popover token is defined
+ * in this theme, so those classes emit nothing and the panel renders
+ * transparent — text bleeding over whatever sits beneath it. Same root cause
+ * (and same fix) as select-content above.
+ *
+ * z-index: popovers portal to <body> with Tailwind's z-50, which loses to the
+ * app's modal layer (10001, see constants/zIndex.ts). Pin them to the
+ * "dropdowns inside modals" tier so the hint is readable everywhere the login
+ * form appears.
+ */
+[data-slot="popover-content"] {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border-color: var(--border);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  z-index: 10002; /* Z_INDEX_MODAL_DROPDOWN */
+}
+
 [data-slot="select-item"] {
   border-radius: calc(var(--radius) - 2px);
 }
