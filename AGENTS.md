@@ -9,7 +9,7 @@
 ### Naming and copy
 
 - **App title:** “The Foresight Atlas” (with optional “(beta)” marker in the header/footer).
-- **Subtext:** “Internal tool — Connecting Grantees, Fellows, Nodees, and our programming”.
+- **Subtext:** “Internal tool — Connecting Grantees, Fellows, Nodees, Alumni, and our programming”.
 - **Nav:** Desktop = “Map” + “Programming” (dropdown: Berlin, San Francisco, Global). Mobile hamburger = “Map”, “Berlin node”, “SF node”, “Global programming”.
 - **Footer:** “Foresight Institute · The Foresight Atlas · {year}”.
 

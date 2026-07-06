@@ -1142,7 +1142,7 @@ export function MapView({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="text-gray-900 font-semibold truncate font-heading">
-                    {selectedMarker ? selectedMarkerLabel : "Fellows, Grantees, and Nodees"}
+                    {selectedMarker ? selectedMarkerLabel : "Grantees, Fellows, Nodees & Alumni"}
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {selectedMarker
@@ -1187,7 +1187,7 @@ export function MapView({
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                  {selectedMarker ? selectedMarkerLabel : "Fellows, Grantees, and Nodees"}
+                  {selectedMarker ? selectedMarkerLabel : "Grantees, Fellows, Nodees & Alumni"}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                     {selectedMarker

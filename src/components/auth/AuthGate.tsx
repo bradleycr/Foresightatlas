@@ -58,8 +58,8 @@ export function AuthGate({ onSignIn }: AuthGateProps) {
             Map · Programming · Nodes
           </h1>
           <p className="mt-2 max-w-xs text-sm leading-6 text-gray-600">
-            A private space for Foresight fellows. Sign in to connect with
-            grantees, fellows and nodees.
+            A private space for the Foresight community. Sign in to connect
+            with grantees, fellows, nodees, and alumni.
           </p>
         </div>
 

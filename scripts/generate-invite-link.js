@@ -3,9 +3,10 @@
  * Mint a private "create new account" invite link.
  *
  * Account creation is invite-only — there is no public "Add yourself" button.
- * Run this to get a /join?token=… link, then send it to a NEW fellow (someone
- * not yet on the roster). The token is signed and time-limited; anyone with the
- * link can create exactly one profile until it expires.
+ * Run this to get a /join?token=… link, then send it to a NEW community member
+ * — fellow, grantee, nodee, or alumni not yet on the roster. The token is
+ * signed and time-limited; anyone with the link can create exactly one
+ * profile until it expires.
  *
  * For people who ARE already on the roster, use `pnpm claim:links` instead —
  * those set a password on the existing row.

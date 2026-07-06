@@ -378,7 +378,7 @@ function verifyClaimToken(token) {
  * A register token authorizes creating ONE brand-new profile (for people not
  * yet on the roster). Unlike claim links it has no personId; it's time-limited
  * instead of one-time, since there's no record yet to mark as used. Bradley
- * mints these privately and sends them to new fellows — there is no public
+ * mints these privately and sends them to new community members — there is no public
  * "create account" button.
  */
 

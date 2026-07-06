@@ -348,8 +348,9 @@ export function SuggestUpdateModal({ onClose, onSubmit, people = [] }: SuggestUp
           <div className="flex-1 min-w-0">
             <h2 className="text-gray-900 font-semibold text-lg">Suggest an Update</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Foresight fellows & grantees can suggest updates to their location or travel
-              plans. A node manager will review and publish approved changes.
+              Anyone in the Foresight community — grantees, fellows, nodees, and
+              alumni — can suggest updates to their location or travel plans. A
+              node manager will review and publish approved changes.
             </p>
           </div>
           <button

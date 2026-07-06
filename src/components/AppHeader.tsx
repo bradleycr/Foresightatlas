@@ -59,7 +59,7 @@ export function AppHeader({
    * from the profile menu; it just doesn't need a nav pill of its own.
    */
   const subtext =
-    "Internal tool — Connecting Grantees, Fellows, Nodees, and our programming";
+    "Internal tool — Connecting Grantees, Fellows, Nodees, Alumni, and our programming";
   /*
    * Tiny beta marker — inline sibling of the title so it sits on the same
    * baseline as “The Foresight Atlas”.
