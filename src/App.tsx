@@ -32,6 +32,7 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { CheckInPage } from "./pages/CheckInPage";
+import { ClaimPage } from "./pages/ClaimPage";
 import { StatsPage } from "./pages/StatsPage";
 import type { NodeSlug } from "./types/events";
 import {
