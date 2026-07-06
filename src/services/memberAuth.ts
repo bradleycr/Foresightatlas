@@ -16,6 +16,8 @@ export interface ClaimPeekResult {
   alreadyClaimed: boolean;
   /** "claim" = first-time setup, "reset" = forgotten-password link. */
   mode?: "claim" | "reset";
+  /** True when the roster has no email yet — claim form asks for one. */
+  needsEmail?: boolean;
 }
 
 async function postJson<T>(url: string, body: unknown, token?: string): Promise<T> {
@@ -99,9 +101,11 @@ export async function peekClaim(token: string): Promise<ClaimPeekResult> {
 export async function claimProfile(
   token: string,
   newPassword: string,
+  email?: string,
 ): Promise<DirectoryAuthResult> {
   return postJson<DirectoryAuthResult>(`${getApiBase()}/member-claim`, {
     token,
     newPassword,
+    ...(email ? { email } : {}),
   });
 }

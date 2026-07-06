@@ -356,9 +356,12 @@ export function isPersonCheckedIn(
 
 /* ── Date helpers ──────────────────────────────────────────────────── */
 
-/** YYYY-MM-DD for a Date object. */
+/** YYYY-MM-DD in the user's local calendar (not UTC — avoids wrong-day check-ins near midnight). */
 export function toDateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /** Returns an array of YYYY-MM-DD strings for the Mon–Sun week containing `ref`. */

@@ -514,11 +514,12 @@ async function peekLocalClaim(token) {
     person: { id: person.id, fullName: person.fullName },
     alreadyClaimed: Boolean(auth[person.id]?.passwordHash),
     mode: "claim",
+    needsEmail: !String(person.email || "").trim(),
   };
 }
 
 /** Mock equivalent of claimDirectoryProfile (claim + reset, one-time-use). */
-async function claimLocalProfile(token, newPassword) {
+async function claimLocalProfile(token, newPassword, options = {}) {
   const payload = verifyClaimToken(token);
   const validated = validateNewPasswordForRegister(newPassword);
   const db = await getLocalDatabase();
@@ -543,6 +544,22 @@ async function claimLocalProfile(token, newPassword) {
     );
     err.statusCode = 409;
     throw err;
+  } else {
+    const email = String(options.email || "").trim();
+    if (!String(person.email || "").trim()) {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        const err = new Error(
+          "Add your email address so we can reach you about your profile.",
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+      person.email = email;
+      if (!String(person.contactUrlOrHandle || "").trim()) {
+        person.contactUrlOrHandle = email;
+      }
+      await saveLocalDatabase(db);
+    }
   }
   const now = new Date().toISOString();
   auth[person.id] = {

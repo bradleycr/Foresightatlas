@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../ui/popover";
+import { ATLAS_ACCESS_MAILTO, ATLAS_PASSWORD_RESET_MAILTO } from "../../utils/checkInAuth";
 
 interface DirectoryLoginFormProps {
   people: Person[];
@@ -27,6 +28,8 @@ interface DirectoryLoginFormProps {
    * heuristics or they're signing in on a friend's freshly-cleared device.
    */
   initialName?: string | null;
+  /** Show a visible forgot-password line (AuthGate uses the page footer too). */
+  showAccountRecovery?: boolean;
 }
 
 function normalizeQuery(value: string): string {
@@ -41,6 +44,7 @@ export function DirectoryLoginForm({
   onSubmit,
   onCancel,
   initialName,
+  showAccountRecovery = false,
 }: DirectoryLoginFormProps) {
   const [username, setUsername] = useState(initialName ?? "");
   const [password, setPassword] = useState("");
@@ -205,14 +209,7 @@ export function DirectoryLoginForm({
               <PopoverContent side="top" align="start" className="max-w-[280px]">
                 First time here? Open the personal sign-in link you were sent —
                 it lets you set your password and signs you in. After that, use
-                that password here. Forgot your password? Email{" "}
-                <a
-                  href="mailto:bradley@foresight.org?subject=Foresight%20atlas%20password%20reset"
-                  className="font-medium text-sky-600 hover:text-sky-800"
-                >
-                  bradley@foresight.org
-                </a>{" "}
-                for a reset link.
+                that password here.
               </PopoverContent>
             </Popover>
           </div>
@@ -228,6 +225,17 @@ export function DirectoryLoginForm({
               className="h-11 pl-10"
             />
           </div>
+          {showAccountRecovery ? (
+            <p className="text-sm text-gray-600">
+              <a
+                href={ATLAS_PASSWORD_RESET_MAILTO}
+                className="font-medium text-sky-600 transition-colors hover:text-sky-800"
+              >
+                Forgot password?
+              </a>{" "}
+              Email us for a personal reset link.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -239,12 +247,12 @@ export function DirectoryLoginForm({
       {!hasSelection && (
         <div className="rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3">
           <p className="text-sm text-gray-600">
-            Can’t find your name?{" "}
+            Can't find your name?{" "}
             <a
-              href="mailto:bradley@foresight.org?subject=Foresight%20map%20access"
+              href={ATLAS_ACCESS_MAILTO}
               className="font-medium text-sky-600 transition-colors hover:text-sky-800"
             >
-              Contact bradley@foresight.org
+              Contact us for access
             </a>
           </p>
         </div>

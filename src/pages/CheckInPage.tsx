@@ -17,7 +17,7 @@
  * tap feels instant even on slow Wi-Fi at the door.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Check, MapPin, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
@@ -25,6 +25,7 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Button } from "../components/ui/button";
 import { NanowheelBadge } from "../components/NanowheelBadge";
 import { NanowheelBurst } from "../components/NanowheelBurst";
+import { useTodayKey } from "../hooks/useTodayKey";
 import type { Identity } from "../services/identity";
 import type { Person } from "../types";
 import type { CheckIn, NodeSlug } from "../types/events";
@@ -33,11 +34,11 @@ import {
   fetchCheckInsFromAPI,
   getCheckInsForDay,
   isPersonCheckedIn,
-  toDateKey,
 } from "../services/checkin";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { getProgrammingPageConfig } from "../data/nodes";
 import { setPostLoginReturnUrl } from "../services/returnUrl";
+import { subscribeToDataChanges, type DataChangeMessage } from "../services/sync";
 
 interface CheckInPageProps {
   nodeSlug: NodeSlug;
@@ -55,7 +56,7 @@ export function CheckInPage({
   onNavigateHome,
 }: CheckInPageProps) {
   const node = getProgrammingPageConfig(nodeSlug);
-  const today = useMemo(() => toDateKey(new Date()), []);
+  const today = useTodayKey();
   const [isSaving, setIsSaving] = useState(false);
   const [alreadyHere, setAlreadyHere] = useState(false);
   const [peopleHere, setPeopleHere] = useState<CheckIn[]>([]);
@@ -93,6 +94,19 @@ export function CheckInPage({
     return () => {
       cancelled = true;
     };
+  }, [nodeSlug, today, signedInPerson?.id]);
+
+  useEffect(() => {
+    if (!signedInPerson?.id) return;
+    const onChange = (msg: DataChangeMessage) => {
+      if (msg.scope !== "checkins" && msg.scope !== "all") return;
+      void fetchCheckInsFromAPI(nodeSlug, today, today).then(() => {
+        setPeopleHere(getCheckInsForDay(nodeSlug, today));
+        setAlreadyHere(isPersonCheckedIn(signedInPerson.id, nodeSlug, today));
+        void getNanowheelSummary(signedInPerson.id).then(setSummary);
+      });
+    };
+    return subscribeToDataChanges(onChange);
   }, [nodeSlug, today, signedInPerson?.id]);
 
   const handleCheckIn = useCallback(async () => {

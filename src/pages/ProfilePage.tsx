@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, KeyRound, Loader2, Link2, LogOut, Save, Sparkles, User, UserPlus, CheckCircle, AlertCircle, CalendarDays, EyeOff } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, Link2, LogOut, Save, Sparkles, User, UserPlus, CheckCircle, AlertCircle, CalendarDays, EyeOff, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { createPerson, updatePerson } from "../services/database";
@@ -9,11 +9,20 @@ import type { Person, PrimaryNode, RoleType } from "../types";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
 import { getPersonRSVPs } from "../services/rsvp";
 import { fetchRSVPsFromAPI } from "../services/rsvp";
+import { subscribeToDataChanges } from "../services/sync";
 import { getEventById, isCoworkingLike } from "../data/events";
 import {
+  formatEventDateShort,
+  splitEventsByTiming,
+} from "../utils/eventTiming";
+import {
+  clearProfileImageOverride,
   getProfileImageOverride,
-  setProfileImageOverride,
 } from "../services/profileImageOverride";
+import {
+  isAcceptedProfileImageUrl,
+  probeProfileImageUrl,
+} from "../utils/profileImageUrl";
 import { getNode } from "../data/nodes";
 import { buildFullPath } from "../utils/router";
 import { Button } from "../components/ui/button";
@@ -27,6 +36,14 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NanowheelBadge } from "../components/NanowheelBadge";
 import { PersonAvatar } from "../components/PersonAvatar";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
+import { isOpenToMeet, getOpenToMeetUrl } from "../utils/openToMeet";
+import {
+  clearLocationSetupDismissed,
+  clearLocationSetupUrl,
+  dismissLocationSetupForSession,
+  shouldShowLocationSetup,
+} from "../utils/locationSetup";
+import { LocationSetupPrompt } from "../components/profile/LocationSetupPrompt";
 import {
   Select,
   SelectContent,
@@ -102,6 +119,10 @@ interface ProfilePageProps {
   ) => void;
   /** After creating a new profile, leave create mode (e.g. navigate to /profile). */
   onExitCreateMode: () => void;
+  /** After saving a first-time location, send the member to the map. */
+  onAfterLocationSaved?: () => void;
+  /** When a new account is created without a city, open location setup. */
+  onRequestLocationSetup?: () => void;
   /**
    * Signed invite token from the /join?token=… link. Required to create a new
    * account — registration is invite-only, so without it the server rejects
@@ -110,7 +131,7 @@ interface ProfilePageProps {
   inviteToken?: string | null;
 }
 
-type LocationCheckState =
+type FieldCheckState =
   | { status: "idle"; message: string }
   | { status: "checking"; message: string }
   | { status: "success"; message: string }
@@ -133,6 +154,8 @@ export function ProfilePage({
   onSignOut,
   onProfileSaved,
   onExitCreateMode,
+  onAfterLocationSaved,
+  onRequestLocationSetup,
   inviteToken,
 }: ProfilePageProps) {
   const [draft, setDraft] = useState<Person | null>(person);
@@ -153,19 +176,56 @@ export function ProfilePage({
   const [editSelectedPresets, setEditSelectedPresets] = useState<string[]>([]);
   const [editCustomFocusStr, setEditCustomFocusStr] = useState("");
   /** Live geocode feedback so people can fix city/country before saving. */
-  const [locationCheck, setLocationCheck] = useState<LocationCheckState>({
+  const [locationCheck, setLocationCheck] = useState<FieldCheckState>({
+    status: "idle",
+    message: "",
+  });
+  /** Live probe of the profile photo URL so members know the link works. */
+  const [profileImageCheck, setProfileImageCheck] = useState<FieldCheckState>({
     status: "idle",
     message: "",
   });
   /** Tick to refresh "Events I'm attending" after RSVP fetch (e.g. on profile load). */
   const [rsvpTick, setRsvpTick] = useState(0);
-  /** Local-only profile photo URL (see Details section); synced with localStorage per person id. */
-  const [profileImageUrlLocal, setProfileImageUrlLocal] = useState("");
+  /** Bump when check-ins / RSVPs change elsewhere so nanowheel hero stays live. */
+  const [nanoTick, setNanoTick] = useState(0);
+  /** User tapped "I'll do this later" on the location onboarding card. */
+  const [locationSetupHidden, setLocationSetupHidden] = useState(false);
+
+  useEffect(() => {
+    setLocationSetupHidden(false);
+  }, [draft?.id]);
+
+  const showLocationSetup = useMemo(() => {
+    if (!identity || createMode || locationSetupHidden || identity.mustChangePassword) {
+      return false;
+    }
+    return shouldShowLocationSetup(draft);
+  }, [identity, createMode, locationSetupHidden, draft]);
+
+  const finishLocationSetup = () => {
+    clearLocationSetupUrl();
+    clearLocationSetupDismissed();
+    setLocationSetupHidden(true);
+  };
 
   useEffect(() => {
     if (createMode && !identity) return;
     setDraft(person);
   }, [person, createMode, identity]);
+
+  /**
+   * Legacy photo URLs lived only in localStorage. Surface them in the form
+   * so members can see, edit, and save them to the directory.
+   */
+  useEffect(() => {
+    if (!identity || !draft?.id || draft.profileImageUrl?.trim()) return;
+    const legacy = getProfileImageOverride(draft.id);
+    if (!legacy) return;
+    setDraft((current) =>
+      current?.id === draft.id ? { ...current, profileImageUrl: legacy } : current,
+    );
+  }, [identity, draft?.id, draft?.profileImageUrl]);
 
   /** In create mode without identity, keep draft as empty person (or user edits). Don’t overwrite with null. */
   useEffect(() => {
@@ -197,16 +257,71 @@ export function ProfilePage({
   }, [identity?.personId]);
 
   useEffect(() => {
-    if (!draft?.id) return;
-    setProfileImageUrlLocal(getProfileImageOverride(draft.id) ?? "");
-  }, [draft?.id]);
+    if (!identity?.personId) return;
+    return subscribeToDataChanges((msg) => {
+      if (msg.scope === "rsvps" || msg.scope === "checkins" || msg.scope === "all") {
+        void fetchRSVPsFromAPI().then(() => setRsvpTick((t) => t + 1));
+        setNanoTick((t) => t + 1);
+      }
+    });
+  }, [identity?.personId]);
 
-  const effectiveHeaderAvatar = useMemo(() => {
-    if (!draft?.id) return null;
-    const local = profileImageUrlLocal.trim();
-    if (local) return local;
-    return draft.profileImageUrl?.trim() || null;
-  }, [draft?.id, draft?.profileImageUrl, profileImageUrlLocal]);
+  const effectiveHeaderAvatar = useMemo(
+    () => draft?.profileImageUrl?.trim() || null,
+    [draft?.profileImageUrl],
+  );
+
+  /**
+   * Probe the profile photo URL as the member types so they know whether
+   * the link will render before they hit Save.
+   */
+  useEffect(() => {
+    if (!draft) return;
+
+    const url = draft.profileImageUrl?.trim() || "";
+    if (!url) {
+      setProfileImageCheck({ status: "idle", message: "" });
+      return;
+    }
+
+    if (!isAcceptedProfileImageUrl(url)) {
+      setProfileImageCheck({
+        status: "error",
+        message:
+          "Use a direct https:// image link (.jpg, .png, .webp, etc.) or a foresight.org photo URL.",
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setProfileImageCheck({
+        status: "checking",
+        message: "Checking whether this image loads…",
+      });
+
+      const ok = await probeProfileImageUrl(url, controller.signal);
+      if (controller.signal.aborted) return;
+
+      setProfileImageCheck(
+        ok
+          ? {
+              status: "success",
+              message: "Image loads — this URL will show on your map card after you save.",
+            }
+          : {
+              status: "error",
+              message:
+                "We could not load this image. Try a direct link to a .jpg or .png file, or paste the image URL from foresight.org.",
+            },
+      );
+    }, 700);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [draft?.profileImageUrl]);
 
   /**
    * Validate the map location as the user types.
@@ -261,7 +376,7 @@ export function ProfilePage({
         status: "success",
         message: `Map pin found near ${resolvedLabel}.`,
       });
-    }, 900);
+    }, 1400);
 
     return () => {
       controller.abort();
@@ -303,9 +418,15 @@ export function ProfilePage({
           };
           const result = await createPerson(payload, createPassword.password, inviteToken);
           onProfileSaved(result.person, result.auth);
-          onExitCreateMode();
+          if (!result.person.currentCity?.trim()) {
+            onRequestLocationSetup?.();
+          } else {
+            onExitCreateMode();
+          }
           toast.success("Profile created", {
-            description: "You’re signed in. Your profile is on the map and in the directory.",
+            description: result.person.currentCity?.trim()
+              ? "You're signed in and on the map."
+              : "Next: add your city so you appear on the map.",
           });
         } catch (error) {
           toast.error("Could not create profile", {
@@ -447,7 +568,7 @@ export function ProfilePage({
                     />
                   </Field>
                 </div>
-                <LocationCheckNotice state={locationCheck} />
+                <FieldCheckNotice state={locationCheck} />
                 <Field
                   label="Focus areas"
                   description="Select one or more main focus areas (used for map filtering). You can add custom areas under Other."
@@ -531,8 +652,8 @@ export function ProfilePage({
               </ProfileSection>
 
               <ProfileSection
-                title="Calendar & availability"
-                description="Make it easy for others to invite you. This does not grant access to your calendar."
+                title="Open to meet & calendar"
+                description="Opt in to member meetups. Your booking link is public to signed-in members; calendar email is for invites only."
                 icon={<CalendarDays className="size-4 text-sky-500" />}
               >
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -551,7 +672,7 @@ export function ProfilePage({
                       Others can use this to add you as a guest on a Google Calendar event.
                     </p>
                   </Field>
-                  <Field label="Availability link (optional)">
+                  <Field label="Open to meet link">
                     <Input
                       value={createDraft.availabilityUrl ?? ""}
                       onChange={(e) =>
@@ -563,7 +684,8 @@ export function ProfilePage({
                       autoCorrect="off"
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      A public booking page or schedule link (Calendly, Google appointment schedule, etc.).
+                      Calendly, Google appointment schedule, etc. Appears on the community Calendar
+                      page when set.
                     </p>
                   </Field>
                 </div>
@@ -692,7 +814,7 @@ export function ProfilePage({
     setDraft((current) => (current ? { ...current, [key]: value } : current));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (options?: { afterSave?: () => void; requireCity?: boolean }) => {
     if (!draft) return;
     if (!identity) return;
 
@@ -706,6 +828,11 @@ export function ProfilePage({
       return;
     }
 
+    if (options?.requireCity && !draft.currentCity.trim()) {
+      toast.error("City is required to appear on the map.");
+      return;
+    }
+
     if (
       draft.fellowshipCohortYear !== 0 &&
       draft.fellowshipCohortYear != null &&
@@ -713,6 +840,20 @@ export function ProfilePage({
     ) {
       toast.error("Please enter a valid cohort year (1900–2100), or 0 for unknown.");
       return;
+    }
+
+    const photoUrl = draft.profileImageUrl?.trim() || "";
+    if (photoUrl) {
+      if (profileImageCheck.status === "checking") {
+        toast.error("Still checking your profile photo — wait a moment, then save again.");
+        return;
+      }
+      if (profileImageCheck.status === "error") {
+        toast.error("Fix your profile photo URL before saving.", {
+          description: profileImageCheck.message,
+        });
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -723,10 +864,20 @@ export function ProfilePage({
       };
       const result = await updatePerson(draft.id, payload, identity.token);
       setDraft(result.person);
+      clearProfileImageOverride(draft.id);
       onProfileSaved(result.person, result.auth);
-      toast.success("Profile updated", {
-        description: "Your map card and directory details were refreshed immediately.",
-      });
+      if (result.person.currentCity?.trim()) {
+        finishLocationSetup();
+      }
+      toast.success(
+        options?.requireCity ? "You're on the map" : "Profile updated",
+        {
+          description: options?.requireCity
+            ? "Your pin is live — fellows can find you on the atlas."
+            : "Your map card and directory details were refreshed immediately.",
+        },
+      );
+      options?.afterSave?.();
     } catch (error) {
       toast.error("Failed to save profile", {
         description:
@@ -735,6 +886,19 @@ export function ProfilePage({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveAndViewMap = () => {
+    void handleSave({
+      requireCity: true,
+      afterSave: () => onAfterLocationSaved?.(),
+    });
+  };
+
+  const handleDismissLocationSetup = () => {
+    if (draft?.id) dismissLocationSetupForSession(draft.id);
+    clearLocationSetupUrl();
+    setLocationSetupHidden(true);
   };
 
   const handlePasswordChange = async () => {
@@ -791,6 +955,20 @@ export function ProfilePage({
           Back to map
         </button>
 
+        {showLocationSetup && draft ? (
+          <LocationSetupPrompt
+            firstName={draft.fullName.trim().split(/\s+/)[0] || ""}
+            city={draft.currentCity}
+            country={draft.currentCountry}
+            onCityChange={(value) => updateDraft("currentCity", value)}
+            onCountryChange={(value) => updateDraft("currentCountry", value)}
+            locationCheck={locationCheck}
+            isSaving={isSaving}
+            onSaveAndViewMap={handleSaveAndViewMap}
+            onDismiss={handleDismissLocationSetup}
+          />
+        ) : null}
+
         <section className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow">
           {/* Header: identity only, no actions */}
           {/* Header: Foresight icon + initials, then name */}
@@ -819,8 +997,10 @@ export function ProfilePage({
                 </div>
               </div>
               {/* Nanowheel hero — your running count of node check-ins + RSVPs. */}
-              <NanowheelHero personId={draft.id} />
+              <NanowheelHero personId={draft.id} refreshTick={nanoTick} />
             </div>
+
+            <OpenToMeetProfileStatus person={draft} />
           </div>
 
           <div className="grid gap-10 px-6 py-8 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)] lg:px-10 lg:py-10 lg:gap-12">
@@ -978,8 +1158,8 @@ export function ProfilePage({
               {/* Events I'm attending — only "going" (confirmed), not "interested" */}
               {identity?.personId && (
                 <ProfileSection
-                  title="Events I'm attending"
-                  description={'Events you\'ve confirmed you\'re going to. (Choosing "Interested" does not add you here — only "Going" counts.) Manage on Berlin or SF Programming.'}
+                  title="My events"
+                  description="Going RSVPs from programming pages. Upcoming events also appear on your map sidebar card; past events stay here for your record."
                   icon={<CalendarDays className="size-4 text-sky-500" />}
                 >
                   <ProfileEventsAttending
@@ -1006,20 +1186,22 @@ export function ProfilePage({
 
                 <Field
                   label="Profile photo URL (optional)"
-                  description="Paste a direct image link (https://…). Stored only in this browser—nothing is saved to the directory. Clears when you remove the text."
+                  description="Paste a direct image link (https://…). Saved to the directory and shown on your map card. Clear the field to remove your photo."
                 >
                   <Input
-                    value={profileImageUrlLocal}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setProfileImageUrlLocal(v);
-                      if (draft.id.trim()) setProfileImageOverride(draft.id, v.trim() || null);
-                    }}
-                    placeholder="https://example.com/photo.jpg"
+                    value={draft.profileImageUrl ?? ""}
+                    onChange={(event) =>
+                      updateDraft(
+                        "profileImageUrl",
+                        event.target.value ? event.target.value : null,
+                      )
+                    }
+                    placeholder="https://foresight.org/wp-content/uploads/…/photo.png"
                     inputMode="url"
                     autoCapitalize="none"
                     autoCorrect="off"
                   />
+                  <FieldCheckNotice state={profileImageCheck} />
                 </Field>
 
                 <Field label="Details (full description)">
@@ -1035,10 +1217,17 @@ export function ProfilePage({
               </ProfileSection>
             </section>
 
-            <section className="space-y-8">
+            <section
+              id="profile-location-section"
+              className={`space-y-8 ${showLocationSetup ? "rounded-2xl ring-2 ring-sky-300/80 ring-offset-2" : ""}`}
+            >
               <ProfileSection
                 title="Location and map"
-                description="Add a precise city and country so your map pin lands in the right place."
+                description={
+                  showLocationSetup
+                    ? "Same fields as above — save from the card or use Save profile below."
+                    : "Add a precise city and country so your map pin lands in the right place."
+                }
                 icon={<img src={foresightIconUrl} alt="" className="size-4 object-contain opacity-90" aria-hidden />}
               >
                 <Field
@@ -1065,7 +1254,7 @@ export function ProfilePage({
                     placeholder="e.g. Germany"
                   />
                 </Field>
-                <LocationCheckNotice state={locationCheck} />
+                <FieldCheckNotice state={locationCheck} />
               </ProfileSection>
 
               <ProfileSection
@@ -1201,8 +1390,8 @@ export function ProfilePage({
               </ProfileSection>
 
               <ProfileSection
-                title="Calendar & availability"
-                description="Make it easy for others to invite you. This does not grant access to your calendar."
+                title="Open to meet & calendar"
+                description="Opt in to member meetups. Your booking link is public to signed-in members; calendar email is for invites only."
                 icon={<CalendarDays className="size-4 text-sky-500" />}
               >
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -1221,7 +1410,7 @@ export function ProfilePage({
                       Others can use this to add you as a guest on a Google Calendar event.
                     </p>
                   </Field>
-                  <Field label="Availability link (optional)">
+                  <Field label="Open to meet link">
                     <Input
                       value={draft.availabilityUrl ?? ""}
                       onChange={(e) =>
@@ -1233,7 +1422,8 @@ export function ProfilePage({
                       autoCorrect="off"
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      A public booking page or schedule link (Calendly, Google appointment schedule, etc.).
+                      Calendly, Google appointment schedule, etc. Appears on the community Calendar
+                      page when set.
                     </p>
                   </Field>
                 </div>
@@ -1253,7 +1443,7 @@ export function ProfilePage({
                 Sign out
               </Button>
               <Button
-                onClick={handleSave}
+                onClick={() => void handleSave()}
                 disabled={isSaving || identity.mustChangePassword}
                 className="min-h-[48px] justify-center px-6 font-medium sm:min-w-[11rem]"
               >
@@ -1323,7 +1513,7 @@ function ProfileSection({
   );
 }
 
-/** Lists events the user is attending (going RSVPs only — not "interested"). */
+/** Lists going RSVPs split into upcoming vs past with clear labels. */
 function ProfileEventsAttending({
   personId,
   rsvpTick,
@@ -1331,22 +1521,35 @@ function ProfileEventsAttending({
   personId: string;
   rsvpTick: number;
 }) {
-  void rsvpTick; // refresh when RSVPs are re-fetched
-  const { coworkingCount, otherEvents } = useMemo(() => {
+  void rsvpTick;
+  const { upcomingCoworking, pastCoworking, upcomingOther, pastOther } = useMemo(() => {
     const rsvps = getPersonRSVPs(personId).filter((r) => r.status === "going");
     const events = rsvps
       .map((r) => getEventById(r.eventId))
-      .filter((e): e is NonNullable<typeof e> => e != null)
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+      .filter((e): e is NonNullable<typeof e> => e != null);
     const coworking = events.filter((e) => isCoworkingLike(e));
     const other = events.filter((e) => !isCoworkingLike(e));
-    return { coworkingCount: coworking.length, otherEvents: other };
+    const coworkingSplit = splitEventsByTiming(coworking);
+    const otherSplit = splitEventsByTiming(other);
+    return {
+      upcomingCoworking: coworkingSplit.upcoming,
+      pastCoworking: coworkingSplit.past,
+      upcomingOther: otherSplit.upcoming,
+      pastOther: otherSplit.past,
+    };
   }, [personId, rsvpTick]);
 
-  if (coworkingCount === 0 && otherEvents.length === 0) {
+  const hasUpcoming =
+    upcomingCoworking.length > 0 || upcomingOther.length > 0;
+  const hasPast = pastCoworking.length > 0 || pastOther.length > 0;
+
+  if (!hasUpcoming && !hasPast) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-600">
-        <p>You haven&apos;t said you&apos;re <strong>going</strong> to any events yet. Use &quot;Going&quot; (not just &quot;Interested&quot;) on the programming page to confirm.</p>
+        <p>
+          You haven&apos;t said you&apos;re <strong>going</strong> to any events yet. Use
+          &quot;Going&quot; (not just &quot;Interested&quot;) on the programming page to confirm.
+        </p>
         <p className="mt-2">
           Visit{" "}
           <a
@@ -1369,57 +1572,133 @@ function ProfileEventsAttending({
           >
             Global programming
           </a>{" "}
-          to RSVP to Vision Weekends, workshops, and node events. Choose <strong>Going</strong> (not just Interested) and it&apos;ll show here and on your profile card.
+          to RSVP. Upcoming events will show here and on your map card.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {coworkingCount > 0 ? (
-        <div className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2.5 text-sm">
-          <span className="font-medium text-gray-900">Co-working / residence days</span>
-          <span className="text-gray-600">
-            {" "}
-            — {coworkingCount} {coworkingCount === 1 ? "date" : "dates"} you&apos;re going to
-          </span>
+    <div className="space-y-5">
+      {hasUpcoming ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+              Upcoming
+            </span>
+            <span className="text-xs text-gray-500">Shown on your map sidebar card</span>
+          </div>
+
+          {upcomingCoworking.length > 0 ? (
+            <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-sm">
+              <span className="font-medium text-gray-900">Co-working / residence days</span>
+              <span className="text-gray-600">
+                {" "}
+                — {upcomingCoworking.length}{" "}
+                {upcomingCoworking.length === 1 ? "date" : "dates"} coming up
+              </span>
+            </div>
+          ) : null}
+
+          {upcomingOther.length > 0 ? (
+            <ProfileEventList events={upcomingOther} timing="upcoming" />
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-600">
+          No upcoming events right now. Past RSVPs are listed below.
+        </p>
+      )}
+
+      {hasPast ? (
+        <div className="space-y-3 border-t border-gray-200 pt-4">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-gray-700">
+              Past
+            </span>
+            <span className="text-xs text-gray-500">Profile only — not on the map card</span>
+          </div>
+
+          {pastCoworking.length > 0 ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
+              <span className="font-medium text-gray-800">Co-working / residence days</span>
+              {" "}
+              — {pastCoworking.length} past{" "}
+              {pastCoworking.length === 1 ? "date" : "dates"}
+            </div>
+          ) : null}
+
+          {pastOther.length > 0 ? (
+            <ProfileEventList events={pastOther} timing="past" />
+          ) : null}
         </div>
       ) : null}
-      {otherEvents.length > 0 ? (
-        <ul className="space-y-2">
-          {otherEvents.map((event) => {
-            const node = getNode(event.nodeSlug);
-            const nodeLabel = node ? `${node.city}` : event.location;
-            const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            });
-            const programPath = event.nodeSlug === "global" ? "global" : event.nodeSlug === "berlin" ? "berlin" : "sf";
-            return (
-              <li key={event.id}>
-                <a
-                  href={buildFullPath(`/${programPath}`)}
-                  className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-sky-200 hover:bg-sky-50/80"
-                >
-                  <span className="font-medium text-gray-900">{event.title}</span>
-                  <span className="text-gray-500">
-                    {dateStr} · {nodeLabel}
-                  </span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+
       <p className="text-xs text-gray-500">
         To change attendance, go to{" "}
-        <a href={buildFullPath("berlin")} className="text-sky-600 underline hover:text-sky-700">Berlin</a>
+        <a href={buildFullPath("berlin")} className="text-sky-600 underline hover:text-sky-700">
+          Berlin
+        </a>
         {" or "}
-        <a href={buildFullPath("sf")} className="text-sky-600 underline hover:text-sky-700">SF Programming</a>.
+        <a href={buildFullPath("sf")} className="text-sky-600 underline hover:text-sky-700">
+          SF Programming
+        </a>
+        . Only &quot;Going&quot; counts — not &quot;Interested&quot;.
       </p>
     </div>
+  );
+}
+
+function ProfileEventList({
+  events,
+  timing,
+}: {
+  events: NonNullable<ReturnType<typeof getEventById>>[];
+  timing: "upcoming" | "past";
+}) {
+  return (
+    <ul className="space-y-2">
+      {events.map((event) => {
+        const node = getNode(event.nodeSlug);
+        const nodeLabel = node ? `${node.city}` : event.location;
+        const dateStr = formatEventDateShort(event.startAt);
+        const programPath =
+          event.nodeSlug === "global"
+            ? "global"
+            : event.nodeSlug === "berlin"
+              ? "berlin"
+              : "sf";
+        const isPast = timing === "past";
+        return (
+          <li key={event.id}>
+            <a
+              href={buildFullPath(`/${programPath}`)}
+              className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                isPast
+                  ? "border-gray-200 bg-gray-50/90 text-gray-600 hover:border-gray-300 hover:bg-gray-100"
+                  : "border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/50"
+              }`}
+            >
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  isPast
+                    ? "bg-gray-200 text-gray-600"
+                    : "bg-emerald-100 text-emerald-800"
+                }`}
+              >
+                {isPast ? "Past" : "Upcoming"}
+              </span>
+              <span className={`font-medium ${isPast ? "text-gray-700" : "text-gray-900"}`}>
+                {event.title}
+              </span>
+              <span className="text-gray-500">
+                {dateStr} · {nodeLabel}
+              </span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -1448,7 +1727,7 @@ function Field({
   );
 }
 
-function LocationCheckNotice({ state }: { state: LocationCheckState }) {
+function FieldCheckNotice({ state }: { state: FieldCheckState }) {
   if (state.status === "idle" || !state.message) return null;
 
   const tone =
@@ -1487,7 +1766,7 @@ function LocationCheckNotice({ state }: { state: LocationCheckState }) {
  * known (avoids flashing a misleading 0). Visible on all breakpoints, including
  * phones — the map sidebar badge is desktop-only, but your own count belongs here.
  */
-function NanowheelHero({ personId }: { personId: string }) {
+function NanowheelHero({ personId, refreshTick = 0 }: { personId: string; refreshTick?: number }) {
   const [summary, setSummary] = useState<NanowheelSummary | null>(null);
 
   useEffect(() => {
@@ -1502,7 +1781,7 @@ function NanowheelHero({ personId }: { personId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [personId]);
+  }, [personId, refreshTick]);
 
   if (!personId) return null;
 
@@ -1525,6 +1804,45 @@ function NanowheelHero({ personId }: { personId: string }) {
         ariaLabel={`You have ${count} nanowheels`}
         className={count === 0 ? "opacity-75" : undefined}
       />
+    </div>
+  );
+}
+
+function OpenToMeetProfileStatus({ person }: { person: Person }) {
+  const bookUrl = getOpenToMeetUrl(person);
+
+  if (isOpenToMeet(person) && bookUrl) {
+    return (
+      <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-emerald-200/80 bg-white/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex min-w-0 items-start gap-3">
+          <Users className="mt-0.5 size-5 shrink-0 text-emerald-600" aria-hidden />
+          <div>
+            <p className="font-medium text-gray-900">You&apos;re open to meet</p>
+            <p className="mt-1 text-sm leading-relaxed text-gray-600">
+              Signed-in members can find you on the community Calendar page and book time via
+              your link. You control what slots you offer on your booking page.
+            </p>
+          </div>
+        </div>
+        <a
+          href={bookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-medium text-emerald-900 transition-colors hover:bg-emerald-100 touch-manipulation"
+        >
+          Preview booking link
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white/50 px-4 py-4 sm:px-5">
+      <p className="text-sm leading-relaxed text-gray-600">
+        <span className="font-medium text-gray-800">Open to meet?</span> Add a booking link in{" "}
+        <span className="font-medium text-gray-800">Open to meet &amp; calendar</span> below
+        (Calendly, Google appointment schedule, etc.) to appear on the community Calendar page.
+      </p>
     </div>
   );
 }

@@ -188,7 +188,7 @@ export function NodeProgrammingPage({
       } catch (e) {
         setCheckInTick((t) => t + 1);
         toast.error("Check-in not synced", {
-          description: e instanceof Error ? e.message : "Saved on this device only.",
+          description: e instanceof Error ? e.message : "Please try again in a moment.",
         });
       }
     })();
@@ -259,7 +259,7 @@ export function NodeProgrammingPage({
         .then(() => setRsvpTick((t) => t + 1))
         .catch((e) => {
           toast.error("RSVP not synced", {
-            description: e instanceof Error ? e.message : "Saved on this device only.",
+            description: e instanceof Error ? e.message : "Please try again in a moment.",
           });
           setRsvpTick((t) => t + 1);
         });

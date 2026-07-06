@@ -198,7 +198,9 @@ app.post("/api/member-claim", async (req, res) => {
   const newPassword = req.body?.newPassword;
   try {
     if (typeof newPassword === "string" && newPassword.length > 0) {
-      const result = await claimLocalProfile(token, newPassword);
+      const result = await claimLocalProfile(token, newPassword, {
+        email: req.body?.email,
+      });
       return res.json(result);
     }
     const result = await peekLocalClaim(token);

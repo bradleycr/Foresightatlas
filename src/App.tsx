@@ -32,13 +32,15 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { CheckInPage } from "./pages/CheckInPage";
-import { ClaimPage } from "./pages/ClaimPage";
+import { StatsPage } from "./pages/StatsPage";
 import type { NodeSlug } from "./types/events";
 import {
   getRoutePath,
   buildFullPath,
   consumeRedirectPath,
 } from "./utils/router";
+import { personNeedsLocation, profileLocationSetupPath, isLocationSetupDismissed, dismissLocationSetupForSession } from "./utils/locationSetup";
+import { LocationMapNudge } from "./components/profile/LocationMapNudge";
 import {
   clearIdentity,
   forgetLastSignedInName,
@@ -181,7 +183,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/claim", "/join"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/stats", "/claim", "/join"];
     const current = getRoutePath();
     // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
     // so we match them with a prefix rather than an exact list entry. Bare
@@ -379,13 +381,16 @@ export default function App() {
   // ── Navigation ─────────────────────────────────────────────────────
 
   const navigate = useCallback((path: string) => {
+    const stripped = path.startsWith("/") ? path.slice(1) : path;
+    const fullPath = buildFullPath(stripped);
     const pathname = path.includes("?") ? path.slice(0, path.indexOf("?")) : path;
-    if (pathname === route) return;
-    const fullPath = buildFullPath(path);
+    const nextRoute = pathname || "/";
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current === fullPath) return;
     window.history.pushState({}, "", fullPath);
-    setRoute(pathname || "/");
+    setRoute(nextRoute);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [route]);
+  }, []);
 
   const handleIdentityClear = useCallback(() => {
     clearIdentity();
@@ -427,6 +432,8 @@ export default function App() {
         const returnUrl = consumePostLoginReturnUrl();
         if (returnUrl) {
           navigate(returnUrl);
+        } else if (personNeedsLocation(result.person)) {
+          navigate(profileLocationSetupPath());
         }
 
         return { ok: true as const };
@@ -441,9 +448,9 @@ export default function App() {
   );
 
   const handleClaimProfile = useCallback(
-    async (token: string, newPassword: string) => {
+    async (token: string, newPassword: string, email?: string) => {
       try {
-        const result = await claimProfile(token, newPassword);
+        const result = await claimProfile(token, newPassword, email);
         persistIdentity({
           personId: result.person.id,
           fullName: result.person.fullName,
@@ -516,6 +523,7 @@ export default function App() {
 
   /** Increment when user toggles a connection in the person modal so ConnectionsPage can re-read. */
   const [connectionsVersion, setConnectionsVersion] = useState(0);
+  const [mapLocationNudgeHidden, setMapLocationNudgeHidden] = useState(false);
 
   const mapPeople = useMemo(() => {
     if (!mapFilterIds) return filteredPeople;
@@ -528,6 +536,7 @@ export default function App() {
   const isProfileRoute = route === "/profile";
   const isConnectionsRoute = route === "/connections";
   const isCalendarRoute = route === "/calendar";
+  const isStatsRoute = route === "/stats";
   /**
    * Check-in route detection. Supports the three canonical slugs plus a bare
    * "/checkin" (we default to Berlin when signed in to avoid a dead-end 404;
@@ -569,6 +578,18 @@ export default function App() {
       (selfPerson && selfPerson.id === identity.personId ? selfPerson : null)
     : null;
 
+  useEffect(() => {
+    setMapLocationNudgeHidden(false);
+  }, [signedInPerson?.id]);
+
+  const showMapLocationNudge =
+    route === "/" &&
+    !!identity &&
+    !identity.mustChangePassword &&
+    !mapLocationNudgeHidden &&
+    personNeedsLocation(signedInPerson) &&
+    !isLocationSetupDismissed(signedInPerson?.id ?? "");
+
   const mainContent = isConnectionsRoute ? (
     <ConnectionsPage
       identity={identity}
@@ -606,12 +627,24 @@ export default function App() {
       onSignOut={handleIdentityClear}
       onProfileSaved={handleProfileSaved}
       onExitCreateMode={() => navigate("/profile")}
+      onAfterLocationSaved={() => navigate("/")}
+      onRequestLocationSetup={() => navigate(profileLocationSetupPath())}
+    />
+  ) : isStatsRoute ? (
+    <StatsPage
+      identity={identity}
+      onNavigateHome={() => navigate("/")}
     />
   ) : isCalendarRoute ? (
     <CalendarPage
       identity={identity}
       signedInPerson={signedInPerson}
+      people={people}
       onOpenProfile={() => navigate("/profile")}
+      onViewPerson={(personId) => {
+        setSelectedPersonId(personId);
+        setDetailNavContext(null);
+      }}
     />
   ) : isCheckInRoute && checkInSlug ? (
     <CheckInPage
@@ -625,7 +658,7 @@ export default function App() {
     <ClaimPage
       token={claimToken}
       onClaim={handleClaimProfile}
-      onClaimed={() => navigate("/profile")}
+      onClaimed={() => navigate(profileLocationSetupPath())}
       onNavigateHome={() => navigate("/")}
     />
   ) : isJoinRoute ? (
@@ -640,9 +673,20 @@ export default function App() {
       onSignOut={handleIdentityClear}
       onProfileSaved={handleProfileSaved}
       onExitCreateMode={() => navigate("/")}
+      onRequestLocationSetup={() => navigate(profileLocationSetupPath())}
+      onAfterLocationSaved={() => navigate("/")}
     />
   ) : (
     <>
+      {showMapLocationNudge && signedInPerson ? (
+        <LocationMapNudge
+          onSetLocation={() => navigate(profileLocationSetupPath())}
+          onDismiss={() => {
+            dismissLocationSetupForSession(signedInPerson.id);
+            setMapLocationNudgeHidden(true);
+          }}
+        />
+      ) : null}
       {/* Event filter banner — shown when returning from programming page */}
       {/* Event filter banner — only people who are "going" (confirmed) are shown */}
       {mapFilterIds && (
@@ -693,7 +737,7 @@ export default function App() {
   if (!identity && !isClaimRoute && !isJoinRoute) {
     return (
       <>
-        <AuthGate onSignIn={handleDirectorySignIn} />
+        <AuthGate route={route} onSignIn={handleDirectorySignIn} />
         <Toaster />
       </>
     );

@@ -16,6 +16,10 @@ const COUNTRY_TYPO_MAP = {
   germnay: "Germany",
   geramny: "Germany",
   gernany: "Germany",
+  german: "Germany",
+  deutschland: "Germany",
+  ger: "Germany",
+  de: "Germany",
   engalnd: "England",
   engand: "England",
   "untied kingdom": "United Kingdom",
@@ -39,21 +43,70 @@ const COUNTRY_TYPO_MAP = {
   singapor: "Singapore",
 };
 
+const KNOWN_LOCATIONS = {
+  "berlin|germany": {
+    lat: 52.520008,
+    lng: 13.404954,
+    city: "Berlin",
+    country: "Germany",
+  },
+  "san francisco|united states": {
+    lat: 37.774929,
+    lng: -122.419416,
+    city: "San Francisco",
+    country: "United States",
+  },
+};
+
+function normalizeCityName(city) {
+  return String(city || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/^the\s+/i, "")
+    .replace(/\s+city$/i, "");
+}
+
 function correctCountryTypo(country) {
   if (!country || !String(country).trim()) return country;
   const key = String(country).trim().toLowerCase().replace(/\s+/g, " ");
   return COUNTRY_TYPO_MAP[key] ?? String(country).trim();
 }
 
-async function geocodeCityOneQuery(query, fallbackCity, fallbackCountry) {
-  const url =
-    `${NOMINATIM_BASE_URL}/search?format=json&limit=1&addressdetails=1&q=` +
-    encodeURIComponent(query);
+function lookupKnownLocation(city, country) {
+  const cityNorm = normalizeCityName(city);
+  const countryNorm = correctCountryTypo(country).trim().toLowerCase();
+
+  if (cityNorm === "berlin") {
+    if (!countryNorm || ["germany", "german", "deutschland", "de", "ger"].includes(countryNorm)) {
+      return KNOWN_LOCATIONS["berlin|germany"];
+    }
+  }
+
+  if (!countryNorm) return null;
+  return KNOWN_LOCATIONS[`${cityNorm}|${countryNorm}`] ?? null;
+}
+
+async function geocodeCityOneQuery(query, fallbackCity, fallbackCountry, structured) {
+  const params = new URLSearchParams({
+    format: "json",
+    limit: "1",
+    addressdetails: "1",
+  });
+
+  if (structured) {
+    params.set("city", structured.city);
+    params.set("country", structured.country);
+  } else {
+    params.set("q", query);
+  }
+
+  const url = `${NOMINATIM_BASE_URL}/search?${params.toString()}`;
   try {
     const response = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
     });
-    if (!response.ok) return null;
+    if (response.status === 429 || !response.ok) return null;
     const payload = await response.json();
     const first = Array.isArray(payload) ? payload[0] : null;
     if (!first) return null;
@@ -82,19 +135,39 @@ async function geocodeCity(cityName, country) {
   if (!city) return null;
 
   const correctedCountry = rawCountry ? correctCountryTypo(rawCountry) : "";
+  const known = lookupKnownLocation(city, correctedCountry || rawCountry);
+  if (known) return known;
+
+  if (correctedCountry) {
+    const structured = await geocodeCityOneQuery(
+      `${city}, ${correctedCountry}`,
+      city,
+      correctedCountry,
+      { city, country: correctedCountry },
+    );
+    if (structured) return structured;
+    await new Promise((r) => setTimeout(r, 1100));
+  }
+
   const queries = [];
   if (correctedCountry) queries.push(`${city}, ${correctedCountry}`);
   if (rawCountry && correctedCountry !== rawCountry) queries.push(`${city}, ${rawCountry}`);
   queries.push(city);
 
   for (let i = 0; i < queries.length; i++) {
-    const result = await geocodeCityOneQuery(queries[i], city, correctedCountry || rawCountry);
+    const result = await geocodeCityOneQuery(
+      queries[i],
+      city,
+      correctedCountry || rawCountry,
+      null,
+    );
     if (result) return result;
     if (i < queries.length - 1) {
       await new Promise((r) => setTimeout(r, 1100));
     }
   }
-  return null;
+
+  return lookupKnownLocation(city, correctedCountry || rawCountry);
 }
 
 module.exports = {

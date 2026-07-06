@@ -1,7 +1,8 @@
 /**
- * Optional profile photo URL stored only in the browser (localStorage).
- * Lets a member paste an image URL for how they appear on the map and in
- * modals on this device, without writing to the Google Sheet.
+ * Profile photo URL resolution for map cards and modals.
+ *
+ * The Google Sheet is the source of truth. Legacy per-browser overrides in
+ * localStorage are only used when the sheet has no image yet.
  */
 
 import type { Person } from "../types";
@@ -14,6 +15,7 @@ export function getProfileImageOverride(personId: string): string | null {
   return raw || null;
 }
 
+/** @deprecated Sheet is canonical — clear overrides after a successful profile save. */
 export function setProfileImageOverride(personId: string, url: string | null): void {
   if (typeof window === "undefined") return;
   const key = STORAGE_PREFIX + personId;
@@ -22,10 +24,13 @@ export function setProfileImageOverride(personId: string, url: string | null): v
   else localStorage.removeItem(key);
 }
 
-/** Sheet URL plus optional per-device override (override wins when set). */
+export function clearProfileImageOverride(personId: string): void {
+  setProfileImageOverride(personId, null);
+}
+
+/** Sheet URL first; legacy browser override only when the sheet is empty. */
 export function getEffectiveProfileImageUrl(person: Person): string | null {
-  const override = getProfileImageOverride(person.id);
-  if (override) return override;
   const fromSheet = person.profileImageUrl?.trim();
-  return fromSheet || null;
+  if (fromSheet) return fromSheet;
+  return getProfileImageOverride(person.id);
 }

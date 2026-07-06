@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark, CalendarDays } from "lucide-react";
+import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark, CalendarDays, BarChart3 } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
@@ -53,6 +53,7 @@ export function AppHeader({
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
+  const isStatsRoute = route === "/stats";
   /*
    * Connections is no longer a top-level destination in the header — the profile
    * dialog surfaces it instead. The route itself is still live and reachable
@@ -60,16 +61,13 @@ export function AppHeader({
    */
   const subtext =
     "Internal tool — Connecting Grantees, Fellows, Nodees, Alumni, and our programming";
-  /*
-   * Tiny beta marker — inline sibling of the title so it sits on the same
-   * baseline as “The Foresight Atlas”.
-   */
-  const betaMark = (
+
+  const betaPill = (
     <span
-      className="align-baseline text-[0.65em] font-medium uppercase tracking-wide text-stone-400"
+      className="inline-flex shrink-0 items-center rounded-full border border-stone-200/90 bg-stone-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-500"
       aria-label="Beta — this app is still in development"
     >
-      &nbsp;(beta)
+      Beta
     </span>
   );
 
@@ -130,42 +128,32 @@ export function AppHeader({
       }}
     >
       <div className="px-3 sm:px-4 md:px-8 pb-3.5 sm:pb-4 md:pb-5">
-        <div className="flex min-h-0 flex-nowrap items-start justify-between gap-2 sm:gap-3 md:items-center">
-          {/* Logo + title — mobile-first: readable sizes, natural wrap, no harsh truncation */}
-          <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3 md:items-center md:gap-4">
+        <div className="flex min-h-0 flex-nowrap items-center justify-between gap-2 sm:gap-3">
+          {/* Logo + title — full name always visible; subtext desktop-only */}
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3 md:items-start md:gap-4">
             <button
               type="button"
               onClick={() => {
                 navigate("/");
                 onNavigateHome?.();
               }}
-              className="flex shrink-0 cursor-pointer items-center rounded-md transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-              aria-label="Back to map"
+              className="flex shrink-0 cursor-pointer items-center rounded-md pt-0.5 transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 md:pt-0"
+              aria-label="Back to map — The Foresight Atlas"
             >
               <img
                 src={foresightLogo}
                 alt="Foresight Institute"
-                /* Bumped from h-8/9/12: the wordmark is the identity anchor; previous sizing
-                 * felt cramped next to the chunky nav pills. New sizes stay in proportion
-                 * with the title's line-height so nothing reflows. */
-                className="h-11 w-auto sm:h-12 md:h-14"
+                className="h-9 w-auto sm:h-10 md:h-14"
               />
             </button>
             <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
-              <h1 className="font-heading font-semibold tracking-tight text-gray-900 text-balance">
-                {/*
-                 * Mobile: logo carries the Foresight identity — keep the title
-                 * short ("Atlas (beta)") and drop the subtext so the header
-                 * doesn't crowd nav controls. Desktop keeps the full name + tagline.
-                 */}
-                <span className="min-w-0 text-[0.9375rem] leading-snug md:hidden">
-                  Atlas{betaMark}
-                </span>
-                <span className="hidden min-w-0 text-base leading-snug md:inline md:text-xl md:leading-tight">
-                  The Foresight Atlas{betaMark}
-                </span>
-              </h1>
-              <p className="mt-1.5 hidden max-w-[min(100%,38rem)] text-pretty text-sm leading-relaxed text-gray-600 md:block md:mt-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <h1 className="font-heading text-sm font-semibold leading-snug tracking-tight text-gray-900 sm:text-base md:text-xl md:leading-tight">
+                  The Foresight Atlas
+                </h1>
+                {betaPill}
+              </div>
+              <p className="mt-1 hidden max-w-[38rem] text-pretty text-sm leading-relaxed text-gray-600 md:block md:mt-2">
                 {subtext}
               </p>
             </div>
@@ -186,6 +174,19 @@ export function AppHeader({
               }`}
             >
               Map
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/stats")}
+              className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border inline-flex items-center gap-1.5 ${
+                isStatsRoute
+                  ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
+                  : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              <BarChart3 className="size-4 opacity-70" aria-hidden />
+              Stats
             </button>
 
             <div className="relative" ref={menuRef}>
@@ -412,6 +413,18 @@ export function AppHeader({
                       variant="outline"
                       onClick={() => {
                         closeAccountDialog();
+                        navigate("/stats");
+                      }}
+                      className="min-h-[44px] w-full"
+                    >
+                      <BarChart3 className="size-4" />
+                      Community stats
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        closeAccountDialog();
                         navigate("/calendar");
                       }}
                       className="min-h-[44px] w-full"
@@ -582,6 +595,22 @@ export function AppHeader({
                     }`}
                   >
                     Global programming
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      navigate("/stats");
+                      closeMobileMenu();
+                    }}
+                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center gap-2 ${
+                      isStatsRoute
+                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
+                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
+                    }`}
+                  >
+                    <BarChart3 className="size-4 opacity-70" aria-hidden />
+                    Stats
                   </button>
                 </li>
                 {/* Connections removed from nav; users reach it from the profile dialog. */}

@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, Bookmark, UserCircle2 } from "lucide-react";
+import { ArrowLeft, Bookmark, Shield, UserCircle2 } from "lucide-react";
 import type { Identity } from "../services/identity";
 import type { Person } from "../types";
 import { getConnectionIds, removeConnection } from "../services/connections";
@@ -55,6 +55,11 @@ export function ConnectionsPage({
   const connectedPeople = useMemo(
     () => people.filter((p) => connectionIds.includes(p.id)),
     [people, connectionIds],
+  );
+
+  const unresolvedIds = useMemo(
+    () => connectionIds.filter((id) => !people.some((p) => p.id === id)),
+    [connectionIds, people],
   );
 
   const handleRemoveBookmark = (personId: string) => {
@@ -124,9 +129,11 @@ export function ConnectionsPage({
                 Connections
               </h1>
               <p className="text-sm text-gray-600 truncate">
-                {connectedPeople.length === 0
+                {connectionIds.length === 0
                   ? "People you bookmark appear here"
-                  : `${connectedPeople.length} saved`}
+                  : unresolvedIds.length > 0
+                    ? `${connectedPeople.length} visible · ${unresolvedIds.length} unavailable`
+                    : `${connectedPeople.length} saved`}
               </p>
             </div>
           </div>
@@ -134,7 +141,20 @@ export function ConnectionsPage({
       </div>
 
       <main className="flex-1 overflow-auto px-4 py-6 md:px-8 md:py-8 pb-8">
-        {connectedPeople.length === 0 ? (
+        <div
+          className="mb-6 max-w-2xl mx-auto flex gap-3 rounded-xl border border-gray-200/80 bg-white/70 px-4 py-3 text-sm leading-relaxed text-gray-600"
+          role="note"
+        >
+          <Shield className="size-4 shrink-0 mt-0.5 text-emerald-600" aria-hidden />
+          <p>
+            <span className="font-medium text-gray-800">Private to this device.</span>{" "}
+            Bookmarks are saved only in your browser&apos;s local storage — not in the
+            directory or on our servers. Nobody else can see your list. If you switch phones
+            or browsers, bookmark people again on that device.
+          </p>
+        </div>
+
+        {connectionIds.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-2">
             <div
               className="rounded-full p-6 mb-6 w-fit"
@@ -149,7 +169,9 @@ export function ConnectionsPage({
             </p>
           </div>
         ) : (
-          <ul className="space-y-3 max-w-2xl mx-auto">
+          <div className="space-y-8 max-w-2xl mx-auto">
+            {connectedPeople.length > 0 ? (
+              <ul className="space-y-3">
             {connectedPeople.map((person) => (
               <li key={person.id}>
                 <div
@@ -201,7 +223,38 @@ export function ConnectionsPage({
                 </div>
               </li>
             ))}
-          </ul>
+              </ul>
+            ) : null}
+
+            {unresolvedIds.length > 0 ? (
+              <section className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 sm:p-5">
+                <h2 className="text-sm font-semibold text-amber-950">
+                  Unavailable profiles ({unresolvedIds.length})
+                </h2>
+                <p className="mt-1 text-sm text-amber-900/80">
+                  These bookmarks point to profiles that aren't visible in the directory (private or
+                  removed). You can remove them to tidy your list.
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {unresolvedIds.map((id) => (
+                    <li
+                      key={id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-amber-200/60 bg-white/80 px-3 py-2.5"
+                    >
+                      <span className="text-sm text-gray-700 truncate">Profile unavailable</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBookmark(id)}
+                        className="shrink-0 text-sm font-medium text-amber-950 underline-offset-2 hover:underline touch-manipulation min-h-[44px] px-2"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </div>
         )}
       </main>
     </div>

@@ -38,6 +38,7 @@ const calendarEventsHandler = require("../api/calendar-events");
  */
 const rsvpsHandler = require("../api/rsvps");
 const checkinsHandler = require("../api/checkins");
+const communityStatsHandler = require("../api/community-stats");
 const suggestionsHandler = require("../api/suggestions");
 
 const app = express();
@@ -159,7 +160,9 @@ app.post("/api/member-claim", async (req, res) => {
   const newPassword = req.body?.newPassword;
   try {
     if (typeof newPassword === "string" && newPassword.length > 0) {
-      const result = await claimDirectoryProfile(token, newPassword);
+      const result = await claimDirectoryProfile(token, newPassword, {
+        email: req.body?.email,
+      });
       return res.json(result);
     }
     const result = await peekClaimToken(token);
@@ -246,6 +249,7 @@ app.get("/api/calendar-events", calendarEventsHandler);
  */
 app.all("/api/rsvps", rsvpsHandler);
 app.all("/api/checkins", checkinsHandler);
+app.all("/api/community-stats", communityStatsHandler);
 app.all("/api/suggestions", suggestionsHandler);
 
 app.get("/api/health", (req, res) => {

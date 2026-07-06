@@ -11,6 +11,7 @@ build/
 .env.vercel.local
 .env.vercel.production
 claim-links*.csv
+missing-emails.csv
 .vercel-session-tmp.txt
 .directory-bootstrap-password.txt
 .vite/

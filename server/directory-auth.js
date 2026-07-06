@@ -177,6 +177,16 @@ function validateNewPassword(newPassword) {
   return password;
 }
 
+/** Optional roster email supplied during first-time claim. */
+function normalizeClaimEmail(value) {
+  const email = String(value || "").trim();
+  if (!email) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) {
+    throw new Error("Enter a valid email address.");
+  }
+  return email;
+}
+
 async function authenticateDirectoryLogin(fullName, password) {
   const submittedName = String(fullName || "").trim();
   const submittedPassword = String(password || "");
@@ -461,6 +471,7 @@ async function peekClaimToken(token) {
     person: { id: match.person.id, fullName: match.person.fullName },
     alreadyClaimed: Boolean(match.auth.passwordHash),
     mode: "claim",
+    needsEmail: !String(match.person.email || "").trim(),
   };
 }
 
@@ -469,9 +480,10 @@ async function peekClaimToken(token) {
  * Claims are rejected once a password exists; resets are rejected once the
  * password no longer matches the fingerprint the link was minted against.
  */
-async function claimDirectoryProfile(token, newPassword) {
+async function claimDirectoryProfile(token, newPassword, options = {}) {
   const payload = verifyClaimToken(token);
   const validatedPassword = validateNewPassword(newPassword);
+  const claimEmail = normalizeClaimEmail(options.email);
 
   const loaded = await loadRealDataRecords({ write: true });
   const match = loaded.records.find(
@@ -497,10 +509,22 @@ async function claimDirectoryProfile(token, newPassword) {
     );
     err.statusCode = 409;
     throw err;
+  } else if (!String(match.person.email || "").trim() && !claimEmail) {
+    const err = new Error(
+      "Add your email address so we can reach you about your profile.",
+    );
+    err.statusCode = 400;
+    throw err;
   }
 
   const now = new Date().toISOString();
   const updated = cloneRecord(match);
+  if (!String(updated.person.email || "").trim() && claimEmail) {
+    updated.person.email = claimEmail;
+    if (!String(updated.person.contactUrlOrHandle || "").trim()) {
+      updated.person.contactUrlOrHandle = claimEmail;
+    }
+  }
   updated.auth.passwordHash = await hashPassword(validatedPassword);
   updated.auth.mustChangePassword = false;
   updated.auth.claimedAt = updated.auth.claimedAt || now;

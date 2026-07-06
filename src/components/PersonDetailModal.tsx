@@ -38,6 +38,7 @@ import { getPersonRSVPs } from "../services/rsvp";
 import { getPersonCheckIns } from "../services/checkin";
 import { getNode } from "../data/nodes";
 import { buildFullPath } from "../utils/router";
+import { formatEventDateShort, splitEventsByTiming } from "../utils/eventTiming";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -90,6 +91,7 @@ import { NanowheelBadge } from "./NanowheelBadge";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
+import { isOpenToMeet } from "../utils/openToMeet";
 
 /** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
 function looksLikeContact(value: string | null | undefined): boolean {
@@ -700,6 +702,11 @@ export function PersonDetailModal({
                           ariaLabel={`${displayPerson.fullName} has earned ${nanowheelSummary.total} nanowheels`}
                         />
                       ) : null}
+                      {isOpenToMeet(displayPerson) ? (
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+                          Open to meet
+                        </span>
+                      ) : null}
                     </div>
                   )}
                   </div>
@@ -959,7 +966,7 @@ export function PersonDetailModal({
                             />
                           </div>
                           <div>
-                            <Label className="text-xs text-gray-600">Availability link</Label>
+                            <Label className="text-xs text-gray-600">Open to meet link</Label>
                             <Input
                               value={editingPerson.availabilityUrl || ""}
                               onChange={(e) =>
@@ -1077,10 +1084,10 @@ export function PersonDetailModal({
                             target="_blank"
                             rel="noopener noreferrer"
                             className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
-                            aria-label={`Open ${displayPerson.fullName}'s availability`}
+                            aria-label={`Book time with ${displayPerson.fullName}`}
                           >
                             <Calendar className="h-4 w-4" />
-                            Availability
+                            Open to meet — book time
                           </a>
                         ) : null}
                       </div>
@@ -1244,58 +1251,107 @@ export function PersonDetailModal({
  */
 function PersonEventRSVPs({ personId, events }: { personId: string; events: NodeEvent[] | null | undefined }) {
   const goingRsvps = useMemo(() => getPersonRSVPs(personId).filter((r) => r.status === "going"), [personId]);
-  const resolved = useMemo(() => {
-    if (!events?.length) return [];
-    return goingRsvps
+  const { upcoming, past } = useMemo(() => {
+    if (!events?.length) return { upcoming: [], past: [] };
+    const resolved = goingRsvps
       .map((r) => {
         const event = events.find((e) => e.id === r.eventId);
         return event ? { rsvp: r, event } : null;
       })
       .filter((x): x is { rsvp: typeof goingRsvps[0]; event: NodeEvent } => x !== null)
-      .sort((a, b) => new Date(a.event.startAt).getTime() - new Date(b.event.startAt).getTime());
+      .map((x) => x.event);
+    return splitEventsByTiming(resolved);
   }, [goingRsvps, events]);
 
-  if (resolved.length === 0) return null;
+  if (upcoming.length === 0 && past.length === 0) return null;
 
   return (
     <section className="person-detail-section mt-6 lg:mt-8 person-detail-divider">
       <h3 className="person-detail-section-title flex items-center gap-2 mb-4">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-        Events they&apos;re going to ({resolved.length})
+        Events they&apos;re going to
       </h3>
-      <div className="space-y-3">
-        {resolved.map(({ event }) => {
-          const node = getNode(event.nodeSlug);
-          const nodeLabel = node ? `${node.city}, ${node.country}` : event.location;
-          const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
-          const nodePath = `/${event.nodeSlug}`;
-          return (
-            <a
-              key={event.id}
-              href={buildFullPath(nodePath)}
-              className="block p-4 sm:p-5 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-teal-50/80 hover:border-teal-200 transition-colors group"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-semibold text-gray-900 group-hover:text-teal-800">{event.title}</h4>
-                  <p className="text-sm text-gray-600 mt-0.5">{nodeLabel}</p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
-                    <CalendarDays className="h-3 w-3" />
-                    {dateStr}
-                  </div>
-                </div>
-                <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-teal-600 shrink-0" />
-              </div>
-            </a>
-          );
-        })}
+      <div className="space-y-5">
+        {upcoming.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Upcoming ({upcoming.length})
+            </p>
+            <PersonEventRSVPList events={upcoming} timing="upcoming" />
+          </div>
+        ) : null}
+        {past.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Past ({past.length})
+            </p>
+            <PersonEventRSVPList events={past} timing="past" />
+          </div>
+        ) : null}
       </div>
     </section>
+  );
+}
+
+function PersonEventRSVPList({
+  events,
+  timing,
+}: {
+  events: NodeEvent[];
+  timing: "upcoming" | "past";
+}) {
+  const isPast = timing === "past";
+  return (
+    <div className="space-y-3">
+      {events.map((event) => {
+        const node = getNode(event.nodeSlug);
+        const nodeLabel = node ? `${node.city}, ${node.country}` : event.location;
+        const dateStr = formatEventDateShort(event.startAt);
+        const nodePath = `/${event.nodeSlug}`;
+        return (
+          <a
+            key={event.id}
+            href={buildFullPath(nodePath)}
+            className={`block p-4 sm:p-5 rounded-xl border transition-colors group ${
+              isPast
+                ? "border-gray-200 bg-gray-50/80 hover:bg-gray-100"
+                : "border-gray-200 bg-gray-50/60 hover:bg-teal-50/80 hover:border-teal-200"
+            }`}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      isPast
+                        ? "bg-gray-200 text-gray-600"
+                        : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {isPast ? "Past" : "Upcoming"}
+                  </span>
+                  <h4
+                    className={`font-semibold ${
+                      isPast
+                        ? "text-gray-700 group-hover:text-gray-900"
+                        : "text-gray-900 group-hover:text-teal-800"
+                    }`}
+                  >
+                    {event.title}
+                  </h4>
+                </div>
+                <p className="text-sm text-gray-600 mt-0.5">{nodeLabel}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                  <CalendarDays className="h-3 w-3" />
+                  {dateStr}
+                </div>
+              </div>
+              <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-teal-600 shrink-0" />
+            </div>
+          </a>
+        );
+      })}
+    </div>
   );
 }
 

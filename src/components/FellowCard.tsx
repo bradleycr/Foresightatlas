@@ -8,13 +8,14 @@ import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
-import { PersonAvatar } from "./PersonAvatar";
+import { formatEventDateShort } from "../utils/eventTiming";
 
-/** Compact event reference for "Attending" line on the card. */
+/** Compact event reference for the map sidebar card (upcoming only). */
 export interface AttendingEvent {
   id: string;
   title: string;
   startAt: string;
+  endAt: string;
 }
 
 interface FellowCardProps {
@@ -180,18 +181,30 @@ export function FellowCard({
           </div>
         )}
 
-        {/* Attending — Vision Weekends, workshops, node events */}
+        {/* Upcoming events — sidebar card stays short; past RSVPs live on the profile page. */}
         {attendingEvents && attendingEvents.length > 0 && (
           <div className="pt-3 border-t border-gray-200">
             <div className="flex items-start gap-2 text-sm">
               <Ticket className="size-4 text-teal-500 mt-0.5 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-500 mb-1">Attending</p>
-                <p className="text-gray-700">
-                  {attendingEvents.length <= 2
-                    ? attendingEvents.map((e) => e.title).join(", ")
-                    : `${attendingEvents.slice(0, 2).map((e) => e.title).join(", ")} +${attendingEvents.length - 2} more`}
-                </p>
+                <p className="text-xs font-medium text-emerald-700 mb-1">Upcoming</p>
+                <ul className="space-y-1 text-gray-700">
+                  {(attendingEvents.length <= 2
+                    ? attendingEvents
+                    : attendingEvents.slice(0, 2)
+                  ).map((event) => (
+                    <li key={event.id} className="truncate">
+                      <span className="text-gray-500">{formatEventDateShort(event.startAt)}</span>
+                      {" · "}
+                      <span>{event.title}</span>
+                    </li>
+                  ))}
+                </ul>
+                {attendingEvents.length > 2 ? (
+                  <p className="mt-1 text-xs text-gray-500">
+                    +{attendingEvents.length - 2} more upcoming
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

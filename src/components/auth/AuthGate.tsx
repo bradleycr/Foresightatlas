@@ -1,11 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { MapPin } from "lucide-react";
 import type { Person } from "../../types";
 import { getDirectoryNames } from "../../services/database";
 import { getLastSignedInName } from "../../services/identity";
+import { setPostLoginReturnUrl } from "../../services/returnUrl";
+import {
+  ATLAS_PASSWORD_RESET_MAILTO,
+  getCheckInAuthCopy,
+  checkInReturnPath,
+} from "../../utils/checkInAuth";
 import { DirectoryLoginForm } from "./DirectoryLoginForm";
 import foresightIcon from "../../assets/Foresight_RGB_Icon_Black.png?url";
 
 interface AuthGateProps {
+  /** Current path (e.g. `/checkin/berlin`) — used for QR check-in context. */
+  route: string;
   /** Authenticate a member; resolves with ok=false + message on failure. */
   onSignIn: (
     username: string,
@@ -22,8 +31,14 @@ interface AuthGateProps {
  * /api/directory-names endpoint so the picker can autocomplete without exposing
  * any of the gated directory data.
  */
-export function AuthGate({ onSignIn }: AuthGateProps) {
+export function AuthGate({ route, onSignIn }: AuthGateProps) {
   const [people, setPeople] = useState<Person[]>([]);
+  const checkInCopy = useMemo(() => getCheckInAuthCopy(route), [route]);
+
+  useEffect(() => {
+    const returnPath = checkInReturnPath(route);
+    if (returnPath) setPostLoginReturnUrl(returnPath);
+  }, [route]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,30 +66,55 @@ export function AuthGate({ onSignIn }: AuthGateProps) {
 
       <div className="relative w-full max-w-md">
         <div className="mb-7 flex flex-col items-center text-center">
-          <div className="flex size-16 items-center justify-center rounded-3xl border border-gray-200 bg-white shadow-sm">
-            <img src={foresightIcon} alt="Foresight Institute" className="size-9 object-contain" />
+          <div
+            className={`flex size-16 items-center justify-center rounded-3xl border bg-white shadow-sm ${
+              checkInCopy ? "border-sky-200" : "border-gray-200"
+            }`}
+          >
+            {checkInCopy ? (
+              <MapPin className="size-8 text-sky-600" aria-hidden />
+            ) : (
+              <img src={foresightIcon} alt="Foresight Institute" className="size-9 object-contain" />
+            )}
           </div>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight text-gray-900">
-            Map · Programming · Nodes
+            {checkInCopy ? checkInCopy.heroTitle : "Map · Programming · Nodes"}
           </h1>
           <p className="mt-2 max-w-xs text-sm leading-6 text-gray-600">
-            A private space for the Foresight community. Sign in to connect
-            with grantees, fellows, nodees, and alumni.
+            {checkInCopy
+              ? checkInCopy.heroSubtitle
+              : "A private space for the Foresight community. Sign in to connect with grantees, fellows, nodees, and alumni."}
           </p>
         </div>
 
         <div className="rounded-3xl border border-gray-200 bg-white/90 p-6 shadow-xl backdrop-blur-sm sm:p-7">
           <DirectoryLoginForm
             people={people}
-            title="Welcome back"
-            description="Use your full name and password to enter."
-            submitLabel="Enter"
+            title={checkInCopy ? checkInCopy.formTitle : "Welcome back"}
+            description={
+              checkInCopy
+                ? checkInCopy.formDescription
+                : "Use your full name and password to enter."
+            }
+            submitLabel={checkInCopy ? checkInCopy.submitLabel : "Enter"}
             initialName={getLastSignedInName()}
             onSubmit={onSignIn}
+            showAccountRecovery
           />
         </div>
 
-        <p className="mt-6 text-center text-xs leading-5 text-gray-400">
+        <p className="mt-5 text-center text-sm leading-6 text-gray-600">
+          Forgot your password?{" "}
+          <a
+            href={ATLAS_PASSWORD_RESET_MAILTO}
+            className="font-medium text-sky-600 transition-colors hover:text-sky-800"
+          >
+            Email for a reset link
+          </a>
+          {" "}— we'll send a personal link to set a new one.
+        </p>
+
+        <p className="mt-4 text-center text-xs leading-5 text-gray-400">
           Foresight Institute · Internal tool · Invitation only
         </p>
       </div>

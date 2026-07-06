@@ -32,6 +32,10 @@ const COUNTRY_TYPO_MAP: Record<string, string> = {
   germnay: "Germany",
   geramny: "Germany",
   gernany: "Germany",
+  german: "Germany",
+  deutschland: "Germany",
+  ger: "Germany",
+  de: "Germany",
   engalnd: "England",
   engand: "England",
   "untied kingdom": "United Kingdom",
@@ -85,6 +89,46 @@ function applyCityAlias(rawCity: string, rawCountry: string): { city: string; co
     city: alias.city,
     country: rawCountry.trim() || alias.countryHint || "",
   };
+}
+
+/**
+ * Canonical coordinates for well-known Foresight node cities.
+ * Used before hitting Nominatim so profile location checks stay instant and
+ * reliable when the public geocoder is rate-limited.
+ */
+const KNOWN_LOCATIONS: Record<string, GeocodeResult> = {
+  "berlin|germany": {
+    lat: 52.520008,
+    lng: 13.404954,
+    city: "Berlin",
+    country: "Germany",
+  },
+  "san francisco|united states": {
+    lat: 37.774929,
+    lng: -122.419416,
+    city: "San Francisco",
+    country: "United States",
+  },
+  "new york|united states": {
+    lat: 40.712776,
+    lng: -74.005974,
+    city: "New York",
+    country: "United States",
+  },
+};
+
+function lookupKnownLocation(city: string, country: string): GeocodeResult | null {
+  const cityNorm = normalizeCityName(city);
+  const countryNorm = correctCountryTypo(country).trim().toLowerCase();
+
+  if (cityNorm === "berlin") {
+    if (!countryNorm || ["germany", "german", "deutschland", "de", "ger"].includes(countryNorm)) {
+      return KNOWN_LOCATIONS["berlin|germany"];
+    }
+  }
+
+  if (!countryNorm) return null;
+  return KNOWN_LOCATIONS[`${cityNorm}|${countryNorm}`] ?? null;
 }
 
 /**
@@ -206,26 +250,40 @@ export function validateReverseGeocodeResult(
 
 /**
  * Single-query Nominatim search. Returns null on no results or error.
+ * Returns "rate-limited" when Nominatim asks us to back off (429).
  */
 async function geocodeCityOneQuery(
   query: string,
-  options?: { signal?: AbortSignal },
-): Promise<GeocodeResult | null> {
+  options?: { signal?: AbortSignal; structured?: { city: string; country: string } },
+): Promise<GeocodeResult | null | "rate-limited"> {
   try {
     if (options?.signal?.aborted) return null;
+
+    const params = new URLSearchParams({
+      format: "json",
+      limit: "1",
+      addressdetails: "1",
+    });
+
+    if (options?.structured) {
+      params.set("city", options.structured.city);
+      params.set("country", options.structured.country);
+    } else {
+      params.set("q", query);
+    }
+
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
       {
         headers: {
           "User-Agent": "ForesightAtlas/1.0", // Required by Nominatim
         },
         signal: options?.signal,
-      }
+      },
     );
 
-    if (!response.ok) {
-      return null;
-    }
+    if (response.status === 429) return "rate-limited";
+    if (!response.ok) return null;
 
     const data = await response.json();
     if (data && data.length > 0) {
@@ -234,7 +292,11 @@ async function geocodeCityOneQuery(
         lat: parseFloat(result.lat),
         lng: parseFloat(result.lon),
         country: result.address?.country || undefined,
-        city: result.address?.city || result.address?.town || result.address?.village || undefined,
+        city:
+          result.address?.city ||
+          result.address?.town ||
+          result.address?.village ||
+          undefined,
       };
     }
     return null;
@@ -277,19 +339,27 @@ async function scheduleNominatimSlot(signal?: AbortSignal): Promise<void> {
   });
 }
 
-async function nominatimGeocode(query: string, options?: { signal?: AbortSignal }): Promise<GeocodeResult | null> {
+async function nominatimGeocode(
+  query: string,
+  options?: { signal?: AbortSignal; structured?: { city: string; country: string } },
+): Promise<GeocodeResult | null> {
   const signal = options?.signal;
   if (signal?.aborted) return null;
 
-  // Ensure requests run sequentially with spacing.
   const run = async () => {
     await scheduleNominatimSlot(signal);
     if (signal?.aborted) return null;
-    return geocodeCityOneQuery(query, { signal });
+
+    let result = await geocodeCityOneQuery(query, options);
+    if (result === "rate-limited") {
+      await new Promise((resolve) => setTimeout(resolve, 2200));
+      if (signal?.aborted) return null;
+      result = await geocodeCityOneQuery(query, options);
+    }
+    return result === "rate-limited" ? null : result;
   };
 
   const p = nominatimChain.then(run, run) as unknown as Promise<GeocodeResult | null>;
-  // Keep chain alive even if a request fails/aborts.
   nominatimChain = p.then(() => undefined, () => undefined);
   return p;
 }
@@ -314,7 +384,28 @@ export async function geocodeCity(
   const signal = options?.signal;
   if (signal?.aborted) return null;
 
-  // Build query list: prefer corrected country, then city-only for fallback
+  const known = lookupKnownLocation(city, correctedCountry || rawCountry);
+  if (known) return known;
+
+  const cacheKey = `${city}|${correctedCountry || rawCountry}`;
+  const cachedKnown = geocodeCache.get(`known:${cacheKey}`);
+  if (cachedKnown && cachedKnown.expiresAt > Date.now() && cachedKnown.value) {
+    return cachedKnown.value;
+  }
+
+  // Structured city+country search is more reliable than free-text for places like Berlin.
+  if (correctedCountry) {
+    const structured = await nominatimGeocode(`${city}, ${correctedCountry}`, {
+      signal,
+      structured: { city, country: correctedCountry },
+    });
+    if (signal?.aborted) return null;
+    if (structured) {
+      geocodeCache.set(`known:${cacheKey}`, { value: structured, expiresAt: Date.now() + ttl });
+      return structured;
+    }
+  }
+
   const queries: string[] = [];
   if (correctedCountry) {
     queries.push(`${city}, ${correctedCountry}`);
@@ -333,12 +424,20 @@ export async function geocodeCity(
     }
 
     const result = await nominatimGeocode(q, { signal });
-    if (result) return result;
+    if (signal?.aborted) return null;
+    if (result) {
+      geocodeCache.set(q, { value: result, expiresAt: Date.now() + ttl });
+      geocodeCache.set(`known:${cacheKey}`, { value: result, expiresAt: Date.now() + ttl });
+      return result;
+    }
 
-    geocodeCache.set(q, { value: null, expiresAt: Date.now() + Math.min(ttl, 60_000) });
+    geocodeCache.set(q, {
+      value: null,
+      expiresAt: Date.now() + 20_000,
+    });
   }
 
-  return null;
+  return lookupKnownLocation(city, correctedCountry || rawCountry);
 }
 
 /**

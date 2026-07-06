@@ -3,10 +3,9 @@ import { AlertCircle, CalendarDays, ExternalLink, Info } from "lucide-react";
 import dayjs from "dayjs";
 import { Calendar, dayjsLocalizer } from "react-big-calendar";
 import type { Identity } from "../services/identity";
-import type { Person, PrimaryNode } from "../types";
+import type { Person } from "../types";
 import { getSharedCalendarEvents, type SharedCalendarEvent } from "../services/googleCalendar";
-import type { NodeSlug } from "../types/events";
-import { getProgrammingPageConfig } from "../data/nodes";
+import { OpenToMeetPanel } from "../components/OpenToMeetPanel";
 import { Button } from "../components/ui/button";
 import { isLumaUrl } from "../utils/externalUrl";
 import {
@@ -22,34 +21,20 @@ const localizer = dayjsLocalizer(dayjs);
 type CalendarView = "month" | "week" | "day" | "agenda";
 const DEFAULT_VIEW: CalendarView = "month";
 
-/**
- * Returns the shared-calendar invite address when it's been configured via
- * `VITE_CALENDAR_INVITE_EMAIL`, or `null` when absent. We return null (instead
- * of a placeholder like "user@foresight.com") so a misconfigured deploy never
- * instructs members to invite a non-existent address. The UI hides the whole
- * invite explainer card when this is null.
- */
+/** One community-wide shared calendar — not scoped to Berlin / SF primary node. */
+const COMMUNITY_CALENDAR_SLUG = "global" as const;
+
 function getConfiguredInviteEmail(): string | null {
   const raw = (import.meta.env.VITE_CALENDAR_INVITE_EMAIL as string | undefined)?.trim();
   return raw && raw.length > 0 ? raw : null;
 }
 
-const NODE_FROM_PRIMARY: Record<PrimaryNode, NodeSlug> = {
-  "Berlin Node": "berlin",
-  "Bay Area Node": "sf",
-  Global: "global",
-  Alumni: "global",
-};
-
 interface CalendarPageProps {
   identity: Identity | null;
   signedInPerson: Person | null;
+  people: Person[];
   onOpenProfile: () => void;
-}
-
-function getNodeSlugForPerson(person: Person | null): NodeSlug {
-  if (!person) return "global";
-  return NODE_FROM_PRIMARY[person.primaryNode] || "global";
+  onViewPerson?: (personId: string) => void;
 }
 
 function toCalendarEvent(event: SharedCalendarEvent) {
@@ -73,22 +58,39 @@ function isMeetingUrl(href: string | null | undefined): boolean {
   }
 }
 
+function isGoogleCalendarUrl(href: string | null | undefined): boolean {
+  if (!href) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    return host.includes("calendar.google.com") || u.pathname.toLowerCase().includes("/calendar/");
+  } catch {
+    return false;
+  }
+}
+
 function getActionableEventLink(event: SharedCalendarEvent): string | null {
   if (!event.externalLink) return null;
   if (isLumaUrl(event.externalLink)) return event.externalLink;
   if (isMeetingUrl(event.externalLink)) return event.externalLink;
+  if (isGoogleCalendarUrl(event.externalLink)) return event.externalLink;
   return null;
 }
 
 function getEventLinkLabel(event: SharedCalendarEvent): string {
   if (event.externalLink && isLumaUrl(event.externalLink)) return "View on Luma";
+  if (event.externalLink && isGoogleCalendarUrl(event.externalLink)) return "Open in Google Calendar";
   return "Join meeting";
 }
 
-export function CalendarPage({ identity, signedInPerson, onOpenProfile }: CalendarPageProps) {
+export function CalendarPage({
+  identity,
+  signedInPerson,
+  people,
+  onOpenProfile,
+  onViewPerson,
+}: CalendarPageProps) {
   const inviteEmail = getConfiguredInviteEmail();
-  const nodeSlug = getNodeSlugForPerson(signedInPerson);
-  const pageNode = getProgrammingPageConfig(nodeSlug);
   const [calendarEvents, setCalendarEvents] = useState([] as SharedCalendarEvent[]);
   const [source, setSource] = useState("mock" as "google" | "mock");
   const [warning, setWarning] = useState(null as string | null);
@@ -105,7 +107,7 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
     setError(null);
     setWarning(null);
     setNotConfigured(false);
-    void getSharedCalendarEvents(nodeSlug)
+    void getSharedCalendarEvents(COMMUNITY_CALENDAR_SLUG)
       .then((result) => {
         if (cancelled) return;
         setCalendarEvents(result.events);
@@ -124,7 +126,7 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
     return () => {
       cancelled = true;
     };
-  }, [identity, nodeSlug]);
+  }, [identity]);
 
   const uiEvents = useMemo(() => calendarEvents.map(toCalendarEvent), [calendarEvents]);
 
@@ -133,9 +135,9 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
       <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white px-6 py-10 shadow-sm text-center">
           <CalendarDays className="mx-auto mb-4 size-8 text-gray-400" />
-          <h1 className="text-xl font-semibold text-gray-900">Calendar is for signed-in members</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Community calendar</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your profile to access your node&apos;s shared calendar.
+            Sign in to see member hangouts and who&apos;s open to meet.
           </p>
           <Button className="mt-6" onClick={onOpenProfile}>
             Open profile sign-in
@@ -145,24 +147,55 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
     );
   }
 
-  // Friendly "coming soon" state when the node calendar backend isn't set up.
-  // Shown instead of the calendar grid so an unconfigured deploy doesn't look broken.
-  if (notConfigured) {
-    return (
-      <div className="flex-1 overflow-auto bg-gray-100">
-        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+  return (
+    <div className="flex-1 overflow-auto bg-gray-100">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-start gap-3">
+            <Info className="mt-0.5 size-5 shrink-0 text-sky-600" />
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
+                Community calendar
+              </h1>
+              <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                Two ways to connect: book time with members who opted in below, or browse
+                community hangouts on the shared calendar. Official node programming (coworking,
+                Luma events) lives on the Programming pages — this is for member-led meetups.
+              </p>
+              {inviteEmail ? (
+                <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                  Hosting an open hangout? Invite{" "}
+                  <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-800">
+                    {inviteEmail}
+                  </code>{" "}
+                  on your Google Calendar event and it will appear here for the whole community.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <OpenToMeetPanel
+          people={people}
+          currentPersonId={signedInPerson?.id ?? identity.personId}
+          onViewPerson={onViewPerson}
+          className="mb-6"
+        />
+
+        {notConfigured ? (
           <div className="rounded-2xl border border-gray-200 bg-white px-6 py-10 shadow-sm text-center sm:px-8 sm:py-12">
             <CalendarDays className="mx-auto mb-4 size-8 text-gray-400" />
-            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">
-              {pageNode?.city || "Global"} shared calendar — coming soon
-            </h1>
+            <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
+              Shared event calendar — coming soon
+            </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-gray-600">
-              The shared node calendar isn&apos;t connected to Google yet. In the meantime,
-              you can still invite members individually from their profiles, or open your own calendar.
+              The community Google Calendar isn&apos;t connected yet. You can still book members
+              above, invite people from their profiles, or add your own open-to-meet link on your
+              profile.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button onClick={onOpenProfile} variant="outline">
-                Open your profile
+                Edit your profile
               </Button>
               <Button asChild>
                 <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer">
@@ -172,114 +205,95 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
               </Button>
             </div>
           </div>
-        </div>
-      </div>
-    );
-  }
+        ) : (
+          <>
+            {warning && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {warning}
+              </div>
+            )}
 
-  return (
-    <div className="flex-1 overflow-auto bg-gray-100">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {/* Header card — two variants so a misconfigured deploy never shows a fake invite address. */}
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex items-start gap-3">
-            <Info className="mt-0.5 size-5 text-sky-600" />
-            <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
-                {pageNode?.city || "Global"} Shared Calendar
-              </h1>
-              {inviteEmail ? (
-                <p className="mt-1 text-sm leading-relaxed text-gray-600">
-                  Add events to this shared calendar by inviting{" "}
-                  <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-800">{inviteEmail}</code>{" "}
-                  to your Google Calendar event. Once invited, your event appears here for members in your node.
-                </p>
-              ) : (
-                <p className="mt-1 text-sm leading-relaxed text-gray-600">
-                  Browse upcoming events for your node. Contact a node organizer to have events added.
-                </p>
-              )}
+            {error && (
+              <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <AlertCircle className="mt-0.5 size-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Community hangouts</h2>
+                  <p className="mt-0.5 text-sm text-gray-600">
+                    {calendarEvents.length === 0 && !isLoading
+                      ? "No upcoming hangouts yet."
+                      : (
+                        <>
+                          {calendarEvents.length} event{calendarEvents.length === 1 ? "" : "s"} from{" "}
+                          <span className="font-medium text-gray-900">
+                            {source === "google" ? "Google Calendar" : "sample data"}
+                          </span>
+                        </>
+                      )}
+                  </p>
+                </div>
+                <a
+                  href="https://calendar.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-800"
+                >
+                  Open Google Calendar
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-gray-100">
+                <div className="h-[72vh] min-h-[520px] bg-white">
+                  <Calendar
+                    localizer={localizer}
+                    events={uiEvents}
+                    startAccessor="start"
+                    endAccessor="end"
+                    view={view}
+                    onView={setView}
+                    popup
+                    selectable={false}
+                    toolbar
+                    eventPropGetter={(event) => {
+                      const data = event.resource as SharedCalendarEvent | undefined;
+                      return {
+                        style: {
+                          backgroundColor: data?.source === "google" ? "#0ea5e9" : "#6366f1",
+                          borderColor: "transparent",
+                          color: "#ffffff",
+                          borderRadius: "6px",
+                        },
+                      };
+                    }}
+                    onSelectEvent={(event) => {
+                      const data = event.resource as SharedCalendarEvent | undefined;
+                      setSelectedEvent(
+                        data ?? {
+                          id: `calendar-${event.title}-${event.start?.toISOString?.() ?? ""}`,
+                          title: String(event.title || "Untitled event"),
+                          start: event.start instanceof Date ? event.start.toISOString() : new Date().toISOString(),
+                          end: event.end instanceof Date ? event.end.toISOString() : new Date().toISOString(),
+                          location: null,
+                          invitedBy: null,
+                          description: null,
+                          externalLink: null,
+                          source: "mock",
+                        },
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+              {isLoading && <p className="mt-3 text-sm text-gray-500">Loading calendar events…</p>}
             </div>
-          </div>
-        </div>
-
-        {warning && (
-          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {warning}
-          </div>
+          </>
         )}
-
-        {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-start gap-2">
-            <AlertCircle className="mt-0.5 size-4 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
-          <div className="mb-3 flex items-center justify-between gap-3 px-1">
-            <p className="text-sm text-gray-600">
-              Showing {calendarEvents.length} event{calendarEvents.length === 1 ? "" : "s"} from{" "}
-              <span className="font-medium text-gray-900">
-                {source === "google" ? "Google Calendar" : "mock programming data"}
-              </span>
-              .
-            </p>
-            <a
-              href="https://calendar.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-800"
-            >
-              Open Google Calendar
-              <ExternalLink className="size-3.5" />
-            </a>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-gray-100">
-            <div className="h-[72vh] min-h-[520px] bg-white">
-              <Calendar
-                localizer={localizer}
-                events={uiEvents}
-                startAccessor="start"
-                endAccessor="end"
-                view={view}
-                onView={setView}
-                popup
-                selectable={false}
-                toolbar
-                eventPropGetter={(event) => {
-                  const data = event.resource as SharedCalendarEvent | undefined;
-                  return {
-                    style: {
-                      backgroundColor: data?.source === "google" ? "#0ea5e9" : "#6366f1",
-                      borderColor: "transparent",
-                      color: "#ffffff",
-                      borderRadius: "6px",
-                    },
-                  };
-                }}
-                onSelectEvent={(event) => {
-                  const data = event.resource as SharedCalendarEvent | undefined;
-                  setSelectedEvent(
-                    data ?? {
-                      id: `calendar-${event.title}-${event.start?.toISOString?.() ?? ""}`,
-                      title: String(event.title || "Untitled event"),
-                      start: event.start instanceof Date ? event.start.toISOString() : new Date().toISOString(),
-                      end: event.end instanceof Date ? event.end.toISOString() : new Date().toISOString(),
-                      location: null,
-                      invitedBy: null,
-                      description: null,
-                      externalLink: null,
-                      source: "mock",
-                    },
-                  );
-                }}
-              />
-            </div>
-          </div>
-          {isLoading && <p className="mt-3 text-sm text-gray-500">Loading calendar events...</p>}
-        </div>
       </div>
 
       <Dialog open={selectedEvent !== null} onOpenChange={(open) => !open && setSelectedEvent(null)}>
@@ -315,18 +329,18 @@ export function CalendarPage({ identity, signedInPerson, onOpenProfile }: Calend
                 )}
                 {selectedEvent.invitedBy && (
                   <p>
-                    <span className="font-medium text-gray-900">Invited by:</span>{" "}
+                    <span className="font-medium text-gray-900">Organized by:</span>{" "}
                     <span className="text-gray-700">{selectedEvent.invitedBy}</span>
                   </p>
                 )}
                 {selectedEvent.description && (
                   <p>
                     <span className="font-medium text-gray-900">Description:</span>{" "}
-                    <span className="text-gray-700 whitespace-pre-wrap">{selectedEvent.description}</span>
+                    <span className="whitespace-pre-wrap text-gray-700">{selectedEvent.description}</span>
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Source: {selectedEvent.source === "google" ? "Google Calendar" : "Programming/Luma mock"}
+                  Source: {selectedEvent.source === "google" ? "Google Calendar" : "Sample data"}
                 </p>
               </div>
 

@@ -6,6 +6,7 @@ const {
   cloneRecord,
   loadRealDataRecords,
   upsertRealDataRecord,
+  sanitizeProfileImageUrl,
 } = require("./realdata-store");
 const { geocodeCity } = require("./geocoding");
 const { issueDirectorySession, hashPassword } = require("./directory-auth");
@@ -43,6 +44,19 @@ function normalizeCoordinates(value) {
   };
 }
 
+function normalizeProfileImageUrlInput(value) {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  const sanitized = sanitizeProfileImageUrl(trimmed);
+  if (!sanitized) {
+    throw new Error(
+      "Profile photo must be a direct https:// image link (.jpg, .png, .webp, etc.) or a foresight.org image URL.",
+    );
+  }
+  return sanitized;
+}
+
 function normalizePerson(input) {
   const person = {
     id: normalizeString(input?.id),
@@ -64,6 +78,7 @@ function normalizePerson(input) {
     currentCoordinates: normalizeCoordinates(input?.currentCoordinates),
     primaryNode: normalizeString(input?.primaryNode) || "Global",
     profileUrl: normalizeString(input?.profileUrl),
+    profileImageUrl: normalizeProfileImageUrlInput(input?.profileImageUrl),
     contactUrlOrHandle: normalizeNullableString(input?.contactUrlOrHandle),
     calendarEmail: normalizeNullableString(input?.calendarEmail),
     availabilityUrl: normalizeNullableString(input?.availabilityUrl),
@@ -155,6 +170,7 @@ function normalizePersonForCreate(input) {
     currentCoordinates: normalizeCoordinates(input?.currentCoordinates),
     primaryNode: normalizeString(input?.primaryNode) || "Global",
     profileUrl: normalizeString(input?.profileUrl),
+    profileImageUrl: normalizeProfileImageUrlInput(input?.profileImageUrl),
     contactUrlOrHandle: normalizeNullableString(input?.contactUrlOrHandle),
     calendarEmail: normalizeNullableString(input?.calendarEmail),
     availabilityUrl: normalizeNullableString(input?.availabilityUrl),

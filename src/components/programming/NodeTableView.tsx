@@ -17,12 +17,12 @@ import {
 import type { NodeSlug, NodeColorTheme } from "../../types/events";
 import type { Person } from "../../types";
 import type { Identity } from "../../services/identity";
+import { useTodayKey } from "../../hooks/useTodayKey";
 import {
   checkIn,
   withdrawCheckIn,
   getCheckInsForDay,
   getWeekDates,
-  toDateKey,
   isPersonCheckedIn,
   fetchCheckInsFromAPI,
 } from "../../services/checkin";
@@ -83,7 +83,7 @@ export function NodeTableView({
   tick,
   onTick,
 }: NodeTableViewProps) {
-  const todayKey = useMemo(() => toDateKey(new Date()), []);
+  const todayKey = useTodayKey();
   const [selectedDate, setSelectedDate] = useState(todayKey);
 
   const personMap = useMemo(() => {

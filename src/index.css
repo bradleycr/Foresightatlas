@@ -213,13 +213,21 @@ select optgroup {
  * invisible on our white toast background ("Profile updated" body text was
  * unreadable). Pin title and description to solid grays with enough contrast.
  */
-[data-sonner-toast] [data-title] {
-  color: var(--color-gray-900);
+[data-sonner-toast][data-styled="true"] [data-title] {
+  color: oklch(0.21 0.034 264.665) !important;
   font-weight: 600;
 }
 
-[data-sonner-toast] [data-description] {
-  color: var(--color-gray-700);
+[data-sonner-toast][data-styled="true"] [data-description] {
+  color: oklch(0.32 0.03 256.802) !important;
+}
+
+[data-rich-colors="true"][data-sonner-toast][data-type="success"] [data-description] {
+  color: hsl(140, 100%, 22%) !important;
+}
+
+[data-rich-colors="true"][data-sonner-toast][data-type="error"] [data-description] {
+  color: hsl(360, 100%, 38%) !important;
 }
 
 [data-slot="select-item"] {

@@ -82,7 +82,9 @@ async function handleClaim(req, res) {
   const newPassword = req.body?.newPassword;
   try {
     if (typeof newPassword === "string" && newPassword.length > 0) {
-      const result = await claimDirectoryProfile(token, newPassword);
+      const result = await claimDirectoryProfile(token, newPassword, {
+        email: req.body?.email,
+      });
       return res.status(200).json(result);
     }
     const result = await peekClaimToken(token);

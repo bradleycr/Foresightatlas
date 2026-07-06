@@ -533,6 +533,7 @@ module.exports = {
   buildStablePersonId,
   rowToPersonRecord,
   personRecordToRow,
+  sanitizeProfileImageUrl,
   getSheetsClient,
   loadRealDataRecords,
   findRecordsByNormalizedName,

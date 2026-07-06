@@ -5,7 +5,7 @@
  * boring and predictable. A person shows up at **exactly one** place on the
  * map: the city + coordinates they put in their profile. Travel windows and
  * event RSVPs do not move pins; they are purely informational chrome on the
- * person's card (next-travel teaser, "Attending" line). This eliminates a
+ * person's card (next-travel teaser, upcoming-events line). This eliminates a
  * whole class of bugs (reverse-geocode mismatches, duplicate pins for a
  * person with overlapping trips, stale month/week pivots) and matches the
  * mental model people actually use: "where does this person live?"
@@ -26,7 +26,7 @@ import { useIsMobile } from "./ui/use-mobile";
 import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
-import { effectiveIsAlumni } from "../utils/cohortLabel";
+import { isEventUpcoming } from "../utils/eventTiming";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -893,15 +893,21 @@ export function MapView({
     return personWindows.find((tw) => new Date(tw.startDate) >= new Date());
   };
 
-  /** Events this person is attending (going RSVPs) for the card. */
+  /** Upcoming events this person is going to (going RSVPs only) — sidebar card. */
   const getAttendingEvents = useCallback(
     (personId: string): AttendingEvent[] => {
       if (!events?.length) return [];
+      const now = new Date();
       return getPersonRSVPs(personId)
         .filter((r) => r.status === "going")
         .map((r) => events!.find((e) => e.id === r.eventId))
-        .filter((e): e is NodeEvent => e != null)
-        .map((e) => ({ id: e.id, title: e.title, startAt: e.startAt }))
+        .filter((e): e is NodeEvent => e != null && isEventUpcoming(e, now))
+        .map((e) => ({
+          id: e.id,
+          title: e.title,
+          startAt: e.startAt,
+          endAt: e.endAt,
+        }))
         .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
     },
     [events],

@@ -22,6 +22,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { peekClaim } from "../services/memberAuth";
+import { ATLAS_PASSWORD_RESET_MAILTO } from "../utils/checkInAuth";
 
 interface ClaimPageProps {
   /** Raw token from the ?token= query parameter. */
@@ -30,6 +31,7 @@ interface ClaimPageProps {
   onClaim: (
     token: string,
     newPassword: string,
+    email?: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   /** Where to send the member once their profile is claimed. */
   onClaimed: () => void;
@@ -38,7 +40,12 @@ interface ClaimPageProps {
 
 type PeekState =
   | { status: "loading" }
-  | { status: "ready"; fullName: string; mode: "claim" | "reset" }
+  | {
+      status: "ready";
+      fullName: string;
+      mode: "claim" | "reset";
+      needsEmail: boolean;
+    }
   | { status: "claimed"; fullName: string }
   | { status: "error"; message: string };
 
@@ -54,6 +61,7 @@ export function ClaimPage({
   const [peek, setPeek] = useState<PeekState>({ status: "loading" });
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -74,6 +82,7 @@ export function ClaimPage({
                 status: "ready",
                 fullName: result.person.fullName,
                 mode: result.mode === "reset" ? "reset" : "claim",
+                needsEmail: Boolean(result.needsEmail),
               },
         );
       })
@@ -90,10 +99,12 @@ export function ClaimPage({
     };
   }, [token]);
 
-  const canSubmit = useMemo(
-    () => peek.status === "ready" && password.length >= 8 && password === confirm,
-    [peek.status, password, confirm],
-  );
+  const canSubmit = useMemo(() => {
+    if (peek.status !== "ready") return false;
+    const emailOk =
+      peek.mode === "reset" || !peek.needsEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    return emailOk && password.length >= 8 && password === confirm;
+  }, [peek, password, confirm, email]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -109,23 +120,36 @@ export function ClaimPage({
         setError("Password and confirmation do not match.");
         return;
       }
+      if (
+        peek.status === "ready" &&
+        peek.mode === "claim" &&
+        peek.needsEmail &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      ) {
+        setError("Enter a valid email address.");
+        return;
+      }
 
       setIsSubmitting(true);
       try {
-        const result = await onClaim(token, password);
+        const result = await onClaim(
+          token,
+          password,
+          peek.status === "ready" && peek.needsEmail ? email.trim() : undefined,
+        );
         if (!result.ok) {
           setError(result.error ?? "We couldn't set up your profile.");
           return;
         }
         toast.success("You're all set", {
-          description: "Your password is saved and you're signed in.",
+          description: "Next: add your city so you appear on the map.",
         });
         onClaimed();
       } finally {
         setIsSubmitting(false);
       }
     },
-    [token, password, confirm, onClaim, onClaimed],
+    [token, password, confirm, email, peek, onClaim, onClaimed],
   );
 
   return (
@@ -185,6 +209,16 @@ export function ClaimPage({
               This profile already has a password. Sign in with it from the
               profile page — this one-time link has done its job.
             </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Forgot your password?{" "}
+              <a
+                href={ATLAS_PASSWORD_RESET_MAILTO}
+                className="font-medium text-sky-600 hover:text-sky-800"
+              >
+                Email for a reset link
+              </a>
+              .
+            </p>
             <Button className="mt-6" onClick={onClaimed}>
               Go to sign in
             </Button>
@@ -219,6 +253,24 @@ export function ClaimPage({
                 )}
               </p>
             </div>
+
+            {peek.mode === "claim" && peek.needsEmail && (
+              <div className="space-y-2">
+                <Label htmlFor="claim-email">Your email</Label>
+                <Input
+                  id="claim-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="h-11"
+                />
+                <p className="text-xs text-gray-500">
+                  We use this for roster contact only — it is not shown on the public map.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="claim-password">Choose a password</Label>
