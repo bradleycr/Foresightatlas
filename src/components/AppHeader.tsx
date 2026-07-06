@@ -154,16 +154,18 @@ export function AppHeader({
             <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
               <h1 className="font-heading font-semibold tracking-tight text-gray-900 text-balance">
                 {/*
-                 * Two-line title on narrow viewports, single line from `sm` up.
-                 * The (beta) marker is a sibling of the title text so it reads
-                 * as part of the name rather than a detached chip. It stays on
-                 * the same line as the last word via non-breaking space.
+                 * Mobile: logo carries the Foresight identity — keep the title
+                 * short ("Atlas (beta)") and drop the subtext so the header
+                 * doesn't crowd nav controls. Desktop keeps the full name + tagline.
                  */}
-                <span className="min-w-0 text-[0.9375rem] leading-snug sm:text-base md:text-xl md:leading-tight">
+                <span className="min-w-0 text-[0.9375rem] leading-snug md:hidden">
+                  Atlas{betaMark}
+                </span>
+                <span className="hidden min-w-0 text-base leading-snug md:inline md:text-xl md:leading-tight">
                   The Foresight Atlas{betaMark}
                 </span>
               </h1>
-              <p className="mt-1.5 max-w-[min(100%,38rem)] text-pretty text-[0.8125rem] leading-relaxed text-gray-600 sm:text-[0.8125rem] md:mt-2 md:text-sm md:leading-relaxed">
+              <p className="mt-1.5 hidden max-w-[min(100%,38rem)] text-pretty text-sm leading-relaxed text-gray-600 md:block md:mt-2">
                 {subtext}
               </p>
             </div>
