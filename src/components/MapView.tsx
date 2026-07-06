@@ -27,6 +27,7 @@ import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleCo
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
 import { isEventUpcoming } from "../utils/eventTiming";
+import { effectiveIsAlumni } from "../utils/cohortLabel";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
