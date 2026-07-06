@@ -118,6 +118,8 @@
         "sync:fellows": "node scripts/sync-fellows-from-website.js",
         "scrape:fellowship": "node scripts/scrape-fellowship-website.js",
         "claim:links": "node scripts/generate-claim-links.js",
+        "claim:team": "node scripts/generate-claim-links.js --role \"Foresight Team\" --unclaimed-only --csv",
+        "sync:team": "node scripts/add-foresight-team.js --apply",
         "invite:link": "node scripts/generate-invite-link.js",
         "reset:link": "node scripts/generate-reset-link.js",
         "sync:roster": "node scripts/sync-fellows-roster.js",

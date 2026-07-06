@@ -7,7 +7,7 @@
  * one-time-use (they stop working after the member sets a password).
  *
  * Usage:
- *   node scripts/generate-claim-links.js [--base <url>] [--unclaimed-only] [--csv]
+ *   node scripts/generate-claim-links.js [--base <url>] [--unclaimed-only] [--role <roleType>] [--csv]
  *
  * Examples:
  *   CLAIM_BASE_URL=https://map.foresight.org node scripts/generate-claim-links.js
@@ -34,11 +34,19 @@ const { loadRealDataRecords } = require("../server/realdata-store");
 const { issueClaimToken } = require("../server/directory-auth");
 
 function parseArgs(argv) {
-  const args = { base: process.env.CLAIM_BASE_URL || "", unclaimedOnly: false, csv: false };
+  const args = {
+    base: process.env.CLAIM_BASE_URL || "",
+    unclaimedOnly: false,
+    role: "",
+    csv: false,
+  };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--base") {
       args.base = argv[i + 1] || "";
+      i += 1;
+    } else if (arg === "--role") {
+      args.role = argv[i + 1] || "";
       i += 1;
     } else if (arg === "--unclaimed-only") {
       args.unclaimedOnly = true;
@@ -79,8 +87,14 @@ async function main() {
   }
 
   const { records } = await loadRealDataRecords();
+  const roleFilter = args.role.trim().toLowerCase();
   const people = (records || [])
     .filter((r) => r.person && r.person.fullName)
+    .filter((r) =>
+      roleFilter
+        ? String(r.person.roleType || "").trim().toLowerCase() === roleFilter
+        : true,
+    )
     .filter((r) => (args.unclaimedOnly ? !r.auth.passwordHash : true))
     .sort((a, b) => a.person.fullName.localeCompare(b.person.fullName));
 
@@ -93,26 +107,29 @@ async function main() {
     const token = issueClaimToken(r.person.id);
     return {
       fullName: r.person.fullName,
+      title: r.person.shortProjectTagline || "",
       email: r.person.email || "",
       url: buildClaimUrl(args.base, token),
     };
   });
 
   if (args.csv) {
-    console.log("Full name,Email,Claim link");
+    console.log("Full name,Title,Email,Claim link");
     for (const row of rows) {
-      console.log(`${csvCell(row.fullName)},${csvCell(row.email)},${csvCell(row.url)}`);
+      console.log(
+        `${csvCell(row.fullName)},${csvCell(row.title)},${csvCell(row.email)},${csvCell(row.url)}`,
+      );
     }
   } else {
     for (const row of rows) {
-      console.log(`${row.fullName}\t${row.email}\t${row.url}`);
+      console.log(`${row.fullName}\t${row.title}\t${row.email}\t${row.url}`);
     }
   }
 
   console.error(
     `\n✓ Generated ${rows.length} claim link${rows.length === 1 ? "" : "s"}${
       args.unclaimedOnly ? " (unclaimed only)" : ""
-    }.`,
+    }${roleFilter ? ` [role: ${args.role}]` : ""}.`,
   );
 }
 
