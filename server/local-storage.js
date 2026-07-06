@@ -10,6 +10,7 @@ const {
   verifyPasswordHash,
   hashPassword,
   verifyClaimToken,
+  passwordVersion,
 } = require("./directory-auth");
 
 const MOCK_DIR = path.resolve(__dirname, "../mock");
@@ -484,7 +485,7 @@ async function refreshLocalMemberSession(session) {
   return { person, auth: fresh };
 }
 
-/** Mock equivalent of peekClaimToken (see server/directory-auth.js). */
+/** Mock equivalent of peekClaimToken (claim + reset; see server/directory-auth.js). */
 async function peekLocalClaim(token) {
   const payload = verifyClaimToken(token);
   const db = await getLocalDatabase();
@@ -495,13 +496,28 @@ async function peekLocalClaim(token) {
     err.statusCode = 404;
     throw err;
   }
+  if (payload.purpose === "reset") {
+    if (passwordVersion(auth[person.id]?.passwordHash) !== payload.pwv) {
+      const err = new Error(
+        "This reset link has already been used. Ask for a fresh one if you still need it.",
+      );
+      err.statusCode = 401;
+      throw err;
+    }
+    return {
+      person: { id: person.id, fullName: person.fullName },
+      alreadyClaimed: false,
+      mode: "reset",
+    };
+  }
   return {
     person: { id: person.id, fullName: person.fullName },
     alreadyClaimed: Boolean(auth[person.id]?.passwordHash),
+    mode: "claim",
   };
 }
 
-/** Mock equivalent of claimDirectoryProfile (one-time-use). */
+/** Mock equivalent of claimDirectoryProfile (claim + reset, one-time-use). */
 async function claimLocalProfile(token, newPassword) {
   const payload = verifyClaimToken(token);
   const validated = validateNewPasswordForRegister(newPassword);
@@ -513,7 +529,15 @@ async function claimLocalProfile(token, newPassword) {
     err.statusCode = 404;
     throw err;
   }
-  if (auth[person.id]?.passwordHash) {
+  if (payload.purpose === "reset") {
+    if (passwordVersion(auth[person.id]?.passwordHash) !== payload.pwv) {
+      const err = new Error(
+        "This reset link has already been used. Ask for a fresh one if you still need it.",
+      );
+      err.statusCode = 401;
+      throw err;
+    }
+  } else if (auth[person.id]?.passwordHash) {
     const err = new Error(
       "This profile is already set up. Please sign in with your password instead.",
     );
@@ -525,7 +549,7 @@ async function claimLocalProfile(token, newPassword) {
     ...(auth[person.id] || {}),
     passwordHash: await hashPassword(validated),
     mustChangePassword: false,
-    claimedAt: now,
+    claimedAt: auth[person.id]?.claimedAt || now,
     lastPasswordChangedAt: now,
   };
   await saveLocalAuth(auth);

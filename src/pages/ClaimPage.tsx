@@ -38,7 +38,7 @@ interface ClaimPageProps {
 
 type PeekState =
   | { status: "loading" }
-  | { status: "ready"; fullName: string }
+  | { status: "ready"; fullName: string; mode: "claim" | "reset" }
   | { status: "claimed"; fullName: string }
   | { status: "error"; message: string };
 
@@ -70,7 +70,11 @@ export function ClaimPage({
         setPeek(
           result.alreadyClaimed
             ? { status: "claimed", fullName: result.person.fullName }
-            : { status: "ready", fullName: result.person.fullName },
+            : {
+                status: "ready",
+                fullName: result.person.fullName,
+                mode: result.mode === "reset" ? "reset" : "claim",
+              },
         );
       })
       .catch((err) => {
@@ -191,15 +195,28 @@ export function ClaimPage({
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-sky-600/80">
-                Welcome
+                {peek.mode === "reset" ? "Password reset" : "Welcome"}
               </p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
-                Set up {firstName(peek.fullName)}&apos;s profile
+                {peek.mode === "reset"
+                  ? `Reset your password, ${firstName(peek.fullName)}`
+                  : `Set up ${firstName(peek.fullName)}'s profile`}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                You&apos;re claiming the profile for{" "}
-                <span className="font-medium text-gray-900">{peek.fullName}</span>.
-                Choose a password and you&apos;ll be signed in.
+                {peek.mode === "reset" ? (
+                  <>
+                    Choose a new password for{" "}
+                    <span className="font-medium text-gray-900">{peek.fullName}</span>{" "}
+                    and you&apos;ll be signed back in. This link works once and
+                    expires after 24 hours.
+                  </>
+                ) : (
+                  <>
+                    You&apos;re claiming the profile for{" "}
+                    <span className="font-medium text-gray-900">{peek.fullName}</span>.
+                    Choose a password and you&apos;ll be signed in.
+                  </>
+                )}
               </p>
             </div>
 

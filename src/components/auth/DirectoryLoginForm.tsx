@@ -205,7 +205,14 @@ export function DirectoryLoginForm({
               <PopoverContent side="top" align="start" className="max-w-[280px]">
                 First time here? Open the personal sign-in link you were sent —
                 it lets you set your password and signs you in. After that, use
-                that password here.
+                that password here. Forgot your password? Email{" "}
+                <a
+                  href="mailto:bradley@foresight.org?subject=Foresight%20atlas%20password%20reset"
+                  className="font-medium text-sky-600 hover:text-sky-800"
+                >
+                  bradley@foresight.org
+                </a>{" "}
+                for a reset link.
               </PopoverContent>
             </Popover>
           </div>

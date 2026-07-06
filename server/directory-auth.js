@@ -282,6 +282,57 @@ function issueClaimToken(personId) {
   return `${encodedPayload}.${getSessionSignature(encodedPayload)}`;
 }
 
+/* ── Password reset links ────────────────────────────────────────────────
+ *
+ * Same magic-link idea as claims, for members who already have a password
+ * but forgot it. Two extra safeguards make resets safe without any storage:
+ *
+ *   exp — resets are time-limited (default 24h), unlike claims.
+ *   pwv — a short fingerprint of the CURRENT passwordHash. Setting a new
+ *         password changes the fingerprint, so a reset link is dead the
+ *         moment it (or a normal password change) is used. True one-time
+ *         use with zero server-side state.
+ *
+ * There is deliberately no self-serve "email me a reset" endpoint: we have
+ * no outbound email infra, and an unauthenticated mint-a-reset API would be
+ * an account-takeover surface. An admin mints links via `pnpm reset:link`
+ * and sends them out-of-band — same trust model as claim links.
+ */
+
+const RESET_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+
+/** Short, non-reversible fingerprint of a password hash ("password version"). */
+function passwordVersion(passwordHash) {
+  return crypto
+    .createHash("sha256")
+    .update(String(passwordHash || ""))
+    .digest("hex")
+    .slice(0, 12);
+}
+
+function issuePasswordResetToken(personId, currentPasswordHash, ttlMs = RESET_TTL_MS) {
+  const id = String(personId || "").trim();
+  if (!id) throw new Error("issuePasswordResetToken requires a personId.");
+  if (!currentPasswordHash) {
+    throw new Error(
+      "This profile has no password yet — send a claim link instead of a reset link.",
+    );
+  }
+  const payload = {
+    personId: id,
+    purpose: "reset",
+    pwv: passwordVersion(currentPasswordHash),
+    iat: Date.now(),
+    exp: new Date(Date.now() + ttlMs).toISOString(),
+  };
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  return `${encodedPayload}.${getSessionSignature(encodedPayload)}`;
+}
+
+/**
+ * Verify a claim OR reset token (they share the /claim page and endpoint).
+ * Returns the payload; check `payload.purpose` to tell them apart.
+ */
 function verifyClaimToken(token) {
   const unauthorized = (message) => {
     const err = new Error(message);
@@ -310,8 +361,13 @@ function verifyClaimToken(token) {
   } catch {
     throw unauthorized("This sign-in link is invalid.");
   }
-  if (payload.purpose !== "claim" || !payload.personId) {
+  const isClaim = payload.purpose === "claim";
+  const isReset = payload.purpose === "reset";
+  if ((!isClaim && !isReset) || !payload.personId) {
     throw unauthorized("This sign-in link is invalid.");
+  }
+  if (isReset && (!payload.exp || new Date(payload.exp).getTime() <= Date.now())) {
+    throw unauthorized("This reset link has expired. Ask for a fresh one.");
   }
 
   return payload;
@@ -374,8 +430,8 @@ function verifyRegisterToken(token) {
 }
 
 /**
- * Peek at a claim link without consuming it — used by the claim page to greet
- * the member by name and tell them whether the profile is already set up.
+ * Peek at a claim/reset link without consuming it — used by the claim page to
+ * greet the member by name and pick the right copy for the flow.
  */
 async function peekClaimToken(token) {
   const payload = verifyClaimToken(token);
@@ -386,15 +442,32 @@ async function peekClaimToken(token) {
     err.statusCode = 404;
     throw err;
   }
+  if (payload.purpose === "reset") {
+    // A reset link only fits the password it was minted against.
+    if (passwordVersion(match.auth.passwordHash) !== payload.pwv) {
+      const err = new Error(
+        "This reset link has already been used. Ask for a fresh one if you still need it.",
+      );
+      err.statusCode = 401;
+      throw err;
+    }
+    return {
+      person: { id: match.person.id, fullName: match.person.fullName },
+      alreadyClaimed: false,
+      mode: "reset",
+    };
+  }
   return {
     person: { id: match.person.id, fullName: match.person.fullName },
     alreadyClaimed: Boolean(match.auth.passwordHash),
+    mode: "claim",
   };
 }
 
 /**
- * Consume a claim link: set the member's first password and sign them in.
- * One-time-use — rejected once the profile already has a password.
+ * Consume a claim or reset link: set the member's password and sign them in.
+ * Claims are rejected once a password exists; resets are rejected once the
+ * password no longer matches the fingerprint the link was minted against.
  */
 async function claimDirectoryProfile(token, newPassword) {
   const payload = verifyClaimToken(token);
@@ -410,7 +483,15 @@ async function claimDirectoryProfile(token, newPassword) {
     throw err;
   }
 
-  if (match.auth.passwordHash) {
+  if (payload.purpose === "reset") {
+    if (passwordVersion(match.auth.passwordHash) !== payload.pwv) {
+      const err = new Error(
+        "This reset link has already been used. Ask for a fresh one if you still need it.",
+      );
+      err.statusCode = 401;
+      throw err;
+    }
+  } else if (match.auth.passwordHash) {
     const err = new Error(
       "This profile is already set up. Please sign in with your password instead.",
     );
@@ -422,7 +503,7 @@ async function claimDirectoryProfile(token, newPassword) {
   const updated = cloneRecord(match);
   updated.auth.passwordHash = await hashPassword(validatedPassword);
   updated.auth.mustChangePassword = false;
-  updated.auth.claimedAt = now;
+  updated.auth.claimedAt = updated.auth.claimedAt || now;
   updated.auth.lastPasswordChangedAt = now;
 
   await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updated);
@@ -473,6 +554,8 @@ module.exports = {
   hashPassword,
   verifyPasswordHash,
   issueClaimToken,
+  issuePasswordResetToken,
+  passwordVersion,
   verifyClaimToken,
   peekClaimToken,
   claimDirectoryProfile,

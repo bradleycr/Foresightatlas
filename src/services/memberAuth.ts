@@ -14,6 +14,8 @@ export interface DirectoryAuthResult {
 export interface ClaimPeekResult {
   person: { id: string; fullName: string };
   alreadyClaimed: boolean;
+  /** "claim" = first-time setup, "reset" = forgotten-password link. */
+  mode?: "claim" | "reset";
 }
 
 async function postJson<T>(url: string, body: unknown, token?: string): Promise<T> {
