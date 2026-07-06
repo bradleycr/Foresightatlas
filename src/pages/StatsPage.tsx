@@ -2,16 +2,28 @@
  * StatsPage — community engagement totals from the portal.
  *
  * Nanowheels (◎) = check-ins at a node + RSVPs marked "going".
- * Data comes from the CheckIns and RSVPs Google Sheet tabs via GET /api/community-stats.
+ * Roster counts come from RealData; engagement from CheckIns + RSVPs + Events tabs.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, MapPin, RefreshCw, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Loader2,
+  MapPin,
+  Plane,
+  RefreshCw,
+  Sparkles,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import type { Identity } from "../services/identity";
 import {
   fetchCommunityStats,
   type CommunityStats,
   type NodeCommunityStats,
+  type RosterStats,
+  type TopParticipantStat,
 } from "../services/communityStats";
 import { NanowheelBadge } from "../components/NanowheelBadge";
 import { Button } from "../components/ui/button";
@@ -73,15 +85,16 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
         <header className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
-              Community pulse
+              Admin · not in navigation
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
               Nanowheels &amp; engagement
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600">
-              Live totals from the atlas — every check-in at a node and every
-              &ldquo;going&rdquo; RSVP earns one nanowheel (◎). Updated from the
-              Google Sheet as people use the portal.
+              Live totals from the Google Sheet — roster, check-ins, RSVPs, and
+              upcoming events. Reach this page directly at{" "}
+              <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-800">/stats</code>
+              ; it is not linked anywhere in the app.
             </p>
           </div>
           <Button
@@ -115,32 +128,70 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
               <p className="text-xs text-gray-500">Last updated {updatedLabel}</p>
             ) : null}
 
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <TotalCard
-                label="Total nanowheels"
-                value={stats.totals.nanowheels}
-                hint="Check-ins + going RSVPs"
-                showBadge
-              />
-              <TotalCard
-                label="Unique people"
-                value={stats.totals.uniqueParticipants}
-                hint="At least one check-in or RSVP"
-                icon={<Users className="size-5 text-violet-600" />}
-              />
-              <TotalCard
-                label="Check-ins"
-                value={stats.totals.checkIns}
-                hint="Node table & QR check-in"
-                icon={<MapPin className="size-5 text-sky-600" />}
-              />
-              <TotalCard
-                label="Going RSVPs"
-                value={stats.totals.rsvpsGoing}
-                hint="Events & coworking days"
-                icon={<span className="text-lg leading-none">◎</span>}
-              />
+            <ThisMonthBanner month={stats.thisMonth} />
+
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900">Engagement totals</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Nanowheels = check-ins plus &ldquo;going&rdquo; RSVPs.
+              </p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <TotalCard
+                  label="Total nanowheels"
+                  value={stats.totals.nanowheels}
+                  hint="Check-ins + going RSVPs"
+                  showBadge
+                />
+                <TotalCard
+                  label="Unique people"
+                  value={stats.totals.uniqueParticipants}
+                  hint="At least one check-in or going RSVP"
+                  icon={<Users className="size-5 text-violet-600" />}
+                />
+                <TotalCard
+                  label="Check-ins"
+                  value={stats.totals.checkIns}
+                  hint="Node table & QR check-in"
+                  icon={<MapPin className="size-5 text-sky-600" />}
+                />
+                <TotalCard
+                  label="Going RSVPs"
+                  value={stats.totals.rsvpsGoing}
+                  hint="Events & coworking days"
+                  icon={<span className="text-lg leading-none">◎</span>}
+                />
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <TotalCard
+                  label="Interested RSVPs"
+                  value={stats.totals.rsvpsInterested}
+                  hint="Marked interested (not going yet)"
+                  icon={<Sparkles className="size-5 text-amber-600" />}
+                />
+                <TotalCard
+                  label="Upcoming events"
+                  value={stats.totals.upcomingEvents}
+                  hint="On the Events tab, end date not passed"
+                  icon={<CalendarDays className="size-5 text-emerald-600" />}
+                />
+                <TotalCard
+                  label="Going · upcoming"
+                  value={stats.totals.upcomingGoingRsvps}
+                  hint="Going RSVPs for future events"
+                  icon={<CalendarDays className="size-5 text-teal-600" />}
+                />
+                <TotalCard
+                  label="Active travel"
+                  value={stats.totals.activeTravelWindows}
+                  hint="Travel windows ending today or later"
+                  icon={<Plane className="size-5 text-indigo-600" />}
+                />
+              </div>
             </section>
+
+            <ActivitySnapshot stats={stats} />
+
+            <RosterSection roster={stats.roster} />
 
             <section>
               <h2 className="text-lg font-semibold text-gray-900">By node</h2>
@@ -188,6 +239,20 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
               </section>
             ) : null}
 
+            {stats.topParticipants.length > 0 ? (
+              <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+                <h2 className="text-lg font-semibold text-gray-900">Most engaged</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  People with the most nanowheels (check-ins + going RSVPs).
+                </p>
+                <ul className="mt-5 divide-y divide-gray-100">
+                  {stats.topParticipants.map((person, index) => (
+                    <TopParticipantRow key={person.personId} rank={index + 1} person={person} />
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {stats.topEvents.length > 0 ? (
               <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <h2 className="text-lg font-semibold text-gray-900">Top events</h2>
@@ -219,6 +284,169 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function ThisMonthBanner({ month }: { month: CommunityStats["thisMonth"] }) {
+  return (
+    <section className="rounded-[1.75rem] border border-sky-200/80 bg-gradient-to-br from-sky-50 via-white to-emerald-50/60 p-6 shadow-sm sm:p-7">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
+        {formatMonth(month.month)}
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-6">
+        <div>
+          <p className="text-sm text-gray-600">Nanowheels this month</p>
+          <div className="mt-1 flex items-center gap-2">
+            <NanowheelBadge
+              count={month.nanowheels}
+              size="lg"
+              ariaLabel={`${month.nanowheels} nanowheels this month`}
+            />
+          </div>
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">Check-ins</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+            {month.checkIns.toLocaleString()}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">Going RSVPs</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+            {month.rsvpsGoing.toLocaleString()}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ActivitySnapshot({ stats }: { stats: CommunityStats }) {
+  return (
+    <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+      <h2 className="text-lg font-semibold text-gray-900">Activity snapshot</h2>
+      <p className="mt-1 text-sm text-gray-600">Derived from the same sheet rows as above.</p>
+      <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <SnapshotItem
+          label="Check-ins · 30 days"
+          value={stats.activity.checkInsLast30Days}
+        />
+        <SnapshotItem
+          label="Avg nanowheels / person"
+          value={stats.activity.avgNanowheelsPerParticipant}
+          decimal
+        />
+        <SnapshotItem label="Events with RSVPs" value={stats.totals.eventsWithGoing} />
+        <SnapshotItem label="Coworking RSVPs" value={stats.totals.coworkingEngagements} />
+      </dl>
+    </section>
+  );
+}
+
+function SnapshotItem({
+  label,
+  value,
+  decimal,
+}: {
+  label: string;
+  value: number;
+  decimal?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3">
+      <dt className="text-xs font-medium text-gray-500">{label}</dt>
+      <dd className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+        {decimal ? value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : value.toLocaleString()}
+      </dd>
+    </div>
+  );
+}
+
+function RosterSection({ roster }: { roster: RosterStats }) {
+  return (
+    <section>
+      <h2 className="text-lg font-semibold text-gray-900">Directory</h2>
+      <p className="mt-1 text-sm text-gray-600">
+        Roster from RealData — who is in the atlas and how complete profiles are.
+      </p>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <TotalCard
+          label="People in roster"
+          value={roster.total}
+          hint={`${roster.publicProfiles} visible on the map`}
+          icon={<Users className="size-5 text-gray-700" />}
+        />
+        <TotalCard
+          label="Claimed accounts"
+          value={roster.claimed}
+          hint={`${roster.unclaimed} not claimed yet`}
+          icon={<UserCheck className="size-5 text-emerald-600" />}
+        />
+        <TotalCard
+          label="On the map"
+          value={roster.onMap}
+          hint={`${roster.withoutLocation} missing city / coords`}
+          icon={<MapPin className="size-5 text-sky-600" />}
+        />
+        <TotalCard
+          label="Open to meet"
+          value={roster.openToMeet}
+          hint="Availability link on profile"
+          icon={<Sparkles className="size-5 text-violet-600" />}
+        />
+      </div>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <TotalCard label="Current" value={roster.current} hint="Active cohort / fellows" />
+        <TotalCard label="Alumni" value={roster.alumni} hint="From sheet flag or end year" />
+        <TotalCard
+          label="With photo"
+          value={roster.withPhoto}
+          hint="profileImageUrl on RealData"
+        />
+        <TotalCard
+          label="With contact"
+          value={roster.withContact}
+          hint="Email, handle, or calendar email"
+        />
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {roster.byPrimaryNode.map((node) => (
+          <div
+            key={node.nodeSlug}
+            className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
+          >
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              {node.label}
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+              {node.count.toLocaleString()}
+            </p>
+            <p className="text-xs text-gray-500">primary node on profile</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TopParticipantRow({ rank, person }: { rank: number; person: TopParticipantStat }) {
+  return (
+    <li className="flex items-center gap-4 py-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold tabular-nums text-gray-700">
+        {rank}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-gray-900">{person.fullName}</p>
+        <p className="text-xs text-gray-500">
+          {person.checkIns} check-in{person.checkIns === 1 ? "" : "s"} · {person.rsvpsGoing} going
+        </p>
+      </div>
+      <NanowheelBadge
+        count={person.nanowheels}
+        size="sm"
+        ariaLabel={`${person.nanowheels} nanowheels for ${person.fullName}`}
+      />
+    </li>
   );
 }
 

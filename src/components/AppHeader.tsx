@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark, CalendarDays, BarChart3 } from "lucide-react";
+import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark, CalendarDays } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
@@ -53,7 +53,6 @@ export function AppHeader({
   const isMapRoute = route === "/";
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
-  const isStatsRoute = route === "/stats";
   /*
    * Connections is no longer a top-level destination in the header — the profile
    * dialog surfaces it instead. The route itself is still live and reachable
@@ -174,19 +173,6 @@ export function AppHeader({
               }`}
             >
               Map
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/stats")}
-              className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border inline-flex items-center gap-1.5 ${
-                isStatsRoute
-                  ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              }`}
-            >
-              <BarChart3 className="size-4 opacity-70" aria-hidden />
-              Stats
             </button>
 
             <div className="relative" ref={menuRef}>
@@ -413,18 +399,6 @@ export function AppHeader({
                       variant="outline"
                       onClick={() => {
                         closeAccountDialog();
-                        navigate("/stats");
-                      }}
-                      className="min-h-[44px] w-full"
-                    >
-                      <BarChart3 className="size-4" />
-                      Community stats
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        closeAccountDialog();
                         navigate("/calendar");
                       }}
                       className="min-h-[44px] w-full"
@@ -595,22 +569,6 @@ export function AppHeader({
                     }`}
                   >
                     Global programming
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => {
-                      navigate("/stats");
-                      closeMobileMenu();
-                    }}
-                    className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center gap-2 ${
-                      isStatsRoute
-                        ? "bg-app-tab-active text-gray-900 border-white/50 shadow-sm"
-                        : "text-gray-700 bg-gray-50/80 border border-gray-200 hover:bg-gray-100 active:bg-gray-200"
-                    }`}
-                  >
-                    <BarChart3 className="size-4 opacity-70" aria-hidden />
-                    Stats
                   </button>
                 </li>
                 {/* Connections removed from nav; users reach it from the profile dialog. */}
