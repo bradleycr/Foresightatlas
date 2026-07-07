@@ -6,9 +6,10 @@ import { createPerson, updatePerson } from "../services/database";
 import { changeDirectoryPassword } from "../services/memberAuth";
 import { geocodeCity } from "../services/geocoding";
 import type { Person, PrimaryNode, RoleType } from "../types";
-import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
+import { PRESET_FOCUS_AREAS, CUSTOM_FOCUS_AREAS_ENABLED, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "../components/FocusTagsDisplay";
 import { CustomFocusInput } from "../components/CustomFocusInput";
+import { PersonContactLinks } from "../components/PersonContactLinks";
 import { getPersonRSVPs } from "../services/rsvp";
 import { fetchRSVPsFromAPI } from "../services/rsvp";
 import { subscribeToDataChanges } from "../services/sync";
@@ -237,7 +238,11 @@ export function ProfilePage({
   useEffect(() => {
     if (createMode && !identity && draft) {
       setCreateSelectedPresets(getPresetFocusTags(draft.focusTags));
-      setCreateCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(draft.focusTags)));
+      setCreateCustomFocusStr(
+        CUSTOM_FOCUS_AREAS_ENABLED
+          ? formatCustomFocusTags(getCustomFocusTags(draft.focusTags))
+          : "",
+      );
     }
   }, [createMode, identity, draft?.focusTags]);
 
@@ -245,7 +250,11 @@ export function ProfilePage({
   useEffect(() => {
     if (identity && draft && !createMode) {
       setEditSelectedPresets(getPresetFocusTags(draft.focusTags));
-      setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(draft.focusTags)));
+      setEditCustomFocusStr(
+        CUSTOM_FOCUS_AREAS_ENABLED
+          ? formatCustomFocusTags(getCustomFocusTags(draft.focusTags))
+          : "",
+      );
     }
   }, [identity, createMode, draft?.id, draft?.focusTags]);
 
@@ -629,7 +638,10 @@ export function ProfilePage({
                 description="How would you like others to reach you? Email, URL, or LinkedIn profile."
                 icon={<Link2 className="size-4 text-sky-500" />}
               >
-                <Field label="Preferred contact (email, URL, or LinkedIn)">
+                <Field
+                  label="Preferred contact (email, URL, or LinkedIn)"
+                  description="Separate multiple with commas — each becomes its own contact button on your profile."
+                >
                   <Input
                     value={createDraft.contactUrlOrHandle ?? ""}
                     onChange={(e) =>
@@ -638,7 +650,7 @@ export function ProfilePage({
                         e.target.value.trim() || null,
                       )
                     }
-                    placeholder="you@example.com, https://linkedin.com/in/you, or profile URL"
+                    placeholder="you@example.com, https://linkedin.com/in/you"
                   />
                 </Field>
               </ProfileSection>
@@ -1012,7 +1024,7 @@ export function ProfilePage({
                     Edit below; Save and Sign out are at the bottom.
                   </p>
                   <FocusTagsDisplay
-                    focusTags={mergeFocusTags(editSelectedPresets, editCustomFocusStr)}
+                    focusTags={editSelectedPresets}
                     className="mt-4"
                   />
                 </div>
@@ -1378,7 +1390,10 @@ export function ProfilePage({
                 description="How would you like to be contacted? Email, URL, or LinkedIn."
                 icon={<Link2 className="size-4 text-sky-500" />}
               >
-                <Field label="Preferred contact (email, URL, or LinkedIn)">
+                <Field
+                  label="Preferred contact (email, URL, or LinkedIn)"
+                  description="Separate multiple with commas — each becomes its own contact button on your profile."
+                >
                   <Input
                     value={draft.contactUrlOrHandle ?? ""}
                     onChange={(event) =>
@@ -1387,8 +1402,16 @@ export function ProfilePage({
                         event.target.value.trim() || null,
                       )
                     }
-                    placeholder="you@example.com, https://linkedin.com/in/you, or profile URL"
+                    placeholder="you@example.com, https://linkedin.com/in/you"
                   />
+                  <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                      Preview
+                    </p>
+                    <div className="mt-2">
+                      <PersonContactLinks person={draft} isSelf />
+                    </div>
+                  </div>
                 </Field>
 
                 <Field label="Profile URL">

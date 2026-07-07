@@ -64,7 +64,7 @@ import { connectionsAccentGradient } from "../styles/gradients";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getPrimaryRoleType } from "../utils/roleTypes";
-import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
+import { PRESET_FOCUS_AREAS, CUSTOM_FOCUS_AREAS_ENABLED, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "./FocusTagsDisplay";
 import { CustomFocusInput } from "./CustomFocusInput";
 import { PersonContactLinks } from "./PersonContactLinks";
@@ -207,7 +207,11 @@ export function PersonDetailModal({
   useEffect(() => {
     if (person) {
       setEditingPerson({ ...person });
-      setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(person.focusTags)));
+      setEditCustomFocusStr(
+        CUSTOM_FOCUS_AREAS_ENABLED
+          ? formatCustomFocusTags(getCustomFocusTags(person.focusTags))
+          : "",
+      );
       const personTWs = travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -281,7 +285,11 @@ export function PersonDetailModal({
     setEditingTravelWindow(null);
     if (person) {
       setEditingPerson({ ...person });
-      setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(person.focusTags)));
+      setEditCustomFocusStr(
+        CUSTOM_FOCUS_AREAS_ENABLED
+          ? formatCustomFocusTags(getCustomFocusTags(person.focusTags))
+          : "",
+      );
       const personTWs = travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -921,7 +929,7 @@ export function PersonDetailModal({
                       <div className="space-y-3">
                         <div>
                           <Label className="text-xs text-gray-600">Email, URL, or LinkedIn</Label>
-                          <Input value={editingPerson.contactUrlOrHandle || ""} onChange={(e) => setEditingPerson({ ...editingPerson, contactUrlOrHandle: e.target.value || null })} placeholder="you@example.com, https://linkedin.com/in/you, or profile URL" className="mt-1" />
+                          <Input value={editingPerson.contactUrlOrHandle || ""} onChange={(e) => setEditingPerson({ ...editingPerson, contactUrlOrHandle: e.target.value || null })} placeholder="you@example.com, https://linkedin.com/in/you" className="mt-1" />
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>

@@ -14,8 +14,23 @@ export interface ParsedContact {
   copyLabel: string;
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
 const HTTP_URL_RE = /^https?:\/\/[^\s]+$/i;
+const CONTACT_SEP_RE = /[,;\n]+/;
+
+function splitContactParts(value: string): string[] {
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  for (const part of value.split(CONTACT_SEP_RE)) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    parts.push(trimmed);
+  }
+  return parts;
+}
 
 function truncate(value: string, max = 40): string {
   return value.length > max ? `${value.slice(0, max - 3)}...` : value;
@@ -44,7 +59,7 @@ function tryParseUrl(raw: string): URL | null {
 
 /** True when the value is a recognizable contact (email, URL, or @handle). */
 export function isRecognizedContact(value: string | null | undefined): boolean {
-  return parseContact(value) !== null;
+  return parseContacts(value).length > 0;
 }
 
 /** True when the value is a plain email address. */
@@ -62,7 +77,33 @@ export function isRecognizedUrl(value: string | null | undefined): boolean {
 
 /** Classify preferred contact (email, URL, or @handle). */
 export function parseContact(value: string | null | undefined): ParsedContact | null {
+  const contacts = parseContacts(value);
+  return contacts[0] ?? null;
+}
+
+/** Parse one or more contacts from a comma/semicolon-separated string. */
+export function parseContacts(value: string | null | undefined): ParsedContact[] {
   const raw = (value ?? "").trim();
+  if (!raw || raw.length > 500) return [];
+
+  const parts = splitContactParts(raw);
+  const candidates = parts.length > 0 ? parts : [raw];
+  const seen = new Set<string>();
+  const contacts: ParsedContact[] = [];
+
+  for (const part of candidates) {
+    const parsed = parseSingleContact(part);
+    if (!parsed) continue;
+    const key = parsed.href.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    contacts.push(parsed);
+  }
+
+  return contacts;
+}
+
+function parseSingleContact(raw: string): ParsedContact | null {
   if (!raw || raw.length > 250) return null;
 
   if (/^@[\w.]{1,49}$/i.test(raw)) {

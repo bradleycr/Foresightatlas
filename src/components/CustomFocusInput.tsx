@@ -1,6 +1,6 @@
 /**
  * Custom focus tag input — comma-separated, live preview, max 3 areas.
- * When CUSTOM_FOCUS_AREAS_ENABLED is false, shows a disabled "Coming soon" state.
+ * When CUSTOM_FOCUS_AREAS_ENABLED is false, the input is hidden entirely.
  */
 
 import { useId } from "react";
@@ -22,32 +22,12 @@ interface CustomFocusInputProps {
 }
 
 export function CustomFocusInput({ value, onChange, id: idProp }: CustomFocusInputProps) {
+  if (!CUSTOM_FOCUS_AREAS_ENABLED) {
+    return null;
+  }
+
   const autoId = useId();
   const id = idProp ?? autoId;
-
-  if (!CUSTOM_FOCUS_AREAS_ENABLED) {
-    return (
-      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-3 opacity-70">
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="text-xs font-medium text-gray-400">Other (optional)</Label>
-          <Badge variant="outline" className="text-[10px] font-medium text-gray-500 border-gray-300">
-            Coming soon
-          </Badge>
-        </div>
-        <p className="mt-1.5 text-xs text-gray-400">
-          Custom focus areas aren&apos;t available yet. For now, pick from the six main areas above.
-        </p>
-        <Input
-          disabled
-          tabIndex={-1}
-          aria-hidden
-          value=""
-          placeholder="e.g. Cognitive Science, Design"
-          className="mt-2 cursor-not-allowed bg-gray-100 text-gray-400"
-        />
-      </div>
-    );
-  }
 
   const previewTags = parseCustomFocusTags(value);
   const overLimit = countParsedFocusTags(value) > MAX_CUSTOM_FOCUS_TAGS;

@@ -27,7 +27,7 @@ import { Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
 import { buildGoogleCalendarTemplateUrl } from "../utils/googleCalendarTemplate";
 import {
   isRecognizedEmail,
-  parseContact,
+  parseContacts,
   parseWebsiteLink,
   sameContactHref,
   type ContactKind,
@@ -173,16 +173,17 @@ interface PersonContactLinksProps {
 }
 
 export function PersonContactLinks({ person, isSelf = false }: PersonContactLinksProps) {
-  const preferred = parseContact(person.contactUrlOrHandle);
+  const preferredContacts = parseContacts(person.contactUrlOrHandle);
   const profileLink = parseWebsiteLink(person.profileUrl, "Profile");
   const showProfileLink =
     profileLink &&
-    (!preferred || !sameContactHref(profileLink.href, preferred.href));
+    !preferredContacts.some((contact) => sameContactHref(profileLink.href, contact.href));
 
   const hasCalendar = isRecognizedEmail(person.calendarEmail);
   const bookingLink = parseWebsiteLink(person.availabilityUrl, "Book time");
 
-  const hasAny = preferred || showProfileLink || hasCalendar || bookingLink;
+  const hasAny =
+    preferredContacts.length > 0 || showProfileLink || hasCalendar || bookingLink;
 
   if (!hasAny) {
     return (
@@ -196,7 +197,9 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
 
   return (
     <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
-      {preferred ? <ContactActionButton contact={preferred} /> : null}
+      {preferredContacts.map((contact) => (
+        <ContactActionButton key={contact.href} contact={contact} />
+      ))}
 
       {showProfileLink ? (
         <SimpleContactLink
