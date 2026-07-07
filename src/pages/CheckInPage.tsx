@@ -8,8 +8,8 @@
  * States:
  *   1. Not signed in → warm prompt to sign in, preserving the return path
  *      so after auth they land back here with one tap remaining.
- *   2. Signed in, not yet checked in today → large gradient button that
- *      writes to /api/checkins and awards +1 nanowheel.
+ *   2. Signed in, not yet checked in today → auto check-in on arrival (QR
+ *      intent); manual button only if auto fails.
  *   3. Already checked in today → celebratory confirmation with today's
  *      fellow arrivals + their new running nanowheel count.
  *
@@ -17,7 +17,7 @@
  * tap feels instant even on slow Wi-Fi at the door.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, MapPin, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
@@ -59,9 +59,12 @@ export function CheckInPage({
   const node = getProgrammingPageConfig(nodeSlug);
   const today = useTodayKey();
   const [isSaving, setIsSaving] = useState(false);
+  const [statusLoaded, setStatusLoaded] = useState(false);
   const [alreadyHere, setAlreadyHere] = useState(false);
   const [peopleHere, setPeopleHere] = useState<CheckIn[]>([]);
   const [summary, setSummary] = useState<NanowheelSummary | null>(null);
+  const [checkInFailed, setCheckInFailed] = useState(false);
+  const autoCheckInStarted = useRef(false);
   /**
    * Plays the one-shot celebration overlay on a successful check-in. We keep
    * it in local state (rather than firing on re-render) so it only triggers
@@ -73,6 +76,9 @@ export function CheckInPage({
   /* Keep the "already here" flag + daily list in sync with identity + date. */
   useEffect(() => {
     let cancelled = false;
+    setStatusLoaded(false);
+    setCheckInFailed(false);
+    autoCheckInStarted.current = false;
 
     const refresh = async () => {
       // Seed the read cache with today's API check-ins so we can render the
@@ -89,6 +95,7 @@ export function CheckInPage({
         setAlreadyHere(false);
         setSummary(null);
       }
+      if (!cancelled) setStatusLoaded(true);
     };
 
     void refresh();
@@ -113,9 +120,10 @@ export function CheckInPage({
   const handleCheckIn = useCallback(async () => {
     if (!identity || !signedInPerson) {
       onOpenProfile();
-      return;
+      return false;
     }
     setIsSaving(true);
+    setCheckInFailed(false);
     try {
       await checkIn(
         signedInPerson.id,
@@ -132,15 +140,26 @@ export function CheckInPage({
       toast.success("You're in. +1 nanowheel earned.", {
         description: "Thanks for being at the node today.",
       });
+      return true;
     } catch (err) {
+      setCheckInFailed(true);
       toast.error("Could not check in", {
         description:
           err instanceof Error ? err.message : "Please try again in a moment.",
       });
+      return false;
     } finally {
       setIsSaving(false);
     }
   }, [identity, signedInPerson, nodeSlug, today, onOpenProfile]);
+
+  /** QR landing: auto check-in once we know they're not already here today. */
+  useEffect(() => {
+    if (!statusLoaded || !identity || !signedInPerson || alreadyHere) return;
+    if (autoCheckInStarted.current || checkInFailed) return;
+    autoCheckInStarted.current = true;
+    void handleCheckIn();
+  }, [statusLoaded, identity, signedInPerson, alreadyHere, checkInFailed, handleCheckIn]);
 
   /* ── Chrome-level helpers ──────────────────────────────────────────── */
 
@@ -232,7 +251,9 @@ export function CheckInPage({
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
             {alreadyHere
               ? `You're at the ${locationLabel} Node`
-              : `Check in at the ${locationLabel} Node`}
+              : isSaving
+                ? `Checking you in at the ${locationLabel} Node`
+                : `Check in at the ${locationLabel} Node`}
           </h1>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-gray-600">
             {alreadyHere
@@ -242,7 +263,16 @@ export function CheckInPage({
         </div>
 
         <div className="mt-8">
-          {alreadyHere ? (
+          {!statusLoaded || isSaving ? (
+            <div className="flex min-h-[64px] items-center justify-center rounded-2xl border border-gray-200 bg-gray-50/90 px-5 py-4 text-sm text-gray-600 sm:min-h-[72px]">
+              <span className="inline-flex items-center gap-2">
+                <Sparkles className="size-4 animate-pulse text-sky-500" />
+                {!statusLoaded
+                  ? "Loading your check-in status…"
+                  : "Checking you in…"}
+              </span>
+            </div>
+          ) : alreadyHere ? (
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-5 py-4 text-emerald-900 shadow-sm">
               <Check className="size-6" aria-hidden />
               <div>
@@ -255,20 +285,14 @@ export function CheckInPage({
           ) : (
             <Button
               size="lg"
-              onClick={handleCheckIn}
+              onClick={() => void handleCheckIn()}
               disabled={isSaving}
               className="w-full min-h-[64px] rounded-2xl text-base font-semibold shadow-md sm:min-h-[72px] sm:text-lg"
             >
-              {isSaving ? (
-                <span className="inline-flex items-center gap-2">
-                  <Sparkles className="size-4 animate-pulse" /> Checking you in…
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <Sparkles className="size-4" />
-                  I&apos;m here today — check me in
-                </span>
-              )}
+              <span className="inline-flex items-center gap-2">
+                <Sparkles className="size-4" />
+                I&apos;m here today — check me in
+              </span>
             </Button>
           )}
         </div>
