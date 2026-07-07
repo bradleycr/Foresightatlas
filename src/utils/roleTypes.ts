@@ -11,6 +11,17 @@ const VALID_ROLE_TYPES: RoleType[] = [
 
 export const ROLE_TYPE_OPTIONS: RoleType[] = VALID_ROLE_TYPES;
 
+/** Self-service profile picker — Senior Fellow is staff-assigned only. */
+export const PROFILE_ROLE_TYPE_OPTIONS: RoleType[] = VALID_ROLE_TYPES.filter(
+  (r) => r !== "Senior Fellow",
+);
+
+export function getPrimaryRoleType(
+  person: Pick<Person, "roleType" | "roleTypes"> | null | undefined,
+): RoleType {
+  return primaryRoleType(getPersonRoleTypes(person));
+}
+
 /** Parse roleType cell or in-memory value — plain string, JSON array, or comma-separated. */
 export function parseRoleTypes(value: unknown): RoleType[] {
   if (value == null || String(value).trim() === "") return ["Fellow"];

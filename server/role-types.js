@@ -55,7 +55,8 @@ function normalizeRoleTypesInput(input) {
       throw new Error(`Invalid role type: ${role}`);
     }
   }
-  return unique;
+  // Single role per profile — keep the first (primary) when legacy data has multiples.
+  return [unique[0]];
 }
 
 module.exports = {

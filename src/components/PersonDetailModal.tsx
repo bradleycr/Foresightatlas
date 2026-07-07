@@ -63,7 +63,7 @@ import { getRolePillClass } from "../styles/roleColors";
 import { connectionsAccentGradient } from "../styles/gradients";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
-import { getPersonRoleTypes } from "../utils/roleTypes";
+import { getPrimaryRoleType } from "../utils/roleTypes";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "./FocusTagsDisplay";
 import { CustomFocusInput } from "./CustomFocusInput";
@@ -727,17 +727,14 @@ export function PersonDetailModal({
                     </>
                   ) : (
                     <>
-                      {getPersonRoleTypes(displayPerson).map((role) => (
-                        <span
-                          key={role}
-                          className={cn(
-                            "person-detail-pill text-sm font-medium",
-                            getRolePillClass(role),
-                          )}
-                        >
-                          {role}
-                        </span>
-                      ))}
+                      <span
+                        className={cn(
+                          "person-detail-pill text-sm font-medium",
+                          getRolePillClass(getPrimaryRoleType(displayPerson)),
+                        )}
+                      >
+                        {getPrimaryRoleType(displayPerson)}
+                      </span>
                       <span className="person-detail-pill person-detail-pill-muted">Cohort {getCohortLabel(displayPerson)}</span>
                       {effectiveIsAlumni(displayPerson) && <Badge variant="alumni" className="person-detail-badge-pill text-xs">Alumni</Badge>}
                     </>

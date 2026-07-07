@@ -48,9 +48,9 @@ import {
 } from "../utils/locationSetup";
 import { LocationSetupPrompt } from "../components/profile/LocationSetupPrompt";
 import {
-  getPersonRoleTypes,
+  getPrimaryRoleType,
   normalizeAffiliationInput,
-  ROLE_TYPE_OPTIONS,
+  PROFILE_ROLE_TYPE_OPTIONS,
 } from "../utils/roleTypes";
 import {
   Select,
@@ -174,8 +174,6 @@ export function ProfilePage({
   /** Same for edit form. */
   const [editSelectedPresets, setEditSelectedPresets] = useState<string[]>([]);
   const [editCustomFocusStr, setEditCustomFocusStr] = useState("");
-  const [createSelectedRoles, setCreateSelectedRoles] = useState<RoleType[]>(["Fellow"]);
-  const [editSelectedRoles, setEditSelectedRoles] = useState<RoleType[]>(["Fellow"]);
   /** Live geocode feedback so people can fix city/country before saving. */
   const [locationCheck, setLocationCheck] = useState<FieldCheckState>({
     status: "idle",
@@ -248,16 +246,8 @@ export function ProfilePage({
     if (identity && draft && !createMode) {
       setEditSelectedPresets(getPresetFocusTags(draft.focusTags));
       setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(draft.focusTags)));
-      setEditSelectedRoles(getPersonRoleTypes(draft));
     }
-  }, [identity, createMode, draft?.id, draft?.focusTags, draft?.roleType, draft?.roleTypes]);
-
-  /** Sync create-form roles when entering create mode. */
-  useEffect(() => {
-    if (createMode && draft) {
-      setCreateSelectedRoles(getPersonRoleTypes(draft));
-    }
-  }, [createMode, draft?.roleType, draft?.roleTypes, draft]);
+  }, [identity, createMode, draft?.id, draft?.focusTags]);
 
   /** Fetch RSVPs when viewing profile so "Events I'm attending" is up to date. */
   useEffect(() => {
@@ -411,8 +401,8 @@ export function ProfilePage({
           toast.error("Full name is required.");
           return;
         }
-        if (createSelectedRoles.length === 0) {
-          toast.error("Select at least one role type.");
+        if (!createDraft.roleType) {
+          toast.error("Select a role type.");
           return;
         }
         if (createPassword.password.length < 8) {
@@ -425,10 +415,11 @@ export function ProfilePage({
         }
         setIsSaving(true);
         try {
+          const roleType = createDraft.roleType;
           const payload = {
             ...createDraft,
-            roleTypes: createSelectedRoles,
-            roleType: createSelectedRoles[0],
+            roleType,
+            roleTypes: [roleType],
             affiliationOrInstitution: normalizeAffiliationInput(
               createDraft.affiliationOrInstitution,
             ),
@@ -497,10 +488,10 @@ export function ProfilePage({
                       placeholder="First and last name"
                     />
                   </Field>
-                  <Field label="Role types" required description="Select every role that applies to you.">
-                    <RoleTypePicker
-                      selected={createSelectedRoles}
-                      onChange={setCreateSelectedRoles}
+                  <Field label="Role type" required description="Pick the role that best describes you.">
+                    <RoleTypeSelect
+                      value={createDraft.roleType}
+                      onChange={(role) => updateCreateDraft("roleType", role)}
                     />
                   </Field>
                   <Field label="Cohort year" required>
@@ -841,8 +832,8 @@ export function ProfilePage({
       return;
     }
 
-    if (editSelectedRoles.length === 0) {
-      toast.error("Select at least one role type.");
+    if (!draft.roleType) {
+      toast.error("Select a role type.");
       return;
     }
 
@@ -877,11 +868,12 @@ export function ProfilePage({
 
     setIsSaving(true);
     try {
+      const roleType = draft.roleType;
       const payload = {
         ...draft,
         profileImageUrl: photoUrl || null,
-        roleTypes: editSelectedRoles,
-        roleType: editSelectedRoles[0] || draft.roleType,
+        roleType,
+        roleTypes: [roleType],
         affiliationOrInstitution: normalizeAffiliationInput(draft.affiliationOrInstitution),
         focusTags: mergeFocusTags(editSelectedPresets, editCustomFocusStr),
       };
@@ -1048,10 +1040,10 @@ export function ProfilePage({
                     />
                   </Field>
 
-                  <Field label="Role types" required description="Select every role that applies to you.">
-                    <RoleTypePicker
-                      selected={editSelectedRoles}
-                      onChange={setEditSelectedRoles}
+                  <Field label="Role type" required description="Pick the role that best describes you.">
+                    <RoleTypeSelect
+                      value={draft.roleType}
+                      onChange={(role) => updateDraft("roleType", role)}
                     />
                   </Field>
 
@@ -1722,38 +1714,26 @@ function ProfileEventList({
   );
 }
 
-function RoleTypePicker({
-  selected,
+function RoleTypeSelect({
+  value,
   onChange,
 }: {
-  selected: RoleType[];
-  onChange: (roles: RoleType[]) => void;
+  value: RoleType;
+  onChange: (role: RoleType) => void;
 }) {
-  const toggle = (role: RoleType) => {
-    onChange(
-      selected.includes(role)
-        ? selected.filter((r) => r !== role)
-        : [...selected, role],
-    );
-  };
-
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-y-3">
-      {ROLE_TYPE_OPTIONS.map((role) => (
-        <label
-          key={role}
-          className="flex min-h-[44px] touch-manipulation cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50 has-[:checked]:border-sky-400 has-[:checked]:bg-sky-50 has-[:checked]:text-sky-800 sm:min-h-0"
-        >
-          <input
-            type="checkbox"
-            checked={selected.includes(role)}
-            onChange={() => toggle(role)}
-            className="size-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-          />
-          <span>{role}</span>
-        </label>
-      ))}
-    </div>
+    <Select value={value} onValueChange={(v: RoleType) => onChange(v)}>
+      <SelectTrigger>
+        <SelectValue placeholder="Select a role" />
+      </SelectTrigger>
+      <SelectContent>
+        {PROFILE_ROLE_TYPE_OPTIONS.map((role) => (
+          <SelectItem key={role} value={role}>
+            {role}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

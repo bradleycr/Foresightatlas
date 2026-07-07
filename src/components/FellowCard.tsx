@@ -7,7 +7,7 @@ import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
-import { getPersonRoleTypes } from "../utils/roleTypes";
+import { getPrimaryRoleType } from "../utils/roleTypes";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { formatEventDateShort } from "../utils/eventTiming";
 import { PersonAvatar } from "./PersonAvatar";
@@ -93,17 +93,14 @@ export function FellowCard({
             <div className="min-w-0 flex-1">
             <h3 className="text-gray-900 font-heading">{person.fullName}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {getPersonRoleTypes(person).map((role) => (
-                <span
-                  key={role}
-                  className={cn(
-                    "text-xs px-3 py-1.5 rounded-full font-medium",
-                    getRolePillClass(role),
-                  )}
-                >
-                  {role}
-                </span>
-              ))}
+              <span
+                className={cn(
+                  "text-xs px-3 py-1.5 rounded-full font-medium",
+                  getRolePillClass(getPrimaryRoleType(person)),
+                )}
+              >
+                {getPrimaryRoleType(person)}
+              </span>
               {effectiveIsAlumni(person) && (
                 <Badge variant="alumni" className="text-xs">
                   Alumni
