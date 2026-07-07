@@ -17,8 +17,6 @@ import {
   MapPin,
   Calendar,
   ExternalLink,
-  Mail,
-  Globe,
   Edit,
   Save,
   Trash2,
@@ -27,7 +25,6 @@ import {
   Users,
   CalendarDays,
   MapPinCheck,
-  Copy,
   ChevronDown,
   Bookmark,
   Loader2,
@@ -61,12 +58,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import { cn } from "./ui/utils";
 import { getRolePillClass } from "../styles/roleColors";
 import { connectionsAccentGradient } from "../styles/gradients";
@@ -76,7 +67,8 @@ import { getPersonRoleTypes } from "../utils/roleTypes";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "./FocusTagsDisplay";
 import { CustomFocusInput } from "./CustomFocusInput";
-import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
+import { PersonContactLinks } from "./PersonContactLinks";
+import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
 import { 
   updatePerson, 
@@ -89,35 +81,11 @@ import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { isConnected, toggleConnection } from "../services/connections";
-import { buildGoogleCalendarTemplateUrl } from "../utils/googleCalendarTemplate";
 import { NanowheelBadge } from "./NanowheelBadge";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
 import { isOpenToMeet } from "../utils/openToMeet";
-
-/** True only when the value looks like real contact (email, URL, or @handle). Avoids showing bio/description. */
-function looksLikeContact(value: string | null | undefined): boolean {
-  const s = (value ?? "").trim();
-  if (!s) return false;
-  if (s.length > 250) return false;
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120) return true;
-  if (/^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220) return true;
-  if (/^@[\w]+$/i.test(s) && s.length <= 50) return true;
-  return false;
-}
-
-function looksLikeEmail(value: string | null | undefined): boolean {
-  const s = (value ?? "").trim();
-  if (!s) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120;
-}
-
-function looksLikeUrl(value: string | null | undefined): boolean {
-  const s = (value ?? "").trim();
-  if (!s) return false;
-  return /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 220;
-}
 
 /** Cohort years 2017–current plus 0 for Unknown. */
 const COHORT_YEAR_OPTIONS: number[] = (() => {
@@ -1000,108 +968,10 @@ export function PersonDetailModal({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {looksLikeContact(displayPerson.contactUrlOrHandle) ? (() => {
-                          const contact = displayPerson.contactUrlOrHandle!;
-                          const isEmail = contact.includes("@") && !contact.startsWith("@");
-                          const isUrl = contact.startsWith("http");
-                          const href = contact.startsWith("@")
-                            ? `https://twitter.com/${contact.slice(1)}`
-                            : isUrl
-                              ? contact
-                              : `mailto:${contact}`;
-                          const displayLabel = contact.startsWith("@")
-                            ? contact
-                            : contact.includes("linkedin.com")
-                              ? "LinkedIn"
-                              : contact.length > 40
-                                ? contact.slice(0, 37) + "..."
-                                : contact;
-                          const copyValue = contact;
-                          const handleCopy = () => {
-                            navigator.clipboard.writeText(copyValue).then(
-                              () => toast.success("Copied to clipboard"),
-                              () => toast.error("Could not copy"),
-                            );
-                          };
-                          const handleOpen = () => window.open(href, "_blank", "noopener,noreferrer");
-                          return (
-                            <DropdownMenu key="contact" modal={false}>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="person-detail-link-primary min-h-[44px] sm:min-h-[40px] inline-flex items-center gap-2"
-                                  aria-haspopup="menu"
-                                  aria-label={`Contact: ${displayLabel}. Open menu for options.`}
-                                >
-                                  {isEmail ? <Mail className="h-4 w-4 shrink-0" /> : <ExternalLink className="h-4 w-4 shrink-0" />}
-                                  <span className="min-w-0 truncate">{displayLabel}</span>
-                                  <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="start"
-                                className="min-w-[12rem] !bg-white text-gray-900 border border-gray-200 shadow-xl rounded-lg py-1"
-                                style={{ zIndex: Z_INDEX_MODAL_DROPDOWN }}
-                              >
-                                <DropdownMenuItem onSelect={handleOpen}>
-                                  {isEmail ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-                                  {isEmail ? "Send email" : isUrl ? "Open link" : "Open profile"}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={handleCopy}>
-                                  <Copy className="h-4 w-4" />
-                                  {isEmail ? "Copy email address" : "Copy to clipboard"}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          );
-                        })() : (
-                          <p className="text-sm text-gray-500 italic">
-                            {identity?.personId === person.id
-                              ? "No contact info yet. You can add it when you log in and edit your profile."
-                              : "No contact info added yet."}
-                          </p>
-                        )}
-                        <a
-                          href="https://foresight.org/about/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
-                        >
-                          <Globe className="h-4 w-4" />
-                          foresight.org/about
-                        </a>
-
-                        {looksLikeEmail(displayPerson.calendarEmail) ? (
-                          <a
-                            href={buildGoogleCalendarTemplateUrl({
-                              title: `Meet: ${displayPerson.fullName}`,
-                              details: `Inviting ${displayPerson.fullName}.`,
-                              addGuests: [displayPerson.calendarEmail],
-                            })}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
-                            aria-label={`Create a Google Calendar invite for ${displayPerson.fullName}`}
-                          >
-                            <CalendarDays className="h-4 w-4" />
-                            Invite via Google Calendar
-                          </a>
-                        ) : null}
-
-                        {looksLikeUrl(displayPerson.availabilityUrl) ? (
-                          <a
-                            href={displayPerson.availabilityUrl!}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
-                            aria-label={`Book time with ${displayPerson.fullName}`}
-                          >
-                            <Calendar className="h-4 w-4" />
-                            Open to meet — book time
-                          </a>
-                        ) : null}
-                      </div>
+                      <PersonContactLinks
+                        person={displayPerson}
+                        isSelf={identity?.personId === person.id}
+                      />
                     )}
                   </section>
                 </div>
