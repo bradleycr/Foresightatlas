@@ -73,8 +73,9 @@ import { connectionsAccentGradient } from "../styles/gradients";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getPersonRoleTypes } from "../utils/roleTypes";
-import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
+import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "./FocusTagsDisplay";
+import { CustomFocusInput } from "./CustomFocusInput";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
 import { 
@@ -180,6 +181,8 @@ export function PersonDetailModal({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  /** Comma-separated custom focus tags while admin editing (keeps typing graceful). */
+  const [editCustomFocusStr, setEditCustomFocusStr] = useState("");
   /** When true, show full expanded project description; otherwise truncate with "Show more". */
   const [projectDescriptionExpanded, setProjectDescriptionExpanded] = useState(false);
 
@@ -236,6 +239,7 @@ export function PersonDetailModal({
   useEffect(() => {
     if (person) {
       setEditingPerson({ ...person });
+      setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(person.focusTags)));
       const personTWs = travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -309,6 +313,7 @@ export function PersonDetailModal({
     setEditingTravelWindow(null);
     if (person) {
       setEditingPerson({ ...person });
+      setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(person.focusTags)));
       const personTWs = travelWindows
         .filter((tw) => tw.personId === person.id)
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -333,7 +338,13 @@ export function PersonDetailModal({
       }
 
       // Geocode when coordinates missing (city is enough; country optional)
-      let personToSave = { ...editingPerson };
+      let personToSave = {
+        ...editingPerson,
+        focusTags: mergeFocusTags(
+          getPresetFocusTags(editingPerson.focusTags),
+          editCustomFocusStr,
+        ),
+      };
       if (
         personToSave.currentCoordinates.lat === 0 &&
         personToSave.currentCoordinates.lng === 0 &&
@@ -779,11 +790,13 @@ export function PersonDetailModal({
                             checked={editingPerson.focusTags.includes(tag)}
                             onChange={() => {
                               const preset = getPresetFocusTags(editingPerson.focusTags);
-                              const custom = getCustomFocusTags(editingPerson.focusTags);
                               const next = preset.includes(tag)
                                 ? preset.filter((t) => t !== tag)
                                 : [...preset, tag];
-                              setEditingPerson({ ...editingPerson, focusTags: [...next, ...custom] });
+                              setEditingPerson({
+                                ...editingPerson,
+                                focusTags: mergeFocusTags(next, editCustomFocusStr),
+                              });
                             }}
                             className="size-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                           />
@@ -791,19 +804,20 @@ export function PersonDetailModal({
                         </label>
                       ))}
                     </div>
-                    <div>
-                      <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
-                      <Input
-                        value={getCustomFocusTags(editingPerson.focusTags).join(", ")}
-                        onChange={(e) => {
-                          const preset = getPresetFocusTags(editingPerson.focusTags);
-                          const custom = parseFocusTags(e.target.value);
-                          setEditingPerson({ ...editingPerson, focusTags: [...preset, ...custom] });
-                        }}
-                        placeholder="e.g. Quantum computing, Policy"
-                        className="mt-1"
-                      />
-                    </div>
+                    <CustomFocusInput
+                      id="modal-custom-focus"
+                      value={editCustomFocusStr}
+                      onChange={(value) => {
+                        setEditCustomFocusStr(value);
+                        setEditingPerson({
+                          ...editingPerson,
+                          focusTags: mergeFocusTags(
+                            getPresetFocusTags(editingPerson.focusTags),
+                            value,
+                          ),
+                        });
+                      }}
+                    />
                   </div>
                 ) : (
                   <FocusTagsDisplay

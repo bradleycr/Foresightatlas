@@ -6,8 +6,9 @@ import { createPerson, updatePerson } from "../services/database";
 import { changeDirectoryPassword } from "../services/memberAuth";
 import { geocodeCity } from "../services/geocoding";
 import type { Person, PrimaryNode, RoleType } from "../types";
-import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
+import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "../components/FocusTagsDisplay";
+import { CustomFocusInput } from "../components/CustomFocusInput";
 import { getPersonRSVPs } from "../services/rsvp";
 import { fetchRSVPsFromAPI } from "../services/rsvp";
 import { subscribeToDataChanges } from "../services/sync";
@@ -238,7 +239,7 @@ export function ProfilePage({
   useEffect(() => {
     if (createMode && !identity && draft) {
       setCreateSelectedPresets(getPresetFocusTags(draft.focusTags));
-      setCreateCustomFocusStr(getCustomFocusTags(draft.focusTags).join(", "));
+      setCreateCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(draft.focusTags)));
     }
   }, [createMode, identity, draft?.focusTags]);
 
@@ -246,7 +247,7 @@ export function ProfilePage({
   useEffect(() => {
     if (identity && draft && !createMode) {
       setEditSelectedPresets(getPresetFocusTags(draft.focusTags));
-      setEditCustomFocusStr(getCustomFocusTags(draft.focusTags).join(", "));
+      setEditCustomFocusStr(formatCustomFocusTags(getCustomFocusTags(draft.focusTags)));
       setEditSelectedRoles(getPersonRoleTypes(draft));
     }
   }, [identity, createMode, draft?.id, draft?.focusTags, draft?.roleType, draft?.roleTypes]);
@@ -431,7 +432,7 @@ export function ProfilePage({
             affiliationOrInstitution: normalizeAffiliationInput(
               createDraft.affiliationOrInstitution,
             ),
-            focusTags: [...createSelectedPresets, ...parseFocusTags(createCustomFocusStr)],
+            focusTags: mergeFocusTags(createSelectedPresets, createCustomFocusStr),
           };
           const result = await createPerson(payload, createPassword.password, inviteToken);
           onProfileSaved(result.person, result.auth);
@@ -601,18 +602,11 @@ export function ProfilePage({
                         </label>
                       ))}
                     </div>
-                    <div>
-                      <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Custom focus areas appear on your profile page but not on map sidebar cards or filters.
-                      </p>
-                      <Input
-                        value={createCustomFocusStr}
-                        onChange={(e) => setCreateCustomFocusStr(e.target.value)}
-                        placeholder="e.g. Quantum computing, Policy"
-                        className="mt-1"
-                      />
-                    </div>
+                    <CustomFocusInput
+                      id="create-custom-focus"
+                      value={createCustomFocusStr}
+                      onChange={setCreateCustomFocusStr}
+                    />
                   </div>
                 </Field>
               </ProfileSection>
@@ -889,7 +883,7 @@ export function ProfilePage({
         roleTypes: editSelectedRoles,
         roleType: editSelectedRoles[0] || draft.roleType,
         affiliationOrInstitution: normalizeAffiliationInput(draft.affiliationOrInstitution),
-        focusTags: [...editSelectedPresets, ...parseFocusTags(editCustomFocusStr)],
+        focusTags: mergeFocusTags(editSelectedPresets, editCustomFocusStr),
       };
       const result = await updatePerson(draft.id, payload, identity.token);
       setDraft(result.person);
@@ -1026,7 +1020,7 @@ export function ProfilePage({
                     Edit below; Save and Sign out are at the bottom.
                   </p>
                   <FocusTagsDisplay
-                    focusTags={[...editSelectedPresets, ...parseFocusTags(editCustomFocusStr)]}
+                    focusTags={mergeFocusTags(editSelectedPresets, editCustomFocusStr)}
                     className="mt-4"
                   />
                 </div>
@@ -1160,18 +1154,11 @@ export function ProfilePage({
                         </label>
                       ))}
                     </div>
-                    <div>
-                      <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Custom focus areas appear on your profile page but not on map sidebar cards or filters.
-                      </p>
-                      <Input
-                        value={editCustomFocusStr}
-                        onChange={(e) => setEditCustomFocusStr(e.target.value)}
-                        placeholder="e.g. Quantum computing, Policy"
-                        className="mt-1"
-                      />
-                    </div>
+                    <CustomFocusInput
+                      id="edit-custom-focus"
+                      value={editCustomFocusStr}
+                      onChange={setEditCustomFocusStr}
+                    />
                   </div>
                 </Field>
               </ProfileSection>

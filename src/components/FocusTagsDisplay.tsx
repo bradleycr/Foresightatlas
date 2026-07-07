@@ -4,7 +4,7 @@
  * Map sidebar cards intentionally show presets only — see FellowCard.
  */
 
-import { getCustomFocusTags, getPresetFocusTags } from "../data/focusAreas";
+import { getCustomFocusTags, getPresetFocusTags, normalizeCustomFocusTags } from "../data/focusAreas";
 import { Badge } from "./ui/badge";
 import { cn } from "./ui/utils";
 
@@ -25,7 +25,7 @@ export function FocusTagsDisplay({
   otherBadgeClassName,
 }: FocusTagsDisplayProps) {
   const presetTags = getPresetFocusTags(focusTags);
-  const customTags = getCustomFocusTags(focusTags);
+  const customTags = normalizeCustomFocusTags(getCustomFocusTags(focusTags));
   if (presetTags.length === 0 && customTags.length === 0) return null;
 
   return (

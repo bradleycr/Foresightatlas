@@ -10,6 +10,7 @@ const {
   profileImageUrlFromSheet,
 } = require("./realdata-store");
 const { normalizeRoleTypesInput } = require("./role-types");
+const { normalizeFocusTags } = require("./focus-areas");
 const { geocodeCity } = require("./geocoding");
 const { issueDirectorySession, hashPassword } = require("./directory-auth");
 
@@ -65,7 +66,7 @@ function normalizePerson(input) {
     affiliationOrInstitution: normalizeNullableString(
       input?.affiliationOrInstitution,
     ),
-    focusTags: normalizeStringArray(input?.focusTags),
+    focusTags: normalizeFocusTags(normalizeStringArray(input?.focusTags)),
     currentCity: normalizeString(input?.currentCity),
     currentCountry: normalizeString(input?.currentCountry),
     currentCoordinates: normalizeCoordinates(input?.currentCoordinates),
@@ -155,7 +156,7 @@ function normalizePersonForCreate(input) {
     affiliationOrInstitution: normalizeNullableString(
       input?.affiliationOrInstitution,
     ),
-    focusTags: normalizeStringArray(input?.focusTags),
+    focusTags: normalizeFocusTags(normalizeStringArray(input?.focusTags)),
     currentCity: normalizeString(input?.currentCity),
     currentCountry: normalizeString(input?.currentCountry),
     currentCoordinates: normalizeCoordinates(input?.currentCoordinates),
