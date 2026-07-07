@@ -9,19 +9,9 @@ const {
   sanitizeProfileImageUrl,
   profileImageUrlFromSheet,
 } = require("./realdata-store");
+const { normalizeRoleTypesInput } = require("./role-types");
 const { geocodeCity } = require("./geocoding");
 const { issueDirectorySession, hashPassword } = require("./directory-auth");
-
-/** Sheet is the only source of truth; no database.json read or write at runtime. */
-
-const VALID_ROLE_TYPES = new Set([
-  "Fellow",
-  "Grantee",
-  "Prize Winner",
-  "Senior Fellow",
-  "Nodee",
-  "Foresight Team",
-]);
 
 const VALID_PRIMARY_NODES = new Set([
   "Global",
@@ -59,10 +49,12 @@ function normalizeProfileImageUrlInput(value) {
 }
 
 function normalizePerson(input) {
+  const roleTypes = normalizeRoleTypesInput(input);
   const person = {
     id: normalizeString(input?.id),
     fullName: normalizeString(input?.fullName),
-    roleType: normalizeString(input?.roleType) || "Fellow",
+    roleTypes,
+    roleType: roleTypes[0],
     fellowshipCohortYear: normalizeNumber(input?.fellowshipCohortYear, 0),
     fellowshipEndYear:
       input?.fellowshipEndYear === null ||
@@ -97,10 +89,6 @@ function normalizePerson(input) {
 
   if (!person.fullName) {
     throw new Error("Full name is required.");
-  }
-
-  if (!VALID_ROLE_TYPES.has(person.roleType)) {
-    throw new Error("Invalid role type.");
   }
 
   if (
@@ -150,11 +138,13 @@ function generateNewPersonId() {
 
 /** Like normalizePerson but allows missing id (generates one for new registrations). */
 function normalizePersonForCreate(input) {
+  const roleTypes = normalizeRoleTypesInput(input);
   const rawId = normalizeString(input?.id);
   const person = {
     id: rawId || null,
     fullName: normalizeString(input?.fullName),
-    roleType: normalizeString(input?.roleType) || "Fellow",
+    roleTypes,
+    roleType: roleTypes[0],
     fellowshipCohortYear: normalizeNumber(input?.fellowshipCohortYear, 0),
     fellowshipEndYear:
       input?.fellowshipEndYear === null ||
@@ -186,10 +176,6 @@ function normalizePersonForCreate(input) {
 
   if (!person.fullName) {
     throw new Error("Full name is required.");
-  }
-
-  if (!VALID_ROLE_TYPES.has(person.roleType)) {
-    throw new Error("Invalid role type.");
   }
 
   if (

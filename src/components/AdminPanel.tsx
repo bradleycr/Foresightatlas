@@ -864,7 +864,7 @@ function PersonEditForm({
             onChange={(e) =>
               onChange({
                 ...person,
-                affiliationOrInstitution: e.target.value.trim() || null,
+                affiliationOrInstitution: e.target.value || null,
               })
             }
             placeholder="University, company, or institution"

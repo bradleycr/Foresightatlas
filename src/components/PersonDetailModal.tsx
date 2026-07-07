@@ -72,6 +72,7 @@ import { getRolePillClass } from "../styles/roleColors";
 import { connectionsAccentGradient } from "../styles/gradients";
 import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
+import { getPersonRoleTypes } from "../utils/roleTypes";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
@@ -746,9 +747,17 @@ export function PersonDetailModal({
                     </>
                   ) : (
                     <>
-                      <span className={cn("person-detail-pill text-sm font-medium", getRolePillClass(displayPerson.roleType))}>
-                        {displayPerson.roleType}
-                      </span>
+                      {getPersonRoleTypes(displayPerson).map((role) => (
+                        <span
+                          key={role}
+                          className={cn(
+                            "person-detail-pill text-sm font-medium",
+                            getRolePillClass(role),
+                          )}
+                        >
+                          {role}
+                        </span>
+                      ))}
                       <span className="person-detail-pill person-detail-pill-muted">Cohort {getCohortLabel(displayPerson)}</span>
                       {effectiveIsAlumni(displayPerson) && <Badge variant="alumni" className="person-detail-badge-pill text-xs">Alumni</Badge>}
                     </>
@@ -835,7 +844,7 @@ export function PersonDetailModal({
                         <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="About you, your work, or project — full description" />
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
-                          <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value.trim() || null })} placeholder="Institution or company" className="mt-1" />
+                          <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value || null })} placeholder="Institution or company" className="mt-1" />
                         </div>
                       </div>
                     ) : (

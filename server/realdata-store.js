@@ -11,6 +11,10 @@ if (credPath && !fs.existsSync(path.resolve(credPath))) {
 
 const { google } = require("googleapis");
 const {
+  parseRoleTypes,
+  serializeRoleTypes,
+} = require("./role-types");
+const {
   SHEET_NAMES,
   REAL_DATA_TAB_NAMES,
   PEOPLE_HEADERS,
@@ -243,10 +247,13 @@ function rowToPersonRecord(orderedRow, rowNumber) {
       ? null
       : Number.parseInt(String(endYearRaw), 10);
 
+  const roleTypes = parseRoleTypes(orderedRow[idx("roleType")]);
+
   const person = {
     id: normalizeString(orderedRow[idx("id")]),
     fullName: displayNameOnly(orderedRow[idx("fullName")]),
-    roleType: normalizeString(orderedRow[idx("roleType")]) || "Fellow",
+    roleType: roleTypes[0] || "Fellow",
+    roleTypes,
     fellowshipCohortYear: sanitizeCohortYear(orderedRow[idx("fellowshipCohortYear")]),
     fellowshipEndYear: Number.isNaN(fellowshipEndYear) ? null : fellowshipEndYear,
     affiliationOrInstitution: normalizeNullableString(
@@ -299,7 +306,7 @@ function personRecordToRow(record) {
   return [
     person.id ?? "",
     person.fullName ?? "",
-    person.roleType ?? "Fellow",
+    serializeRoleTypes(person.roleTypes || person.roleType),
     person.fellowshipCohortYear ?? "",
     person.fellowshipEndYear ?? "",
     person.affiliationOrInstitution ?? "",

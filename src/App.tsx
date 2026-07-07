@@ -8,6 +8,7 @@ import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getPresetFocusTags } from "./data/focusAreas";
 import { effectiveIsAlumni } from "./utils/cohortLabel";
+import { getPersonRoleTypes } from "./utils/roleTypes";
 import {
   getAllPeople,
   getAllTravelWindows,
@@ -346,7 +347,7 @@ export default function App() {
         if (!match) return false;
       }
 
-      if (filters.programs.length > 0 && !filters.programs.includes(person.roleType)) return false;
+      if (filters.programs.length > 0 && !getPersonRoleTypes(person).some((r) => filters.programs.includes(r))) return false;
       if (filters.focusTags.length > 0) {
         const personPresetTags = getPresetFocusTags(person.focusTags);
         if (!filters.focusTags.some((t) => personPresetTags.includes(t))) return false;

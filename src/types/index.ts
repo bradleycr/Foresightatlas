@@ -18,6 +18,8 @@ export interface Person {
   id: string;
   fullName: string;
   roleType: RoleType;
+  /** All roles for this person (sheet may store one or many in the roleType column). */
+  roleTypes?: RoleType[];
   fellowshipCohortYear: number;
   /** Last year active in the program; null = ongoing (current). Used for alumni and for year-range filtering. */
   fellowshipEndYear: number | null;

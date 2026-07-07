@@ -106,6 +106,9 @@ export function ClaimPage({
     return emailOk && password.length >= 8 && password === confirm;
   }, [peek, password, confirm, email]);
 
+  const passwordsMismatch =
+    confirm.length > 0 && password.length > 0 && password !== confirm;
+
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -117,7 +120,7 @@ export function ClaimPage({
         return;
       }
       if (password !== confirm) {
-        setError("Password and confirmation do not match.");
+        setError("Passwords don't match.");
         return;
       }
       if (
@@ -296,12 +299,22 @@ export function ClaimPage({
                   id="claim-confirm"
                   type="password"
                   value={confirm}
-                  onChange={(event) => setConfirm(event.target.value)}
+                  onChange={(event) => {
+                    setConfirm(event.target.value);
+                    if (error === "Passwords don't match.") setError(null);
+                  }}
                   placeholder="Re-enter your password"
                   autoComplete="new-password"
                   className="h-11 pl-10"
+                  aria-invalid={passwordsMismatch}
+                  aria-describedby={passwordsMismatch ? "claim-password-mismatch" : undefined}
                 />
               </div>
+              {passwordsMismatch ? (
+                <p id="claim-password-mismatch" className="text-sm text-red-600" role="alert">
+                  Passwords don&apos;t match.
+                </p>
+              ) : null}
             </div>
 
             {error && (

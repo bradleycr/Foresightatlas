@@ -12,6 +12,7 @@ import type { NodeEvent } from "../types/events";
 import { getApiBase } from "./api-base";
 import { publishDataChanged } from "./sync";
 import { getIdentity } from "./identity";
+import { getPersonRoleTypes, primaryRoleType } from "../utils/roleTypes";
 
 /** Thrown when the API rejects our session — App clears identity and shows login. */
 export class UnauthorizedError extends Error {
@@ -162,9 +163,12 @@ function normalizePerson(
   const fullName = (p.fullName ?? "")
     .split(/\r?\n/)[0]
     ?.trim() || (p.fullName ?? "").trim() || "";
+  const roleTypes = getPersonRoleTypes(p as Person);
   return {
     ...p,
     fullName,
+    roleTypes,
+    roleType: primaryRoleType(roleTypes),
     fellowshipCohortYear: normalizeYearValue(p.fellowshipCohortYear) ?? 0,
     fellowshipEndYear: normalizeYearValue(p.fellowshipEndYear) ?? null,
     affiliationOrInstitution: p.affiliationOrInstitution ?? null,
