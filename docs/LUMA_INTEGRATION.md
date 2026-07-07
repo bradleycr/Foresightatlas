@@ -123,6 +123,20 @@ This means you can:
 
 ---
 
+## Luma guest RSVPs (display-only)
+
+When `LUMA_API_KEY` is set, the API **merges approved Luma registrants into RSVP counts** on programming pages:
+
+- **GET /api/database** and **GET /api/rsvps** call `server/luma-guests.js` after loading sheet RSVPs.
+- Only **directory members** are shown (matched by roster email, calendar email, or email in preferred contact).
+- **Atlas RSVPs always win** — if someone already has a sheet row for that event, the Luma guest is ignored.
+- Guest lists are **cached ~10 minutes** per Luma event; only events in a relevant window (past week → six months ahead) are fetched.
+- This is **display-only** — nothing is written to the RSVPs sheet.
+
+Events need a `lumaEventId` (auto-set for pure Luma events, or via the sheet `lumaEventId` column).
+
+---
+
 ## Luma API reference
 
 - [Getting Started](https://docs.luma.com/reference/getting-started-with-your-api)

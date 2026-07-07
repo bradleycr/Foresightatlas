@@ -13,6 +13,7 @@ const express = require("express");
 const fs = require("fs").promises;
 const cors = require("cors");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
+const { enrichRsvpsForApi } = require("./rsvp-enrichment");
 const {
   applyBerlinSecureWorkshopSheetOverrides,
   normalizeBerlinSecureWorkshopRsvps,
@@ -130,6 +131,7 @@ app.get("/api/database", async (req, res) => {
     database.events = applyBerlinSecureWorkshopSheetOverrides(database.events || []);
     database.rsvps = normalizeBerlinSecureWorkshopRsvps(database.rsvps || []);
     database.events = await mergeSheetEventsWithLuma(database.events || []);
+    database.rsvps = await enrichRsvpsForApi(database.rsvps || []);
     return res.json(database);
   } catch (error) {
     console.error("Error reading local mock database:", error);
@@ -249,7 +251,8 @@ app.post("/api/profile", async (req, res) => {
 
 app.get("/api/rsvps", async (_req, res) => {
   try {
-    return res.json(normalizeBerlinSecureWorkshopRsvps(await listLocalRsvps()));
+    const rsvps = normalizeBerlinSecureWorkshopRsvps(await listLocalRsvps());
+    return res.json(await enrichRsvpsForApi(rsvps));
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Failed to read RSVPs",

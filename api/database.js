@@ -19,6 +19,7 @@ if (credPath && !fs.existsSync(path.resolve(credPath))) {
 
 const { getFullDatabaseFromSheet } = require("../server/sheet-database");
 const { mergeSheetEventsWithLuma } = require("../server/luma-merge");
+const { enrichRsvpsForApi } = require("../server/rsvp-enrichment");
 const {
   verifyDirectorySessionToken,
   readDirectoryTokenFromRequest,
@@ -52,6 +53,7 @@ module.exports = async function handler(req, res) {
     }
     const database = await getFullDatabaseFromSheet();
     database.events = await mergeSheetEventsWithLuma(database.events || []);
+    database.rsvps = await enrichRsvpsForApi(database.rsvps);
     cached = database;
     cachedAt = now;
     return res.status(200).json(database);

@@ -817,6 +817,19 @@ async function getMockLumaEvents() {
   return Array.isArray(raw) ? raw : defaultMockLumaEvents();
 }
 
+/** Approved Luma guests for local mock RSVP merge (directory emails only). */
+function getMockLumaGuests(lumaEventId) {
+  const fixtures = {
+    "mock-luma-berlin-1": [
+      { email: "bradley@foresight.org", registered_at: "2026-05-01T12:00:00.000Z" },
+    ],
+    "mock-luma-berlin-kickoff-2026": [
+      { email: "bradley@foresight.org", registered_at: "2026-04-01T10:00:00.000Z" },
+    ],
+  };
+  return fixtures[String(lumaEventId || "").trim()] || [];
+}
+
 async function getMockCalendarEvents() {
   const raw = await readJsonFile(CALENDAR_FILE, defaultMockGoogleCalendarEvents);
   return Array.isArray(raw) ? raw : defaultMockGoogleCalendarEvents();
@@ -842,6 +855,7 @@ module.exports = {
   appendLocalCheckin,
   appendLocalSuggestion,
   getMockLumaEvents,
+  getMockLumaGuests,
   getMockCalendarEvents,
 };
 

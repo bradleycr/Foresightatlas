@@ -202,6 +202,7 @@ async function fetchLumaEvents() {
     return {
       _lumaApiId: ev.api_id,
       id: `luma-${ev.api_id}`,
+      lumaEventId: ev.api_id,
       nodeSlug,
       title: ev.name || "Untitled Event",
       description: (ev.description_md || ev.description || "").trim(),
@@ -240,6 +241,7 @@ function mergeEvents(sheetEvents, lumaEvents) {
       if (isLocationUnspecified(location)) nodeSlug = "global";
       merged.push({
         id: sheetEv.id,
+        lumaEventId: sheetEv._lumaEventId || lumaEv._lumaApiId,
         nodeSlug,
         title: lumaEv.title,
         description: lumaEv.description || sheetEv.description,
@@ -258,6 +260,7 @@ function mergeEvents(sheetEvents, lumaEvents) {
       const { _lumaEventId, ...clean } = sheetEv;
       // Sheet row without a Luma link: never leave nodeSlug null, default to global.
       if (!clean.nodeSlug) clean.nodeSlug = "global";
+      if (_lumaEventId) clean.lumaEventId = _lumaEventId;
       merged.push(clean);
     }
   }
@@ -266,7 +269,7 @@ function mergeEvents(sheetEvents, lumaEvents) {
     if (!matchedLumaIds.has(lumaEv._lumaApiId)) {
       const { _lumaApiId, ...clean } = lumaEv;
       if (isLocationUnspecified(clean.location)) clean.nodeSlug = "global";
-      merged.push(clean);
+      merged.push({ ...clean, lumaEventId: lumaEv._lumaApiId });
     }
   }
 

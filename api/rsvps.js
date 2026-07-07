@@ -16,6 +16,7 @@ const { google } = require("googleapis");
 const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
 const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
 const { normalizeBerlinSecureWorkshopRsvps } = require("../server/event-corrections");
+const { enrichRsvpsForApi } = require("../server/rsvp-enrichment");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_RSVPS = "RSVPs";
@@ -159,7 +160,8 @@ module.exports = async function handler(req, res) {
         range: `'${SHEET_RSVPS}'!A:G`,
       });
       const { latest } = parseRsvpRows(data.values || []);
-      const rsvps = normalizeBerlinSecureWorkshopRsvps(latest);
+      let rsvps = normalizeBerlinSecureWorkshopRsvps(latest);
+      rsvps = await enrichRsvpsForApi(rsvps);
       return res.status(200).json(rsvps);
     } catch (e) {
       console.error("GET /api/rsvps", e.message);

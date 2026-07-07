@@ -15,6 +15,7 @@ const cors = require("cors");
 const { saveProfile, createProfile } = require("./profile-store");
 const { getFullDatabaseFromSheet, getDirectoryNamesFromSheet } = require("./sheet-database");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
+const { enrichRsvpsForApi } = require("./rsvp-enrichment");
 const {
   authenticateDirectoryLogin,
   changeDirectoryPassword,
@@ -75,6 +76,7 @@ app.get("/api/database", async (req, res) => {
   try {
     const database = await getFullDatabaseFromSheet();
     database.events = await mergeSheetEventsWithLuma(database.events || []);
+    database.rsvps = await enrichRsvpsForApi(database.rsvps);
     return res.json(database);
   } catch (error) {
     console.error("Error reading database from sheet:", error);

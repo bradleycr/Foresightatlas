@@ -102,6 +102,8 @@ export interface NodeEvent {
   externalLink: string | null;
   /** Optional cover/thumbnail from Luma or sheet (cards without it render as before). */
   coverImageUrl?: string | null;
+  /** When set, this event is linked to Luma and guest RSVPs can be merged for display. */
+  lumaEventId?: string | null;
   recurrenceGroupId: string | null;
 }
 
