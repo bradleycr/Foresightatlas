@@ -1,6 +1,6 @@
 /**
  * Draggable split between map and fellows list on desktop.
- * Sits on the sidebar's left edge so it's always easy to find and grab.
+ * Hidden until hover/focus so the default layout stays unchanged.
  */
 
 import { GripVertical } from "lucide-react";
@@ -12,9 +12,10 @@ interface MapSidebarResizeHandleProps {
   minWidth: number;
   maxWidth: number;
   isDragging: boolean;
-  onResizeStart: (event: React.MouseEvent) => void;
+  onResizeStart: (event: React.MouseEvent<HTMLElement>, measuredWidth: number) => void;
   onResizeKeyDown: (event: React.KeyboardEvent) => void;
   onResizeDoubleClick: () => void;
+  sidebarRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function MapSidebarResizeHandle({
@@ -25,6 +26,7 @@ export function MapSidebarResizeHandle({
   onResizeStart,
   onResizeKeyDown,
   onResizeDoubleClick,
+  sidebarRef,
 }: MapSidebarResizeHandleProps) {
   return (
     <div
@@ -35,21 +37,26 @@ export function MapSidebarResizeHandle({
       aria-valuemin={minWidth}
       aria-valuemax={maxWidth}
       tabIndex={0}
-      onMouseDown={onResizeStart}
+      onMouseDown={(event) => {
+        const measuredWidth = sidebarRef.current?.getBoundingClientRect().width ?? width;
+        onResizeStart(event, measuredWidth);
+      }}
       onDoubleClick={onResizeDoubleClick}
       onKeyDown={onResizeKeyDown}
       style={{ zIndex: Z_INDEX_MAP_CONTROLS }}
       className={cn(
-        "absolute left-0 top-0 bottom-0 -translate-x-1/2",
-        "flex w-5 cursor-col-resize touch-none items-center justify-center",
-        "group outline-none",
+        "absolute left-0 top-0 bottom-0",
+        "flex w-3 cursor-col-resize touch-none items-center justify-center",
+        "group/handle outline-none",
+        "opacity-0 group-hover/sidebar:opacity-100 focus-visible:opacity-100",
+        isDragging && "opacity-100",
         "focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2",
       )}
     >
       <div
         className={cn(
           "absolute inset-y-4 left-1/2 w-0.5 -translate-x-1/2 rounded-full transition-colors duration-150",
-          isDragging ? "bg-teal-500" : "bg-gray-300 group-hover:bg-teal-400",
+          isDragging ? "bg-teal-500" : "bg-gray-300 group-hover/handle:bg-teal-400",
         )}
       />
       <div
@@ -57,7 +64,7 @@ export function MapSidebarResizeHandle({
           "relative flex h-12 w-5 items-center justify-center rounded-full border shadow-md transition-all duration-150",
           isDragging
             ? "border-teal-400 bg-white text-teal-600 shadow-lg scale-105"
-            : "border-gray-200 bg-white text-gray-400 group-hover:border-teal-300 group-hover:text-teal-600 group-hover:shadow-lg",
+            : "border-gray-200 bg-white text-gray-400 group-hover/handle:border-teal-300 group-hover/handle:text-teal-600 group-hover/handle:shadow-lg",
         )}
         title="Drag to resize · double-click to reset"
       >

@@ -1,10 +1,12 @@
 /**
  * Desktop map sidebar width — draggable split, persisted in localStorage.
+ * Default layout uses Tailwind `lg:w-96`; custom width only after the user drags.
  */
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 
 const STORAGE_KEY = "foresightatlas_map_sidebar_width";
+const CUSTOMIZED_KEY = "foresightatlas_map_sidebar_customized";
 export const MAP_SIDEBAR_DEFAULT_WIDTH = 384;
 const MIN_WIDTH = 300;
 const MAX_WIDTH_RATIO = 0.58;
@@ -25,16 +27,27 @@ function readStoredWidth(): number {
   return MAP_SIDEBAR_DEFAULT_WIDTH;
 }
 
+function readHasCustomWidth(): boolean {
+  try {
+    return localStorage.getItem(CUSTOMIZED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 interface UseResizableMapSidebarOptions {
-  /** Only active when map and list are side-by-side (md+). */
+  /** Only active on large desktop split view (lg+). */
   enabled: boolean;
 }
 
 export function useResizableMapSidebar({ enabled }: UseResizableMapSidebarOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(readStoredWidth);
+  const [hasCustomWidth, setHasCustomWidth] = useState(readHasCustomWidth);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const useCustomLayout = hasCustomWidth || isDragging;
 
   const clampToContainer = useCallback((next: number) => {
     const containerWidth = containerRef.current?.getBoundingClientRect().width ?? 1200;
@@ -42,25 +55,27 @@ export function useResizableMapSidebar({ enabled }: UseResizableMapSidebarOption
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !useCustomLayout) return;
     setWidth((prev) => clampToContainer(prev));
-  }, [enabled, clampToContainer]);
+  }, [enabled, useCustomLayout, clampToContainer]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !useCustomLayout) return;
     const onResize = () => setWidth((prev) => clampToContainer(prev));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [enabled, clampToContainer]);
+  }, [enabled, useCustomLayout, clampToContainer]);
 
   const persistWidth = useCallback(
     (next: number) => {
       const clamped = clampToContainer(next);
       try {
         localStorage.setItem(STORAGE_KEY, String(clamped));
+        localStorage.setItem(CUSTOMIZED_KEY, "1");
       } catch {
         // ignore
       }
+      setHasCustomWidth(true);
       return clamped;
     },
     [clampToContainer],
@@ -97,18 +112,29 @@ export function useResizableMapSidebar({ enabled }: UseResizableMapSidebarOption
   }, [isDragging, clampToContainer, persistWidth]);
 
   const onResizeStart = useCallback(
-    (event: MouseEvent) => {
+    (event: MouseEvent<HTMLElement>, measuredWidth: number) => {
       if (!enabled) return;
       event.preventDefault();
-      dragRef.current = { startX: event.clientX, startWidth: width };
+      const startWidth = useCustomLayout ? width : measuredWidth;
+      dragRef.current = { startX: event.clientX, startWidth };
+      if (!useCustomLayout) {
+        setWidth(clampToContainer(startWidth));
+      }
       setIsDragging(true);
     },
-    [enabled, width],
+    [enabled, width, useCustomLayout, clampToContainer],
   );
 
-  const resetWidth = useCallback(() => {
-    setWidth(persistWidth(MAP_SIDEBAR_DEFAULT_WIDTH));
-  }, [persistWidth]);
+  const clearStoredWidth = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(CUSTOMIZED_KEY);
+    } catch {
+      // ignore
+    }
+    setHasCustomWidth(false);
+    setWidth(MAP_SIDEBAR_DEFAULT_WIDTH);
+  }, []);
 
   const onResizeKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -122,10 +148,10 @@ export function useResizableMapSidebar({ enabled }: UseResizableMapSidebarOption
         setWidth((prev) => persistWidth(prev - step));
       } else if (event.key === "Home") {
         event.preventDefault();
-        resetWidth();
+        clearStoredWidth();
       }
     },
-    [enabled, persistWidth, resetWidth],
+    [enabled, persistWidth, clearStoredWidth],
   );
 
   const maxWidth = clampToContainer(9999);
@@ -133,10 +159,11 @@ export function useResizableMapSidebar({ enabled }: UseResizableMapSidebarOption
   return {
     containerRef,
     width,
+    hasCustomWidth: useCustomLayout,
     isDragging,
     onResizeStart,
     onResizeKeyDown,
-    onResizeDoubleClick: resetWidth,
+    onResizeDoubleClick: clearStoredWidth,
     minWidth: MIN_WIDTH,
     maxWidth,
   };
