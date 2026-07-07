@@ -28,6 +28,7 @@ import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } f
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
 import { isEventUpcoming } from "../utils/eventTiming";
 import { effectiveIsAlumni } from "../utils/cohortLabel";
+import { getPresetFocusTags } from "../data/focusAreas";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -327,7 +328,7 @@ function buildPopupHtml(marker: MarkerData): string {
       const alumni = effectiveIsAlumni(person)
         ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium text-slate-50 shrink-0" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 1px solid rgba(100,116,139,0.4)">Alumni</span>'
         : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
-      const focusTags = person.focusTags
+      const focusTags = getPresetFocusTags(person.focusTags)
         .slice(0, 3)
         .map(
           (tag) =>

@@ -74,6 +74,7 @@ import { getNodeLabel } from "../utils/nodeLabels";
 import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getPersonRoleTypes } from "../utils/roleTypes";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
+import { FocusTagsDisplay } from "./FocusTagsDisplay";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT, Z_INDEX_MODAL_DROPDOWN } from "../constants/zIndex";
 import { useIsMobile } from "./ui/use-mobile";
 import { 
@@ -766,7 +767,7 @@ export function PersonDetailModal({
                 {isEditing && editingPerson ? (
                   <div className="mt-4 space-y-3">
                     <Label className="text-sm font-medium text-gray-700 block">Focus areas</Label>
-                    <p className="text-xs text-gray-500 mb-2">Main areas are used for map filtering; custom ones appear on your profile only.</p>
+                    <p className="text-xs text-gray-500 mb-2">Main areas are used for map filtering and sidebar cards; custom ones appear on your profile page only.</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-2">
                       {PRESET_FOCUS_AREAS.map((tag) => (
                         <label
@@ -805,26 +806,13 @@ export function PersonDetailModal({
                     </div>
                   </div>
                 ) : (
-                  (() => {
-                    const presetTags = getPresetFocusTags(displayPerson.focusTags);
-                    const customTags = getCustomFocusTags(displayPerson.focusTags);
-                    if (presetTags.length === 0 && customTags.length === 0) return null;
-                    return (
-                      <div className="flex flex-wrap gap-2 sm:gap-2.5 mt-3 sm:mt-4">
-                        {presetTags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal">{tag}</Badge>
-                        ))}
-                        {customTags.length > 0 && (
-                          <>
-                            <Badge variant="outline" className="person-detail-badge-pill text-xs font-normal text-gray-600 border-gray-300">Other</Badge>
-                            {customTags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="person-detail-badge-pill text-xs font-normal bg-gray-100 text-gray-700">{tag}</Badge>
-                            ))}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })()
+                  <FocusTagsDisplay
+                    focusTags={displayPerson.focusTags}
+                    className="mt-3 sm:mt-4"
+                    presetBadgeClassName="person-detail-badge-pill text-xs font-normal"
+                    otherBadgeClassName="person-detail-badge-pill text-xs font-normal"
+                    customBadgeClassName="person-detail-badge-pill text-xs font-normal"
+                  />
                 )}
               </header>
 

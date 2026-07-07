@@ -7,6 +7,7 @@ import { changeDirectoryPassword } from "../services/memberAuth";
 import { geocodeCity } from "../services/geocoding";
 import type { Person, PrimaryNode, RoleType } from "../types";
 import { PRESET_FOCUS_AREAS, getPresetFocusTags, getCustomFocusTags, parseFocusTags } from "../data/focusAreas";
+import { FocusTagsDisplay } from "../components/FocusTagsDisplay";
 import { getPersonRSVPs } from "../services/rsvp";
 import { fetchRSVPsFromAPI } from "../services/rsvp";
 import { subscribeToDataChanges } from "../services/sync";
@@ -603,7 +604,7 @@ export function ProfilePage({
                     <div>
                       <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
                       <p className="mt-0.5 text-xs text-gray-500">
-                        Custom focus areas appear on your profile but are not used for map filtering.
+                        Custom focus areas appear on your profile page but not on map sidebar cards or filters.
                       </p>
                       <Input
                         value={createCustomFocusStr}
@@ -1024,6 +1025,10 @@ export function ProfilePage({
                   <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
                     Edit below; Save and Sign out are at the bottom.
                   </p>
+                  <FocusTagsDisplay
+                    focusTags={[...editSelectedPresets, ...parseFocusTags(editCustomFocusStr)]}
+                    className="mt-4"
+                  />
                 </div>
               </div>
               {/* Nanowheel hero — your running count of node check-ins + RSVPs. */}
@@ -1158,7 +1163,7 @@ export function ProfilePage({
                     <div>
                       <Label className="text-xs font-medium text-gray-500">Other (optional)</Label>
                       <p className="mt-0.5 text-xs text-gray-500">
-                        Custom focus areas appear on your profile but are not used for map filtering.
+                        Custom focus areas appear on your profile page but not on map sidebar cards or filters.
                       </p>
                       <Input
                         value={editCustomFocusStr}

@@ -26,15 +26,7 @@ interface InlineFiltersProps {
   filterToggleStartSlot?: React.ReactNode;
 }
 
-const FOCUS_AREAS = [
-  "Secure AI",
-  "Neurotechnology",
-  "Longevity Biotechnology",
-  "Nanotechnology",
-  "Space",
-  "Existential Hope",
-  "Other",
-];
+import { PRESET_FOCUS_AREAS } from "../data/focusAreas";
 
 /**
  * Program filter chips. "Senior Fellow" is intentionally omitted: those
@@ -175,7 +167,7 @@ export function InlineFilters({
 
           {/* Focus */}
           <QuickRow label="Focus">
-            {FOCUS_AREAS.map((t) => (
+            {PRESET_FOCUS_AREAS.map((t) => (
               <TogglePill key={t} active={filters.focusTags.includes(t)} activeStyle={{ background: activeFocus, border: "1px solid rgba(255,255,255,0.5)" }} onClick={() => toggleFocusTag(t)}>
                 {t}
               </TogglePill>

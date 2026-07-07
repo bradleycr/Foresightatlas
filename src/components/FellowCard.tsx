@@ -11,6 +11,7 @@ import { getPersonRoleTypes } from "../utils/roleTypes";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { formatEventDateShort } from "../utils/eventTiming";
 import { PersonAvatar } from "./PersonAvatar";
+import { getPresetFocusTags } from "../data/focusAreas";
 
 /** Compact event reference for the map sidebar card (upcoming only). */
 export interface AttendingEvent {
@@ -48,6 +49,7 @@ export function FellowCard({
     "";
   const nodeLabel = getNodeLabel(person.primaryNode);
   const avatarUrl = getEffectiveProfileImageUrl(person);
+  const presetFocusTags = getPresetFocusTags(person.focusTags);
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -128,10 +130,10 @@ export function FellowCard({
           )}
         </div>
 
-        {/* Focus Tags — only when present */}
-        {person.focusTags.length > 0 && (
+        {/* Preset focus areas only — custom tags appear on full profile, not sidebar cards */}
+        {presetFocusTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {person.focusTags.map((tag) => (
+            {presetFocusTags.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
