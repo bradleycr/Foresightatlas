@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Person, TravelWindow, Granularity, PrimaryNode, TimelineViewMode } from "../types";
 import { Badge } from "./ui/badge";
 import { ExternalLink, X, ChevronDown, ChevronUp, MapPin } from "lucide-react";
-import { getRoleGradient } from "../styles/roleColors";
+import { getDisplayFocusTags } from "../data/focusAreas";
 import { getCohortLabel } from "../utils/cohortLabel";
 import { useIsMobile } from "./ui/use-mobile";
 import {
@@ -1363,7 +1363,7 @@ export function TimelineView({
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-2">Focus Areas</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedTravel.person.focusTags.map((tag) => (
+                      {getDisplayFocusTags(selectedTravel.person.focusTags).map((tag) => (
                         <Badge key={tag} variant="secondary">
                           {tag}
                         </Badge>
@@ -1843,7 +1843,7 @@ export function TimelineView({
             <div>
               <p className="text-sm text-gray-600 mb-2">Focus Areas</p>
               <div className="flex flex-wrap gap-1">
-                {selectedTravel.person.focusTags.map((tag) => (
+                {getDisplayFocusTags(selectedTravel.person.focusTags).map((tag) => (
                   <Badge key={tag} variant="secondary">
                     {tag}
                   </Badge>

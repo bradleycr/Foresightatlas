@@ -1,10 +1,15 @@
 /**
  * Focus tag pills for profile surfaces (modal, /profile editor header).
- * Preset areas and custom "Other" tags are both shown here.
+ * Shows preset areas; custom "Other" tags only when CUSTOM_FOCUS_AREAS_ENABLED.
  * Map sidebar cards intentionally show presets only — see FellowCard.
  */
 
-import { getCustomFocusTags, getPresetFocusTags, normalizeCustomFocusTags } from "../data/focusAreas";
+import {
+  CUSTOM_FOCUS_AREAS_ENABLED,
+  getCustomFocusTags,
+  getDisplayFocusTags,
+  normalizeCustomFocusTags,
+} from "../data/focusAreas";
 import { Badge } from "./ui/badge";
 import { cn } from "./ui/utils";
 
@@ -24,8 +29,10 @@ export function FocusTagsDisplay({
   customBadgeClassName,
   otherBadgeClassName,
 }: FocusTagsDisplayProps) {
-  const presetTags = getPresetFocusTags(focusTags);
-  const customTags = normalizeCustomFocusTags(getCustomFocusTags(focusTags));
+  const presetTags = getDisplayFocusTags(focusTags);
+  const customTags = CUSTOM_FOCUS_AREAS_ENABLED
+    ? normalizeCustomFocusTags(getCustomFocusTags(focusTags))
+    : [];
   if (presetTags.length === 0 && customTags.length === 0) return null;
 
   return (

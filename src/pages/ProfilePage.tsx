@@ -570,7 +570,7 @@ export function ProfilePage({
                 <FieldCheckNotice state={locationCheck} />
                 <Field
                   label="Focus areas"
-                  description="Select one or more main focus areas (used for map filtering). You can add custom areas under Other."
+                  description="Select one or more of the six main focus areas (used for map filtering)."
                 >
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-y-3">
@@ -1123,7 +1123,7 @@ export function ProfilePage({
 
                 <Field
                   label="Focus areas"
-                  description="Select one or more main focus areas (used for map filtering). You can add custom areas under Other."
+                  description="Select one or more of the six main focus areas (used for map filtering)."
                 >
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-y-3">

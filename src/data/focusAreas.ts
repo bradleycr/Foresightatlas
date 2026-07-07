@@ -5,9 +5,12 @@
  * - Map/timeline filtering (only these are filterable)
  * - Profile multi-select (users pick from these)
  *
- * "Other" is not in the preset list: users can add custom focus tags via "Other";
+ * When CUSTOM_FOCUS_AREAS_ENABLED is true, users can add custom tags via "Other";
  * custom tags appear on the profile but are not used for map filtering.
  */
+
+/** Toggle custom "Other" focus areas in the UI and on save. */
+export const CUSTOM_FOCUS_AREAS_ENABLED = false;
 
 /** The six main focus areas; used for filtering and for profile selection. */
 export const PRESET_FOCUS_AREAS: readonly string[] = [
@@ -87,7 +90,13 @@ export function normalizeCustomFocusTags(tags: string[]): string[] {
   return parseCustomFocusTags(tags.join(", "));
 }
 
+/** Tags to show on profile surfaces and cards (presets only while custom is off). */
+export function getDisplayFocusTags(focusTags: string[]): string[] {
+  return getPresetFocusTags(focusTags);
+}
+
 /** Merge preset selections with parsed custom tags for persistence. */
 export function mergeFocusTags(presetTags: string[], customInput: string): string[] {
+  if (!CUSTOM_FOCUS_AREAS_ENABLED) return [...presetTags];
   return [...presetTags, ...parseCustomFocusTags(customInput)];
 }

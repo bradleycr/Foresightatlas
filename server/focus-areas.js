@@ -13,6 +13,9 @@ const PRESET_FOCUS_AREAS = new Set([
 
 const MAX_CUSTOM_FOCUS_TAGS = 3;
 
+/** Mirror src/data/focusAreas.ts — set true to allow custom "Other" tags again. */
+const CUSTOM_FOCUS_AREAS_ENABLED = false;
+
 function isPresetFocusTag(tag) {
   return PRESET_FOCUS_AREAS.has(tag);
 }
@@ -32,7 +35,7 @@ function parseCustomFocusTags(value) {
   return result;
 }
 
-/** Keep all preset tags; cap and dedupe custom tags. */
+/** Keep all preset tags; cap and dedupe custom tags when enabled. */
 function normalizeFocusTags(tags) {
   if (!Array.isArray(tags)) return [];
   const presets = [];
@@ -43,6 +46,7 @@ function normalizeFocusTags(tags) {
     if (isPresetFocusTag(tag)) presets.push(tag);
     else customs.push(tag);
   }
+  if (!CUSTOM_FOCUS_AREAS_ENABLED) return presets;
   return [...presets, ...parseCustomFocusTags(customs.join(", "))];
 }
 

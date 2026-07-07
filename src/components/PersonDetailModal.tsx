@@ -743,7 +743,7 @@ export function PersonDetailModal({
                 {isEditing && editingPerson ? (
                   <div className="mt-4 space-y-3">
                     <Label className="text-sm font-medium text-gray-700 block">Focus areas</Label>
-                    <p className="text-xs text-gray-500 mb-2">Main areas are used for map filtering and sidebar cards; custom ones appear on your profile page only.</p>
+                    <p className="text-xs text-gray-500 mb-2">Pick from the six main focus areas — used for map filtering and sidebar cards.</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-2">
                       {PRESET_FOCUS_AREAS.map((tag) => (
                         <label
