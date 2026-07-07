@@ -59,17 +59,32 @@ export function QRCheckIn({ nodeSlug, nodeName, theme, onClose }: QRCheckInProps
   <title>${POSTER_TITLE} — ${nodeName} check-in</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    @page { size: A4 portrait; margin: 18mm; }
+    @page { size: A4 portrait; margin: 12mm; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
     body {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      min-height: 100dvh;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: white;
       color: #111827;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+    }
+    .page-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 1rem;
     }
     .poster {
       text-align: center;
@@ -123,19 +138,38 @@ export function QRCheckIn({ nodeSlug, nodeName, theme, onClose }: QRCheckInProps
       word-break: break-all;
     }
     @media print {
-      body { min-height: auto; }
-      .poster { border: none; border-radius: 0; max-width: none; padding: 0; }
+      html, body {
+        height: 100%;
+        min-height: 100%;
+      }
+      body, .page-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        height: 100%;
+      }
+      .page-center { padding: 0; }
+      .poster {
+        border: none;
+        border-radius: 0;
+        max-width: 420px;
+        padding: 0;
+        page-break-inside: avoid;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="poster">
-    <p class="eyebrow">${POSTER_TITLE}</p>
-    <h1 class="headline">${POSTER_SUBTITLE}</h1>
-    <p class="node">${nodeName}</p>
-    <p class="hint">Scan with your phone to sign in and check in</p>
-    <div class="qr-wrap">${qrSvg}</div>
-    <p class="url">${checkInUrl}</p>
+  <div class="page-center">
+    <div class="poster">
+      <p class="eyebrow">${POSTER_TITLE}</p>
+      <h1 class="headline">${POSTER_SUBTITLE}</h1>
+      <p class="node">${nodeName}</p>
+      <p class="hint">Scan with your phone to sign in and check in</p>
+      <div class="qr-wrap">${qrSvg}</div>
+      <p class="url">${checkInUrl}</p>
+    </div>
   </div>
 </body>
 </html>`);
