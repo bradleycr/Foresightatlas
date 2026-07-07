@@ -34,6 +34,9 @@ import { getPresetFocusTags } from "../data/focusAreas";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
+/** Match Tailwind `md` — side-by-side map + list layout on tablet landscape and up. */
+const DESKTOP_SPLIT_MIN_WIDTH = 768;
+
 interface MapViewProps {
   filteredPeople: Person[];
   /**
@@ -692,7 +695,7 @@ export function MapView({
   });
 
   useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1024px)");
+    const mql = window.matchMedia(`(min-width: ${DESKTOP_SPLIT_MIN_WIDTH}px)`);
     const update = () => setIsDesktopSplit(mql.matches);
     update();
     mql.addEventListener("change", update);
@@ -1032,15 +1035,15 @@ export function MapView({
     <div
       ref={sidebarResize.containerRef}
       className={cn(
-        "flex flex-col lg:flex-row h-full relative min-h-0 flex-1",
-        isDesktopSplit && isSidebarOpen ? "lg:gap-0" : "gap-4",
+        "flex flex-col md:flex-row h-full relative min-h-0 flex-1",
+        isDesktopSplit && isSidebarOpen ? "md:gap-0" : "gap-4",
       )}
     >
       {/* Map Panel */}
       <div
         className={cn(
-          "flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100 min-w-0",
-          isDesktopSplit && isSidebarOpen && "lg:rounded-r-none lg:border-r-0",
+          "flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] md:h-full shadow-lg border border-gray-100 min-w-0",
+          isDesktopSplit && isSidebarOpen && "md:rounded-r-none md:border-r-0",
         )}
       >
       {/* Map Panel — always show the map so the world view and tiles are visible; markers appear as geocoding completes */}
@@ -1179,23 +1182,11 @@ export function MapView({
       )}
 
       {/* Fellows & Grantees List - desktop sidebar */}
-      {isDesktopSplit && isSidebarOpen && (
-        <MapSidebarResizeHandle
-          width={sidebarResize.width}
-          minWidth={sidebarResize.minWidth}
-          maxWidth={sidebarResize.maxWidth}
-          isDragging={sidebarResize.isDragging}
-          onResizeStart={sidebarResize.onResizeStart}
-          onResizeKeyDown={sidebarResize.onResizeKeyDown}
-          onResizeDoubleClick={sidebarResize.onResizeDoubleClick}
-        />
-      )}
-
       {!isMobile && isSidebarOpen && (
         <div
           className={cn(
-            "bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none min-h-0 relative",
-            isDesktopSplit ? "shrink-0 h-full lg:rounded-l-none lg:border-l-0" : "w-full lg:w-96",
+            "bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col max-h-[500px] md:max-h-none min-h-0 overflow-visible",
+            isDesktopSplit ? "relative shrink-0 h-full md:rounded-l-none md:border-l-0" : "relative w-full md:w-96",
             !sidebarResize.isDragging && isDesktopSplit && "transition-[width] duration-200 ease-out",
           )}
           style={{
@@ -1205,7 +1196,19 @@ export function MapView({
               : {}),
           }}
         >
+          {isDesktopSplit && (
+            <MapSidebarResizeHandle
+              width={sidebarResize.width}
+              minWidth={sidebarResize.minWidth}
+              maxWidth={sidebarResize.maxWidth}
+              isDragging={sidebarResize.isDragging}
+              onResizeStart={sidebarResize.onResizeStart}
+              onResizeKeyDown={sidebarResize.onResizeKeyDown}
+              onResizeDoubleClick={sidebarResize.onResizeDoubleClick}
+            />
+          )}
           {/* Scrollable: sticky search/filters at top, then list */}
+          <div className="flex-1 min-h-0 overflow-hidden rounded-xl flex flex-col">
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {/* Sticky block: title + search + filters stay visible when scrolling the list */}
             <div className="sticky top-0 z-10 p-4 pb-4 border-b border-gray-200 bg-app-sidebar space-y-3">
@@ -1242,6 +1245,7 @@ export function MapView({
             <div className="p-4 space-y-3">
               {peopleListContent}
             </div>
+          </div>
           </div>
         </div>
       )}

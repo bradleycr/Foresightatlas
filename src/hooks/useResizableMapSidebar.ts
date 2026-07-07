@@ -26,7 +26,7 @@ function readStoredWidth(): number {
 }
 
 interface UseResizableMapSidebarOptions {
-  /** Only active on large desktop split view (lg+). */
+  /** Only active when map and list are side-by-side (md+). */
   enabled: boolean;
 }
 
