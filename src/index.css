@@ -147,6 +147,27 @@
 
 html {
   font-size: var(--font-size);
+  height: 100%;
+}
+
+/*
+ * Full-height app shell — svh on phones avoids the blank band iOS Safari
+ * leaves when 100dvh is taller than the visible viewport.
+ */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  height: 100svh;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  #root {
+    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 
 /*
@@ -764,8 +785,9 @@ h4 {
   body {
     line-height: inherit;
     overflow-x: hidden;
-    min-height: 100vh;
+    min-height: 100svh;
     min-height: 100dvh;
+    height: 100%;
   }
 
   hr {

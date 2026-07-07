@@ -58,7 +58,7 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
   }, []);
 
   return (
-    <main className="relative flex min-h-[100dvh] flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-y-contain bg-gradient-to-b from-slate-50 via-white to-sky-50 px-5 py-8 sm:justify-center sm:py-10">
+    <main className="relative flex min-h-[100svh] flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-y-contain bg-gradient-to-b from-slate-50 via-white to-sky-50 px-5 py-8 sm:min-h-[100dvh] sm:justify-center sm:py-10">
       {/* Soft ambient glow so the card feels like it floats over the atlas. */}
       <div
         aria-hidden
@@ -112,7 +112,7 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
           />
         </div>
 
-        <p className="mt-5 text-center text-sm leading-6 text-gray-600">
+        <p className="mt-5 hidden text-center text-sm leading-6 text-gray-600 sm:block">
           Forgot your password?{" "}
           <a
             href={ATLAS_PASSWORD_RESET_MAILTO}
@@ -123,7 +123,7 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
           {" "}— we'll send a personal link to set a new one.
         </p>
 
-        <p className="mt-4 text-center text-xs leading-5 text-gray-400">
+        <p className="mt-4 hidden text-center text-xs leading-5 text-gray-400 sm:block">
           Foresight Institute · Internal tool · Invitation only
         </p>
       </div>

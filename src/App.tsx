@@ -708,7 +708,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 md:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 md:p-6 md:pb-6">
         <MapView
           filteredPeople={mapPeople}
           /*
@@ -752,7 +752,7 @@ export default function App() {
     return (
       <>
         <div
-          className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gray-50"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-50 w-full"
           style={{
             paddingLeft: "env(safe-area-inset-left, 0px)",
             paddingRight: "env(safe-area-inset-right, 0px)",
@@ -770,7 +770,7 @@ export default function App() {
   return (
     <>
       <div
-        className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gray-50"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-50 w-full"
         style={{
           paddingLeft: "env(safe-area-inset-left, 0px)",
           paddingRight: "env(safe-area-inset-right, 0px)",
