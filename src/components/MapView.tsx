@@ -1038,14 +1038,14 @@ export function MapView({
     <div
       ref={sidebarResize.containerRef}
       className={cn(
-        "flex flex-col lg:flex-row h-full gap-4 relative min-h-0 flex-1",
+        "flex h-full min-h-0 flex-1 flex-col lg:flex-row gap-4 relative",
         useCustomSidebarLayout && "lg:gap-0",
       )}
     >
       {/* Map Panel */}
       <div
         className={cn(
-          "flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100 min-w-0",
+          "flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:min-h-0 lg:h-full shadow-lg border border-gray-100 min-w-0",
           useCustomSidebarLayout && "lg:rounded-r-none lg:border-r-0",
         )}
       >

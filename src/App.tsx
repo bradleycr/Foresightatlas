@@ -705,7 +705,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 md:p-6">
         <MapView
           filteredPeople={mapPeople}
           /*
@@ -748,7 +748,7 @@ export default function App() {
   return (
     <>
       <div
-        className="h-screen flex flex-col bg-gray-50 min-h-[100dvh]"
+        className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gray-50"
         style={{
           paddingLeft: "env(safe-area-inset-left, 0px)",
           paddingRight: "env(safe-area-inset-right, 0px)",
@@ -768,7 +768,9 @@ export default function App() {
           suggestFormUrl={SUGGEST_FORM_URL}
         />
 
-        {mainContent}
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {mainContent}
+        </main>
 
         <AppFooter onNavigateHome={() => navigate("/")} />
       </div>

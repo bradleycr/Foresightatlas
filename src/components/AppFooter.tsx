@@ -14,9 +14,9 @@ export function AppFooter({ onNavigateHome }: AppFooterProps) {
 
   return (
     <footer
-      className="flex-shrink-0 border-t border-gray-200 bg-white/50 pt-4 pb-2 md:pt-5 md:pb-2.5"
+      className="shrink-0 border-t border-gray-200 bg-white/50 py-2 md:py-2.5"
       style={{
-        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px) + 0.5rem)",
+        paddingBottom: "max(0.375rem, calc(env(safe-area-inset-bottom, 0px) + 0.375rem))",
         paddingLeft: "max(0.75rem, env(safe-area-inset-left, 0px))",
         paddingRight: "max(0.75rem, env(safe-area-inset-right, 0px))",
       }}
