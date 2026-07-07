@@ -158,8 +158,11 @@ export function ClaimPage({
 
   return (
     <div
-      className="flex flex-1 items-start justify-center px-4 py-10 sm:py-16"
-      style={{ background: GRADIENT }}
+      className="flex min-h-full w-full items-start justify-center px-4 py-8 sm:py-12"
+      style={{
+        background: GRADIENT,
+        paddingBottom: "max(2rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))",
+      }}
     >
       <div className="w-full max-w-lg rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl backdrop-blur-md sm:p-10">
         <button

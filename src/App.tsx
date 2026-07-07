@@ -569,6 +569,9 @@ export default function App() {
     isJoinRoute && typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("token")
       : null;
+  const isMapRoute = route === "/" || route === "";
+  /** Magic-link onboarding — no chrome; the form needs the full viewport. */
+  const isTokenOnboardingRoute = !identity && (isClaimRoute || isJoinRoute);
   /*
    * Resolve the signed-in member's record. Prefer the public directory copy
    * (kept in sync by edits across tabs), but fall back to the auth-sourced
@@ -745,6 +748,25 @@ export default function App() {
     );
   }
 
+  if (isTokenOnboardingRoute) {
+    return (
+      <>
+        <div
+          className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gray-50"
+          style={{
+            paddingLeft: "env(safe-area-inset-left, 0px)",
+            paddingRight: "env(safe-area-inset-right, 0px)",
+          }}
+        >
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+            {mainContent}
+          </main>
+        </div>
+        <Toaster />
+      </>
+    );
+  }
+
   return (
     <>
       <div
@@ -768,7 +790,13 @@ export default function App() {
           suggestFormUrl={SUGGEST_FORM_URL}
         />
 
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main
+          className={
+            isMapRoute
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+              : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain"
+          }
+        >
           {mainContent}
         </main>
 

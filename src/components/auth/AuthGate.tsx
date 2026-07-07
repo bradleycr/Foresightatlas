@@ -58,7 +58,7 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
   }, []);
 
   return (
-    <main className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 via-white to-sky-50 px-5 py-10">
+    <main className="relative flex min-h-[100dvh] flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-y-contain bg-gradient-to-b from-slate-50 via-white to-sky-50 px-5 py-8 sm:justify-center sm:py-10">
       {/* Soft ambient glow so the card feels like it floats over the atlas. */}
       <div
         aria-hidden
