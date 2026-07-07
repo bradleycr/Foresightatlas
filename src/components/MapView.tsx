@@ -23,6 +23,8 @@ import { ArrowLeft, List, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
+import { useResizableMapSidebar } from "../hooks/useResizableMapSidebar";
+import { MapSidebarResizeHandle } from "./map/MapSidebarResizeHandle";
 import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
@@ -168,23 +170,33 @@ function ZoomToMarker({
   return null;
 }
 
-// Component to invalidate map size when sidebar state changes
-function MapResizer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
+// Component to invalidate map size when sidebar state or width changes
+function MapResizer({
+  isSidebarOpen,
+  sidebarWidth,
+}: {
+  isSidebarOpen: boolean;
+  sidebarWidth?: number;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    // Use a delay to ensure DOM has updated after sidebar animation
-    // Leaflet needs time to recalculate after layout changes
+    if (sidebarWidth !== undefined) {
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+      });
+      return;
+    }
+
     const timer = setTimeout(() => {
       map.invalidateSize();
-      // Force a second resize check to catch any edge cases
       requestAnimationFrame(() => {
         map.invalidateSize();
       });
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [map, isSidebarOpen]);
+  }, [map, isSidebarOpen, sidebarWidth]);
 
   return null;
 }
@@ -674,6 +686,18 @@ export function MapView({
   /** Filter section expanded state; collapse when user selects a map node so the person list is visible. */
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const isMobile = useIsMobile();
+  const [isDesktopSplit, setIsDesktopSplit] = useState(false);
+  const sidebarResize = useResizableMapSidebar({
+    enabled: isDesktopSplit && isSidebarOpen,
+  });
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktopSplit(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
   
   // Cache for reverse geocoded city names (coordinates -> city, country)
   const [geocodedCities, setGeocodedCities] = useState<Map<string, { city: string; country: string }>>(new Map());
@@ -1005,9 +1029,20 @@ export function MapView({
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4 relative">
+    <div
+      ref={sidebarResize.containerRef}
+      className={cn(
+        "flex flex-col lg:flex-row h-full relative min-h-0 flex-1",
+        isDesktopSplit && isSidebarOpen ? "lg:gap-0" : "gap-4",
+      )}
+    >
       {/* Map Panel */}
-      <div className="flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100">
+      <div
+        className={cn(
+          "flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:h-full shadow-lg border border-gray-100 min-w-0",
+          isDesktopSplit && isSidebarOpen && "lg:rounded-r-none lg:border-r-0",
+        )}
+      >
       {/* Map Panel — always show the map so the world view and tiles are visible; markers appear as geocoding completes */}
         <MapContainer
             center={WORLD_VIEW_CENTER}
@@ -1032,7 +1067,10 @@ export function MapView({
             />
             <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} isMobile={isMobile} />
             <ZoomToMarker marker={selectedMarker} onlyWhenFromList={selectedMarkerFromList} />
-            <MapResizer isSidebarOpen={isSidebarOpen} />
+            <MapResizer
+              isSidebarOpen={isSidebarOpen}
+              sidebarWidth={isDesktopSplit && isSidebarOpen ? sidebarResize.width : undefined}
+            />
             <ImperativeMarkerClusters
               markers={markers}
               foresightIcon={foresightIcon}
@@ -1141,8 +1179,32 @@ export function MapView({
       )}
 
       {/* Fellows & Grantees List - desktop sidebar */}
+      {isDesktopSplit && isSidebarOpen && (
+        <MapSidebarResizeHandle
+          width={sidebarResize.width}
+          minWidth={sidebarResize.minWidth}
+          maxWidth={sidebarResize.maxWidth}
+          isDragging={sidebarResize.isDragging}
+          onResizeStart={sidebarResize.onResizeStart}
+          onResizeKeyDown={sidebarResize.onResizeKeyDown}
+          onResizeDoubleClick={sidebarResize.onResizeDoubleClick}
+        />
+      )}
+
       {!isMobile && isSidebarOpen && (
-        <div className="w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none min-h-0 relative" style={{ zIndex: Z_INDEX_SIDEBAR }}>
+        <div
+          className={cn(
+            "bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none min-h-0 relative",
+            isDesktopSplit ? "shrink-0 h-full lg:rounded-l-none lg:border-l-0" : "w-full lg:w-96",
+            !sidebarResize.isDragging && isDesktopSplit && "transition-[width] duration-200 ease-out",
+          )}
+          style={{
+            zIndex: Z_INDEX_SIDEBAR,
+            ...(isDesktopSplit
+              ? { width: sidebarResize.width, minWidth: sidebarResize.minWidth }
+              : {}),
+          }}
+        >
           {/* Scrollable: sticky search/filters at top, then list */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {/* Sticky block: title + search + filters stay visible when scrolling the list */}
