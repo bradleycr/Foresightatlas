@@ -56,20 +56,22 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-/** Read ?tab= and ?checkin= from the current URL once. */
-function readUrlParams(): { tab: PageTab; autoCheckIn: boolean } {
+/** Read ?tab=, ?checkin=, and ?qr= from the current URL once. */
+function readUrlParams(): { tab: PageTab; autoCheckIn: boolean; openQr: boolean } {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get("tab") === "table" ? "table" : "events";
   const autoCheckIn = params.get("checkin") === "true";
-  return { tab, autoCheckIn };
+  const openQr = params.get("qr") === "true";
+  return { tab, autoCheckIn, openQr };
 }
 
 /** Strip query params after we've consumed them so they don't re-trigger. */
 function clearUrlParams() {
   const url = new URL(window.location.href);
-  if (url.searchParams.has("tab") || url.searchParams.has("checkin")) {
+  if (url.searchParams.has("tab") || url.searchParams.has("checkin") || url.searchParams.has("qr")) {
     url.searchParams.delete("tab");
     url.searchParams.delete("checkin");
+    url.searchParams.delete("qr");
     window.history.replaceState({}, "", url.toString());
   }
 }
@@ -193,6 +195,15 @@ export function NodeProgrammingPage({
       }
     })();
   }, [activeNode, identity, isGlobal]);
+
+  /* Open QR modal when ?qr=true (staff bookmark for printing office poster). */
+  useEffect(() => {
+    if (!urlParams.current.openQr) return;
+    if (!isPhysicalNode) return;
+    setActiveTab("table");
+    setShowQR(true);
+    clearUrlParams();
+  }, [isPhysicalNode]);
 
   useEffect(() => {
     if (!urlParams.current.autoCheckIn) return;

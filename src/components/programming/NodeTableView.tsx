@@ -196,10 +196,14 @@ export function NodeTableView({
           <button
             type="button"
             onClick={onShowQR}
-            className="size-10 rounded-xl border-2 border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-            title="QR Check-in"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-300",
+              theme.focusRing,
+            )}
+            title="Print QR code for node check-in"
           >
-            <QrCode className="size-4" />
+            <QrCode className="size-4 shrink-0" />
+            <span className="hidden sm:inline">Node QR</span>
           </button>
         )}
       </div>

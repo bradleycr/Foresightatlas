@@ -15,7 +15,7 @@ import { useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { X, Printer, QrCode } from "lucide-react";
 import type { NodeSlug, NodeColorTheme } from "../../types/events";
-import { buildFullPath } from "../../utils/router";
+import { getCheckInUrl } from "../../utils/checkInUrls";
 import { cn } from "../ui/utils";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../../constants/zIndex";
 
@@ -29,7 +29,7 @@ interface QRCheckInProps {
 export function QRCheckIn({ nodeSlug, nodeName, theme, onClose }: QRCheckInProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const checkInUrl = `${window.location.origin}${buildFullPath(`/checkin/${nodeSlug}`)}`;
+  const checkInUrl = getCheckInUrl(nodeSlug);
 
   const handlePrint = () => {
     const card = cardRef.current;
