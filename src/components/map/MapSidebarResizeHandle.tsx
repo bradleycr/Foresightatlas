@@ -1,9 +1,8 @@
 /**
  * Draggable split between map and fellows list on desktop.
- * Hidden until hover/focus so the default layout stays unchanged.
+ * Subtle seam handle — visible on hover, centered on the divider.
  */
 
-import { GripVertical } from "lucide-react";
 import { Z_INDEX_MAP_CONTROLS } from "../../constants/zIndex";
 import { cn } from "../ui/utils";
 
@@ -43,33 +42,24 @@ export function MapSidebarResizeHandle({
       }}
       onDoubleClick={onResizeDoubleClick}
       onKeyDown={onResizeKeyDown}
+      title="Drag to resize · double-click to reset"
       style={{ zIndex: Z_INDEX_MAP_CONTROLS }}
       className={cn(
-        "absolute left-0 top-0 bottom-0",
-        "flex w-3 cursor-col-resize touch-none items-center justify-center",
-        "group/handle outline-none",
-        "opacity-0 group-hover/sidebar:opacity-100 focus-visible:opacity-100",
-        isDragging && "opacity-100",
-        "focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2",
+        "absolute left-0 top-0 bottom-0 -translate-x-1/2",
+        "flex w-2 cursor-col-resize touch-none items-center justify-center",
+        "outline-none",
+        "focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-1",
       )}
     >
       <div
         className={cn(
-          "absolute inset-y-4 left-1/2 w-0.5 -translate-x-1/2 rounded-full transition-colors duration-150",
-          isDragging ? "bg-teal-500" : "bg-gray-300 group-hover/handle:bg-teal-400",
+          "h-16 w-px rounded-full transition-all duration-150",
+          isDragging
+            ? "h-full bg-gray-400"
+            : "bg-transparent group-hover/sidebar:bg-gray-300 group-hover/sidebar:h-24",
+          "group-focus-within/sidebar:bg-gray-300",
         )}
       />
-      <div
-        className={cn(
-          "relative flex h-12 w-5 items-center justify-center rounded-full border shadow-md transition-all duration-150",
-          isDragging
-            ? "border-teal-400 bg-white text-teal-600 shadow-lg scale-105"
-            : "border-gray-200 bg-white text-gray-400 group-hover/handle:border-teal-300 group-hover/handle:text-teal-600 group-hover/handle:shadow-lg",
-        )}
-        title="Drag to resize · double-click to reset"
-      >
-        <GripVertical className="size-4" aria-hidden />
-      </div>
     </div>
   );
 }

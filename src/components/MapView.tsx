@@ -1189,8 +1189,8 @@ export function MapView({
         <div
           ref={sidebarRef}
           className={cn(
-            "group/sidebar w-full lg:w-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col max-h-[500px] lg:max-h-none min-h-0 relative",
-            useCustomSidebarLayout && "shrink-0 lg:rounded-l-none lg:border-l-0",
+            "group/sidebar relative flex flex-col max-h-[500px] lg:max-h-none min-h-0 overflow-visible",
+            useCustomSidebarLayout ? "shrink-0 h-full" : "w-full lg:w-96",
             !sidebarResize.isDragging && useCustomSidebarLayout && "transition-[width] duration-200 ease-out",
           )}
           style={{
@@ -1212,6 +1212,12 @@ export function MapView({
               sidebarRef={sidebarRef}
             />
           )}
+          <div
+            className={cn(
+              "flex flex-col h-full min-h-0 overflow-hidden bg-white rounded-xl shadow-lg border border-gray-100",
+              useCustomSidebarLayout && "lg:rounded-l-none lg:border-l-0",
+            )}
+          >
           {/* Scrollable: sticky search/filters at top, then list */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {/* Sticky block: title + search + filters stay visible when scrolling the list */}
@@ -1249,6 +1255,7 @@ export function MapView({
             <div className="p-4 space-y-3">
               {peopleListContent}
             </div>
+          </div>
           </div>
         </div>
       )}
