@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, KeyRound, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
+import { FORESIGHT_ORG_URL } from "../constants/foresight";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -170,14 +171,20 @@ export function ClaimPage({
           Back to map
         </button>
 
-        <div className="mt-6 flex size-16 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 sm:size-20">
+        <a
+          href={FORESIGHT_ORG_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 flex size-16 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-gray-200/80 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 focus-visible:ring-offset-2 sm:size-20"
+          aria-label="Foresight Institute — opens foresight.org in a new tab"
+        >
           <img
             src={foresightIconUrl}
-            alt="Foresight"
+            alt=""
             className="size-10 object-contain opacity-80 sm:size-12"
             aria-hidden
           />
-        </div>
+        </a>
 
         {peek.status === "loading" && (
           <div className="mt-8 flex items-center gap-3 text-gray-600">

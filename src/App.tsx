@@ -770,7 +770,7 @@ export default function App() {
 
         {mainContent}
 
-        <AppFooter />
+        <AppFooter onNavigateHome={() => navigate("/")} />
       </div>
 
       <PersonDetailModal

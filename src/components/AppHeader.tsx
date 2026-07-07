@@ -10,6 +10,7 @@ import { Button } from "./ui/button";
 import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
 import { getLastSignedInName } from "../services/identity";
 import { cn } from "./ui/utils";
+import { FORESIGHT_ORG_URL } from "../constants/foresight";
 
 interface AppHeaderProps {
   /** Current route path: "/", "/berlin", "/sf", "/calendar", etc. */
@@ -116,6 +117,11 @@ export function AppHeader({
 
   const closeAccountDialog = () => setAccountDialogOpen(false);
 
+  const goHome = () => {
+    navigate("/");
+    onNavigateHome?.();
+  };
+
   return (
     <header
       className="border-b border-gray-200 relative bg-app-header"
@@ -130,28 +136,32 @@ export function AppHeader({
         <div className="flex min-h-0 flex-nowrap items-center justify-between gap-2 sm:gap-3">
           {/* Logo + title — full name always visible; subtext desktop-only */}
           <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3 md:items-start md:gap-4">
-            <button
-              type="button"
-              onClick={() => {
-                navigate("/");
-                onNavigateHome?.();
-              }}
-              className="flex shrink-0 cursor-pointer items-center rounded-md pt-0.5 transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 md:pt-0"
-              aria-label="Back to map — The Foresight Atlas"
+            <a
+              href={FORESIGHT_ORG_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex shrink-0 items-center rounded-md pt-0.5 transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 md:pt-0"
+              aria-label="Foresight Institute — opens foresight.org in a new tab"
             >
               <img
                 src={foresightLogo}
-                alt="Foresight Institute"
+                alt=""
                 className="h-9 w-auto sm:h-10 md:h-14"
               />
-            </button>
+            </a>
             <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h1 className="font-heading text-sm font-semibold leading-snug tracking-tight text-gray-900 sm:text-base md:text-xl md:leading-tight">
-                  The Foresight Atlas
-                </h1>
-                {betaPill}
-              </div>
+                  <h1 className="m-0 font-heading text-sm font-semibold leading-snug tracking-tight text-gray-900 sm:text-base md:text-xl md:leading-tight">
+                    <button
+                      type="button"
+                      onClick={goHome}
+                      className="rounded-md text-left transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                    >
+                      The Foresight Atlas
+                    </button>
+                  </h1>
+                  {betaPill}
+                </div>
               <p className="mt-1 hidden max-w-[38rem] text-pretty text-sm leading-relaxed text-gray-600 md:block md:mt-2">
                 {subtext}
               </p>
@@ -162,10 +172,7 @@ export function AppHeader({
           <div className="header-desktop-nav flex-shrink-0 items-center gap-1 sm:gap-2">
             <button
               type="button"
-              onClick={() => {
-                navigate("/");
-                onNavigateHome?.();
-              }}
+              onClick={goHome}
               className={`px-4 py-2 rounded-lg transition-all text-sm sm:text-base border ${
                 isMapRoute
                   ? "text-gray-900 shadow-sm border-white/50 bg-app-tab-active"
@@ -496,7 +503,15 @@ export function AppHeader({
               style={{ background: "linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)" }}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <img src={foresightIcon} alt="" className="h-8 w-8 flex-shrink-0 opacity-90" />
+                <a
+                  href={FORESIGHT_ORG_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex shrink-0 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                  aria-label="Foresight Institute — opens foresight.org in a new tab"
+                >
+                  <img src={foresightIcon} alt="" className="h-8 w-8 flex-shrink-0 opacity-90" />
+                </a>
                 <span className="text-sm font-semibold text-gray-900 font-heading tracking-tight">Menu</span>
               </div>
               <button
@@ -513,8 +528,7 @@ export function AppHeader({
                 <li>
                   <button
                     onClick={() => {
-                      navigate("/");
-                      onNavigateHome?.();
+                      goHome();
                       closeMobileMenu();
                     }}
                     className={`w-full text-left px-4 py-3.5 min-h-[48px] rounded-xl text-base font-medium border transition-colors touch-manipulation flex items-center ${

@@ -11,6 +11,7 @@ import {
 } from "../../utils/checkInAuth";
 import { DirectoryLoginForm } from "./DirectoryLoginForm";
 import foresightIcon from "../../assets/Foresight_RGB_Icon_Black.png?url";
+import { FORESIGHT_ORG_URL } from "../../constants/foresight";
 
 interface AuthGateProps {
   /** Current path (e.g. `/checkin/berlin`) — used for QR check-in context. */
@@ -74,7 +75,15 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
             {checkInCopy ? (
               <MapPin className="size-8 text-sky-600" aria-hidden />
             ) : (
-              <img src={foresightIcon} alt="Foresight Institute" className="size-9 object-contain" />
+              <a
+                href={FORESIGHT_ORG_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex size-full items-center justify-center rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                aria-label="Foresight Institute — opens foresight.org in a new tab"
+              >
+                <img src={foresightIcon} alt="" className="size-9 object-contain" />
+              </a>
             )}
           </div>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight text-gray-900">
