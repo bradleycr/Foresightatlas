@@ -216,9 +216,14 @@ export async function checkIn(
       (c) => !(c.personId === personId && c.nodeSlug === nodeSlug && c.date === date),
     );
     apiCheckIns.push(created);
-    /* Reconcile with the sheet so “The Table” and other views match server truth when the row is visible. */
-    await fetchCheckInsFromAPI(nodeSlug, date, date);
     publishDataChanged("checkins");
+    /*
+     * Reconcile with the sheet in the background so The Table stays in sync
+     * without blocking the check-in celebration.
+     */
+    void fetchCheckInsFromAPI(nodeSlug, date, date).catch(() => {
+      /* non-fatal — optimistic row already published */
+    });
   } catch (e) {
     /* Sheet did not get the row — undo optimistic local write so UI matches cross-device truth. */
     const s = loadLocal();

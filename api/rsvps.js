@@ -17,6 +17,7 @@ const { getSpreadsheetId } = require("../scripts/sheet-schema.js");
 const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
 const { normalizeBerlinSecureWorkshopRsvps } = require("../server/event-corrections");
 const { enrichRsvpsForApi } = require("../server/rsvp-enrichment");
+const { assertRsvpWriteAllowed } = require("../server/rsvp-event-guard");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_RSVPS = "RSVPs";
@@ -176,6 +177,8 @@ module.exports = async function handler(req, res) {
     const { eventId, eventTitle, personId, fullName, status } = req.body || {};
     if (!eventId || !personId) return res.status(400).json({ error: "eventId and personId required" });
     const statusToSave = normaliseStatus(status || "going");
+    const timing = await assertRsvpWriteAllowed(eventId, statusToSave);
+    if (!timing.ok) return res.status(400).json({ error: timing.error });
     const now = new Date().toISOString();
 
     /*

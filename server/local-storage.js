@@ -721,6 +721,16 @@ async function appendLocalRsvp(input) {
     throw new Error("eventId and personId required");
   }
 
+  /* Mirror production: never accept an active RSVP after the event has ended. */
+  if (status !== "withdrawn") {
+    const { canWriteRsvpStatus } = require("./event-timing");
+    const { mergeSheetEventsWithLuma } = require("./luma-merge");
+    const events = await mergeSheetEventsWithLuma(db.events || []);
+    const event = events.find((e) => e && e.id === eventId) || null;
+    const timing = canWriteRsvpStatus(event, status);
+    if (!timing.ok) throw new Error(timing.error);
+  }
+
   /*
    * Match production semantics: preserve the earliest createdAt across any
    * existing rows for this (eventId, personId) so updates don't reset the

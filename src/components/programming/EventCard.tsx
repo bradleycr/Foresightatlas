@@ -17,6 +17,7 @@ import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
 import { badgeGradient } from "../../styles/gradients";
 import { formatEventDescriptionToHtml } from "./eventDescription";
 import { BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID } from "../../data/events";
+import { isEventPast } from "../../utils/eventTiming";
 
 /** Show "Read more" when description is clamped (overflow) or when it's long enough that it likely wraps (fallback for HTML content). */
 const READ_MORE_MIN_LENGTH = 60;
@@ -172,6 +173,8 @@ export function EventCard({
     () => allPeople.filter((p) => rsvpSummary.interestedPersonIds.includes(p.id)),
     [allPeople, rsvpSummary.interestedPersonIds],
   );
+
+  const eventEnded = isEventPast(event);
 
   const showRsvpSection =
     isAuthenticated ||
@@ -365,7 +368,7 @@ export function EventCard({
       {/* RSVP section: show when user is signed in or anyone has gone or is interested */}
       {showRsvpSection && (
         <div className="pt-4 mt-1 border-t border-gray-100 space-y-3">
-          {isAuthenticated && (
+          {isAuthenticated && !eventEnded && (
             <RSVPButtonGroup
               currentStatus={currentUserStatus}
               onStatusChange={(s) => onRSVPChange(event.id, s, event.title)}
@@ -373,6 +376,11 @@ export function EventCard({
               interestedCount={rsvpSummary.interested}
               theme={theme}
             />
+          )}
+          {isAuthenticated && eventEnded && (
+            <p className="text-xs text-gray-500" role="status">
+              This event has ended — RSVPs are closed.
+            </p>
           )}
           {/* Always show going and interested separately so the difference is obvious */}
           {(rsvpSummary.going > 0 || rsvpSummary.interested > 0) && (

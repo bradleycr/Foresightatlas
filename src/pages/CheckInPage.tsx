@@ -132,14 +132,18 @@ export function CheckInPage({
         today,
         "checkin",
       );
+      /* Celebrate as soon as the write lands — don't wait on nanowheel tallies. */
       setAlreadyHere(true);
       setPeopleHere(getCheckInsForDay(nodeSlug, today));
-      const nano = await getNanowheelSummary(signedInPerson.id);
-      setSummary(nano);
       setCelebrating(true);
       toast.success("You're in. +1 nanowheel earned.", {
         description: "Thanks for being at the node today.",
       });
+      void getNanowheelSummary(signedInPerson.id)
+        .then(setSummary)
+        .catch(() => {
+          /* non-fatal — badge refreshes on next visit / sync */
+        });
       return true;
     } catch (err) {
       setCheckInFailed(true);

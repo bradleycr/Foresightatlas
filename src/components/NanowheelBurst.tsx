@@ -15,7 +15,7 @@
  *     visually mirrors — and improves on — the spinning loader).
  *   • A "+1" glyph paired with the nanowheel symbol that rises and fades.
  *
- * The whole performance runs for ~1800 ms and then self-dismisses via
+ * The whole performance runs for ~1100 ms and then self-dismisses via
  * {@link NanowheelBurstProps.onComplete}. If the user has prefers-reduced-
  * motion enabled we shorten it to a soft crossfade so the experience stays
  * celebratory without inducing vestibular strain.
@@ -25,8 +25,8 @@ import { useEffect, useRef } from "react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 
-const DURATION_MS = 1800;
-const DURATION_REDUCED_MS = 900;
+const DURATION_MS = 1100;
+const DURATION_REDUCED_MS = 550;
 const PARTICLE_COUNT = 32;
 const RING_COUNT = 3;
 const PALETTE = {

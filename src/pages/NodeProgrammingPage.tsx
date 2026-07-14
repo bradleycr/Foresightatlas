@@ -38,6 +38,7 @@ import { getRsvps } from "../services/database";
 import { subscribeToDataChanges, type DataChangeMessage } from "../services/sync";
 import { MonthNavigator } from "../components/programming/MonthNavigator";
 import { EventCard } from "../components/programming/EventCard";
+import { isEventPast } from "../utils/eventTiming";
 import { NodeTableView } from "../components/programming/NodeTableView";
 import { QRCheckIn } from "../components/programming/QRCheckIn";
 import { cn } from "../components/ui/utils";
@@ -253,6 +254,19 @@ export function NodeProgrammingPage({
     (eventId: string, status: RSVPStatus | null, eventTitle?: string) => {
       if (!identity) return;
       /*
+       * Never accept an active RSVP after the event has ended. Withdrawals
+       * still go through so people can clear a stale "going" row if needed.
+       */
+      if (status !== null) {
+        const event = allEvents.find((e) => e.id === eventId);
+        if (event && isEventPast(event)) {
+          toast.error("RSVPs closed", {
+            description: "This event has ended — you can't RSVP for past events.",
+          });
+          return;
+        }
+      }
+      /*
        * "Clear my RSVP" used to be a local-only delete, which silently kept
        * the previous "going" row as the latest on the sheet — so the user
        * still showed up as attending from other devices and to other users.
@@ -275,7 +289,7 @@ export function NodeProgrammingPage({
           setRsvpTick((t) => t + 1);
         });
     },
-    [identity],
+    [identity, allEvents],
   );
 
   const summaryOf = useCallback(
