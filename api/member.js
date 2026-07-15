@@ -18,6 +18,7 @@ const {
   verifyRegisterToken,
   readDirectoryTokenFromRequest,
 } = require("../server/directory-auth");
+const { requestPasswordResetEmail } = require("../server/password-reset");
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -146,6 +147,35 @@ async function handleRegister(req, res) {
   }
 }
 
+async function handlePasswordReset(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  try {
+    const forwarded = String(req.headers["x-forwarded-for"] || "")
+      .split(",")[0]
+      .trim();
+    const clientIp =
+      forwarded ||
+      req.headers["x-real-ip"] ||
+      req.socket?.remoteAddress ||
+      "unknown";
+    const result = await requestPasswordResetEmail({
+      email: req.body?.email,
+      clientIp,
+    });
+    return res.status(200).json(result);
+  } catch (error) {
+    const statusCode =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
+    return res.status(statusCode).json({
+      error: error instanceof Error ? error.message : "Password reset failed",
+    });
+  }
+}
+
 async function handleDirectoryNames(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -166,6 +196,7 @@ const ROUTES = {
   refresh: handleRefresh,
   claim: handleClaim,
   password: handlePassword,
+  "password-reset": handlePasswordReset,
   register: handleRegister,
   "directory-names": handleDirectoryNames,
 };

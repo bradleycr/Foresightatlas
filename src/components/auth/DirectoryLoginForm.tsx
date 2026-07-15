@@ -9,7 +9,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../ui/popover";
-import { ATLAS_ACCESS_MAILTO, ATLAS_PASSWORD_RESET_MAILTO } from "../../utils/checkInAuth";
+import { ATLAS_ACCESS_MAILTO } from "../../utils/checkInAuth";
+import { PasswordResetRequest } from "./PasswordResetRequest";
 
 interface DirectoryLoginFormProps {
   people: Person[];
@@ -58,6 +59,7 @@ export function DirectoryLoginForm({
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
 
   /**
    * The remembered name is only ever auto-selected ONCE. Without this guard the
@@ -123,6 +125,20 @@ export function DirectoryLoginForm({
   };
 
   const hasSelection = selectedMatch !== null;
+
+  if (showAccountRecovery && showResetForm) {
+    return (
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold tracking-tight text-gray-900">
+            {title}
+          </h2>
+          <p className="text-sm leading-6 text-gray-600">{description}</p>
+        </div>
+        <PasswordResetRequest onCancel={() => setShowResetForm(false)} />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -227,13 +243,14 @@ export function DirectoryLoginForm({
           </div>
           {showAccountRecovery ? (
             <p className="text-sm text-gray-600">
-              <a
-                href={ATLAS_PASSWORD_RESET_MAILTO}
+              <button
+                type="button"
+                onClick={() => setShowResetForm(true)}
                 className="font-medium text-sky-600 transition-colors hover:text-sky-800"
               >
                 Forgot password?
-              </a>{" "}
-              Email us for a personal reset link.
+              </button>{" "}
+              We&apos;ll email a one-time magic link to the address on your profile.
             </p>
           ) : null}
         </div>

@@ -5,7 +5,6 @@ import { getDirectoryNames } from "../../services/database";
 import { getLastSignedInName } from "../../services/identity";
 import { setPostLoginReturnUrl } from "../../services/returnUrl";
 import {
-  ATLAS_PASSWORD_RESET_MAILTO,
   getCheckInAuthCopy,
   checkInReturnPath,
 } from "../../utils/checkInAuth";
@@ -111,17 +110,6 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
             showAccountRecovery
           />
         </div>
-
-        <p className="mt-5 hidden text-center text-sm leading-6 text-gray-600 sm:block">
-          Forgot your password?{" "}
-          <a
-            href={ATLAS_PASSWORD_RESET_MAILTO}
-            className="font-medium text-sky-600 transition-colors hover:text-sky-800"
-          >
-            Email for a reset link
-          </a>
-          {" "}— we'll send a personal link to set a new one.
-        </p>
 
         <p className="mt-4 hidden text-center text-xs leading-5 text-gray-400 sm:block">
           Foresight Institute · Internal tool · Invitation only
