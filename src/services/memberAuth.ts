@@ -109,16 +109,3 @@ export async function claimProfile(
     ...(email ? { email } : {}),
   });
 }
-
-/**
- * Request a password-reset (or first-claim) magic link emailed to the roster address.
- * The server always returns a generic success body when the request is accepted.
- */
-export async function requestPasswordResetEmail(
-  email: string,
-): Promise<{ ok: boolean; message: string }> {
-  return postJson<{ ok: boolean; message: string }>(
-    `${getApiBase()}/member-password-reset`,
-    { email },
-  );
-}

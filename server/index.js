@@ -203,32 +203,6 @@ app.post("/api/member-password", async (req, res) => {
 });
 
 /**
- * POST /api/member-password-reset
- * Self-serve magic-link reset (email on file). Opaque success always.
- */
-app.post("/api/member-password-reset", async (req, res) => {
-  try {
-    const { requestPasswordResetEmail } = require("./password-reset");
-    const forwarded = String(req.headers["x-forwarded-for"] || "")
-      .split(",")[0]
-      .trim();
-    const result = await requestPasswordResetEmail({
-      email: req.body?.email,
-      clientIp: forwarded || req.socket?.remoteAddress || "unknown",
-    });
-    res.json(result);
-  } catch (error) {
-    const status =
-      error && typeof error === "object" && typeof error.statusCode === "number"
-        ? error.statusCode
-        : 400;
-    res.status(status).json({
-      error: error instanceof Error ? error.message : "Password reset failed",
-    });
-  }
-});
-
-/**
  * POST /api/member-register
  * Self-register a new directory profile. Creates a row in the RealData sheet and returns a session.
  */
