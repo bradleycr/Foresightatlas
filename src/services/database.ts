@@ -43,6 +43,17 @@ let cachedDatabase: CachedDatabase | null = null;
 let cachedAt = 0;
 
 /**
+ * How long a cached `/api/database` payload is considered fresh.
+ *
+ * The server merges Luma events live but caches that fetch for ~10 minutes, so
+ * mirroring that window here means a long-lived / always-focused tab (e.g. a
+ * node display) still re-pulls new Luma events and roster edits at least every
+ * 10 minutes — not just on a hard reload. Writes and focus-after-idle still
+ * bust the cache immediately via {@link invalidateDatabaseCache}.
+ */
+const DATABASE_MAX_AGE_MS = 10 * 60 * 1000;
+
+/**
  * De-duplicates concurrent callers. If two components mount at the same
  * time and both call `getAllPeople()`, they'll share a single in-flight
  * network request instead of hammering the sheet twice.
@@ -95,7 +106,12 @@ async function fetchWithTimeout(url: string): Promise<Response> {
 }
 
 async function fetchDatabase(): Promise<CachedDatabase> {
-  if (cachedDatabase) return cachedDatabase;
+  // Serve the in-memory copy only while it's within the freshness window; once
+  // it ages out we fall through and re-pull so Luma/sheet edits surface without
+  // a manual reload.
+  if (cachedDatabase && Date.now() - cachedAt < DATABASE_MAX_AGE_MS) {
+    return cachedDatabase;
+  }
   if (inFlightFetch) return inFlightFetch;
 
   const apiBase = getApiBase();

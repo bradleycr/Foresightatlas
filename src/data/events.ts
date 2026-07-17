@@ -7,7 +7,7 @@
  */
 
 import { NodeEvent, EventType, NodeSlug } from "../types/events";
-import { fetchSheetEvents } from "../services/database";
+import { fetchSheetEvents, invalidateDatabaseCache } from "../services/database";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 
@@ -346,20 +346,52 @@ function sfDemoDays(): NodeEvent[] {
 
 let _cache: NodeEvent[] | null = null;
 let _dynamicLoaded = false;
+let _loadedAt = 0;
 /** Set when the last load fell back to seeds because GET /api/database failed. */
 let _eventsSheetError: string | null = null;
+
+/**
+ * How long a loaded event set is reused before we re-pull from the server.
+ *
+ * Events are the one dataset that changes without a local write — someone adds
+ * an event to Luma or the Sheet and we only find out on the next fetch. Mirror
+ * the server-side Luma cache (~10 min) so an open programming page refreshes
+ * its own events on that cadence instead of holding the first load forever.
+ */
+const EVENTS_MAX_AGE_MS = 10 * 60 * 1000;
 
 export function getEventsSheetLoadError(): string | null {
   return _eventsSheetError;
 }
 
 /**
+ * Drop the in-memory event cache so the next {@link loadEvents} re-pulls from
+ * the server. Called on focus-resume / cross-tab "events" or "all" sync so Luma
+ * additions surface without a manual reload.
+ */
+export function clearEventsCache(): void {
+  _cache = null;
+  _dynamicLoaded = false;
+  _loadedAt = 0;
+}
+
+/**
  * Load events: Google Sheet (GET /api/database) is the source of truth when it returns rows.
  * When the sheet has no events we use seeds. When the API fails, we use seeds and expose
  * {@link getEventsSheetLoadError} for UI.
+ *
+ * @param force  Skip the freshness window and re-pull immediately (also drops
+ *               the shared `/api/database` cache so we get a live Luma merge).
  */
-export async function loadEvents(): Promise<NodeEvent[]> {
-  if (_dynamicLoaded && _cache) return _cache;
+export async function loadEvents(force = false): Promise<NodeEvent[]> {
+  const isFresh =
+    _dynamicLoaded && _cache !== null && Date.now() - _loadedAt < EVENTS_MAX_AGE_MS;
+  if (!force && isFresh) return _cache!;
+
+  // A forced or aged-out reload must not read a stale `/api/database` copy —
+  // bust it first so we re-pull the sheet + live Luma merge. The very first
+  // load reuses whatever the app already fetched (no needless double request).
+  if (force || (_dynamicLoaded && !isFresh)) invalidateDatabaseCache();
 
   const result = await fetchSheetEvents();
   if (result.ok && result.events.length > 0) {
@@ -368,11 +400,13 @@ export async function loadEvents(): Promise<NodeEvent[]> {
     );
     _eventsSheetError = null;
     _dynamicLoaded = true;
+    _loadedAt = Date.now();
     return _cache;
   }
 
   _eventsSheetError = result.ok ? null : result.message;
   _dynamicLoaded = true;
+  _loadedAt = Date.now();
   return getAllEvents();
 }
 

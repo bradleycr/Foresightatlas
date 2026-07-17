@@ -17,6 +17,7 @@ import {
 } from "./services/database";
 import { AuthGate } from "./components/auth/AuthGate";
 import {
+  publishDataChanged,
   subscribeToDataChanges,
   subscribeToSyncErrors,
   type DataChangeMessage,
@@ -172,6 +173,27 @@ export default function App() {
       unsubError();
     };
   }, []);
+
+  /*
+   * Heartbeat refresh for always-on tabs.
+   *
+   * Focus/visibility refreshes cover people who leave and come back, but a node
+   * display left open on the programming page never loses focus — so it would
+   * otherwise show the events from whenever it was first opened. A gentle
+   * interval publishes an "all" refresh so those long-lived screens re-pull the
+   * sheet + live Luma merge on their own. `visibilitychange` guards it so we
+   * never fetch against a backgrounded tab.
+   */
+  useEffect(() => {
+    if (!identity) return;
+    const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 min — comfortably "at least daily"
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      publishDataChanged("all", "manual");
+    };
+    const timer = window.setInterval(tick, REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [identity?.personId]);
 
   // Restore path after 404 redirect (deep links on GitHub Pages)
   useEffect(() => {

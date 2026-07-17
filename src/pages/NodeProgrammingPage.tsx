@@ -18,7 +18,7 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { NodeSlug, NodeEvent, RSVPStatus } from "../types/events";
 import { Person } from "../types";
 import { getNode, getProgrammingPageConfig } from "../data/nodes";
-import { getEventsByNodeForDisplay, getEventsSheetLoadError, loadEvents } from "../data/events";
+import { clearEventsCache, getEventsByNodeForDisplay, getEventsSheetLoadError, loadEvents } from "../data/events";
 import type { Identity } from "../services/identity";
 import {
   setRSVP,
@@ -162,6 +162,18 @@ export function NodeProgrammingPage({
         void fetchCheckInsFromAPI(activeNode, weekDates[0], weekDates[6]).then(() =>
           setCheckInTick((t) => t + 1),
         );
+      }
+      /*
+       * Events change without any local write (someone adds one to Luma or the
+       * Sheet), so a focus-resume ("all") or an explicit events refresh must
+       * re-pull them — otherwise the page would show the first load forever.
+       */
+      if (msg.scope === "events" || msg.scope === "all") {
+        clearEventsCache();
+        void loadEvents(true).then((ev) => {
+          setDynamicEvents(ev);
+          setEventsSheetError(getEventsSheetLoadError());
+        });
       }
     };
     return subscribeToDataChanges(onChange);
