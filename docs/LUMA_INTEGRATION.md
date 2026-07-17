@@ -42,7 +42,7 @@ LUMA_API_KEY=your-luma-api-key-here
 
 If you want to add manual events via the sheet:
 
-1. Open the [Foresight Map spreadsheet](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit)
+1. Open your **private** Google Sheet (the one whose ID is `SPREADSHEET_ID`)
 2. Create a new tab called **Events**
 3. Set row 1 headers to:
 

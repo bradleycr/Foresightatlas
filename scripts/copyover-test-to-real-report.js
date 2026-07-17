@@ -16,8 +16,8 @@ const { google } = require("googleapis");
 const { SHEET_NAMES, PEOPLE_HEADERS } = require("./sheet-schema.js");
 const fs = require("fs").promises;
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 const API_KEY =
   process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -224,7 +224,7 @@ async function main() {
     });
     lines.push("");
     lines.push("## How to copy over", "");
-    lines.push("1. Open the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit) sheet.");
+    lines.push("1. Open the [Foresight Map Database](your private Google Sheet (SPREADSHEET_ID)) sheet.");
     lines.push("2. In the **Real Data** tab, for each matched row (same fullName as in People), paste or type the value from the **People** tab for the fields you want to bring over (e.g. lat, lng, profileUrl, currentCity, currentCountry).");
     lines.push("3. Run `pnpm run sync:sheet` to refresh the app.");
     lines.push("");

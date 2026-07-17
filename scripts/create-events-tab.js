@@ -15,10 +15,8 @@ require("dotenv").config();
 const fs = require("fs").promises;
 const path = require("path");
 const { google } = require("googleapis");
-const { SHEET_NAMES, EVENTS_HEADERS } = require("./sheet-schema.js");
-
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { SHEET_NAMES, EVENTS_HEADERS, getSpreadsheetId } = require("./sheet-schema.js");
+const SPREADSHEET_ID = getSpreadsheetId();
 
 /** Seed events: same as in src/data/events.ts (Berlin specials + Vision Weekends + workshops). */
 const SEED_EVENTS = [

@@ -1,6 +1,8 @@
 # Using Google Sheets as the database
 
-The Google Sheet is the **source of truth**. At runtime the app does **not** use a static `database.json`: it always loads data via **GET /api/database**, which reads from the Google Sheet. Deploy (Vercel or GitHub Pages) can optionally run a sync (sheet → `public/data/database.json`) before build for static export; the live app uses the API and sheet. Edit People, Travel Windows, Suggestions, and RSVPs in the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) sheet; the app and next deploy will reflect changes.
+The Google Sheet is the **source of truth**. At runtime the app does **not** use a static `database.json`: it always loads data via **GET /api/database**, which reads from the Google Sheet. Deploy can optionally run a sync (sheet → `public/data/database.json`) for backups; the live app uses the API and sheet.
+
+**Keep the production sheet private.** Share it with your service account as Editor (and trusted humans). Do not publish the spreadsheet URL or ID in issues, PRs, or forks. Set `SPREADSHEET_ID` only via env on your host (Vercel / on-prem).
 
 ## Get data to paste into the sheet
 
@@ -138,14 +140,14 @@ After that, the map should show everyone with a city as soon as the app loads. N
 
 To pull the latest sheet data into `public/data/database.json`:
 
-1. **Make the sheet readable**: Share the spreadsheet so **Anyone with the link can view** (required for API key access).
-2. **Google Cloud**: In the same project, create an **API key**, restrict it to the **Google Sheets API** (optional but recommended).
+1. **Credentials**: Prefer a **service account** with Editor on a private sheet. An API key usually needs the sheet viewable by link — avoid that for production rosters.
+2. **Google Cloud**: Create credentials as in [LOCAL_SETUP.md](LOCAL_SETUP.md).
 3. **Run sync**:
 
    ```bash
    # In .env.local (or env):
-   SPREADSHEET_ID=1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ
-   GOOGLE_SHEETS_API_KEY=your-api-key
+   SPREADSHEET_ID=your-spreadsheet-id
+   GOOGLE_SHEETS_API_KEY=your-api-key   # or use the service account instead
 
    pnpm run sync:sheet
    ```
@@ -203,7 +205,7 @@ Implementation: `scripts/sync-fellows-from-website.js`. To refresh the list from
 | App reads sheet live       | Run API with sheet credentials; GET /api/database reads from the sheet (no database.json) |
 | Deploy with sheet data      | Add `GOOGLE_SHEETS_API_KEY` (and optionally `SPREADSHEET_ID`) in GitHub Actions secrets/vars |
 
-From then on, edit the [Foresight Map Database](https://docs.google.com/spreadsheets/d/1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ/edit?usp=sharing) sheet; the next sync (or deploy) will update the app data.
+From then on, edit your private sheet; the next API fetch (or sync/deploy) will update the app data.
 
 ---
 

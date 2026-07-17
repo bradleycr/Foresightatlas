@@ -12,7 +12,7 @@
  *
  * Env: SPREADSHEET_ID, GOOGLE_APPLICATION_CREDENTIALS (path to key JSON)
  *
- *   SPREADSHEET_ID=1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ \
+ *   SPREADSHEET_ID=your-spreadsheet-id \
  *   GOOGLE_APPLICATION_CREDENTIALS=./path-to-key.json \
  *   node scripts/migrate-json-to-sheet.js
  */
@@ -32,8 +32,8 @@ const {
   RSVPS_HEADERS,
 } = require("./sheet-schema.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 
 function personToRow(p) {
   return [

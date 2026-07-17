@@ -24,8 +24,8 @@ const path = require("path");
 const { google } = require("googleapis");
 const { SHEET_NAMES, EVENTS_HEADERS } = require("./sheet-schema.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 
 /** Berlin: CEST (+02:00) until last Sun Oct, then CET (+01:00). We use +02 for Apr–Oct, +01 for Nov. */
 function tzOffset(year, month) {

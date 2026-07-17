@@ -1,6 +1,8 @@
 /**
  * Shared schema for the Foresight Map Google Sheet.
- * Default sheet ID (override with env SPREADSHEET_ID):
+ *
+ * Production spreadsheet ID comes from env `SPREADSHEET_ID` only — keep that
+ * private. Do not hardcode production IDs in the public repo.
  *
  * Tabs: RealData, TravelWindows, Suggestions, AdminUsers, RSVPs, Events,
  *       SignalCheckins, DailyTable-Berlin, DailyTable-SF.
@@ -12,10 +14,15 @@
  * or compare it during migration cleanup.
  */
 
-const DEFAULT_SPREADSHEET_ID = "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
-
 function getSpreadsheetId() {
-  return process.env.SPREADSHEET_ID || DEFAULT_SPREADSHEET_ID;
+  const id = String(process.env.SPREADSHEET_ID || "").trim();
+  if (!id) {
+    throw new Error(
+      "SPREADSHEET_ID is not set. Add it to .env.local (or the host env). " +
+        "See docs/LOCAL_SETUP.md and docs/SELF_HOSTING.md.",
+    );
+  }
+  return id;
 }
 
 const SHEET_NAMES = {
@@ -207,7 +214,6 @@ function getSheetColumnLetter(index) {
 const PEOPLE_SHEET_WIDTH = getSheetColumnLetter(PEOPLE_HEADERS.length - 1);
 
 module.exports = {
-  DEFAULT_SPREADSHEET_ID,
   getSpreadsheetId,
   SHEET_NAMES,
   REAL_DATA_TAB_NAMES,

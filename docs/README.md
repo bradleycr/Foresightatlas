@@ -1,22 +1,45 @@
 # Documentation index
 
-This folder supplements the root **[README.md](../README.md)** and **[CONTRIBUTING.md](../CONTRIBUTING.md)**. Use it when you are setting up locally, deploying to Vercel, or integrating another backend.
+Supplements the root **[README.md](../README.md)** and **[CONTRIBUTING.md](../CONTRIBUTING.md)**.
+
+## Start here
 
 | Doc | Purpose |
 |-----|---------|
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | How to fork, run the app (with or without sheet keys), and open PRs. |
-| [LOCAL_SETUP.md](LOCAL_SETUP.md) | One-page local runbook (env, ports, troubleshooting). |
-| [SHEETS_SYNC.md](SHEETS_SYNC.md) | Google Sheet tabs, migration, sync scripts, column schema. |
-| [EVENTS_SOURCE.md](EVENTS_SOURCE.md) | Where programming events come from (sheet + optional Luma). |
-| [LUMA_INTEGRATION.md](LUMA_INTEGRATION.md) | Luma API and `pnpm sync:events`. |
-| [SIGNAL_CHECKIN_SETUP.md](SIGNAL_CHECKIN_SETUP.md) | Optional Signal check-in bot (`signal-cli-rest-api`, sheet tabs, env). |
-| [VERCEL_ENV.md](VERCEL_ENV.md) | Environment variables on Vercel. |
-| [VERCEL_PRODUCTION.md](VERCEL_PRODUCTION.md) | Production / service account notes. |
-| [VERCEL_CLI.md](VERCEL_CLI.md) | Using the Vercel CLI with this repo. |
-| [MANUAL_UX_CHECKLIST.md](MANUAL_UX_CHECKLIST.md) | Smoke-test checklist before a release. |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Fork, mock vs sheet, PRs |
+| [LOCAL_SETUP.md](LOCAL_SETUP.md) | Local env, ports, troubleshooting |
+| [SELF_HOSTING.md](SELF_HOSTING.md) | **On-prem / sovereign node** deploy; private sheet |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | How data moves (sheet → API → SPA) |
 
-Project root **[README.md](../README.md)** is the main product overview. **[AGENTS.md](../AGENTS.md)** is a concise runbook (ports, sheet as source of truth, Vite base path) aimed at maintainers and AI-assisted workflows.
+## Data & integrations
 
-**Security:** Report vulnerabilities per **[.github/SECURITY.md](../.github/SECURITY.md)**, not public issues.
+| Doc | Purpose |
+|-----|---------|
+| [SHEETS_SYNC.md](SHEETS_SYNC.md) | Private Google Sheet tabs, sync scripts, schema |
+| [EVENTS_SOURCE.md](EVENTS_SOURCE.md) | Sheet + live Luma merge (+ seeds) |
+| [LUMA_INTEGRATION.md](LUMA_INTEGRATION.md) | Luma API setup and merge rules |
+| [SIGNAL_CHECKIN_SETUP.md](SIGNAL_CHECKIN_SETUP.md) | Optional Signal check-in bot |
 
-Maintainer-only reports (audit / sheet comparison) are written under **`reports/`** when you run `pnpm run audit:realdata`, `compare:sheet`, or `copyover-report` — see **`reports/README.md`**.
+## Cloud deploy (current)
+
+| Doc | Purpose |
+|-----|---------|
+| [VERCEL_ENV.md](VERCEL_ENV.md) | Env vars on Vercel |
+| [VERCEL_PRODUCTION.md](VERCEL_PRODUCTION.md) | Production / service account notes |
+| [VERCEL_CLI.md](VERCEL_CLI.md) | Vercel CLI helpers |
+
+## Quality & ops
+
+| Doc | Purpose |
+|-----|---------|
+| [MANUAL_UX_CHECKLIST.md](MANUAL_UX_CHECKLIST.md) | Smoke-test before a release |
+| [AGENTS.md](../AGENTS.md) | Maintainer / AI runbook (ports, naming, caveats) |
+| [.github/SECURITY.md](../.github/SECURITY.md) | Report vulnerabilities privately |
+
+## Open source vs private data
+
+- **Public:** this git repo (MIT), mock data under `mock/`, docs.
+- **Private:** production spreadsheet, service-account keys, session secrets, member PII.
+- Contributors should not need production sheet access — use `pnpm dev` without Google keys.
+
+Maintainer-only script outputs go under **`reports/`** (gitignored) — see **`reports/README.md`**.

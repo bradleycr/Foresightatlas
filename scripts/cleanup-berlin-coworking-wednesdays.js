@@ -32,8 +32,8 @@ const path = require("path");
 const { google } = require("googleapis");
 const { SHEET_NAMES, EVENTS_HEADERS } = require("./sheet-schema.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 
 function parseArgs(argv) {
   const set = new Set(argv.slice(2));

@@ -20,19 +20,21 @@ If you only have **GOOGLE_SHEETS_API_KEY** and **SPREADSHEET_ID** in Vercel, the
 
 | Variable | Purpose | Where to get it |
 |----------|---------|-----------------|
-| **SPREADSHEET_ID** | Which sheet to use | The ID from the sheet URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`. Default in code: `1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ`. |
-| **GOOGLE_SERVICE_ACCOUNT_KEY** | Read + write (profiles, RSVPs, suggestions) | Google Cloud Console → APIs & Services → Credentials → Create Service Account → Key (JSON). Paste the **entire JSON object** as the value (one line or multi-line). Share the sheet with the service account email as **Editor**. |
+| **SPREADSHEET_ID** | Which sheet to use | ID from the sheet URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`. Keep private — set only in Vercel env. |
+| **GOOGLE_SERVICE_ACCOUNT_KEY** | Read + write (profiles, RSVPs, suggestions) | Google Cloud Console → APIs & Services → Credentials → Create Service Account → Key (JSON). Paste the **entire JSON object** as the value (one line or multi-line). Share the **private** sheet with the service account email as **Editor**. |
+| **DIRECTORY_SESSION_SECRET** | Signs member sessions / claim links | Long random string; must stay stable across deploys |
 
 **Optional (alternative for read-only):**
 
-- **GOOGLE_SHEETS_API_KEY** — If you only need the app to *load* data and not save profiles, you can use an API key instead. Sheet must be shared **“Anyone with the link can view”**. Profile updates and RSVPs will still require **GOOGLE_SERVICE_ACCOUNT_KEY**.
+- **GOOGLE_SHEETS_API_KEY** — If you only need the app to *load* data and not save profiles, you can use an API key instead (usually needs a publicly viewable sheet). Prefer the service account so the roster can stay private. Profile updates and RSVPs still require **GOOGLE_SERVICE_ACCOUNT_KEY**.
 
 ## Add via Vercel dashboard
 
 1. Open [Vercel](https://vercel.com) → your project → **Settings** → **Environment Variables**.
-2. Add **SPREADSHEET_ID** (value: your sheet ID; can use the default above).
+2. Add **SPREADSHEET_ID** (value: your private sheet ID).
 3. Add **GOOGLE_SERVICE_ACCOUNT_KEY** (value: full JSON key; mark as **Sensitive**).
-4. Redeploy (e.g. trigger a new deploy from the Deployments tab or push a commit).
+4. Add **DIRECTORY_SESSION_SECRET** (sensitive).
+5. Redeploy (e.g. trigger a new deploy from the Deployments tab or push a commit).
 
 ## Add via Vercel CLI
 

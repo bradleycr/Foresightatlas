@@ -5,10 +5,10 @@ in the codebase, read this before editing anything that talks to the network.
 
 ## TL;DR
 
-- **Google Sheet is the single source of truth.** Everything the app shows
-  and every write the app makes goes through the sheet (either directly via
-  the Google Sheets API, or via a small Express layer in dev). There is no
-  database server.
+- **A private Google Sheet is the single source of truth.** Everything the
+  app shows and every write goes through the sheet (via the Google Sheets
+  API and a small Express / serverless layer). There is no separate DB
+  server. Sheet IDs and keys stay in env — not in the public repo.
 - **One set of API handlers, two runtimes.** `api/*.js` are Vercel serverless
   functions. The local Express dev server (`server/index.js`) mounts the
   exact same handlers so behavior matches production.
@@ -71,13 +71,18 @@ All client-to-server traffic is funnelled through `src/services/*.ts`:
 ### Caching strategy
 
 - `database.ts` keeps one in-memory copy of the full database response
-  (`cachedDatabase`). Multiple concurrent callers share one in-flight fetch
-  via `inFlightFetch` — no duplicate network requests.
+  (`cachedDatabase`) with a **~10 minute** freshness window (aligned with the
+  server’s Luma merge cache). Multiple concurrent callers share one in-flight
+  fetch via `inFlightFetch`.
+- `src/data/events.ts` has its own ~10 minute window; programming pages
+  re-pull on `events` / `all` sync messages.
 - Writers (`updatePerson`, `createPerson`, `setRSVP`, `checkIn`) all end with
   a `publishDataChanged(scope)` call, which invalidates caches and broadcasts
   to every other tab.
 - On returning focus after a tab was hidden for more than one minute, the
   sync module publishes `reason: "focus"` so stale screens auto-refresh.
+- A 15‑minute heartbeat in `App.tsx` refreshes always-on / focused tabs so
+  Luma and sheet edits surface without a hard reload.
 
 ### Sync module (`src/services/sync.ts`)
 

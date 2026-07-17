@@ -10,7 +10,7 @@
  * is never shown twice. Sheet-only and Luma-only events are both included.
  *
  * Env vars (loaded from .env.local / .env):
- *   SPREADSHEET_ID           – Google Sheet ID (defaults to the Foresight sheet)
+ *   SPREADSHEET_ID           – Google Sheet ID (required; private)
  *   GOOGLE_SHEETS_API_KEY    – read-only API key for the sheet
  *   LUMA_API_KEY             – Luma API key (Settings → Developer on your calendar)
  *   LUMA_CALENDAR_API_ID     – Luma calendar API ID (from calendar settings)
@@ -29,8 +29,8 @@ const path = require("path");
 
 /* ── config ──────────────────────────────────────────────────────────── */
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 const SHEETS_API_KEY =
   process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
 const LUMA_API_KEY = process.env.LUMA_API_KEY;

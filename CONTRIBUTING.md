@@ -45,8 +45,9 @@ Thank you for helping improve this project. By participating, you agree to uphol
 
 5. **Context**
 
-   - [AGENTS.md](AGENTS.md) — Ports, naming, sheet-as-source-of-truth, mock behavior (also useful for AI-assisted editing).
-   - [docs/README.md](docs/README.md) — Index of architecture, sheets, Vercel, Signal, Luma.
+   - [AGENTS.md](AGENTS.md) — Ports, naming, private sheet as source of truth, mock behavior.
+   - [docs/README.md](docs/README.md) — Index (local, self-host / on-prem, sheets, Vercel, Luma, Signal).
+   - [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) — Running on your own node (sovereign compute); production data stays private.
 
 ## Focus areas for collaborators
 

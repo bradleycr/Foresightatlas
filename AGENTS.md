@@ -4,7 +4,7 @@
 
 ### Overview
 
-**The Foresight Atlas** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF, Global) for event calendars. **The Google Sheet is the single source of truth.** The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime.
+**The Foresight Atlas** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF, Global) for event calendars. **A private Google Sheet is the single source of truth** (credentials via env only — never commit sheet IDs/keys). The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime. **Repo is public (MIT)**; contributors use the mock API without production keys. **Hosting goal:** same stack on sovereign on-prem compute at a node — see `docs/SELF_HOSTING.md`. Current cloud host: Vercel.
 
 ### Naming and copy
 
@@ -26,7 +26,8 @@
 - **No linter or test runner configured.** No ESLint, Prettier, or test framework in `package.json`; no `lint` or `test` scripts.
 - **Sheet is the only source of truth.** The app always fetches data from GET `/api/database`, which reads from the Google Sheet. Configure **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID**) so the API and app can load. No static `public/data/database.json` at runtime.
 - **Frontend.** `src/services/database.ts` fetches `/api/database` only; no JSON fallback. If the API or sheet is unavailable, the app shows the error from the API.
-- **Vercel.** Set **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID**) in Vercel so the app can load data and users can save profiles. Without it, profile update shows “Google Sheets write credentials are not configured.” See `docs/VERCEL_ENV.md`. Read-only alternative: **GOOGLE_SHEETS_API_KEY** (sheet shared “Anyone with the link can view”); profile save still needs the service account.
+- **Vercel / on-prem.** Set **GOOGLE_SERVICE_ACCOUNT_KEY**, **SPREADSHEET_ID**, and **DIRECTORY_SESSION_SECRET** so the app can load data and users can save profiles. Prefer a **private** sheet + service account (Editor). See `docs/VERCEL_ENV.md` and `docs/SELF_HOSTING.md`. Read-only API key is a weaker alternative (often needs a publicly viewable sheet).
+- **Events freshness.** Server merges Luma live (~10 min cache). Frontend `/api/database` + `loadEvents` also expire ~10 min; focus-resume and a 15‑min heartbeat re-pull for always-on tabs.
 - **pnpm build scripts.** `@swc/core` and `esbuild` require approved build scripts via `pnpm.onlyBuiltDependencies` in `package.json`.
 - **CSS `@import` warning.** Build may emit a PostCSS warning about `@import` order; cosmetic only.
 - **Timeline view.** The Timeline tab exists but is “Coming soon” in the UI.

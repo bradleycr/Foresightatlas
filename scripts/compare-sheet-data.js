@@ -21,8 +21,8 @@ const {
   PEOPLE_SHEET_WIDTH,
 } = require("./sheet-schema.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 const API_KEY =
   process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
 

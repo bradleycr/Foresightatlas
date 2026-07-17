@@ -12,10 +12,11 @@ In **Vercel** → your project → **Settings** → **Environment Variables**, s
 
 | Variable | Value |
 |----------|--------|
-| **SPREADSHEET_ID** | Your Google Sheet ID from the URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`. If you use the Foresight Map sheet, it’s `1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ`. |
+| **SPREADSHEET_ID** | Your **private** Google Sheet ID from the URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`. Do not publish this ID. |
 | **GOOGLE_SERVICE_ACCOUNT_KEY** | The **entire** JSON key from Google Cloud (service account key). Paste the full JSON; mark as **Sensitive**. |
+| **DIRECTORY_SESSION_SECRET** | Long random secret for sessions / magic links (Sensitive). |
 
-That’s it. No other env vars are required for the map + profile updates to work.
+That’s the minimum for map + profile updates + sign-in. Optional: `LUMA_API_KEY`, calendar IDs — see [VERCEL_ENV.md](VERCEL_ENV.md). For on-prem instead of Vercel, see [SELF_HOSTING.md](SELF_HOSTING.md).
 
 ---
 

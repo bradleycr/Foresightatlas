@@ -38,7 +38,7 @@ Plus:
 
 | Variable | What to put |
 |----------|-------------|
-| `SPREADSHEET_ID` | Your sheet ID (default: `1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ`). |
+| `SPREADSHEET_ID` | Your **private** sheet ID (from the sheet URL `.../d/<ID>/edit`). Never commit it. |
 
 **Optional (for events from Luma):**
 
@@ -49,14 +49,14 @@ Plus:
 **Example `.env.local`** (if the key file is in `keys/service-account.json`):
 
 ```bash
-SPREADSHEET_ID=1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ
+SPREADSHEET_ID=your-spreadsheet-id
 GOOGLE_APPLICATION_CREDENTIALS=./keys/service-account.json
 ```
 
 Or use the JSON directly (no file):
 
 ```bash
-SPREADSHEET_ID=1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ
+SPREADSHEET_ID=your-spreadsheet-id
 GOOGLE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...",...}
 ```
 
@@ -73,9 +73,9 @@ You have two options. The app needs at least one.
 3. **APIs & Services** → **Credentials** → **Create credentials** → **API key**.
 4. (Recommended) Restrict the key: **Edit** → under “API restrictions” choose “Restrict key” → select **Google Sheets API**.
 5. In `.env.local` set: `GOOGLE_SHEETS_API_KEY=your-key-here`.
-6. Share your Google Sheet with **“Anyone with the link” can view** (required for API key access).
+6. API-key reads require the sheet to be readable by that key (often “anyone with the link can view”). **Prefer Option B** for production so the roster sheet can stay private.
 
-**Option B: Service account key (read + write)** — Map loads and profile updates / RSVPs work.
+**Option B: Service account key (read + write)** — Map loads and profile updates / RSVPs work. **Recommended for production / on-prem.**
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) and select (or create) the same project.
 2. **APIs & Services** → **Library** → enable **Google Sheets API** if not already.

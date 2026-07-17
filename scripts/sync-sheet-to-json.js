@@ -8,7 +8,7 @@
  * Requires: Sheet shared "Anyone with the link can view" (for API key auth).
  * Env: SPREADSHEET_ID, GOOGLE_SHEETS_API_KEY (or GOOGLE_API_KEY)
  *
- *   SPREADSHEET_ID=1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ \
+ *   SPREADSHEET_ID=your-spreadsheet-id \
  *   GOOGLE_SHEETS_API_KEY=your-key \
  *   node scripts/sync-sheet-to-json.js
  */
@@ -30,8 +30,8 @@ const {
   RSVPS_HEADERS,
 } = require("./sheet-schema.js");
 
-const SPREADSHEET_ID =
-  process.env.SPREADSHEET_ID || "1kE0ogroOgXFBEH8y1qREU940ux41RUiLNE_rowXXAnQ";
+const { getSpreadsheetId } = require("./sheet-schema");
+const SPREADSHEET_ID = getSpreadsheetId();
 const API_KEY =
   process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
 
