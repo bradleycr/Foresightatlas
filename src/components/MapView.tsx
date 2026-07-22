@@ -405,6 +405,15 @@ function ImperativeMarkerClusters({
   const map = useMap();
   const onPersonClickRef = useRef(onPersonClick);
   onPersonClickRef.current = onPersonClick;
+  /*
+   * Keep the click handler in a ref so it is NOT an effect dependency.
+   * The parent passes a new arrow function every render, and hovering a
+   * marker triggers a parent state update — with the handler in the deps
+   * array that re-render would tear down and rebuild the whole cluster
+   * group mid-hover, closing the popup the user just opened.
+   */
+  const onMarkerClickRef = useRef(onMarkerClick);
+  onMarkerClickRef.current = onMarkerClick;
 
   useEffect(() => {
     if (!map || markers.length === 0) return;
@@ -441,14 +450,14 @@ function ImperativeMarkerClusters({
       const cancelClose = () => { if (closeTimeout) { clearTimeout(closeTimeout); closeTimeout = null; } };
 
       if (prefersHover) {
-        leafletMarker.on("mouseover", () => { if (map.getZoom() >= MIN_ZOOM) { leafletMarker.openPopup(); onMarkerClick(marker); } });
+        leafletMarker.on("mouseover", () => { if (map.getZoom() >= MIN_ZOOM) { leafletMarker.openPopup(); onMarkerClickRef.current(marker); } });
         leafletMarker.on("mouseout", scheduleClose);
       }
       leafletMarker.on("click", () => {
         cancelClose();
         map.flyTo([marker.coordinates.lat, marker.coordinates.lng], Math.max(MIN_ZOOM, map.getZoom()), { duration: 0.3 });
         leafletMarker.openPopup();
-        onMarkerClick(marker);
+        onMarkerClickRef.current(marker);
       });
       leafletMarker.on("popupopen", () => {
         const popupContent = leafletMarker.getPopup()?.getContent();
@@ -495,11 +504,17 @@ function ImperativeMarkerClusters({
         cluster.getAllChildMarkers().forEach((m) => {
           (m as MarkerWithRoles).__roleTypes?.forEach((t) => allRoles.add(t));
         });
-        const count = cluster.getChildCount();
         const background = createRoleBasedBadgeBackground(allRoles);
         const clusterPeople = cluster
           .getAllChildMarkers()
           .flatMap((m) => (m as MarkerWithRoles).__markerData?.people.map((entry) => entry.person) ?? []);
+        /*
+         * The badge must show PEOPLE, not pins. getChildCount() counts child
+         * markers, but one marker is a whole location with N people — so a
+         * "Berlin" cluster of 2 pins holding 10 people used to read "2".
+         * Dedupe by person id in case the same person ever lands in two pins.
+         */
+        const count = new Set(clusterPeople.map((person) => person.id)).size || cluster.getChildCount();
         const communityStatus: CommunityStatus =
           clusterPeople.every((person) => !effectiveIsAlumni(person))
             ? "current"
@@ -547,7 +562,7 @@ function ImperativeMarkerClusters({
           const zoom = Math.max(MIN_ZOOM_ON_NODE_CLICK, map.getZoom());
           map.flyTo([lat, lng], zoom, { duration: 0.4 });
           (child as L.Marker).openPopup();
-          onMarkerClick(markerData);
+          onMarkerClickRef.current(markerData);
         }
         return;
       }
@@ -575,13 +590,13 @@ function ImperativeMarkerClusters({
       const zoom = Math.max(MIN_ZOOM_ON_NODE_CLICK, map.getZoom());
       map.flyTo([data.coordinates.lat, data.coordinates.lng], zoom, { duration: 0.3 });
       m.openPopup();
-      onMarkerClick(data);
+      onMarkerClickRef.current(data);
     };
 
     const openPopupOnHover = (m: L.Marker, data: MarkerData) => {
       if (map.getZoom() < MIN_ZOOM_ON_NODE_CLICK) return;
       m.openPopup();
-      onMarkerClick(data);
+      onMarkerClickRef.current(data);
     };
 
     markers.forEach((marker) => {
@@ -664,7 +679,7 @@ function ImperativeMarkerClusters({
       map.removeLayer(group);
       group.clearLayers();
     };
-  }, [map, markers, foresightIcon, onMarkerClick]);
+  }, [map, markers, foresightIcon]);
 
   return null;
 }
