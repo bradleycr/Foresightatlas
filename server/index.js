@@ -78,8 +78,15 @@ app.get("/api/database", async (req, res) => {
   }
   try {
     const database = await getFullDatabaseFromSheet();
+    const rosterRecords = database._rosterRecords;
+    delete database._rosterRecords;
     database.events = await mergeSheetEventsWithLuma(database.events || []);
-    database.rsvps = await enrichRsvpsForApi(database.rsvps);
+    // Reuse the sheet payload we already loaded — never re-fetch for Luma enrich.
+    database.rsvps = await enrichRsvpsForApi(database.rsvps, {
+      events: database.events,
+      records: rosterRecords,
+      skipEventMerge: true,
+    });
     return res.json(database);
   } catch (error) {
     console.error("Error reading database from sheet:", error);

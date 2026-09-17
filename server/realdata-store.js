@@ -381,12 +381,16 @@ async function getSheetsClient({ write = false } = {}) {
 }
 
 async function fetchSheetRows(sheets, sheetName) {
-  const { data } = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `'${sheetName}'!A:${PEOPLE_SHEET_WIDTH}`,
-    valueRenderOption: "UNFORMATTED_VALUE",
+  const { cachedSheetRead } = require("./sheet-read-cache");
+  const cacheKey = `realdata-rows:${SPREADSHEET_ID}:${sheetName}`;
+  return cachedSheetRead(cacheKey, async () => {
+    const { data } = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${sheetName}'!A:${PEOPLE_SHEET_WIDTH}`,
+      valueRenderOption: "UNFORMATTED_VALUE",
+    });
+    return data.values || [];
   });
-  return data.values || [];
 }
 
 function hasRequiredHeaders(headerRow) {
@@ -404,6 +408,8 @@ async function ensureRealDataHeaders(sheets, sheetName, headerRow) {
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [PEOPLE_HEADERS] },
   });
+  const { invalidateSheetReadCache } = require("./sheet-read-cache");
+  invalidateSheetReadCache(`realdata-rows:${SPREADSHEET_ID}:${sheetName}`);
 }
 
 async function loadRealDataRecords(options = {}) {
@@ -499,6 +505,7 @@ function cloneRecord(record) {
 }
 
 async function upsertRealDataRecord(sheets, sheetName, record) {
+  const { invalidateSheetReadCache } = require("./sheet-read-cache");
   const rows = await fetchSheetRows(sheets, sheetName);
   if (rows.length === 0) {
     throw new Error("RealData sheet is missing headers.");
@@ -516,6 +523,7 @@ async function upsertRealDataRecord(sheets, sheetName, record) {
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [personRecordToRow(record)] },
     });
+    invalidateSheetReadCache();
     return record;
   }
 
@@ -536,6 +544,7 @@ async function upsertRealDataRecord(sheets, sheetName, record) {
       valueInputOption: "USER_ENTERED",
       requestBody: { values },
     });
+    invalidateSheetReadCache();
     return { ...record, rowNumber };
   }
 
@@ -547,6 +556,7 @@ async function upsertRealDataRecord(sheets, sheetName, record) {
     requestBody: { values },
   });
 
+  invalidateSheetReadCache();
   return record;
 }
 

@@ -18,6 +18,8 @@ const { assertPublicWriteSecret } = require("../server/public-write-secret.js");
 const { normalizeBerlinSecureWorkshopRsvps } = require("../server/event-corrections");
 const { enrichRsvpsForApi } = require("../server/rsvp-enrichment");
 const { assertRsvpWriteAllowed } = require("../server/rsvp-event-guard");
+const { getFullDatabaseFromSheet } = require("../server/sheet-database");
+const { invalidateSheetReadCache } = require("../server/sheet-read-cache");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const SHEET_RSVPS = "RSVPs";
@@ -90,6 +92,8 @@ function parseRsvpRows(values) {
  * to reflect when they first RSVP'd — not the time of every edit. Returns
  * the earliest `createdAt` across all prior rows for (eventId, personId),
  * falling back to a default (typically "now") when no prior row exists.
+ * Kept for scripts / future history-aware writers; POST uses the cached
+ * latest row's createdAt (already stamped with the earliest on each append).
  */
 function pickEarliestCreatedAt(allRows, eventId, personId, fallback) {
   let best = null;
@@ -153,16 +157,15 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
 
   if (req.method === "GET") {
-    const sheets = await getSheetsClientForRead();
-    if (!sheets) return res.status(503).json({ error: "RSVP read not configured (missing GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY)" });
     try {
-      const { data } = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_RSVPS}'!A:G`,
+      // One cached full-db read (includes RSVPs) — avoid a second values.get
+      // just to load the RSVPs tab before Luma enrichment.
+      const database = await getFullDatabaseFromSheet();
+      let rsvps = normalizeBerlinSecureWorkshopRsvps(database.rsvps || []);
+      rsvps = await enrichRsvpsForApi(rsvps, {
+        events: database.events,
+        records: database._rosterRecords,
       });
-      const { latest } = parseRsvpRows(data.values || []);
-      let rsvps = normalizeBerlinSecureWorkshopRsvps(latest);
-      rsvps = await enrichRsvpsForApi(rsvps);
       return res.status(200).json(rsvps);
     } catch (e) {
       console.error("GET /api/rsvps", e.message);
@@ -182,23 +185,17 @@ module.exports = async function handler(req, res) {
     const now = new Date().toISOString();
 
     /*
-     * Preserve the original RSVP's `createdAt`. The sheet is append-only, so
-     * each update writes a new row — without this lookup, every edit would
-     * show the same timestamp in both columns and we'd lose the "first RSVP'd
-     * on..." signal that UIs and reports can use.
-     *
-     * The extra GET adds a single round-trip per write; for a small community
-     * sheet this is acceptable. If we ever grow out of Google Sheets this
-     * disappears entirely (a DB would just `UPDATE ... RETURNING createdAt`).
+     * Preserve the original RSVP's `createdAt`. Prior writes already stamp the
+     * earliest createdAt onto every append row, so the latest (eventId, personId)
+     * record from the shared sheet cache is enough — no extra values.get.
      */
     let createdAt = now;
     try {
-      const { data } = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_RSVPS}'!A:G`,
-      });
-      const { allRows } = parseRsvpRows(data.values || []);
-      createdAt = pickEarliestCreatedAt(allRows, eventId, personId, now);
+      const database = await getFullDatabaseFromSheet();
+      const existing = (database.rsvps || []).find(
+        (r) => r.eventId === eventId && r.personId === personId,
+      );
+      if (existing?.createdAt) createdAt = existing.createdAt;
     } catch (e) {
       // Non-fatal: fall back to `now` and continue with the write.
       console.warn("POST /api/rsvps: could not preload rows for createdAt lookup:", e.message);
@@ -221,6 +218,7 @@ module.exports = async function handler(req, res) {
         insertDataOption: "INSERT_ROWS",
         requestBody: { values: [row] },
       });
+      invalidateSheetReadCache();
       return res.status(201).json({
         eventId,
         eventTitle: eventTitle != null ? String(eventTitle).trim() : "",

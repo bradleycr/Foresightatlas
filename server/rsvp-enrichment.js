@@ -2,6 +2,10 @@
 
 /**
  * Shared loader for Luma RSVP enrichment — sheet RSVPs + merged events + email index.
+ *
+ * Callers that already loaded the database (GET /api/database) MUST pass
+ * `{ events, records }` so we do not re-hit Google Sheets. A previous bug
+ * re-fetched the full sheet here and blew past Sheets read quotas.
  */
 
 const { getFullDatabaseFromSheet } = require("./sheet-database");
@@ -22,28 +26,33 @@ async function loadEmailMatchRecords() {
 }
 
 /**
- * @param {Array} [sheetRsvps] - When omitted, loads latest RSVPs from the sheet.
+ * @param {Array|null|undefined} sheetRsvps - Latest Atlas RSVPs (or omit to load)
+ * @param {{ events?: Array, records?: Array, skipEventMerge?: boolean }} [options]
  */
-async function enrichRsvpsForApi(sheetRsvps) {
-  const [records, database] = await Promise.all([
-    loadEmailMatchRecords(),
-    sheetRsvps ? Promise.resolve(null) : getFullDatabaseFromSheet(),
-  ]);
+async function enrichRsvpsForApi(sheetRsvps, options = {}) {
+  let rsvps = Array.isArray(sheetRsvps) ? sheetRsvps : null;
+  let events = options.events;
+  let records = options.records;
 
-  let rsvps = sheetRsvps;
-  let events = [];
-  if (database) {
-    rsvps = database.rsvps || [];
-    events = database.events || [];
-  } else {
-    const full = await getFullDatabaseFromSheet();
-    events = full.events || [];
+  if (rsvps == null || events == null) {
+    const database = await getFullDatabaseFromSheet();
+    rsvps = rsvps ?? database.rsvps ?? [];
+    events = events ?? database.events ?? [];
+    records = records ?? database._rosterRecords;
   }
 
-  events = await mergeSheetEventsWithLuma(events);
-  return enrichRsvpsWithLumaGuests(rsvps, events, records);
+  if (!records) {
+    records = await loadEmailMatchRecords();
+  }
+
+  if (!options.skipEventMerge) {
+    events = await mergeSheetEventsWithLuma(events || []);
+  }
+
+  return enrichRsvpsWithLumaGuests(rsvps || [], events || [], records || []);
 }
 
 module.exports = {
   enrichRsvpsForApi,
+  loadEmailMatchRecords,
 };

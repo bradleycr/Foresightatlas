@@ -202,78 +202,168 @@ function rowsToEvents(rows) {
 }
 
 async function fetchSheetRange(sheets, sheetName, range) {
-  try {
-    const { data } = await sheets.spreadsheets.values.get({
+  const cacheKey = `range:${SPREADSHEET_ID}:${sheetName}:${range}`;
+  const { cachedSheetRead } = require("./sheet-read-cache");
+  return cachedSheetRead(cacheKey, async () => {
+    try {
+      const { data } = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${sheetName}'!${range}`,
+        valueRenderOption: "UNFORMATTED_VALUE",
+      });
+      return data.values || [];
+    } catch (err) {
+      if (err.code === 400 && err.message?.includes("Unable to parse range")) {
+        return [];
+      }
+      throw err;
+    }
+  });
+}
+
+/**
+ * One Sheets read request for many tabs (counts as a single quota unit).
+ * @returns {Promise<Record<string, string[][]>>}
+ */
+async function batchFetchSheetRanges(sheets, namedRanges) {
+  const keys = Object.keys(namedRanges);
+  const ranges = keys.map((k) => namedRanges[k]);
+  const cacheKey = `batch:${SPREADSHEET_ID}:${ranges.join("|")}`;
+  const { cachedSheetRead } = require("./sheet-read-cache");
+
+  return cachedSheetRead(cacheKey, async () => {
+    const { data } = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${sheetName}'!${range}`,
+      ranges,
       valueRenderOption: "UNFORMATTED_VALUE",
     });
-    return data.values || [];
-  } catch (err) {
-    if (err.code === 400 && err.message?.includes("Unable to parse range")) {
-      return [];
-    }
-    throw err;
-  }
+    const valueRanges = data.valueRanges || [];
+    /** @type {Record<string, string[][]>} */
+    const out = {};
+    keys.forEach((key, i) => {
+      out[key] = valueRanges[i]?.values || [];
+    });
+    return out;
+  });
 }
 
 /**
  * Load the full database from the Google Sheet (Real Data + other tabs).
- * Returns { people, travelWindows, suggestions, adminUsers, rsvps } in the same
- * shape as database.json. Requires GOOGLE_SHEETS_API_KEY or service account.
+ * Returns { people, travelWindows, suggestions, adminUsers, rsvps, events }
+ * plus `_rosterRecords` (server-only, includes emails for Luma matching —
+ * never send that field to the client).
+ * Requires GOOGLE_SHEETS_API_KEY or service account.
+ *
+ * Results are TTL-cached and coalesced; callers get a shallow copy so
+ * assigning `database.events = …` cannot poison the shared cache entry.
  */
 async function getFullDatabaseFromSheet() {
-  const sheets = await getSheetsClient({ write: false });
-  if (!sheets) {
-    const envHint = process.env.VERCEL
-      ? " Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY (and SPREADSHEET_ID) in Vercel → Project → Settings → Environment Variables. See docs/VERCEL_ENV.md."
-      : " Set GOOGLE_SHEETS_API_KEY (read-only) or GOOGLE_SERVICE_ACCOUNT_KEY in .env.local. Optional: SPREADSHEET_ID. See docs/SHEETS_SYNC.md.";
-    throw new Error("Google Sheets credentials not configured. " + envHint);
-  }
+  const { cachedSheetRead } = require("./sheet-read-cache");
+  const db = await cachedSheetRead(`full-db:${SPREADSHEET_ID}`, async () => {
+    const sheets = await getSheetsClient({ write: false });
+    if (!sheets) {
+      const envHint = process.env.VERCEL
+        ? " Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY (and SPREADSHEET_ID) in Vercel → Project → Settings → Environment Variables. See docs/VERCEL_ENV.md."
+        : " Set GOOGLE_SHEETS_API_KEY (read-only) or GOOGLE_SERVICE_ACCOUNT_KEY in .env.local. Optional: SPREADSHEET_ID. See docs/SHEETS_SYNC.md.";
+      throw new Error("Google Sheets credentials not configured. " + envHint);
+    }
 
-  const [loaded, twRows, suggestionsRows, adminRows, rsvpsRows, eventsRows] = await Promise.all([
-    loadRealDataRecords({ sheets, write: false }),
-    fetchSheetRange(sheets, SHEET_NAMES.TRAVEL_WINDOWS, "A:K"),
-    fetchSheetRange(sheets, SHEET_NAMES.SUGGESTIONS, "A:G"),
-    fetchSheetRange(sheets, SHEET_NAMES.ADMIN_USERS, "A:D"),
-    fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:G"),
-    fetchSheetRange(sheets, SHEET_NAMES.EVENTS, "A:O"),
-  ]);
-  /*
-   * Public atlas privacy gate. Two classes of people are withheld from the
-   * public /api/database response so their information is never served to
-   * anonymous visitors:
-   *
-   *   1. Senior Fellows — their profiles are not meant to be publicly listed.
-   *   2. Members who opted out via the "make my profile private" setting.
-   *
-   * Note this only affects the public directory payload. Sign-in and profile
-   * editing read from RealData directly (loadRealDataRecords), and the client
-   * keeps the signed-in member's own record from the auth response, so a
-   * hidden member can still see and edit their own profile.
-   */
-  const people = (loaded.records || [])
-    .map((r) => r.person)
-    .filter((p) => p && p.fullName)
-    .filter((p) => p.roleType !== "Senior Fellow")
-    .filter((p) => p.isPrivate !== true)
-    // Roster email is server-side only — never broadcast it to the client.
-    .map(({ email, ...rest }) => rest);
-  const travelWindows = rowsToObjects(twRows, TRAVEL_WINDOWS_HEADERS, (row) => rowToTravelWindow(row));
-  const suggestions = rowsToObjects(suggestionsRows, SUGGESTIONS_HEADERS, (row) => rowToSuggestion(row));
-  const adminUsers = rowsToObjects(adminRows, ADMIN_USERS_HEADERS, (row) => rowToAdminUser(row));
-  let rsvps = rowsToRSVPs(rsvpsRows);
-  let events = rowsToEvents(eventsRows);
-  events = applyBerlinSecureWorkshopSheetOverrides(events);
-  rsvps = normalizeBerlinSecureWorkshopRsvps(rsvps);
+    /*
+     * RealData is loaded via loadRealDataRecords (handles tab-name variants).
+     * Other tabs share one batchGet so this path costs ~2 Sheets read units
+     * instead of 6 parallel values.get calls.
+     */
+    const [loaded, tabValues] = await Promise.all([
+      loadRealDataRecords({ sheets, write: false }),
+      batchFetchSheetRanges(sheets, {
+        travelWindows: `'${SHEET_NAMES.TRAVEL_WINDOWS}'!A:K`,
+        suggestions: `'${SHEET_NAMES.SUGGESTIONS}'!A:G`,
+        adminUsers: `'${SHEET_NAMES.ADMIN_USERS}'!A:D`,
+        rsvps: `'${SHEET_NAMES.RSVPS}'!A:G`,
+        events: `'${SHEET_NAMES.EVENTS}'!A:O`,
+      }).catch(async (err) => {
+        // batchGet can fail if a tab is missing; fall back to per-tab reads.
+        console.warn(
+          "[sheet-database] batchGet failed, falling back to per-tab gets:",
+          err?.message || err,
+        );
+        const [tw, sug, admin, rsvps, events] = await Promise.all([
+          fetchSheetRange(sheets, SHEET_NAMES.TRAVEL_WINDOWS, "A:K"),
+          fetchSheetRange(sheets, SHEET_NAMES.SUGGESTIONS, "A:G"),
+          fetchSheetRange(sheets, SHEET_NAMES.ADMIN_USERS, "A:D"),
+          fetchSheetRange(sheets, SHEET_NAMES.RSVPS, "A:G"),
+          fetchSheetRange(sheets, SHEET_NAMES.EVENTS, "A:O"),
+        ]);
+        return {
+          travelWindows: tw,
+          suggestions: sug,
+          adminUsers: admin,
+          rsvps,
+          events,
+        };
+      }),
+    ]);
+
+    /*
+     * Public atlas privacy gate. Two classes of people are withheld from the
+     * public /api/database response so their information is never served to
+     * anonymous visitors:
+     *
+     *   1. Senior Fellows — their profiles are not meant to be publicly listed.
+     *   2. Members who opted out via the "make my profile private" setting.
+     *
+     * Note this only affects the public directory payload. Sign-in and profile
+     * editing read from RealData directly (loadRealDataRecords), and the client
+     * keeps the signed-in member's own record from the auth response, so a
+     * hidden member can still see and edit their own profile.
+     */
+    const people = (loaded.records || [])
+      .map((r) => r.person)
+      .filter((p) => p && p.fullName)
+      .filter((p) => p.roleType !== "Senior Fellow")
+      .filter((p) => p.isPrivate !== true)
+      // Roster email is server-side only — never broadcast it to the client.
+      .map(({ email, ...rest }) => rest);
+    const travelWindows = rowsToObjects(
+      tabValues.travelWindows,
+      TRAVEL_WINDOWS_HEADERS,
+      (row) => rowToTravelWindow(row),
+    );
+    const suggestions = rowsToObjects(
+      tabValues.suggestions,
+      SUGGESTIONS_HEADERS,
+      (row) => rowToSuggestion(row),
+    );
+    const adminUsers = rowsToObjects(
+      tabValues.adminUsers,
+      ADMIN_USERS_HEADERS,
+      (row) => rowToAdminUser(row),
+    );
+    let rsvps = rowsToRSVPs(tabValues.rsvps);
+    let events = rowsToEvents(tabValues.events);
+    events = applyBerlinSecureWorkshopSheetOverrides(events);
+    rsvps = normalizeBerlinSecureWorkshopRsvps(rsvps);
+
+    return {
+      people,
+      travelWindows,
+      suggestions,
+      adminUsers,
+      rsvps,
+      events,
+      /** Server-only: full RealData rows (with email) for Luma guest matching. */
+      _rosterRecords: loaded.records || [],
+    };
+  });
 
   return {
-    people,
-    travelWindows,
-    suggestions,
-    adminUsers,
-    rsvps,
-    events,
+    people: db.people,
+    travelWindows: db.travelWindows,
+    suggestions: db.suggestions,
+    adminUsers: db.adminUsers,
+    rsvps: db.rsvps,
+    events: db.events,
+    _rosterRecords: db._rosterRecords,
   };
 }
 

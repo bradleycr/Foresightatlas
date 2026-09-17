@@ -52,8 +52,15 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(cached);
     }
     const database = await getFullDatabaseFromSheet();
+    const rosterRecords = database._rosterRecords;
+    delete database._rosterRecords;
     database.events = await mergeSheetEventsWithLuma(database.events || []);
-    database.rsvps = await enrichRsvpsForApi(database.rsvps);
+    // Reuse the sheet payload we already loaded — never re-fetch for Luma enrich.
+    database.rsvps = await enrichRsvpsForApi(database.rsvps, {
+      events: database.events,
+      records: rosterRecords,
+      skipEventMerge: true,
+    });
     cached = database;
     cachedAt = now;
     return res.status(200).json(database);
