@@ -24,6 +24,7 @@ import {
   setRSVP,
   withdrawRSVP,
   getUserRSVPStatus,
+  isLumaBackedRSVP,
   getEventRSVPSummary,
   fetchRSVPsFromAPI,
   setAPIRsvpsFromBuild,
@@ -265,6 +266,12 @@ export function NodeProgrammingPage({
   const handleRSVPChange = useCallback(
     (eventId: string, status: RSVPStatus | null, eventTitle?: string) => {
       if (!identity) return;
+      if (isLumaBackedRSVP(eventId, identity.personId)) {
+        toast.error("Registered on Luma", {
+          description: "Cancel on Luma to change your RSVP here. RSVPing here never updates Luma.",
+        });
+        return;
+      }
       /*
        * Never accept an active RSVP after the event has ended. Withdrawals
        * still go through so people can clear a stale "going" row if needed.
@@ -314,6 +321,15 @@ export function NodeProgrammingPage({
       void rsvpTick;
       if (!identity) return null;
       return getUserRSVPStatus(eventId, identity.personId);
+    },
+    [identity, rsvpTick],
+  );
+
+  const userLumaBackedOf = useCallback(
+    (eventId: string): boolean => {
+      void rsvpTick;
+      if (!identity) return false;
+      return isLumaBackedRSVP(eventId, identity.personId);
     },
     [identity, rsvpTick],
   );
@@ -507,6 +523,7 @@ export function NodeProgrammingPage({
                     event={ev}
                     rsvpSummary={summaryOf(ev.id)}
                     currentUserStatus={userStatusOf(ev.id)}
+                    currentUserLumaBacked={userLumaBackedOf(ev.id)}
                     onRSVPChange={handleRSVPChange}
                     onShowOnMap={onShowEventOnMap ? (id) => {
                       onShowEventOnMap(id, getEventRSVPSummary(id).goingPersonIds);

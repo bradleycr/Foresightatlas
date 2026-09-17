@@ -100,11 +100,25 @@ function mergeIntoStore(store: Store, records: RSVPRecord[]): void {
     if (!r.eventId || !r.personId) continue;
     if (!store[r.eventId]) store[r.eventId] = {};
     const existing = store[r.eventId][r.personId];
+    /*
+     * Luma-backed rows always win for the same person × event so a newer local
+     * Atlas write cannot hide a live Luma registration (or mint a second wheel).
+     */
+    if (r.source === "luma") {
+      store[r.eventId][r.personId] = {
+        ...r,
+        fullName: r.fullName ?? existing?.fullName,
+        eventTitle: r.eventTitle ?? existing?.eventTitle,
+      };
+      continue;
+    }
+    if (existing?.source === "luma") continue;
     if (!existing || new Date(r.updatedAt) > new Date(existing.updatedAt)) {
       store[r.eventId][r.personId] = {
         ...r,
         fullName: r.fullName ?? existing?.fullName,
         eventTitle: r.eventTitle ?? existing?.eventTitle,
+        source: r.source ?? existing?.source ?? "atlas",
       };
     }
   }
@@ -132,6 +146,11 @@ export async function setRSVP(
   fullName?: string,
   eventTitle?: string,
 ): Promise<RSVPRecord> {
+  if (isLumaBackedRSVP(eventId, personId)) {
+    throw new Error(
+      "You're registered on Luma for this event. Cancel on Luma to change your RSVP here.",
+    );
+  }
   const now = new Date().toISOString();
   const store = loadLocal();
   if (!store[eventId]) store[eventId] = {};
@@ -144,6 +163,7 @@ export async function setRSVP(
     updatedAt: now,
     fullName: fullName ?? existing?.fullName,
     eventTitle: eventTitle ?? existing?.eventTitle,
+    source: "atlas",
   };
   store[eventId][personId] = record;
   saveLocal(store);
@@ -234,6 +254,12 @@ export function getUserRSVPStatus(eventId: string, personId: string): RSVPStatus
   const record = getRSVP(eventId, personId);
   if (!record || record.status === "withdrawn") return null;
   return record.status;
+}
+
+/** True when this person’s status for the event comes from Luma (not Atlas). */
+export function isLumaBackedRSVP(eventId: string, personId: string): boolean {
+  const record = getRSVP(eventId, personId);
+  return Boolean(record && record.source === "luma" && record.status === "going");
 }
 
 export function getEventRSVPs(eventId: string): RSVPRecord[] {

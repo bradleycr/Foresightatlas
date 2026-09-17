@@ -107,6 +107,9 @@ export interface NodeEvent {
   recurrenceGroupId: string | null;
 }
 
+/** Where an RSVP “going” (or other status) came from after API enrichment. */
+export type RSVPSource = "atlas" | "luma";
+
 /** Persisted RSVP record for one person × one event. */
 export interface RSVPRecord {
   eventId: string;
@@ -118,6 +121,12 @@ export interface RSVPRecord {
   fullName?: string;
   /** Event title when read from sheet/API (so sheet view is human-readable). */
   eventTitle?: string;
+  /**
+   * Set by the API after Luma guest merge. `luma` means approved on Luma and
+   * supersedes any Atlas sheet row for this person × event (one nanowheel).
+   * Atlas writes never register you on Luma.
+   */
+  source?: RSVPSource;
 }
 
 /** Aggregated counts for a single event — derived at read time. */

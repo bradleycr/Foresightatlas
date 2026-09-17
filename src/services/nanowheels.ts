@@ -3,7 +3,9 @@
  *
  * A nanowheel (◎) is earned any time a member shows up somewhere:
  *   • +1 per check-in at a node (CheckIns sheet)
- *   • +1 per RSVP with status "going" (RSVPs sheet)
+ *   • +1 per RSVP with status "going" (Atlas sheet **or** Luma-approved guest
+ *     matched by email — Luma supersedes Atlas for the same person × event so
+ *     you never earn two wheels for one registration)
  *
  * Counts are derived from the same merged caches as the rest of the app
  * (checkin.ts / rsvp.ts) so a check-in you just made shows up immediately,

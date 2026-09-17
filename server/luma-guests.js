@@ -4,8 +4,12 @@
  * Display-only Luma guest → Atlas RSVP merge.
  *
  * Fetches approved Luma registrants for linked events, matches them to directory
- * members by email, and merges into the RSVP list returned by the API. Atlas
- * sheet RSVPs always win when the same person already has a row for that event.
+ * members by email, and merges into the RSVP list returned by the API.
+ *
+ * Precedence: **Luma approved guests supersede Atlas sheet rows** for the same
+ * person × event. That keeps one "going" status (one nanowheel), surfaces Luma
+ * registration in the app, and avoids double-counting when someone also RSVP'd
+ * on Atlas. Atlas RSVPs never write back to Luma.
  */
 
 const LUMA_BASE = "https://public-api.luma.com";
@@ -156,36 +160,37 @@ function isRelevantEventWindow(event, now = Date.now()) {
   return end >= weekAgo && start <= sixMonthsAhead;
 }
 
-function indexAtlasRsvps(sheetRsvps) {
-  const byKey = new Map();
-  for (const r of sheetRsvps || []) {
-    if (!r?.eventId || !r?.personId) continue;
-    byKey.set(`${r.eventId}\t${r.personId}`, r);
-  }
-  return byKey;
-}
-
 /**
  * Merge Luma-approved guests (directory members only) into sheet RSVPs.
+ * Luma `going` replaces any Atlas row for the same person × event so nanowheels
+ * and UI stay single-source.
  *
  * @param {Array} sheetRsvps - Latest Atlas RSVPs from the sheet
  * @param {Array} events - Merged programming events (with optional lumaEventId)
  * @param {Array} records - RealData records ({ person, auth }) for email matching
  */
 async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
-  const atlasRsvps = Array.isArray(sheetRsvps) ? [...sheetRsvps] : [];
-  const atlasIndex = indexAtlasRsvps(atlasRsvps);
+  const atlasRsvps = Array.isArray(sheetRsvps) ? sheetRsvps : [];
   const emailToPerson = buildEmailToPersonMap(records);
 
+  const taggedAtlas = atlasRsvps
+    .filter((r) => r?.eventId && r?.personId)
+    .map((r) => ({
+      ...r,
+      source: r.source === "luma" ? "luma" : "atlas",
+    }));
+
   if (!process.env.LUMA_API_KEY && !isLocalMockMode()) {
-    return atlasRsvps;
+    return taggedAtlas;
   }
 
   const lumaEvents = (events || []).filter(
     (ev) => resolveLumaEventId(ev) && isRelevantEventWindow(ev),
   );
 
-  const synthetic = [];
+  /** @type {Map<string, object>} person×event keys overridden by Luma */
+  const lumaByKey = new Map();
+
   await Promise.all(
     lumaEvents.map(async (event) => {
       const lumaEventId = resolveLumaEventId(event);
@@ -208,10 +213,8 @@ async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
         if (!match) continue;
 
         const key = `${event.id}\t${match.personId}`;
-        if (atlasIndex.has(key)) continue;
-
         const registeredAt = guestRegisteredAt(guest);
-        synthetic.push({
+        lumaByKey.set(key, {
           eventId: event.id,
           eventTitle: event.title || "",
           personId: match.personId,
@@ -219,14 +222,20 @@ async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
           status: "going",
           createdAt: registeredAt,
           updatedAt: registeredAt,
+          source: "luma",
         });
-        atlasIndex.set(key, synthetic[synthetic.length - 1]);
       }
     }),
   );
 
-  if (synthetic.length === 0) return atlasRsvps;
-  return [...atlasRsvps, ...synthetic];
+  if (lumaByKey.size === 0) return taggedAtlas;
+
+  // Drop Atlas rows that Luma now owns — one going status per person × event.
+  const withoutSuperseded = taggedAtlas.filter(
+    (r) => !lumaByKey.has(`${r.eventId}\t${r.personId}`),
+  );
+
+  return [...withoutSuperseded, ...lumaByKey.values()];
 }
 
 module.exports = {

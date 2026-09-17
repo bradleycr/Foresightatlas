@@ -6,12 +6,18 @@
  * Nanowheel rules (match src/services/nanowheels.ts):
  *   • +1 per active check-in (latest row per person × node × day, not withdrawn)
  *   • +1 per RSVP with status "going" (latest row per person × event)
+ *
+ * Going RSVPs include Luma-approved guests matched to the directory (same merge
+ * as GET /api/rsvps). Luma supersedes Atlas for the same person × event so
+ * nanowheels never double-count.
  */
 
 const { google } = require("googleapis");
 const { getSpreadsheetId, SHEET_NAMES } = require("../scripts/sheet-schema");
 const { normalizeBerlinSecureWorkshopRsvps } = require("./event-corrections");
 const { loadRealDataRecords } = require("./realdata-store");
+const { mergeSheetEventsWithLuma } = require("./luma-merge");
+const { enrichRsvpsWithLumaGuests } = require("./luma-guests");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const NODE_SLUGS = ["berlin", "sf", "global"];
@@ -145,6 +151,7 @@ function parseEventRows(values) {
       type: String(row[col("type")] ?? "").trim(),
       startAt: String(row[col("startAt")] ?? "").trim(),
       endAt: String(row[col("endAt")] ?? "").trim(),
+      lumaEventId: String(row[col("lumaEventId")] ?? "").trim() || null,
     });
   }
   return map;
@@ -552,11 +559,33 @@ async function loadCommunityStatsFromSheet() {
   }
 
   const checkIns = collapseCheckIns(parseCheckInRows(checkInValues));
-  const latestRsvps = normalizeBerlinSecureWorkshopRsvps(parseRsvpRows(rsvpValues));
-  const rsvpsGoing = latestRsvps.filter((r) => r.status === "going");
-  const rsvpsInterested = latestRsvps.filter((r) => r.status === "interested");
+  const sheetRsvps = normalizeBerlinSecureWorkshopRsvps(parseRsvpRows(rsvpValues));
   const eventMetaMap = parseEventRows(eventValues);
   const travelWindowRows = parseTravelWindowRows(travelValues);
+
+  // Same Luma guest merge as programming pages — Luma wins, one going per person×event.
+  const sheetEvents = [...eventMetaMap.values()].map((meta) => ({
+    id: meta.id,
+    title: meta.title,
+    nodeSlug: meta.nodeSlug,
+    startAt: meta.startAt || null,
+    endAt: meta.endAt || null,
+    lumaEventId: meta.lumaEventId || null,
+    type: meta.type || null,
+  }));
+  let latestRsvps = sheetRsvps;
+  try {
+    const mergedEvents = await mergeSheetEventsWithLuma(sheetEvents);
+    latestRsvps = await enrichRsvpsWithLumaGuests(sheetRsvps, mergedEvents, rosterRecords);
+  } catch (err) {
+    console.warn(
+      "[community-stats] Luma RSVP enrichment skipped:",
+      err?.message || err,
+    );
+  }
+
+  const rsvpsGoing = latestRsvps.filter((r) => r.status === "going");
+  const rsvpsInterested = latestRsvps.filter((r) => r.status === "interested");
 
   return buildCommunityStats({
     checkIns,

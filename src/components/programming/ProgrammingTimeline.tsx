@@ -5,10 +5,11 @@
 
 import { useMemo, useState } from "react";
 import { Calendar, Filter } from "lucide-react";
-import { NodeEvent, RSVPStatus, RSVPSummary } from "../../types/events";
+import { NodeEvent, RSVPStatus, RSVPSummary, NodeColorTheme } from "../../types/events";
 import { Person } from "../../types";
 import { EventCard } from "./EventCard";
 import { cn } from "../ui/utils";
+import { getNode, getProgrammingPageConfig } from "../../data/nodes";
 
 /* ── types ──────────────────────────────────────────────────────────── */
 
@@ -26,10 +27,12 @@ interface ProgrammingTimelineProps {
   allPeople: Person[];
   getRSVPSummary: (eventId: string) => RSVPSummary;
   getCurrentUserStatus: (eventId: string) => RSVPStatus | null;
+  getIsLumaBacked?: (eventId: string) => boolean;
   onRSVPChange: (eventId: string, status: RSVPStatus | null) => void;
   onShowOnMap?: (eventId: string) => void;
   isAuthenticated: boolean;
   scrollToMonth?: number | null;
+  theme?: NodeColorTheme;
 }
 
 /* ── constants ──────────────────────────────────────────────────────── */
@@ -109,13 +112,16 @@ export function ProgrammingTimeline({
   allPeople,
   getRSVPSummary,
   getCurrentUserStatus,
+  getIsLumaBacked,
   onRSVPChange,
   onShowOnMap,
   isAuthenticated,
+  theme,
 }: ProgrammingTimelineProps) {
   const [filter, setFilter] = useState<TimeFilter>("upcoming");
   const [typeFilter, setTypeFilter] = useState("all");
   const [collapsed, setCollapsed] = useState(true);
+  const cardTheme = theme ?? getNode("berlin")?.theme ?? getProgrammingPageConfig("berlin")!.theme;
 
   const now = useMemo(() => new Date(), []);
 
@@ -260,10 +266,12 @@ export function ProgrammingTimeline({
                 event={ev}
                 rsvpSummary={getRSVPSummary(ev.id)}
                 currentUserStatus={getCurrentUserStatus(ev.id)}
+                currentUserLumaBacked={getIsLumaBacked?.(ev.id) ?? false}
                 onRSVPChange={onRSVPChange}
                 onShowOnMap={onShowOnMap}
                 allPeople={allPeople}
                 isAuthenticated={isAuthenticated}
+                theme={cardTheme}
               />
             ))}
           </div>
@@ -291,10 +299,12 @@ export function ProgrammingTimeline({
                 event={ev}
                 rsvpSummary={getRSVPSummary(ev.id)}
                 currentUserStatus={getCurrentUserStatus(ev.id)}
+                currentUserLumaBacked={getIsLumaBacked?.(ev.id) ?? false}
                 onRSVPChange={onRSVPChange}
                 onShowOnMap={onShowOnMap}
                 allPeople={allPeople}
                 isAuthenticated={isAuthenticated}
+                theme={cardTheme}
               />
             ))}
           </div>

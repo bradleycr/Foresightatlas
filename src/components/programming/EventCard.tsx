@@ -128,6 +128,8 @@ interface EventCardProps {
   event: NodeEvent;
   rsvpSummary: RSVPSummary;
   currentUserStatus: RSVPStatus | null;
+  /** True when the signed-in user's "going" comes from Luma (supersedes Atlas). */
+  currentUserLumaBacked?: boolean;
   onRSVPChange: (eventId: string, status: RSVPStatus | null, eventTitle?: string) => void;
   onShowOnMap?: (eventId: string) => void;
   allPeople: Person[];
@@ -140,6 +142,7 @@ export function EventCard({
   event,
   rsvpSummary,
   currentUserStatus,
+  currentUserLumaBacked = false,
   onRSVPChange,
   allPeople,
   isAuthenticated,
@@ -369,13 +372,59 @@ export function EventCard({
       {showRsvpSection && (
         <div className="pt-4 mt-1 border-t border-gray-100 space-y-3">
           {isAuthenticated && !eventEnded && (
-            <RSVPButtonGroup
-              currentStatus={currentUserStatus}
-              onStatusChange={(s) => onRSVPChange(event.id, s, event.title)}
-              goingCount={rsvpSummary.going}
-              interestedCount={rsvpSummary.interested}
-              theme={theme}
-            />
+            <>
+              <RSVPButtonGroup
+                currentStatus={currentUserStatus}
+                onStatusChange={(s) => onRSVPChange(event.id, s, event.title)}
+                lumaBacked={currentUserLumaBacked}
+                goingCount={rsvpSummary.going}
+                interestedCount={rsvpSummary.interested}
+                theme={theme}
+              />
+              {currentUserLumaBacked ? (
+                <p className="text-xs text-gray-500 leading-relaxed" role="status">
+                  You&apos;re registered on Luma
+                  {externalLink ? (
+                    <>
+                      {" "}
+                      —{" "}
+                      <a
+                        href={externalLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn("font-medium underline-offset-2 hover:underline", theme.linkText)}
+                      >
+                        cancel on Luma
+                      </a>{" "}
+                      to update your RSVP here.
+                    </>
+                  ) : (
+                    <> — cancel on Luma to update your RSVP here.</>
+                  )}
+                </p>
+              ) : isLumaEvent ? (
+                <p className="text-xs text-gray-500 leading-relaxed" role="status">
+                  RSVPing here doesn&apos;t register you on Luma
+                  {externalLink ? (
+                    <>
+                      {" "}
+                      — use{" "}
+                      <a
+                        href={externalLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn("font-medium underline-offset-2 hover:underline", theme.linkText)}
+                      >
+                        View on Luma
+                      </a>{" "}
+                      for tickets.
+                    </>
+                  ) : (
+                    <>.</>
+                  )}
+                </p>
+              ) : null}
+            </>
           )}
           {isAuthenticated && eventEnded && (
             <p className="text-xs text-gray-500" role="status">

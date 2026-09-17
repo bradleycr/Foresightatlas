@@ -129,9 +129,10 @@ When `LUMA_API_KEY` is set, the API **merges approved Luma registrants into RSVP
 
 - **GET /api/database** and **GET /api/rsvps** call `server/luma-guests.js` after loading sheet RSVPs.
 - Only **directory members** are shown (matched by roster email, calendar email, or email in preferred contact).
-- **Atlas RSVPs always win** — if someone already has a sheet row for that event, the Luma guest is ignored.
+- **Luma supersedes Atlas** — if someone is an approved Luma guest for that event, they show as **Going** here even if they also have an Atlas sheet row (interested / withdrawn / going). One status → one nanowheel.
 - Guest lists are **cached ~10 minutes** per Luma event; only events in a relevant window (past week → six months ahead) are fetched.
-- This is **display-only** — nothing is written to the RSVPs sheet.
+- This is **display-only** — nothing is written to the RSVPs sheet, and **RSVPing in Atlas never registers you on Luma**.
+- UI: Luma-backed Going locks the Atlas RSVP pills and points people to **cancel on Luma** to change status here.
 
 Events need a `lumaEventId` (auto-set for pure Luma events, or via the sheet `lumaEventId` column).
 

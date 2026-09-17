@@ -2,7 +2,7 @@
  * RSVPButtonGroup — pill-rounded RSVP toggles.
  *
  * Going = confirmed attending. Interested = might attend (not the same as going).
- * Counts are shown next to each option so it's always clear how many are going vs interested.
+ * When status comes from Luma, pills are locked — cancel on Luma to change here.
  */
 
 import { Check, Star, X } from "lucide-react";
@@ -13,6 +13,8 @@ interface RSVPButtonGroupProps {
   currentStatus: RSVPStatus | null;
   onStatusChange: (status: RSVPStatus | null) => void;
   disabled?: boolean;
+  /** When true, registration is owned by Luma — Atlas toggles are read-only. */
+  lumaBacked?: boolean;
   goingCount?: number;
   interestedCount?: number;
   theme?: NodeColorTheme;
@@ -57,12 +59,23 @@ export function RSVPButtonGroup({
   currentStatus,
   onStatusChange,
   disabled = false,
+  lumaBacked = false,
   goingCount,
   interestedCount,
   theme,
 }: RSVPButtonGroupProps) {
+  const locked = disabled || lumaBacked;
+
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP: Going means confirmed attending, Interested means might attend">
+    <div
+      className="flex flex-wrap gap-2"
+      role="group"
+      aria-label={
+        lumaBacked
+          ? "RSVP from Luma — cancel on Luma to change here"
+          : "RSVP: Going means confirmed attending, Interested means might attend"
+      }
+    >
       {CHOICES.map(({ status, label, Icon, on, off, ariaDescription }) => {
         const active = currentStatus === status;
         const count =
@@ -73,10 +86,17 @@ export function RSVPButtonGroup({
         return (
           <button
             key={status}
-            onClick={() => onStatusChange(active ? null : status)}
-            disabled={disabled}
+            onClick={() => {
+              if (lumaBacked) return;
+              onStatusChange(active ? null : status);
+            }}
+            disabled={locked}
             aria-pressed={active}
-            title={ariaDescription}
+            title={
+              lumaBacked
+                ? "Registered on Luma — cancel there to update here"
+                : ariaDescription
+            }
             aria-label={count !== undefined && count > 0 ? `${label} (${count})` : label}
             className={cn(
               "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold border transition-all",
