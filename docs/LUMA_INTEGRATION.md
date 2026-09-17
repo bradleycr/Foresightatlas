@@ -128,7 +128,8 @@ This means you can:
 When `LUMA_API_KEY` is set, the API **merges approved Luma registrants into RSVP counts** on programming pages:
 
 - **GET /api/database** and **GET /api/rsvps** call `server/luma-guests.js` after loading sheet RSVPs.
-- Only **directory members** are shown (matched by roster email, calendar email, or email in preferred contact).
+- Source: Luma `GET /v1/events/guests/list?event_id=…&approval_status=approved` (guest fields include `user_email`, `user_name`, `user_first_name`, `user_last_name`).
+- Only **directory members** are shown. Match order: **email first**, then **unique normalized name** (diacritic-insensitive). If two roster people share the same name, name match is skipped for that guest.
 - **Luma supersedes Atlas** — if someone is an approved Luma guest for that event, they show as **Going** here even if they also have an Atlas sheet row (interested / withdrawn / going). One status → one nanowheel.
 - Guest lists are **cached ~10 minutes** per Luma event; only events in a relevant window (past week → six months ahead) are fetched.
 - This is **display-only** — nothing is written to the RSVPs sheet, and **RSVPing in Atlas never registers you on Luma**.

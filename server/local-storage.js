@@ -1005,14 +1005,29 @@ async function getMockLumaEvents() {
   return Array.isArray(raw) ? raw : defaultMockLumaEvents();
 }
 
-/** Approved Luma guests for local mock RSVP merge (directory emails only). */
+/** Approved Luma guests for local mock RSVP merge (email and/or name). */
 function getMockLumaGuests(lumaEventId) {
   const fixtures = {
     "mock-luma-berlin-1": [
-      { email: "bradley@foresight.org", registered_at: "2026-05-01T12:00:00.000Z" },
+      {
+        user_email: "bradley@foresight.org",
+        user_name: "Bradley Clark Royes",
+        registered_at: "2026-05-01T12:00:00.000Z",
+      },
     ],
     "mock-luma-berlin-kickoff-2026": [
-      { email: "bradley@foresight.org", registered_at: "2026-04-01T10:00:00.000Z" },
+      {
+        user_email: "bradley@foresight.org",
+        user_name: "Bradley Clark Royes",
+        registered_at: "2026-04-01T10:00:00.000Z",
+      },
+      {
+        // Name-only fixture — no roster email on the guest.
+        user_name: "Allison Duettmann",
+        user_first_name: "Allison",
+        user_last_name: "Duettmann",
+        registered_at: "2026-04-02T10:00:00.000Z",
+      },
     ],
   };
   return fixtures[String(lumaEventId || "").trim()] || [];

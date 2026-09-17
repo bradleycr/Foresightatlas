@@ -3,13 +3,17 @@
 /**
  * Display-only Luma guest → Atlas RSVP merge.
  *
- * Fetches approved Luma registrants for linked events, matches them to directory
- * members by email, and merges into the RSVP list returned by the API.
+ * Fetches approved Luma registrants (`GET /v1/events/guests/list`) for linked
+ * events and matches them to directory members, then merges into the RSVP list.
+ *
+ * Matching (first hit wins):
+ *   1. Email — `user_email` vs roster email / calendarEmail / contact emails
+ *   2. Unique name — `user_name` or first+last vs roster `fullName` (diacritic-
+ *      insensitive). Ambiguous names (two directory people) are skipped.
  *
  * Precedence: **Luma approved guests supersede Atlas sheet rows** for the same
- * person × event. That keeps one "going" status (one nanowheel), surfaces Luma
- * registration in the app, and avoids double-counting when someone also RSVP'd
- * on Atlas. Atlas RSVPs never write back to Luma.
+ * person × event. That keeps one "going" status (one nanowheel). Atlas RSVPs
+ * never write back to Luma.
  */
 
 const LUMA_BASE = "https://public-api.luma.com";
@@ -23,6 +27,18 @@ const guestCache = new Map();
 
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+/** Fold names for matching: case, spacing, punctuation, and diacritics. */
+function normalizeMatchName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function extractEmailsFromContact(value) {
@@ -62,6 +78,27 @@ function buildEmailToPersonMap(records) {
   return map;
 }
 
+/**
+ * Map normalized full name → person only when exactly one roster row shares it.
+ * Duplicate names are stored as `null` so lookups stay safe (no wrong merge).
+ */
+function buildUniqueNameToPersonMap(records) {
+  /** @type {Map<string, { personId: string, fullName: string } | null>} */
+  const map = new Map();
+  for (const record of records || []) {
+    const person = record?.person;
+    if (!person?.id) continue;
+    const key = normalizeMatchName(person.fullName);
+    if (!key) continue;
+    if (!map.has(key)) {
+      map.set(key, { personId: person.id, fullName: person.fullName || "" });
+    } else {
+      map.set(key, null);
+    }
+  }
+  return map;
+}
+
 /** Resolve the Luma event id used by the guests API from an Atlas event row. */
 function resolveLumaEventId(event) {
   if (!event) return null;
@@ -73,13 +110,30 @@ function resolveLumaEventId(event) {
 
 function guestEmail(guest) {
   return normalizeEmail(
-    guest?.email || guest?.user_email || guest?.guest_email || guest?.user?.email || "",
+    guest?.user_email ||
+      guest?.email ||
+      guest?.guest_email ||
+      guest?.user?.email ||
+      "",
   );
+}
+
+/**
+ * Luma guest list entries expose `user_name` and/or first+last.
+ * @see https://docs.luma.com/reference/get_v1-events-guests-list
+ */
+function guestDisplayName(guest) {
+  const full = String(guest?.user_name || guest?.name || guest?.user?.name || "").trim();
+  if (full) return full;
+  const first = String(guest?.user_first_name || guest?.first_name || "").trim();
+  const last = String(guest?.user_last_name || guest?.last_name || "").trim();
+  return [first, last].filter(Boolean).join(" ");
 }
 
 function guestRegisteredAt(guest) {
   const raw =
     guest?.registered_at ||
+    guest?.joined_at ||
     guest?.created_at ||
     guest?.approved_at ||
     guest?.updated_at ||
@@ -87,6 +141,23 @@ function guestRegisteredAt(guest) {
   if (!raw) return new Date().toISOString();
   const parsed = new Date(raw);
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : new Date().toISOString();
+}
+
+/**
+ * Resolve a Luma guest to a directory member: email first, then unique name.
+ * @returns {{ personId: string, fullName: string } | null}
+ */
+function matchGuestToPerson(guest, emailToPerson, nameToPerson) {
+  const email = guestEmail(guest);
+  if (email) {
+    const byEmail = emailToPerson.get(email);
+    if (byEmail) return byEmail;
+  }
+
+  const nameKey = normalizeMatchName(guestDisplayName(guest));
+  if (!nameKey) return null;
+  const byName = nameToPerson.get(nameKey);
+  return byName || null;
 }
 
 async function fetchLumaGuestsForEvent(lumaEventId) {
@@ -137,6 +208,7 @@ async function fetchLumaGuestsForEvent(lumaEventId) {
     if (entries.length === 0) break;
 
     for (const entry of entries) {
+      // List responses put fields on the entry itself; older shapes nest under `.guest`.
       const guest = entry.guest || entry;
       guests.push(guest);
     }
@@ -167,11 +239,12 @@ function isRelevantEventWindow(event, now = Date.now()) {
  *
  * @param {Array} sheetRsvps - Latest Atlas RSVPs from the sheet
  * @param {Array} events - Merged programming events (with optional lumaEventId)
- * @param {Array} records - RealData records ({ person, auth }) for email matching
+ * @param {Array} records - RealData records ({ person, auth }) for matching
  */
 async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
   const atlasRsvps = Array.isArray(sheetRsvps) ? sheetRsvps : [];
   const emailToPerson = buildEmailToPersonMap(records);
+  const nameToPerson = buildUniqueNameToPersonMap(records);
 
   const taggedAtlas = atlasRsvps
     .filter((r) => r?.eventId && r?.personId)
@@ -207,9 +280,7 @@ async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
       }
 
       for (const guest of guests) {
-        const email = guestEmail(guest);
-        if (!email) continue;
-        const match = emailToPerson.get(email);
+        const match = matchGuestToPerson(guest, emailToPerson, nameToPerson);
         if (!match) continue;
 
         const key = `${event.id}\t${match.personId}`;
@@ -240,6 +311,9 @@ async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
 
 module.exports = {
   buildEmailToPersonMap,
+  buildUniqueNameToPersonMap,
   enrichRsvpsWithLumaGuests,
+  matchGuestToPerson,
+  normalizeMatchName,
   resolveLumaEventId,
 };
