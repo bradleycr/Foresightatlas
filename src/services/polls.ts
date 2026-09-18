@@ -85,9 +85,13 @@ export async function updatePoll(
     slug: string;
     question?: string;
     options?: string[];
+    /** Append one project while draft or live (stable option ids). */
+    addOption?: string;
     eventId?: string;
     eventTitle?: string;
     status?: "draft" | "live" | "closed";
+    /** When going live, close every other live poll first. */
+    closeOtherLive?: boolean;
   },
 ): Promise<PollAdmin> {
   const res = await fetch(`${getApiBase()}/polls`, {

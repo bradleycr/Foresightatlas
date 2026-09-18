@@ -15,7 +15,7 @@ import { fetchPublicPoll } from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import type { PollPublic } from "../types/polls";
 
-const GRADIENT = "linear-gradient(160deg, #f8fafc 0%, #eef2ff 42%, #fdf2f8 100%)";
+const GRADIENT = "linear-gradient(160deg, #f7f6f3 0%, #ffffff 45%, #efece6 100%)";
 
 interface PollLivePageProps {
   slug: string;
@@ -95,11 +95,11 @@ export function PollLivePage({ slug }: PollLivePageProps) {
         <div className="mt-8 grid flex-1 grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-12">
           <div>
             {poll.eventTitle ? (
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700/80">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
                 {poll.eventTitle}
               </p>
             ) : null}
-            <h1 className="font-heading mt-2 text-2xl font-bold leading-tight text-gray-900 sm:text-4xl lg:text-5xl">
+            <h1 className="font-heading mt-2 text-2xl font-bold leading-tight text-[var(--primary)] sm:text-4xl lg:text-5xl">
               {poll.question}
             </h1>
             <div className="mt-8 max-h-[min(70vh,40rem)] overflow-y-auto pr-1">

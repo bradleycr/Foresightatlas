@@ -118,6 +118,34 @@ function normalizeOptions(input) {
   return options;
 }
 
+/**
+ * Append one option without renumbering existing ids — safe while a poll is
+ * live (votes already point at option ids). Used for "add a project on the fly".
+ */
+function appendOptionLabel(existing, labelRaw) {
+  const label = String(labelRaw || "").trim();
+  if (!label) throw new Error("Project name is required.");
+  if (label.length > MAX_OPTION) {
+    throw new Error(`Each option must be ${MAX_OPTION} characters or fewer.`);
+  }
+  const options = Array.isArray(existing) ? [...existing] : [];
+  if (options.length >= MAX_OPTIONS) {
+    throw new Error(`Keep it to ${MAX_OPTIONS} options or fewer.`);
+  }
+  const dup = options.some(
+    (o) => String(o.label || "").trim().toLowerCase() === label.toLowerCase(),
+  );
+  if (dup) throw new Error("That project is already on this poll.");
+
+  let maxId = 0;
+  for (const option of options) {
+    const n = Number.parseInt(String(option.id), 10);
+    if (Number.isFinite(n) && n > maxId) maxId = n;
+  }
+  options.push({ id: String(maxId + 1), label });
+  return options;
+}
+
 function normalizeQuestion(value) {
   const question = String(value || "").trim();
   if (!question) throw new Error("A question is required.");
@@ -505,9 +533,30 @@ async function updatePoll(session, body) {
     throw err;
   }
   const now = new Date().toISOString();
+
+  /*
+   * Live polls may only grow: append a project name without renumbering ids.
+   * Full question/options replace stays draft-only so existing votes stay valid.
+   */
+  const addOption =
+    body.addOption != null
+      ? body.addOption
+      : body.appendOption != null
+        ? body.appendOption
+        : null;
+  if (addOption != null) {
+    if (poll.status === "closed") {
+      throw new Error("Closed polls can’t gain new projects. Open a new poll.");
+    }
+    poll.options = appendOptionLabel(poll.options, addOption);
+  }
+
   if (body.question != null || body.options != null) {
     if (poll.status !== "draft") {
-      throw new Error("Question and options can only change while the poll is a draft.");
+      throw new Error(
+        "Question and the full project list can only change while the poll is a draft. " +
+          "On a live poll, add one project at a time.",
+      );
     }
     if (body.question != null) poll.question = normalizeQuestion(body.question);
     if (body.options != null) poll.options = normalizeOptions(body.options);
@@ -523,12 +572,26 @@ async function updatePoll(session, body) {
     if (poll.status === "draft" && next === "closed") {
       throw new Error("Go live before closing, or leave it as a draft.");
     }
+    /*
+     * Soft single-live: when going live, optionally close every other live
+     * poll so the room isn’t split across two QR codes by accident.
+     */
+    if (next === "live" && body.closeOtherLive) {
+      for (const other of polls) {
+        if (other.id === poll.id || other.status !== "live") continue;
+        other.status = "closed";
+        other.closedAt = now;
+        other.updatedAt = now;
+        await persistPoll(other);
+      }
+    }
     poll.status = next;
     if (next === "closed") poll.closedAt = now;
   }
   poll.updatedAt = now;
   await persistPoll(poll);
-  return adminPollShape(poll, votes);
+  const { votes: freshVotes } = await loadAll();
+  return adminPollShape(poll, freshVotes);
 }
 
 async function castVote({ slug, optionId, voterKeyRaw }) {

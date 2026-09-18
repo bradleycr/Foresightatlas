@@ -47,7 +47,7 @@ export function PollOptionPicker({
             enterKeyHint="search"
             autoCapitalize="none"
             autoCorrect="off"
-            className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-base text-gray-900 shadow-sm outline-none placeholder:text-gray-400 focus-visible:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-200"
+            className="h-11 w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-3 text-base text-neutral-900 shadow-sm outline-none placeholder:text-neutral-400 focus-visible:border-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--primary)_18%,transparent)]"
           />
         </label>
       ) : null}
@@ -63,7 +63,7 @@ export function PollOptionPicker({
                 onClick={() => onSelect(option.id)}
                 className={cn(
                   "flex min-h-[48px] w-full items-center gap-3 px-3.5 py-2.5 text-left touch-manipulation",
-                  isOn ? "bg-sky-50" : "bg-white active:bg-gray-50",
+                  isOn ? "bg-[color-mix(in_oklab,var(--primary)_6%,white)]" : "bg-white active:bg-neutral-50",
                   disabled && "cursor-default",
                 )}
               >
@@ -71,8 +71,8 @@ export function PollOptionPicker({
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
                     isOn
-                      ? "bg-sky-600 text-white"
-                      : "bg-gray-100 text-gray-500",
+                      ? "bg-[var(--primary)] text-white"
+                      : "bg-neutral-100 text-neutral-500",
                   )}
                 >
                   {option.id}
@@ -80,7 +80,7 @@ export function PollOptionPicker({
                 <span
                   className={cn(
                     "min-w-0 flex-1 text-[15px] leading-snug",
-                    isOn ? "font-semibold text-sky-950" : "font-medium text-gray-900",
+                    isOn ? "font-semibold text-[var(--primary)]" : "font-medium text-neutral-900",
                   )}
                 >
                   {option.label}
@@ -92,13 +92,13 @@ export function PollOptionPicker({
       </ul>
 
       {filtered.length === 0 ? (
-        <p className="mt-3 text-center text-sm text-gray-500">No matches. Try another word.</p>
+        <p className="mt-3 text-center text-sm text-neutral-500">No matches. Try another word.</p>
       ) : null}
 
       {selected ? (
         <div className="pointer-events-none sticky bottom-3 z-10 mt-4">
-          <p className="rounded-2xl border border-sky-200 bg-sky-50/95 px-4 py-3 text-sm text-sky-950 shadow-sm backdrop-blur">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-700">
+          <p className="rounded-2xl border border-neutral-200 bg-white/95 px-4 py-3 text-sm text-[var(--primary)] shadow-sm backdrop-blur">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               Your vote
             </span>
             <span className="mt-0.5 block font-medium leading-snug">{selected.label}</span>

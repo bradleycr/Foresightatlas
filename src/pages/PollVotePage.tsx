@@ -17,7 +17,7 @@ import { subscribeToDataChanges } from "../services/sync";
 import type { Identity } from "../services/identity";
 import type { PollPublic } from "../types/polls";
 
-const GRADIENT = "linear-gradient(135deg, #eef2ff 0%, #fdf2f8 55%, #f5f3ff 100%)";
+const GRADIENT = "linear-gradient(165deg, #f7f6f3 0%, #ffffff 48%, #efece6 100%)";
 
 interface PollVotePageProps {
   slug: string;
@@ -94,7 +94,7 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
           >
             <img src={foresightIconUrl} alt="Foresight Institute" className="size-6 sm:size-8" />
           </a>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700/80">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
             The Foresight Atlas · Poll
           </p>
         </div>
@@ -120,7 +120,7 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
                 {poll.eventTitle}
               </p>
             ) : null}
-            <h1 className="font-heading mt-1 text-[1.35rem] font-bold leading-snug text-gray-900 sm:text-2xl">
+            <h1 className="font-heading mt-1 text-[1.35rem] font-bold leading-snug text-[var(--primary)] sm:text-2xl">
               {poll.question}
             </h1>
 
@@ -161,7 +161,7 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
                   <button
                     type="button"
                     onClick={() => setShowAllResults((v) => !v)}
-                    className="mt-3 min-h-[40px] text-sm font-medium text-sky-700"
+                    className="mt-3 min-h-[40px] text-sm font-medium text-[var(--primary)]"
                   >
                     {showAllResults ? "Show top 5" : `See all ${poll.results.length} results`}
                   </button>

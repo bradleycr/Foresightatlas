@@ -68,7 +68,7 @@ export function PollResultsBars({
               <div
                 className={cn(
                   "h-full rounded-full transition-[width] duration-700 ease-out",
-                  mine ? "bg-sky-600" : "bg-sky-400/90",
+                  mine ? "bg-[var(--primary)]" : "bg-[color-mix(in_oklab,var(--primary)_72%,white)]",
                 )}
                 style={{ width: `${width}%` }}
               />
