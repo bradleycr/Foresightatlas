@@ -22,6 +22,18 @@ export function atlasPasswordResetMailto(fullName?: string): string {
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+/** Ask staff to wipe a roster row entirely (beyond the self-serve “hide from atlas” toggle). */
+export function atlasProfileRemovalMailto(fullName?: string): string {
+  const name = String(fullName || "").trim();
+  const subject = name
+    ? `Foresight Atlas — please remove my profile — ${name}`
+    : "Foresight Atlas — please remove my profile";
+  const body = name
+    ? `Hi,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it):\n${name}\n\nThanks`
+    : "Hi,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it).\n\nMy full directory name:\n\nThanks";
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 /** @deprecated Prefer {@link atlasPasswordResetMailto} so the body can include a name. */
 export const ATLAS_PASSWORD_RESET_MAILTO = atlasPasswordResetMailto();
 

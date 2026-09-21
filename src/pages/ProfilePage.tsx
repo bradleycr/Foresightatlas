@@ -30,6 +30,7 @@ import {
 import { getNode } from "../data/nodes";
 import { peekRegisterInviteRole } from "../utils/inviteToken";
 import { buildFullPath } from "../utils/router";
+import { atlasProfileRemovalMailto } from "../utils/checkInAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -1075,9 +1076,13 @@ export function ProfilePage({
 
               <ProfileSection
                 title="Privacy"
+                description="You stay signed in either way. Hidden just means your pin and directory card are off the public atlas."
                 icon={<EyeOff className="size-4 text-sky-500" />}
               >
-                <Field label="Profile visibility">
+                <Field
+                  label="Profile visibility"
+                  description="Choose Private to hide yourself from the map and member list."
+                >
                   <Select
                     value={draft.isPrivate ? "private" : "public"}
                     onValueChange={(v) => updateDraft("isPrivate", v === "private")}
@@ -1089,6 +1094,22 @@ export function ProfilePage({
                     </SelectContent>
                   </Select>
                 </Field>
+                {draft.isPrivate ? (
+                  <p className="rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    You’re hidden from the map and directory. You can still RSVP,
+                    check in, and edit this profile. Save profile to apply.
+                  </p>
+                ) : null}
+                <p className="text-sm text-gray-600">
+                  Want your row removed entirely?{" "}
+                  <a
+                    href={atlasProfileRemovalMailto(draft.fullName || identity.fullName)}
+                    className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline"
+                  >
+                    Email us and we’ll delete it
+                  </a>
+                  .
+                </p>
               </ProfileSection>
 
               <ProfileSection
