@@ -1,15 +1,14 @@
 "use strict";
 
 /**
- * Outbound mail via Resend (same pattern as foresight-matchmaker).
+ * Optional outbound mail via Resend.
  *
- * Env:
- *   RESEND_API_KEY   — required to send
- *   SMTP_FROM        — e.g. "Foresight Atlas <noreply@foresight.org>"
- *                      (any address on a Resend-verified domain)
- *   SMTP_REPLY_TO    — optional; where replies should land
- *   AUTH_REVEAL_LINKS — "true" to show links on-screen when mail isn't sent
- *                      (local testing / first DNS deploy)
+ * Default product path needs no mail / DNS: when RESEND_API_KEY is unset,
+ * /access shows the magic link on screen after name + email match.
+ *
+ * Env (only if you later want email delivery):
+ *   RESEND_API_KEY, SMTP_FROM, SMTP_REPLY_TO
+ *   AUTH_REVEAL_LINKS=false — force hide on-screen links even without mail
  */
 
 const RESEND_API = "https://api.resend.com/emails";
@@ -22,10 +21,13 @@ function mailConfigured() {
 }
 
 function revealLinksAllowed() {
-  if (process.env.AUTH_REVEAL_LINKS === "true") return true;
-  if (mailConfigured()) return false;
+  // Explicit opt-out (e.g. staging with Resend half-configured).
   if (process.env.AUTH_REVEAL_LINKS === "false") return false;
-  return process.env.NODE_ENV !== "production";
+  if (process.env.AUTH_REVEAL_LINKS === "true") return true;
+  // No mail infra → on-screen links are the product (no DNS required).
+  if (!mailConfigured()) return true;
+  // Mail is live: don't also show the link (would burn one-time tokens).
+  return false;
 }
 
 /** @returns {"email" | "on_screen" | "server_log"} */

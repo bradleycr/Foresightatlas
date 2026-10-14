@@ -236,7 +236,7 @@ export function DirectoryLoginForm({
               >
                 Forgot password / need a magic link?
               </a>{" "}
-              We’ll email you a one-time link.
+              Verify name + email on file to get a one-time link.
               {" · "}
               <a
                 href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}

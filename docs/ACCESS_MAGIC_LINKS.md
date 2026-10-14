@@ -1,41 +1,36 @@
 # Self-serve magic links (`/access`)
 
 Members enter **first name, last name, and the email on file**. If both match a
-RealData row, Atlas emails a one-time `/claim?token=…` link:
+RealData row, Atlas shows a one-time `/claim?token=…` link on screen:
 
 - **No password yet** → claim link (set password)
 - **Already claimed** → password-reset link (24h)
 
-The UI always says “if we find a match, we’ll email you” — it does not reveal
-whether the name/email existed (anti-enumeration).
+**No DNS or Resend required.** Name + email on the roster is the gate. Rate
+limited. Optional Resend email delivery can be added later without changing
+this flow.
 
-## Local test (no Resend, not live)
+Share with the community: `https://atlas.foresight.org/access`
+
+## Local / smoke test
 
 ```bash
-# Terminal 1 — mock or sheet-backed API
-AUTH_REVEAL_LINKS=true CLAIM_BASE_URL=http://localhost:3000 pnpm dev
+pnpm test:access-request
 
-# Or hit the API directly after the server is up:
+# Or with the mock API running:
 curl -s -X POST http://localhost:3001/api/member-access-request \
   -H 'Content-Type: application/json' \
   -d '{"firstName":"Alice","lastName":"Example","email":"alice@example.com"}'
 ```
 
-In mock mode, Alice Example / `alice@example.com` is seeded. The JSON may
-include `claim_link` when mail isn’t configured — open that URL to finish
-claiming.
+Mock seed: Alice Example / `alice@example.com`.
 
-## Go-live (Resend + noreply@foresight.org)
+## Optional later: email the link (Resend + DNS)
 
-1. Resend → API key + verify `foresight.org` (or a send subdomain)  
-2. Vercel env: `RESEND_API_KEY`, `SMTP_FROM=Foresight Atlas <noreply@foresight.org>`,
-   `SMTP_REPLY_TO=…`, `CLAIM_BASE_URL=https://atlas.foresight.org`  
-3. Do **not** set `AUTH_REVEAL_LINKS` in production  
-4. Smoke-test `/access` with your own roster email before announcing  
-
-Code mirrors foresight-matchmaker’s `lib/auth/mail.ts` (Resend HTTP, not SMTP).
+Only if you want inbox delivery instead of on-screen links. Verify a domain in
+Resend, then set `RESEND_API_KEY` + `SMTP_FROM`. When mail is configured,
+on-screen reveal turns off so the emailed one-time link isn’t burned.
 
 ## New people (not on the sheet yet)
 
 Use the standing `/join?token=…` invite (`pnpm invite:link`), not `/access`.
-`/access` only helps people who are already on the roster with an email.

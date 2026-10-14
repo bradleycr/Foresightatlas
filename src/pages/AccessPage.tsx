@@ -1,13 +1,11 @@
 /**
- * Self-serve access — enter name + email, get a claim or reset magic link.
- *
- * Public (no session). Anti-enumeration: the success copy is the same whether
- * or not we found a roster match. Locally, with Resend unset, the API may
- * return claim_link for testing.
+ * Self-serve access — enter name + email, get a claim or reset magic link
+ * on screen. No email / DNS required. Optional Resend can email later if
+ * configured; until then the link is shown here after a roster match.
  */
 
 import { useState, type FormEvent } from "react";
-import { ArrowLeft, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, Check, Copy, KeyRound, Loader2 } from "lucide-react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { requestAccessMagicLink } from "../services/accessRequest";
@@ -33,12 +31,14 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
   const [claimLink, setClaimLink] = useState<string | null>(null);
   const [kind, setKind] = useState<"claim" | "reset" | null>(null);
   const [message, setMessage] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setStatus("working");
     setError(null);
     setClaimLink(null);
+    setCopied(false);
     try {
       const result = await requestAccessMagicLink({
         firstName: firstName.trim(),
@@ -52,6 +52,17 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not request a link.");
       setStatus("error");
+    }
+  };
+
+  const copyLink = async () => {
+    if (!claimLink) return;
+    try {
+      await navigator.clipboard.writeText(claimLink);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard may fail; link is still visible */
     }
   };
 
@@ -93,24 +104,35 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
           {status === "done" ? (
             <div className="space-y-4">
               <div className="flex size-11 items-center justify-center rounded-2xl bg-[color-mix(in_oklab,var(--primary)_8%,white)]">
-                <Mail className="size-5 text-[var(--primary)]" aria-hidden />
+                <KeyRound className="size-5 text-[var(--primary)]" aria-hidden />
               </div>
               <h2 className="font-heading text-lg font-bold text-[var(--primary)]">
-                Check your email
+                {claimLink
+                  ? kind === "reset"
+                    ? "Reset link ready"
+                    : "Claim link ready"
+                  : "No match"}
               </h2>
               <p className="text-sm leading-relaxed text-neutral-600">{message}</p>
               {claimLink ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-                  <p className="font-medium">
-                    Dev / fallback link
-                    {kind ? ` (${kind})` : ""} — Resend not sending yet:
-                  </p>
+                <div className="space-y-3">
                   <a
                     href={claimLink}
-                    className="mt-2 block break-all font-medium text-[var(--primary)] underline underline-offset-2"
+                    className="flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)] hover:opacity-90"
                   >
-                    {claimLink}
+                    {kind === "reset" ? "Reset password" : "Set password & claim"}
                   </a>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3">
+                    <p className="break-all text-xs text-neutral-600">{claimLink}</p>
+                    <button
+                      type="button"
+                      onClick={() => void copyLink()}
+                      className="mt-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-[var(--primary)]"
+                    >
+                      {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                      {copied ? "Copied" : "Copy link"}
+                    </button>
+                  </div>
                 </div>
               ) : null}
               <Button
@@ -122,15 +144,15 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
                   setClaimLink(null);
                 }}
               >
-                Request another
+                Try again
               </Button>
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
               <p className="text-sm leading-relaxed text-neutral-600">
-                If you’re already on the atlas roster, enter the name and email
-                we have on file. We’ll send a one-time link to claim your
-                profile or reset your password.
+                Already on the atlas roster? Enter the name and email we have on
+                file. We’ll show a one-time link to claim your profile or reset
+                your password — no inbox required.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -182,9 +204,9 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
                 {status === "working" ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  <Mail className="size-4" />
+                  <KeyRound className="size-4" />
                 )}
-                Email me a link
+                Get my link
               </Button>
             </form>
           )}

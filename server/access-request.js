@@ -140,27 +140,24 @@ async function requestAccessLink(req, body) {
 
   const mode = magicLinkMode();
   const reveal = revealLinksAllowed();
-  const generic = {
-    ok: true,
-    mode,
-    message:
-      "If we find a matching profile, we’ll email a magic link shortly. Check spam if it doesn’t arrive.",
-  };
+  const missMessage =
+    mode === "email"
+      ? "If we find a matching profile, we’ll email a magic link shortly. Check spam if it doesn’t arrive."
+      : "We couldn’t verify that name and email against the atlas roster. Check the spelling matches the email on file, or ask staff for help.";
 
   let records;
   try {
     records = await loadRosterRecords();
   } catch (error) {
     console.error("[access-request] roster load failed:", error?.message || error);
-    // Same public response — don't leak sheet outages as "not found".
-    return generic;
+    return { ok: true, mode, message: missMessage };
   }
 
   const match = findMatchingRecord(records, fullName, email);
   if (!match) {
-    // Constant-time-ish delay so misses aren't obviously faster.
+    // Small delay so misses aren't obviously faster than hits.
     await new Promise((r) => setTimeout(r, 400 + Math.floor(Math.random() * 200)));
-    return generic;
+    return { ok: true, mode, message: missMessage };
   }
 
   const person = match.person;
@@ -174,9 +171,11 @@ async function requestAccessLink(req, body) {
       : issueClaimToken(person.id);
   } catch (error) {
     console.error("[access-request] token issue failed:", error?.message || error);
-    return generic;
+    return { ok: true, mode, message: missMessage };
   }
   const link = buildClaimUrl(origin, token);
+
+  // Optional Resend path — only when configured. Default is on-screen (no DNS).
   const mail = await sendAccessMagicLink(
     email,
     link,
@@ -185,9 +184,18 @@ async function requestAccessLink(req, body) {
   );
 
   const claimLink = reveal && !mail.sent ? link : undefined;
+  const hitMessage = mail.sent
+    ? "We emailed a one-time link. Check your inbox (and spam)."
+    : kind === "reset"
+      ? "Open this one-time link to reset your password."
+      : "Open this one-time link to set your password and claim your profile.";
+
   return {
-    ...generic,
-    ...(claimLink ? { claim_link: claimLink, kind } : {}),
+    ok: true,
+    mode,
+    message: hitMessage,
+    kind,
+    ...(claimLink ? { claim_link: claimLink } : {}),
     ...(mail.sent ? { emailed: true } : {}),
   };
 }

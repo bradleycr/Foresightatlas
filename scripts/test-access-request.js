@@ -71,7 +71,7 @@ async function main() {
   }
   console.log("   ok —", hit.kind || "claim", hit.claim_link.slice(0, 64) + "…");
 
-  console.log("2) Miss (wrong email) still returns generic ok …");
+  console.log("2) Miss (wrong email) — ok, no link …");
   const miss = await requestAccessLink(fakeReq, {
     firstName: "Alice",
     lastName: "Example",
@@ -79,6 +79,9 @@ async function main() {
   });
   if (!miss.ok) throw new Error("miss should still be ok");
   if (miss.claim_link) throw new Error("miss must not reveal a link");
+  if (!/couldn.t verify/i.test(miss.message || "")) {
+    throw new Error("expected verify-failure message, got: " + miss.message);
+  }
   console.log("   ok — no claim_link leaked");
 
   console.log("3) Validation error on empty name …");
