@@ -45,7 +45,14 @@ async function req(base, method, path, { token, body } = {}) {
 }
 
 async function main() {
+  const { getLocalDatabase, DATABASE_FILE } = require("../server/local-storage");
+  const fsp = require("fs").promises;
   const db = await getLocalDatabase();
+  // Isolate from prior local runs that left bookmark rows in mock/*.local.json.
+  db.connections = [];
+  db.meta = { ...(db.meta || {}), updatedAt: new Date().toISOString() };
+  await fsp.writeFile(DATABASE_FILE, `${JSON.stringify(db, null, 2)}\n`);
+
   const alice = db.people.find((p) => p.id === "mock-person-alice");
   const bob = db.people.find((p) => p.id === "mock-person-bob");
   if (!alice || !bob) throw new Error("mock people missing");
