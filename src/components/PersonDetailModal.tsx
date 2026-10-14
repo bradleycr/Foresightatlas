@@ -567,11 +567,27 @@ export function PersonDetailModal({
                     <button
                       type="button"
                       onClick={() => {
-                        const nowConnected = toggleConnection(identity.personId, person.id);
-                        onConnectionsChange?.();
-                        toast.success(
-                          nowConnected ? "Added to connections" : "Removed from connections",
-                        );
+                        void (async () => {
+                          try {
+                            const nowConnected = await toggleConnection(
+                              identity.personId,
+                              person.id,
+                            );
+                            onConnectionsChange?.();
+                            toast.success(
+                              nowConnected
+                                ? "Added to connections"
+                                : "Removed from connections",
+                            );
+                          } catch (err) {
+                            onConnectionsChange?.();
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : "Could not update connection",
+                            );
+                          }
+                        })();
                       }}
                       className={cn(
                         "person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation active:scale-95 transition-transform",

@@ -33,9 +33,13 @@ function parseRoleTypes(value) {
 
 /** Write back to the sheet — single role stays a plain string for readability. */
 function serializeRoleTypes(roles) {
+  // Accept string | string[] — personRecordToRow may pass roleType when roleTypes is unset.
   const list = Array.isArray(roles)
     ? roles.map((r) => String(r).trim()).filter(Boolean)
-    : [];
+    : String(roles || "")
+        .trim()
+        ? [String(roles).trim()]
+        : [];
   if (list.length === 0) return "Fellow";
   if (list.length === 1) return list[0];
   return JSON.stringify(list);

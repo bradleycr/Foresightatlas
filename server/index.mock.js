@@ -49,6 +49,7 @@ const {
 } = require("./directory-auth");
 const { assertPublicWriteSecret } = require("./public-write-secret");
 const pollsHandler = require("../api/polls");
+const connectionsHandler = require("../api/connections");
 
 const app = express();
 const DEFAULT_PORT = 3001;
@@ -404,6 +405,7 @@ app.get("/api/calendar-events", async (req, res) => {
 });
 
 app.all("/api/polls", pollsHandler);
+app.all("/api/connections", connectionsHandler);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

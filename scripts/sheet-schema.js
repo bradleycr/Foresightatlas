@@ -8,6 +8,7 @@
  *       SignalCheckins, DailyTable-Berlin, DailyTable-SF.
  * The optional CheckIns tab (used by api/checkins.js for node check-in) is separate from SignalCheckins/DailyTable; not listed here.
  * Polls + PollVotes are created on first use by api/polls.js (event QR polls).
+ * Connections is created on first bookmark by api/connections.js (private).
  * Row 1 = headers; data from row 2. Arrays/objects stored as JSON strings.
  *
  * RealData is the canonical source of truth for people records. The legacy
@@ -40,6 +41,8 @@ const SHEET_NAMES = {
   DAILY_TABLE_SF: "DailyTable-SF",
   POLLS: "Polls",
   POLL_VOTES: "PollVotes",
+  /** Private bookmarks — never served via /api/database; session-scoped only. */
+  CONNECTIONS: "Connections",
 };
 
 /** Try these in order when resolving the Real Data tab (sheet may use "Real Data" or "RealData"). */
@@ -218,6 +221,19 @@ const POLL_VOTES_HEADERS = [
   "updatedAt",
 ];
 
+/**
+ * Personal connection bookmarks. Append-only; latest row for
+ * (ownerPersonId, targetPersonId) wins. status is "active" | "removed".
+ * Only the owner may read their rows (GET /api/connections + session).
+ */
+const CONNECTIONS_HEADERS = [
+  "ownerPersonId",
+  "targetPersonId",
+  "status",
+  "createdAt",
+  "updatedAt",
+];
+
 /** Resolve a DailyTable tab name from a node slug ("berlin" → "DailyTable-Berlin"). */
 function dailyTableTabName(nodeSlug) {
   const label = { berlin: "Berlin", sf: "SF" }[nodeSlug];
@@ -268,6 +284,7 @@ module.exports = {
   DAILY_TABLE_HEADERS,
   POLLS_HEADERS,
   POLL_VOTES_HEADERS,
+  CONNECTIONS_HEADERS,
   dailyTableTabName,
   isLocationUnspecified,
   getSheetColumnLetter,

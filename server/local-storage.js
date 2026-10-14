@@ -52,6 +52,7 @@ function normalizeLocalDatabase(raw) {
     checkins: Array.isArray(base.checkins) ? base.checkins : [],
     polls: Array.isArray(base.polls) ? base.polls : [],
     pollVotes: Array.isArray(base.pollVotes) ? base.pollVotes : [],
+    connections: Array.isArray(base.connections) ? base.connections : [],
     meta: {
       updatedAt:
         base.meta && typeof base.meta === "object" && typeof base.meta.updatedAt === "string"
@@ -175,6 +176,7 @@ function defaultMockDatabase() {
     checkins: [],
     polls: [],
     pollVotes: [],
+    connections: [],
     meta: { updatedAt: new Date().toISOString() },
   };
 }
@@ -939,6 +941,33 @@ async function appendLocalCheckin(input) {
   return row;
 }
 
+/** All connection rows for one owner (including removed) — caller dedupes. */
+async function listLocalConnections(ownerPersonId) {
+  const db = await getLocalDatabase();
+  const owner = String(ownerPersonId || "").trim();
+  if (!owner) return [];
+  return (db.connections || []).filter(
+    (r) => String(r.ownerPersonId || "").trim() === owner,
+  );
+}
+
+async function appendLocalConnection(row) {
+  const db = await getLocalDatabase();
+  const next = {
+    ownerPersonId: String(row.ownerPersonId || "").trim(),
+    targetPersonId: String(row.targetPersonId || "").trim(),
+    status: String(row.status || "active").trim() || "active",
+    createdAt: String(row.createdAt || new Date().toISOString()),
+    updatedAt: String(row.updatedAt || new Date().toISOString()),
+  };
+  if (!next.ownerPersonId || !next.targetPersonId) {
+    throw new Error("ownerPersonId and targetPersonId required");
+  }
+  db.connections.push(next);
+  await saveLocalDatabase(db);
+  return next;
+}
+
 async function upsertLocalPoll(poll) {
   const db = await getLocalDatabase();
   const next = {
@@ -1063,6 +1092,8 @@ module.exports = {
   appendLocalRsvp,
   listLocalCheckins,
   appendLocalCheckin,
+  listLocalConnections,
+  appendLocalConnection,
   appendLocalSuggestion,
   upsertLocalPoll,
   appendLocalPollVote,

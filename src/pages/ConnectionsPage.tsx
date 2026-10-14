@@ -8,11 +8,16 @@
  * alongside programming nodes without repeating Berlin/SF/Global.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Bookmark, Shield, UserCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import type { Person } from "../types";
-import { getConnectionIds, removeConnection } from "../services/connections";
+import {
+  fetchConnectionsFromAPI,
+  getConnectionIds,
+  removeConnection,
+} from "../services/connections";
 import { Button } from "../components/ui/button";
 import { getRolePillClass } from "../styles/roleColors";
 import {
@@ -47,6 +52,13 @@ export function ConnectionsPage({
 }: ConnectionsPageProps) {
   const [tick, setTick] = useState(0);
 
+  useEffect(() => {
+    if (!identity?.personId) return;
+    void fetchConnectionsFromAPI(identity.personId).then(() => {
+      setTick((t) => t + 1);
+    });
+  }, [identity?.personId, connectionsVersion]);
+
   const connectionIds = useMemo(
     () => (identity ? getConnectionIds(identity.personId) : []),
     [identity?.personId, tick, connectionsVersion],
@@ -64,8 +76,17 @@ export function ConnectionsPage({
 
   const handleRemoveBookmark = (personId: string) => {
     if (!identity) return;
-    removeConnection(identity.personId, personId);
-    setTick((t) => t + 1);
+    void (async () => {
+      try {
+        await removeConnection(identity.personId, personId);
+        setTick((t) => t + 1);
+      } catch (err) {
+        setTick((t) => t + 1);
+        toast.error(
+          err instanceof Error ? err.message : "Could not remove connection",
+        );
+      }
+    })();
   };
 
   if (!identity) {

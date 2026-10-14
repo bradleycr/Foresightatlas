@@ -43,7 +43,14 @@
  */
 
 /** Scope of data that has changed. Granular so consumers can refetch cheaply. */
-export type DataScope = "people" | "rsvps" | "checkins" | "events" | "polls" | "all";
+export type DataScope =
+  | "people"
+  | "rsvps"
+  | "checkins"
+  | "events"
+  | "polls"
+  | "connections"
+  | "all";
 
 /** Reason for a sync broadcast — purely informational, for logs/UI. */
 export type DataChangeReason =
@@ -62,7 +69,7 @@ export interface DataChangeMessage {
 
 export interface SyncError {
   /** Which endpoint/domain produced the error (used in toasts/logs). */
-  scope: "database" | "rsvps" | "checkins" | "events" | "profile";
+  scope: "database" | "rsvps" | "checkins" | "events" | "profile" | "connections";
   message: string;
   /** Original error when available, for devtools. */
   cause?: unknown;

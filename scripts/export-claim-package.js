@@ -46,10 +46,10 @@ function toClaimRow(record) {
 }
 
 function claimCsv(rows) {
-  const lines = ["Full name,Title,Email,Claim link"];
+  const lines = ["Full name,Role,Title,Email,Claim link"];
   for (const row of rows) {
     lines.push(
-      `${csvCell(row.fullName)},${csvCell(row.title)},${csvCell(row.email)},${csvCell(row.url)}`,
+      `${csvCell(row.fullName)},${csvCell(row.roleType)},${csvCell(row.title)},${csvCell(row.email)},${csvCell(row.url)}`,
     );
   }
   return `${lines.join("\n")}\n`;

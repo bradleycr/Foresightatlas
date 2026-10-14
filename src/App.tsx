@@ -65,6 +65,7 @@ import {
   refreshDirectorySession,
   claimProfile,
 } from "./services/memberAuth";
+import { fetchConnectionsFromAPI } from "./services/connections";
 import { consumePostLoginReturnUrl } from "./services/returnUrl";
 
 /**
@@ -108,6 +109,8 @@ export default function App() {
    * their record is intentionally absent from the public /api/database list.
    */
   const [selfPerson, setSelfPerson] = useState<Person | null>(null);
+  /** Bumps when bookmarks sync or toggle so ConnectionsPage re-reads. */
+  const [connectionsVersion, setConnectionsVersion] = useState(0);
   /** Shared with MapView so the mobile list sheet can open the same nav menu as the header hamburger. */
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -135,6 +138,10 @@ export default function App() {
       return;
     }
     loadData();
+    // Pull account-scoped bookmarks (sheet) so a new device gets the same list.
+    void fetchConnectionsFromAPI(identity.personId).then(() => {
+      setConnectionsVersion((v) => v + 1);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity?.personId]);
 
@@ -572,8 +579,6 @@ export default function App() {
 
   const [mapFilterIds, setMapFilterIds] = useState<Set<string> | null>(null);
 
-  /** Increment when user toggles a connection in the person modal so ConnectionsPage can re-read. */
-  const [connectionsVersion, setConnectionsVersion] = useState(0);
   const [mapLocationNudgeHidden, setMapLocationNudgeHidden] = useState(false);
 
   const mapPeople = useMemo(() => {
