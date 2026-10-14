@@ -36,6 +36,7 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { CheckInPage } from "./pages/CheckInPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { JoinPage } from "./pages/JoinPage";
+import { AccessPage } from "./pages/AccessPage";
 import { StatsPage } from "./pages/StatsPage";
 import { PollsPage } from "./pages/PollsPage";
 import { PollVotePage } from "./pages/PollVotePage";
@@ -215,7 +216,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/stats", "/claim", "/join", "/polls"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/stats", "/claim", "/join", "/access", "/polls"];
     const current = getRoutePath();
     // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
     // so we match them with a prefix rather than an exact list entry. Bare
@@ -621,9 +622,12 @@ export default function App() {
     isJoinRoute && typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("token")
       : null;
+  /** Self-serve claim / password-reset request (emails a magic link). */
+  const isAccessRoute = route === "/access";
   const isMapRoute = route === "/" || route === "";
   /** Magic-link onboarding — no chrome; the form needs the full viewport. */
-  const isTokenOnboardingRoute = !identity && (isClaimRoute || isJoinRoute);
+  const isTokenOnboardingRoute =
+    !identity && (isClaimRoute || isJoinRoute || isAccessRoute);
   const isPollsPublicExperience = isPollsPublicRoute(route);
   /*
    * Resolve the signed-in member's record. Prefer the public directory copy
@@ -742,6 +746,8 @@ export default function App() {
       onExitCreateMode={() => navigate("/")}
       onRequestLocationSetup={() => navigate(profileLocationSetupPath())}
     />
+  ) : isAccessRoute ? (
+    <AccessPage onNavigateHome={() => navigate("/")} />
   ) : (
     <>
       {showMapLocationNudge && signedInPerson ? (
@@ -800,7 +806,13 @@ export default function App() {
    * signed-out person legitimately needs — claiming an existing profile and
    * the invite-only join page — plus public event-poll QR / projector pages.
    */
-  if (!identity && !isClaimRoute && !isJoinRoute && !isPollsPublicExperience) {
+  if (
+    !identity &&
+    !isClaimRoute &&
+    !isJoinRoute &&
+    !isAccessRoute &&
+    !isPollsPublicExperience
+  ) {
     return (
       <>
         <AuthGate route={route} onSignIn={handleDirectorySignIn} />

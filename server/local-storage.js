@@ -34,6 +34,9 @@ function hasReadOnlySheetsCredentials() {
 
 function isLocalMockMode() {
   if (process.env.VERCEL) return false;
+  // server/index.mock.js sets this so access-request / auth stay file-backed
+  // even when .env.local still has production sheet credentials.
+  if (process.env.FORESIGHT_FORCE_MOCK === "1") return true;
   return !hasServiceAccountCredentials() && !hasReadOnlySheetsCredentials();
 }
 
@@ -114,6 +117,7 @@ function defaultPeople() {
       profileUrl: "",
       profileImageUrl: null,
       contactUrlOrHandle: "@bob",
+      email: "bob@example.com",
       shortProjectTagline: "Local storage and API integration checks.",
       expandedProjectDescription: "Second seed profile for local mock mode.",
       isAlumni: false,
@@ -1045,6 +1049,7 @@ module.exports = {
   CALENDAR_FILE,
   isLocalMockMode,
   getLocalDatabase,
+  getLocalAuth,
   authenticateLocalMember,
   changeLocalMemberPassword,
   refreshLocalMemberSession,

@@ -111,6 +111,7 @@
         "dedupe:realdata": "node scripts/dedupe-realdata.js",
         "test:sheet-roundtrip": "node scripts/test-sheet-roundtrip.js",
         "test:member-auth": "node scripts/test-member-auth.js",
+        "test:access-request": "node scripts/test-access-request.js",
         "compare:sheet": "node scripts/compare-sheet-data.js",
         "copyover-report": "node scripts/copyover-test-to-real-report.js",
         "copyover-report:csv": "node scripts/copyover-test-to-real-report.js --csv",

@@ -8,6 +8,8 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../.env.local") });
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+// Stay file-backed even if .env.local has production Google credentials.
+process.env.FORESIGHT_FORCE_MOCK = "1";
 
 const express = require("express");
 const fs = require("fs").promises;
@@ -262,6 +264,25 @@ app.post("/api/member-invite-claim", async (req, res) => {
     const message =
       error instanceof Error ? error.message : "Could not claim this profile";
     res.status(status).json({ error: message });
+  }
+});
+
+app.post("/api/member-access-request", async (req, res) => {
+  try {
+    const { requestAccessLink } = require("./access-request");
+    const result = await requestAccessLink(req, req.body || {});
+    return res.json(result);
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
+    if (status === 429 && error.retryAfterSec) {
+      res.setHeader("Retry-After", String(error.retryAfterSec));
+    }
+    res.status(status).json({
+      error: error instanceof Error ? error.message : "Could not request a link",
+    });
   }
 });
 

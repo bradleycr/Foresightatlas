@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 import { ATLAS_ACCESS_MAILTO, atlasPasswordResetMailto } from "../../utils/checkInAuth";
+import { buildFullPath } from "../../utils/router";
 
 interface DirectoryLoginFormProps {
   people: Person[];
@@ -230,12 +231,19 @@ export function DirectoryLoginForm({
           {showAccountRecovery ? (
             <p className="text-sm text-gray-600">
               <a
-                href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
+                href={buildFullPath("/access")}
                 className="font-medium text-sky-600 transition-colors hover:text-sky-800"
               >
-                Forgot password?
+                Forgot password / need a magic link?
               </a>{" "}
-              Email for a personal reset link.
+              We’ll email you a one-time link.
+              {" · "}
+              <a
+                href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
+                className="font-medium text-gray-500 transition-colors hover:text-gray-800"
+              >
+                Or email staff
+              </a>
             </p>
           ) : null}
         </div>

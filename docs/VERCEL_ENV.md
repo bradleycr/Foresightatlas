@@ -82,6 +82,28 @@ Server code that loads **`server/directory-auth.js`** requires in **`NODE_ENV=pr
 
 Set these on any production host that runs member login / profile routes (Vercel includes them in serverless functions that import that module).
 
+## Self-serve magic links (`/access`) — optional until go-live
+
+Same Resend setup as foresight-matchmaker. **Do not enable in production until the domain is verified and you’ve smoke-tested.**
+
+| Variable | Purpose |
+|----------|---------|
+| **RESEND_API_KEY** | Send claim / password-reset emails |
+| **SMTP_FROM** | e.g. `Foresight Atlas <noreply@foresight.org>` (any address on a verified domain) |
+| **SMTP_REPLY_TO** | Optional; where replies land (e.g. Lydia) |
+| **AUTH_REVEAL_LINKS** | `true` only for local / staging — shows the link on-screen when mail isn’t sent. **Leave unset in production.** |
+| **CLAIM_BASE_URL** | Origin baked into emailed links (`https://atlas.foresight.org`) |
+
+**Setup checklist (easy):**
+
+1. Resend account → create API key  
+2. Domains → add `foresight.org` (or `mail.foresight.org`) → copy SPF/DKIM into DNS  
+3. Wait for verification (often &lt; 15 min)  
+4. Add the env vars above in Vercel → redeploy  
+5. Open `/access`, request a link for yourself, confirm inbox delivery  
+
+Until step 4, local `pnpm dev` with `AUTH_REVEAL_LINKS=true` (or no Resend key in development) returns the magic link in the API response for testing.
+
 ## Data is live
 
 - The app does **not** use a static backup at runtime. It always loads from **GET /api/database**, which reads from the Google Sheet.

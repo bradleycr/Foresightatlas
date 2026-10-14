@@ -11,6 +11,7 @@
     { "source": "/api/member-register", "destination": "/api/member?route=register" },
     { "source": "/api/member-invite-claim", "destination": "/api/member?route=invite-claim" },
     { "source": "/api/directory-names", "destination": "/api/member?route=directory-names" },
+    { "source": "/api/member-access-request", "destination": "/api/member?route=access-request" },
     { "source": "/checkin/:slug*", "destination": "/index.html" },
     { "source": "/berlin", "destination": "/index.html" },
     { "source": "/sf", "destination": "/index.html" },
@@ -22,6 +23,7 @@
     { "source": "/polls", "destination": "/index.html" },
     { "source": "/polls/:path*", "destination": "/index.html" },
     { "source": "/claim", "destination": "/index.html" },
-    { "source": "/join", "destination": "/index.html" }
+    { "source": "/join", "destination": "/index.html" },
+    { "source": "/access", "destination": "/index.html" }
   ]
 }

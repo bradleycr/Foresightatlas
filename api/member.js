@@ -4,7 +4,8 @@
  * Unified member / directory auth API (Vercel Hobby plan: one function, many routes).
  *
  * Rewrites in vercel.json map legacy paths here via ?route=…
- *   login, refresh, claim, password, register, invite-claim, directory-names
+ *   login, refresh, claim, password, register, invite-claim, directory-names,
+ *   access-request
  */
 
 const { createProfile } = require("../server/profile-store");
@@ -20,6 +21,7 @@ const {
   claimProfileWithInvite,
   readDirectoryTokenFromRequest,
 } = require("../server/directory-auth");
+const { requestAccessLink } = require("../server/access-request");
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -192,6 +194,27 @@ async function handleDirectoryNames(req, res) {
   }
 }
 
+async function handleAccessRequest(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  try {
+    const result = await requestAccessLink(req, req.body || {});
+    return res.status(200).json(result);
+  } catch (error) {
+    const statusCode =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 400;
+    if (statusCode === 429 && error.retryAfterSec) {
+      res.setHeader("Retry-After", String(error.retryAfterSec));
+    }
+    return res.status(statusCode).json({
+      error: error instanceof Error ? error.message : "Could not request a link",
+    });
+  }
+}
+
 const ROUTES = {
   login: handleLogin,
   refresh: handleRefresh,
@@ -200,6 +223,7 @@ const ROUTES = {
   register: handleRegister,
   "invite-claim": handleInviteClaim,
   "directory-names": handleDirectoryNames,
+  "access-request": handleAccessRequest,
 };
 
 module.exports = async function handler(req, res) {
