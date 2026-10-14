@@ -93,8 +93,7 @@ async function main() {
     console.log("   ok —", e.message);
   }
 
-  console.log("\n✓ access-request smoke test passed (mock + reveal).");
-  console.log("  Go-live later: set RESEND_API_KEY + SMTP_FROM, unset AUTH_REVEAL_LINKS.");
+  console.log("\n✓ access-request smoke test passed (on-screen links, no mail).");
 }
 
 main().catch((err) => {

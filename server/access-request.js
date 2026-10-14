@@ -1,11 +1,10 @@
 "use strict";
 
 /**
- * Self-serve magic links: name + email → claim or password-reset email.
+ * Self-serve magic links: name + email → claim or password-reset link on screen.
  *
  * Always returns the same public shape whether or not a match was found
- * (anti-enumeration). Locally, AUTH_REVEAL_LINKS / missing Resend can surface
- * the link on-screen for testing.
+ * (anti-enumeration). Optional Resend (if configured later) can email instead.
  */
 
 const {
@@ -140,10 +139,11 @@ async function requestAccessLink(req, body) {
 
   const mode = magicLinkMode();
   const reveal = revealLinksAllowed();
+  // Anti-enumeration: same copy whether or not a row matched.
   const missMessage =
     mode === "email"
-      ? "If we find a matching profile, we’ll email a magic link shortly. Check spam if it doesn’t arrive."
-      : "We couldn’t verify that name and email against the atlas roster. Check the spelling matches the email on file, or ask staff for help.";
+      ? "If we find a matching profile, we’ll email a one-time link shortly. Check spam if it doesn’t arrive."
+      : "We couldn’t verify that name and email against the atlas roster. Check the spelling matches the email on file, or email bradley@foresight.org for help.";
 
   let records;
   try {

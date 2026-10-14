@@ -242,7 +242,7 @@ export function DirectoryLoginForm({
                 href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
                 className="font-medium text-gray-500 transition-colors hover:text-gray-800"
               >
-                Or email staff
+                Or email Bradley
               </a>
             </p>
           ) : null}
@@ -262,7 +262,7 @@ export function DirectoryLoginForm({
               href={ATLAS_ACCESS_MAILTO}
               className="font-medium text-sky-600 transition-colors hover:text-sky-800"
             >
-              Contact us for access
+              Email Bradley for access
             </a>
           </p>
         </div>

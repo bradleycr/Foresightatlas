@@ -29,8 +29,8 @@ export function atlasProfileRemovalMailto(fullName?: string): string {
     ? `Foresight Atlas — please remove my profile — ${name}`
     : "Foresight Atlas — please remove my profile";
   const body = name
-    ? `Hi,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it):\n${name}\n\nThanks`
-    : "Hi,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it).\n\nMy full directory name:\n\nThanks";
+    ? `Hi Bradley,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it):\n${name}\n\nThanks`
+    : "Hi Bradley,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it).\n\nMy full directory name:\n\nThanks";
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 

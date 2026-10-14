@@ -622,7 +622,7 @@ export default function App() {
     isJoinRoute && typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("token")
       : null;
-  /** Self-serve claim / password-reset request (emails a magic link). */
+  /** Self-serve claim / password-reset — on-screen magic link after roster match. */
   const isAccessRoute = route === "/access";
   const isMapRoute = route === "/" || route === "";
   /** Magic-link onboarding — no chrome; the form needs the full viewport. */

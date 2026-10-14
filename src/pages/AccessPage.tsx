@@ -1,7 +1,6 @@
 /**
  * Self-serve access — enter name + email, get a claim or reset magic link
- * on screen. No email / DNS required. Optional Resend can email later if
- * configured; until then the link is shown here after a roster match.
+ * on screen. No outbound mail required.
  */
 
 import { useState, type FormEvent } from "react";
@@ -9,6 +8,7 @@ import { ArrowLeft, Check, Copy, KeyRound, Loader2 } from "lucide-react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { requestAccessMagicLink } from "../services/accessRequest";
+import { ATLAS_ACCESS_MAILTO } from "../utils/checkInAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -134,7 +134,18 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
                     </button>
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <p className="text-sm text-neutral-600">
+                  Still stuck?{" "}
+                  <a
+                    href={ATLAS_ACCESS_MAILTO}
+                    className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
+                  >
+                    Email Bradley
+                  </a>
+                  .
+                </p>
+              )}
               <Button
                 type="button"
                 variant="outline"
