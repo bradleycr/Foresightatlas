@@ -408,7 +408,7 @@ function ExistingClaimForm({
             <StatusNote>
               Staff profiles aren&apos;t claimed here.{" "}
               <a href={ATLAS_ACCESS_MAILTO} className="font-medium text-sky-700">
-                Email Bradley
+                Email our team
               </a>{" "}
               for a personal link.
             </StatusNote>
@@ -418,7 +418,7 @@ function ExistingClaimForm({
               We don&apos;t have an email on file for {peek.fullName}, so this
               profile can&apos;t be claimed here.{" "}
               <a href={ATLAS_ACCESS_MAILTO} className="font-medium text-sky-700">
-                Email Bradley
+                Email our team
               </a>{" "}
               and we&apos;ll send a personal claim link.
             </StatusNote>

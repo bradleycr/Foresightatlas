@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { atlasBugReportMailto } from "../utils/checkInAuth";
 
 interface Props {
   children: ReactNode;
@@ -48,12 +49,29 @@ export class ErrorBoundary extends Component<Props, State> {
                 {this.state.error?.stack}
               </pre>
             </details>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Reload Page
-            </button>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                style={{ padding: "0.5rem 1rem", background: "#2563eb", color: "#fff", borderRadius: "0.375rem", border: "none" }}
+              >
+                Reload Page
+              </button>
+              <a
+                href={atlasBugReportMailto({
+                  error: this.state.error
+                    ? `${this.state.error.message}\n${this.state.error.stack || ""}`
+                    : undefined,
+                })}
+                className="px-4 py-2 rounded border border-gray-300 text-gray-800 hover:bg-gray-50"
+                style={{ padding: "0.5rem 1rem", borderRadius: "0.375rem", border: "1px solid #d1d5db", color: "#1f2937", textDecoration: "none" }}
+              >
+                Email our team
+              </a>
+            </div>
+            <p className="mt-3 text-sm text-gray-500" style={{ marginTop: "0.75rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              This looks like a bug. A short note about what you were doing helps us fix it.
+            </p>
           </div>
         </div>
       );

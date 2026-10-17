@@ -104,7 +104,18 @@ function findMatchingRecord(records, fullName, email) {
  * @param {import("http").IncomingMessage} req
  * @param {{ firstName?: string, lastName?: string, fullName?: string, email?: string }} body
  */
+/** Off while password resets go through a mailto instead of an on-screen link. */
+const SELF_SERVE_ACCESS_LINKS = false;
+
 async function requestAccessLink(req, body) {
+  if (!SELF_SERVE_ACCESS_LINKS) {
+    const paused = new Error(
+      "Self-serve magic links are paused. Email the team from the sign-in page and we’ll send a new link.",
+    );
+    paused.statusCode = 410;
+    throw paused;
+  }
+
   const fullName = buildFullName(body || {});
   const email = normalizeEmail(body?.email);
   if (!fullName || fullName.length < 2) {

@@ -10,7 +10,6 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 import { ATLAS_ACCESS_MAILTO, atlasPasswordResetMailto } from "../../utils/checkInAuth";
-import { buildFullPath } from "../../utils/router";
 
 interface DirectoryLoginFormProps {
   people: Person[];
@@ -231,19 +230,12 @@ export function DirectoryLoginForm({
           {showAccountRecovery ? (
             <p className="text-sm text-gray-600">
               <a
-                href={buildFullPath("/access")}
+                href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
                 className="font-medium text-sky-600 transition-colors hover:text-sky-800"
               >
-                Forgot password / need a magic link?
+                Forgot your password?
               </a>{" "}
-              Verify name + email on file to get a one-time link.
-              {" · "}
-              <a
-                href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
-                className="font-medium text-gray-500 transition-colors hover:text-gray-800"
-              >
-                Or email Bradley
-              </a>
+              Email our team and we’ll send a new sign-in link.
             </p>
           ) : null}
         </div>
@@ -251,8 +243,8 @@ export function DirectoryLoginForm({
 
       {/*
         New accounts are invite-only — there is intentionally no public
-        "Add yourself" button. People who aren't in the directory are pointed
-        to Bradley, who can send a private join link.
+        "Add yourself" button. People who aren't in the directory email the
+        team, who can send a private join link.
       */}
       {!hasSelection && (
         <div className="rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3">
@@ -262,7 +254,7 @@ export function DirectoryLoginForm({
               href={ATLAS_ACCESS_MAILTO}
               className="font-medium text-sky-600 transition-colors hover:text-sky-800"
             >
-              Email Bradley for access
+              Email our team for access
             </a>
           </p>
         </div>

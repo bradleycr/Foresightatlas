@@ -1272,7 +1272,13 @@ export function ProfilePage({
                       autoCorrect="off"
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      Calendly, Google appointment schedule, etc. Appears on the community Calendar
+                      Calendly, Google appointment schedule, etc. Appears on the{" "}
+                      <a
+                        href={buildFullPath("/calendar")}
+                        className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                      >
+                        community Calendar
+                      </a>{" "}
                       page when set.
                     </p>
                   </Field>
@@ -1702,8 +1708,15 @@ function OpenToMeetProfileStatus({ person }: { person: Person }) {
           <div>
             <p className="font-medium text-gray-900">You&apos;re open to meet</p>
             <p className="mt-1 text-sm leading-relaxed text-gray-600">
-              Signed-in members can find you on the community Calendar page and book time via
-              your link. You control what slots you offer on your booking page.
+              Signed-in members can find you on the{" "}
+              <a
+                href={buildFullPath("/calendar")}
+                className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+              >
+                community Calendar
+              </a>{" "}
+              page and book time via your link. You control what slots you offer on your booking
+              page.
             </p>
           </div>
         </div>
@@ -1724,7 +1737,14 @@ function OpenToMeetProfileStatus({ person }: { person: Person }) {
       <p className="text-sm leading-relaxed text-gray-600">
         <span className="font-medium text-gray-800">Open to meet?</span> Add a booking link in{" "}
         <span className="font-medium text-gray-800">Open to meet &amp; calendar</span> below
-        (Calendly, Google appointment schedule, etc.) to appear on the community Calendar page.
+        (Calendly, Google appointment schedule, etc.) to appear on the{" "}
+        <a
+          href={buildFullPath("/calendar")}
+          className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+        >
+          community Calendar
+        </a>{" "}
+        page.
       </p>
     </div>
   );

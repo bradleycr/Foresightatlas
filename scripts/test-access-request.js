@@ -56,6 +56,20 @@ async function main() {
     socket: { remoteAddress: "127.0.0.1" },
   };
 
+  console.log("0) Self-serve links stay paused …");
+  try {
+    await requestAccessLink(fakeReq, {
+      firstName: "Alice",
+      lastName: "Example",
+      email: "alice@example.com",
+    });
+    throw new Error("expected self-serve links to be paused");
+  } catch (e) {
+    if (e.statusCode !== 410) throw e;
+    console.log("   ok —", e.message);
+    return;
+  }
+
   console.log("1) Match Alice Example / alice@example.com …");
   const hit = await requestAccessLink(fakeReq, {
     firstName: "Alice",

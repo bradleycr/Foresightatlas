@@ -10,8 +10,15 @@ build/
 .env.local
 .env.vercel.local
 .env.vercel.production
+# Local outreach / magic-link exports — never commit (contain tokens + emails)
 claim-links*.csv
+amber-*.csv
+magic-links*.txt
 missing-emails.csv
+found-public-emails.csv
+atlas_*.csv
+new_grantees*.csv
+*-roster-import.csv
 .vercel-session-tmp.txt
 .directory-bootstrap-password.txt
 .vite/

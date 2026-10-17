@@ -27,6 +27,7 @@ import type { NodeEvent } from "./types/events";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
+import { BugReportLink } from "./components/BugReportLink";
 import { useIsMobile } from "./components/ui/use-mobile";
 import { Z_INDEX_LOADING, Z_INDEX_ERROR } from "./constants/zIndex";
 import { NodeProgrammingPage } from "./pages/NodeProgrammingPage";
@@ -935,10 +936,16 @@ export default function App() {
               <X className="size-4" />
             </button>
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button onClick={() => { setError(null); loadData(); }} size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
               Retry
             </Button>
+            <BugReportLink
+              error={error}
+              className="text-sm font-medium text-red-800 underline underline-offset-2 hover:text-red-950"
+            >
+              Email our team
+            </BugReportLink>
           </div>
         </div>
       )}
