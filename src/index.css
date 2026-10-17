@@ -308,31 +308,33 @@ select optgroup {
 .map-node-popup .leaflet-popup-content-wrapper {
   border-radius: 12px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
-  max-height: min(80vh, 480px);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  overflow: hidden;
 }
 
 .map-node-popup .leaflet-popup-content {
   min-width: 260px;
   max-width: 320px;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
-.map-node-popup__inner {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1;
+.map-node-popup__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
 }
 
+/*
+ * The name list is its own scrollport. A max-height (not a flex chain inside
+ * an overflow:hidden wrapper) is what lets a finger move past the first names
+ * on iOS — otherwise the wrapper clips the list and the gesture never scrolls.
+ */
 .map-node-popup__list {
-  flex: 1;
-  min-height: 0;
+  max-height: min(56dvh, 360px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .map-node-popup__person {
@@ -347,8 +349,8 @@ select optgroup {
 }
 
 @media (max-width: 640px) {
-  .map-node-popup .leaflet-popup-content-wrapper {
-    max-height: min(70vh, 400px);
+  .map-node-popup__list {
+    max-height: min(48dvh, 320px);
   }
 
   .map-node-popup .leaflet-popup-content {

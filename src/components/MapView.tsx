@@ -360,13 +360,79 @@ function buildPopupHtml(marker: MarkerData): string {
       </button>`;
     })
     .join("");
-  return `<div class="map-node-popup__inner overflow-hidden bg-white">
-    <div class="map-node-popup__header px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100 shrink-0">
+  return `<div class="map-node-popup__inner bg-white">
+    <div class="map-node-popup__header px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100">
       <h4 class="font-semibold text-gray-900 text-sm leading-tight sm:text-base font-heading">${cityCountry}</h4>
       <p class="text-xs text-gray-500 mt-0.5 leading-snug">${markerSummary}</p>
     </div>
-    <div class="map-node-popup__list overflow-y-auto overscroll-contain pt-px min-h-0">${rows}</div>
+    <div class="map-node-popup__list pt-px">${rows}</div>
   </div>`;
+}
+
+/**
+ * Keep a finger-drag inside the name list. Leaflet already stops click
+ * propagation on the popup; touchmove still leaks to the map and pans it
+ * instead of scrolling the names.
+ */
+function wirePopupPeopleList(root: HTMLElement, onPerson: (personId: string) => void) {
+  const list = root.querySelector(".map-node-popup__list");
+  if (list instanceof HTMLElement) {
+    L.DomEvent.disableScrollPropagation(list);
+    L.DomEvent.disableClickPropagation(list);
+    L.DomEvent.on(list, "touchmove", L.DomEvent.stopPropagation);
+  }
+  const handler = (event: Event) => {
+    const target = (event.target as HTMLElement | null)?.closest?.("[data-person-id]");
+    const id = target?.getAttribute("data-person-id");
+    if (id) onPerson(id);
+  };
+  root.addEventListener("click", handler);
+}
+
+/** Pins inside this span are one city — open the list instead of zooming apart. */
+const CITY_CLUSTER_METERS = 22000;
+
+function markerDataFromCluster(
+  cluster: { getAllChildMarkers(): L.Marker[] },
+): MarkerData | null {
+  const children = cluster.getAllChildMarkers() as Array<L.Marker & { __markerData?: MarkerData }>;
+  const people: MarkerData["people"] = [];
+  const cityCounts = new Map<string, { city: string; country: string; count: number }>();
+  let lat = 0;
+  let lng = 0;
+  let n = 0;
+  for (const child of children) {
+    const data = child.__markerData;
+    if (!data) continue;
+    people.push(...data.people);
+    const key = `${data.city}|${data.country}`;
+    const prev = cityCounts.get(key);
+    cityCounts.set(key, {
+      city: data.city,
+      country: data.country,
+      count: (prev?.count ?? 0) + data.people.length,
+    });
+    lat += data.coordinates.lat;
+    lng += data.coordinates.lng;
+    n += 1;
+  }
+  if (!people.length || n === 0) return null;
+  let city = "Nearby";
+  let country = "";
+  let best = 0;
+  for (const entry of cityCounts.values()) {
+    if (entry.count > best) {
+      best = entry.count;
+      city = entry.city || "Nearby";
+      country = entry.country;
+    }
+  }
+  return dedupeMarkerEntries({
+    city,
+    country,
+    coordinates: { lat: lat / n, lng: lng / n },
+    people,
+  });
 }
 
 function dedupeMarkerEntries(marker: MarkerData): MarkerData {
@@ -434,6 +500,7 @@ function ImperativeMarkerClusters({
       const latLng: L.LatLngExpression = [marker.coordinates.lat, marker.coordinates.lng];
       const content = document.createElement("div");
       content.innerHTML = buildPopupHtml(marker);
+      wirePopupPeopleList(content, (id) => onPersonClickRef.current(id));
       const leafletMarker = L.marker(latLng, { icon }).bindPopup(content, {
         className: "custom-popup map-node-popup",
         autoPan: true,
@@ -455,24 +522,15 @@ function ImperativeMarkerClusters({
       }
       leafletMarker.on("click", () => {
         cancelClose();
-        map.flyTo([marker.coordinates.lat, marker.coordinates.lng], Math.max(MIN_ZOOM, map.getZoom()), { duration: 0.3 });
-        leafletMarker.openPopup();
+        if (map.getZoom() < MIN_ZOOM) {
+          map.once("moveend", () => leafletMarker.openPopup());
+          map.flyTo([marker.coordinates.lat, marker.coordinates.lng], MIN_ZOOM, { duration: 0.3 });
+        } else {
+          leafletMarker.openPopup();
+        }
         onMarkerClickRef.current(marker);
       });
       leafletMarker.on("popupopen", () => {
-        const popupContent = leafletMarker.getPopup()?.getContent();
-        if (popupContent && typeof popupContent !== "string") {
-          const el = popupContent as HTMLElement;
-          const handler = (e: Event) => {
-            const target = (e.target as HTMLElement).closest("[data-person-id]");
-            if (target) {
-              const id = (target as HTMLElement).getAttribute("data-person-id");
-              if (id) onPersonClickRef.current(id);
-            }
-          };
-          el.addEventListener("click", handler);
-          leafletMarker.once("popupclose", () => el.removeEventListener("click", handler));
-        }
         if (prefersHover) {
           const popupEl = leafletMarker.getPopup()?.getElement();
           if (popupEl) {
@@ -542,43 +600,70 @@ function ImperativeMarkerClusters({
     type ClusterLayer = L.Marker & {
       getChildCount(): number;
       getAllChildMarkers(): L.Marker[];
+      getBounds(): L.LatLngBounds;
       _childClusters?: ClusterLayer[];
       _zoom?: number;
       _childCount?: number;
       spiderfy(): void;
-      zoomToBounds(): void;
+      zoomToBounds(options?: L.FitBoundsOptions): void;
     };
 
     const MIN_ZOOM_ON_NODE_CLICK = 10;
 
+    const openClusterPeople = (cluster: ClusterLayer) => {
+      const data = markerDataFromCluster(cluster);
+      if (!data) return;
+      const content = document.createElement("div");
+      content.innerHTML = buildPopupHtml(data);
+      wirePopupPeopleList(content, (id) => onPersonClickRef.current(id));
+      L.popup({
+        className: "custom-popup map-node-popup",
+        autoPan: true,
+        autoPanPadding: L.point(24, 64),
+        offset: L.point(0, -8),
+        maxWidth: 360,
+      })
+        .setLatLng(cluster.getLatLng())
+        .setContent(content)
+        .openOn(map);
+      onMarkerClickRef.current(data);
+    };
+
+    const clusterSpanMeters = (cluster: ClusterLayer): number => {
+      const bounds = cluster.getBounds?.();
+      if (!bounds || !bounds.isValid()) return Number.POSITIVE_INFINITY;
+      return bounds.getNorthEast().distanceTo(bounds.getSouthWest());
+    };
+
     const handleClusterClick = (e: L.LeafletEvent & { layer: ClusterLayer }) => {
       const cluster = e.layer;
-      const count = cluster.getChildCount();
-      if (count === 1) {
-        const child = cluster.getAllChildMarkers()[0] as MarkerWithRoles;
+      const children = cluster.getAllChildMarkers() as MarkerWithRoles[];
+      if (children.length <= 1) {
+        const child = children[0];
         const markerData = child?.__markerData;
-        if (markerData) {
-          const { lat, lng } = markerData.coordinates;
-          const zoom = Math.max(MIN_ZOOM_ON_NODE_CLICK, map.getZoom());
-          map.flyTo([lat, lng], zoom, { duration: 0.4 });
-          (child as L.Marker).openPopup();
+        if (child && markerData) {
+          if (map.getZoom() < MIN_ZOOM_ON_NODE_CLICK) {
+            map.once("moveend", () => child.openPopup());
+            map.flyTo(child.getLatLng(), MIN_ZOOM_ON_NODE_CLICK, { duration: 0.35 });
+          } else {
+            child.openPopup();
+          }
           onMarkerClickRef.current(markerData);
         }
         return;
       }
-      let bottomCluster: ClusterLayer = cluster;
-      while (bottomCluster._childClusters?.length === 1) {
-        bottomCluster = bottomCluster._childClusters[0];
+      /*
+       * A city like Berlin is several nearby pins. Zooming "breaks" the
+       * bubble into 10 and 3 and throws away the tap. If they already sit
+       * inside one city, open that list on the first tap.
+       */
+      const tight =
+        clusterSpanMeters(cluster) <= CITY_CLUSTER_METERS || map.getZoom() >= 12;
+      if (tight) {
+        openClusterPeople(cluster);
+        return;
       }
-      const maxZoom = map.getMaxZoom();
-      if (
-        bottomCluster._zoom === maxZoom &&
-        bottomCluster._childCount === cluster.getChildCount()
-      ) {
-        cluster.spiderfy();
-      } else {
-        cluster.zoomToBounds();
-      }
+      cluster.zoomToBounds({ padding: [48, 48], maxZoom: 14 });
     };
 
     group.on("clusterclick", handleClusterClick);
@@ -587,9 +672,12 @@ function ImperativeMarkerClusters({
     const prefersHover = typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
 
     const openPopupOnClick = (m: L.Marker, data: MarkerData) => {
-      const zoom = Math.max(MIN_ZOOM_ON_NODE_CLICK, map.getZoom());
-      map.flyTo([data.coordinates.lat, data.coordinates.lng], zoom, { duration: 0.3 });
-      m.openPopup();
+      if (map.getZoom() < MIN_ZOOM_ON_NODE_CLICK) {
+        map.once("moveend", () => m.openPopup());
+        map.flyTo([data.coordinates.lat, data.coordinates.lng], MIN_ZOOM_ON_NODE_CLICK, { duration: 0.3 });
+      } else {
+        m.openPopup();
+      }
       onMarkerClickRef.current(data);
     };
 
@@ -611,6 +699,7 @@ function ImperativeMarkerClusters({
       const latLng: L.LatLngExpression = [marker.coordinates.lat, marker.coordinates.lng];
       const content = document.createElement("div");
       content.innerHTML = buildPopupHtml(marker);
+      wirePopupPeopleList(content, (id) => onPersonClickRef.current(id));
       const leafletMarker = L.marker(latLng, { icon }).bindPopup(content, {
         className: "custom-popup map-node-popup",
         autoPan: true,
@@ -645,19 +734,6 @@ function ImperativeMarkerClusters({
       });
 
       leafletMarker.on("popupopen", () => {
-        const popupContent = leafletMarker.getPopup()?.getContent();
-        if (popupContent && typeof popupContent !== "string") {
-          const el = popupContent as HTMLElement;
-          const handler = (e: Event) => {
-            const target = (e.target as HTMLElement).closest("[data-person-id]");
-            if (target) {
-              const id = (target as HTMLElement).getAttribute("data-person-id");
-              if (id) onPersonClickRef.current(id);
-            }
-          };
-          el.addEventListener("click", handler);
-          leafletMarker.once("popupclose", () => el.removeEventListener("click", handler));
-        }
         if (prefersHover) {
           const popupEl = leafletMarker.getPopup()?.getElement();
           if (popupEl) {
@@ -1234,7 +1310,7 @@ export function MapView({
             )}
           >
           {/* Scrollable: sticky search/filters at top, then list */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
             {/* Sticky block: title + search + filters stay visible when scrolling the list */}
             <div className="sticky top-0 z-10 p-4 pb-4 border-b border-gray-200 bg-app-sidebar space-y-3">
               <div className="flex items-center justify-between gap-2">
@@ -1326,7 +1402,7 @@ export function MapView({
             </div>
           </header>
           {/* Scrollable area: sticky search/filters at top, then list */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
             {/* Sticky block: search + filters stay visible when scrolling the list */}
             <div className="sticky top-0 z-10 px-4 pt-3 pb-4 border-b border-gray-200 bg-app-sidebar">
               {filters && onFiltersChange && defaultYear !== undefined && (
