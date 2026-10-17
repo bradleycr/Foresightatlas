@@ -11,7 +11,6 @@ import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
 import { getLastSignedInName } from "../services/identity";
 import { cn } from "./ui/utils";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
-import { BugReportLink } from "./BugReportLink";
 
 interface AppHeaderProps {
   /** Current route path: "/", "/berlin", "/sf", "/calendar", etc. */
@@ -593,11 +592,6 @@ export function AppHeader({
                     </a>
                   </li>
                 )}
-                <li className="pt-2 mt-2 border-t border-gray-100">
-                  <BugReportLink className="flex min-h-[48px] w-full items-center rounded-xl px-4 text-base font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900">
-                    Report a bug
-                  </BugReportLink>
-                </li>
               </ul>
 
               {/* Mobile identity strip */}

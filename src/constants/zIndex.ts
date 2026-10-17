@@ -26,6 +26,8 @@ export const Z_INDEX_TOOLTIP = 200;
 export const Z_INDEX_HEADER = 1000;
 export const Z_INDEX_SIDEBAR = 1100;
 export const Z_INDEX_MAP_CONTROLS = 1200;
+/** Floating bug report. Above the map, under sheets, menus, and dialogs. */
+export const Z_INDEX_BUG_REPORT = 1250;
 /** Header bar — above map "Open list" so nav and hamburger are clickable */
 export const Z_INDEX_HEADER_NAV = 1300;
 /** Full-screen mobile sidebar sheet — above header when list is open */

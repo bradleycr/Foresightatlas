@@ -9,7 +9,6 @@ import {
   checkInReturnPath,
 } from "../../utils/checkInAuth";
 import { DirectoryLoginForm } from "./DirectoryLoginForm";
-import { BugReportLink } from "../BugReportLink";
 import foresightIcon from "../../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../../constants/foresight";
 
@@ -101,9 +100,6 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
             showAccountRecovery
           />
         </div>
-        <p className="mt-6 text-center text-sm text-gray-500">
-          <BugReportLink className="font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-gray-800" />
-        </p>
       </div>
     </main>
   );

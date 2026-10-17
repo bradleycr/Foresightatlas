@@ -10,6 +10,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { BugReportFab } from "./components/BugReportFab";
 import { migrateLegacyLocalStorageKeys } from "./services/storageLegacyMigration";
 
 migrateLegacyLocalStorageKeys();
@@ -32,6 +33,7 @@ try {
   root.render(
     <ErrorBoundary>
       <App />
+      <BugReportFab />
     </ErrorBoundary>,
   );
 } catch (err) {

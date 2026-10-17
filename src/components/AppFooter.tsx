@@ -1,9 +1,8 @@
 /**
- * AppFooter — one quiet line under the app, including the bug-report mailto.
- * Stays a single row on phones so it doesn’t eat the map.
+ * AppFooter — desktop-only utility line.
+ * Hidden on mobile so the map and forms get the full viewport (tool-app pattern).
  */
 
-import { BugReportLink } from "./BugReportLink";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 
 interface AppFooterProps {
@@ -14,7 +13,7 @@ export function AppFooter({ onNavigateHome }: AppFooterProps) {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="shrink-0 border-t border-gray-200 bg-white/80 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <footer className="hidden shrink-0 border-t border-gray-200 bg-white/80 py-2 md:block">
       <div className="px-4 md:px-8">
         <p className="mx-auto max-w-2xl text-center text-xs leading-none text-gray-500">
           <a
@@ -45,11 +44,6 @@ export function AppFooter({ onNavigateHome }: AppFooterProps) {
             ·{" "}
           </span>
           <span className="tabular-nums">{year}</span>
-          <span className="text-gray-300" aria-hidden>
-            {" "}
-            ·{" "}
-          </span>
-          <BugReportLink className="font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 transition-colors hover:text-gray-800" />
         </p>
       </div>
     </footer>
