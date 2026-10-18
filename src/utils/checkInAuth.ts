@@ -71,8 +71,9 @@ export function atlasBugReportMailto(options?: { error?: string }): string {
 }
 
 /**
- * Browser compose links that actually open a drafted message.
- * `mailto:` alone often yields a blank tab when no default mail app is configured.
+ * Browser compose links for a desktop session that is already signed in.
+ * Phones should not use these — mobile Gmail ignores the compose params and
+ * lands on a random inbox.
  */
 export function atlasBugReportComposeUrls(options?: { error?: string }): {
   mailto: string;
@@ -88,6 +89,38 @@ export function atlasBugReportComposeUrls(options?: { error?: string }): {
     gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`,
     outlook: `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${subject}&body=${body}`,
   };
+}
+
+/** A phone browser, where webmail compose links do not open a draft. */
+export function isPhoneBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+/**
+ * Open a drafted bug report in the right place.
+ * Phones use the app's own URL scheme (Gmail / Outlook) or mailto, which the
+ * system routes to the installed mail app. Desktop keeps the web compose tab.
+ */
+export function openBugReportCompose(
+  kind: "gmail" | "outlook" | "mailto",
+  options?: { error?: string },
+) {
+  const urls = atlasBugReportComposeUrls(options);
+  if (kind === "mailto") {
+    window.location.href = urls.mailto;
+    return;
+  }
+  if (!isPhoneBrowser()) {
+    window.open(urls[kind], "_blank", "noopener,noreferrer");
+    return;
+  }
+  const draft = buildBugReportDraft(options);
+  const query = `to=${encodeURIComponent(draft.to)}&subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`;
+  // Three slashes: Gmail's compose endpoint is `co` on an empty host.
+  const native =
+    kind === "gmail" ? `googlegmail:///co?${query}` : `ms-outlook://compose?${query}`;
+  window.location.href = native;
 }
 
 /** Ask staff to wipe a roster row entirely (beyond the self-serve “hide from atlas” toggle). */

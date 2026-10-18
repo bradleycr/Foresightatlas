@@ -1,24 +1,14 @@
 /**
  * BugReportFab — a small corner control that asks before it opens mail.
- * The first tap only confirms they found a bug. "Tell us" then offers a
- * drafted message in Gmail, Outlook, or the device mail app.
+ * The first tap only confirms they found a bug. "Tell us" then opens a draft
+ * in the Gmail or Outlook app on a phone, or in the browser on a computer.
  */
 
 import { useState, type ReactNode } from "react";
 import { Bug, ExternalLink, Mail } from "lucide-react";
 import { Z_INDEX_BUG_REPORT } from "../constants/zIndex";
-import { atlasBugReportComposeUrls } from "../utils/checkInAuth";
+import { isPhoneBrowser, openBugReportCompose } from "../utils/checkInAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-
-function openCompose(kind: "gmail" | "outlook" | "mailto") {
-  const urls = atlasBugReportComposeUrls();
-  if (kind === "mailto") {
-    // Same-tab: target=_blank on mailto is what produces empty browser tabs.
-    window.location.href = urls.mailto;
-    return;
-  }
-  window.open(urls[kind], "_blank", "noopener,noreferrer");
-}
 
 export function BugReportFab() {
   const [open, setOpen] = useState(false);
@@ -63,9 +53,26 @@ export function BugReportFab() {
           {readyToSend ? (
             <div className="mt-3 grid gap-1.5">
               <p className="text-xs font-medium text-gray-500">Tell us with</p>
-              <ComposeChoice icon={<ExternalLink className="size-3.5" />} label="Gmail" onClick={() => openCompose("gmail")} />
-              <ComposeChoice icon={<ExternalLink className="size-3.5" />} label="Outlook" onClick={() => openCompose("outlook")} />
-              <ComposeChoice icon={<Mail className="size-3.5" />} label="Mail app" onClick={() => openCompose("mailto")} />
+              <ComposeChoice
+                icon={<ExternalLink className="size-3.5" />}
+                label={isPhoneBrowser() ? "Gmail app" : "Gmail"}
+                onClick={() => openBugReportCompose("gmail")}
+              />
+              <ComposeChoice
+                icon={<ExternalLink className="size-3.5" />}
+                label={isPhoneBrowser() ? "Outlook app" : "Outlook"}
+                onClick={() => openBugReportCompose("outlook")}
+              />
+              <ComposeChoice
+                icon={<Mail className="size-3.5" />}
+                label="Mail app"
+                onClick={() => openBugReportCompose("mailto")}
+              />
+              {isPhoneBrowser() ? (
+                <p className="px-2 pt-1 text-xs leading-snug text-gray-500">
+                  Gmail and Outlook open the installed app. If that app isn’t on this phone, use Mail.
+                </p>
+              ) : null}
             </div>
           ) : (
             <div className="mt-3 flex items-center justify-end gap-2">

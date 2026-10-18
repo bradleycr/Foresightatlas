@@ -1,9 +1,9 @@
 /**
- * Inline “email our team” link. Uses Gmail compose so the draft opens in the
- * browser; mailto alone often fails when no desktop client is configured.
+ * Inline “email our team” link. Phones use mailto so iOS opens the mail app.
+ * Desktop uses a Gmail compose tab, which is where a drafted message actually opens.
  */
 
-import { atlasBugReportComposeUrls } from "../utils/checkInAuth";
+import { atlasBugReportComposeUrls, atlasBugReportMailto, isPhoneBrowser } from "../utils/checkInAuth";
 
 interface BugReportLinkProps {
   className?: string;
@@ -17,12 +17,13 @@ export function BugReportLink({
   error,
   children = "Report a bug",
 }: BugReportLinkProps) {
-  const { gmail } = atlasBugReportComposeUrls({ error });
+  const href = isPhoneBrowser()
+    ? atlasBugReportMailto({ error })
+    : atlasBugReportComposeUrls({ error }).gmail;
   return (
     <a
-      href={gmail}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={href}
+      {...(isPhoneBrowser() ? {} : { target: "_blank", rel: "noopener noreferrer" })}
       className={className}
     >
       {children}

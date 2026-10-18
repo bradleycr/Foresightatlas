@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { atlasBugReportComposeUrls } from "../utils/checkInAuth";
+import { atlasBugReportMailto } from "../utils/checkInAuth";
 
 interface Props {
   children: ReactNode;
@@ -58,13 +58,11 @@ export class ErrorBoundary extends Component<Props, State> {
                 Reload Page
               </button>
               <a
-                href={atlasBugReportComposeUrls({
+                href={atlasBugReportMailto({
                   error: this.state.error
                     ? `${this.state.error.message}\n${this.state.error.stack || ""}`
                     : undefined,
-                }).gmail}
-                target="_blank"
-                rel="noopener noreferrer"
+                })}
                 className="px-4 py-2 rounded border border-gray-300 text-gray-800 hover:bg-gray-50"
                 style={{ padding: "0.5rem 1rem", borderRadius: "0.375rem", border: "1px solid #d1d5db", color: "#1f2937", textDecoration: "none" }}
               >
