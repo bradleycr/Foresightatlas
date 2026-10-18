@@ -169,9 +169,8 @@ export function ConnectionsPage({
           <Shield className="size-4 shrink-0 mt-0.5 text-emerald-600" aria-hidden />
           <p>
             <span className="font-medium text-gray-800">Private to this device.</span>{" "}
-            Bookmarks are saved only in your browser&apos;s local storage — not in the
-            directory or on our servers. Nobody else can see your list. If you switch phones
-            or browsers, bookmark people again on that device.
+            Connections are saved only in your browser&apos;s local storage. If you switch
+            phones or browsers, bookmark people again on your other device.
           </p>
         </div>
 
