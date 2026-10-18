@@ -39,7 +39,7 @@ import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
 import { getLastSignedInName } from "../services/identity";
 // Foresight pin icon (same as map markers)
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
-import { NanowheelBadge } from "../components/NanowheelBadge";
+import { NanowheelBadge, NanowheelPending } from "../components/NanowheelBadge";
 import { PersonAvatar } from "../components/PersonAvatar";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { isOpenToMeet, getOpenToMeetUrl } from "../utils/openToMeet";
@@ -1651,9 +1651,10 @@ function FieldCheckNotice({ state }: { state: FieldCheckState }) {
 /* ── NanowheelHero ────────────────────────────────────────────────────
  *
  * Shown in the profile page header for the signed-in member. Loads the live
- * nanowheel total from the API and shows a spinner until the real count is
- * known (avoids flashing a misleading 0). Visible on all breakpoints, including
- * phones — the map sidebar badge is desktop-only, but your own count belongs here.
+ * nanowheel total from the API. The spinning Foresight mark holds the slot
+ * until the real count arrives, including a true zero. Visible on all
+ * breakpoints, including phones — the map sidebar badge is desktop-only, but
+ * your own count belongs here.
  */
 function NanowheelHero({ personId, refreshTick = 0 }: { personId: string; refreshTick?: number }) {
   const [summary, setSummary] = useState<NanowheelSummary | null>(null);
@@ -1675,12 +1676,7 @@ function NanowheelHero({ personId, refreshTick = 0 }: { personId: string; refres
   if (!personId) return null;
 
   if (summary === null) {
-    return (
-      <div className="flex shrink-0 items-center gap-2 rounded-xl border border-sky-200/70 bg-white/90 px-3 py-2 text-sky-800 shadow-sm">
-        <Loader2 className="size-5 animate-spin text-sky-600/70" aria-hidden />
-        <span className="sr-only">Loading nanowheels</span>
-      </div>
-    );
+    return <NanowheelPending size="lg" className="shrink-0" />;
   }
 
   const count = summary.total;

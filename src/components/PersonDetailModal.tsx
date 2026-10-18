@@ -27,7 +27,6 @@ import {
   MapPinCheck,
   ChevronDown,
   Bookmark,
-  Loader2,
 } from "lucide-react";
 import { Person, TravelWindow, RoleType, PrimaryNode, TravelWindowType, Filters } from "../types";
 import type { NodeEvent } from "../types/events";
@@ -81,7 +80,7 @@ import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 import type { Identity } from "../services/identity";
 import { isConnected, toggleConnection } from "../services/connections";
-import { NanowheelBadge } from "./NanowheelBadge";
+import { NanowheelBadge, NanowheelPending } from "./NanowheelBadge";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
@@ -696,17 +695,14 @@ export function PersonDetailModal({
                         {displayPerson.fullName}
                       </h2>
                       {nanowheelSummary === null ? (
-                        <Loader2
-                          className="size-4 shrink-0 animate-spin text-sky-600/60"
-                          aria-label="Loading nanowheels"
-                        />
-                      ) : nanowheelSummary.total > 0 ? (
+                        <NanowheelPending size="sm" />
+                      ) : (
                         <NanowheelBadge
                           count={nanowheelSummary.total}
                           size="sm"
-                          ariaLabel={`${displayPerson.fullName} has earned ${nanowheelSummary.total} nanowheels`}
+                          ariaLabel={`${displayPerson.fullName} has ${nanowheelSummary.total} nanowheels`}
                         />
-                      ) : null}
+                      )}
                       {isOpenToMeet(displayPerson) ? (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
                           Open to meet

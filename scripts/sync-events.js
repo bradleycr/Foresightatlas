@@ -13,7 +13,6 @@
  *   SPREADSHEET_ID           – Google Sheet ID (required; private)
  *   GOOGLE_SHEETS_API_KEY    – read-only API key for the sheet
  *   LUMA_API_KEY             – Luma API key (Settings → Developer on your calendar)
- *   LUMA_CALENDAR_API_ID     – Luma calendar API ID (from calendar settings)
  *
  * If LUMA_API_KEY is missing, only Sheet events are synced (no error).
  * If GOOGLE_SHEETS_API_KEY is missing, only Luma events are synced.
@@ -34,8 +33,6 @@ const SPREADSHEET_ID = getSpreadsheetId();
 const SHEETS_API_KEY =
   process.env.GOOGLE_SHEETS_API_KEY || process.env.GOOGLE_API_KEY;
 const LUMA_API_KEY = process.env.LUMA_API_KEY;
-const LUMA_CALENDAR_API_ID = process.env.LUMA_CALENDAR_API_ID;
-const LUMA_BASE = "https://public-api.luma.com";
 
 const OUT_PATH = path.join(__dirname, "../public/data/events.json");
 
@@ -47,99 +44,13 @@ const {
 const {
   applyBerlinSecureWorkshopSheetOverrides,
 } = require("../server/event-corrections");
+const { fetchLumaEvents } = require("../server/luma-merge");
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
 function parseJsonSafe(str, fallback) {
   if (str == null || String(str).trim() === "") return fallback;
   try { return JSON.parse(String(str)); } catch { return fallback; }
-}
-
-function slugify(s) {
-  return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-/**
- * Luma's `event.url` can be either a slug ("abcd1234") or full URL.
- * Normalize both shapes to a valid public event URL.
- */
-function normalizeLumaEventUrl(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return null;
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (/^(lu\.ma|luma\.com)\//i.test(raw)) return `https://${raw}`;
-  return `https://lu.ma/${raw.replace(/^\/+/, "")}`;
-}
-
-function isUrlLikeLocation(value) {
-  const s = String(value || "").trim().toLowerCase();
-  if (!s) return false;
-  if (/^https?:\/\//.test(s)) return true;
-  if (s.includes("zoom.us/") || s.includes("meet.google.com/")) return true;
-  return false;
-}
-
-/** Map a Luma event type string to our EventType enum. */
-function mapLumaType(lumaEvent) {
-  const name = (lumaEvent.name || "").toLowerCase();
-  if (name.includes("coworking")) return "coworking";
-  if (name.includes("workshop")) return "workshop";
-  if (name.includes("demo")) return "demo";
-  if (name.includes("open house")) return "open-house";
-  if (name.includes("launch")) return "launch";
-  if (name.includes("conference")) return "conference";
-  if (name.includes("social")) return "social";
-  return "other";
-}
-
-/**
- * Decide which Foresight node a Luma event belongs to.
- *
- * Keep this in sync with the server's live merge (`server/luma-merge.js`) so
- * deploy-time `events.json` and runtime API results agree.
- */
-function guessNode(lumaEvent) {
-  const geo = lumaEvent.geo_address_json || lumaEvent.geo_address_info || {};
-  const city = String(geo.city || "").toLowerCase().trim();
-  const region = String(geo.region || "").toLowerCase().trim();
-  const country = String(geo.country || "").toLowerCase().trim();
-  const countryCode = String(geo.country_code || "").toLowerCase().trim();
-  const full = String(geo.full_address || geo.city_state || geo.address || "").toLowerCase();
-  const name = String(lumaEvent.name || "").toLowerCase();
-  const desc = String(lumaEvent.description || "").toLowerCase();
-  const tz = String(lumaEvent.timezone || "").toLowerCase();
-
-  // ── Berlin / Germany signals ────────────────────────────────────────
-  const isBerlin =
-    city === "berlin" ||
-    /\bberlin\b/.test(full) ||
-    /\bberlin\b/.test(name) ||
-    country === "germany" ||
-    country === "deutschland" ||
-    countryCode === "de" ||
-    tz === "europe/berlin";
-  if (isBerlin) return "berlin";
-
-  // ── San Francisco / Bay Area signals ────────────────────────────────
-  const bayAreaCities = new Set([
-    "san francisco", "oakland", "berkeley", "palo alto", "mountain view",
-    "menlo park", "san jose", "sunnyvale", "san mateo", "redwood city",
-    "emeryville", "daly city", "south san francisco", "fremont", "cupertino",
-    "santa clara", "hayward", "richmond", "alameda",
-  ]);
-  const isSf =
-    bayAreaCities.has(city) ||
-    /\bsan frans?cisco\b|\bbay ar(?:ea|e)\b|\bsilicon valley\b|\boakland\b|\bberkeley\b|\bpalo alto\b|\bthe fold\b/.test(full) ||
-    /\bsan frans?cisco\b|\bbay ar(?:ea|e)\b|\bsf\b|\bthe fold\b/.test(name) ||
-    region === "california" ||
-    tz === "america/los_angeles";
-  if (isSf) return "sf";
-
-  // ── Description keywords (weakest; only if nothing else matched) ────
-  if (/\bberlin\b/.test(desc)) return "berlin";
-  if (/\bsan frans?cisco\b|\bbay ar(?:ea|e)\b|\bthe fold\b/.test(desc)) return "sf";
-
-  return "global";
 }
 
 /* ── Google Sheet fetch ──────────────────────────────────────────────── */
@@ -211,109 +122,6 @@ async function fetchSheetEvents() {
     .filter(Boolean);
 }
 
-/* ── Luma API fetch ──────────────────────────────────────────────────── */
-
-async function fetchLumaEvents() {
-  if (!LUMA_API_KEY) {
-    console.log("  No LUMA_API_KEY — skipping Luma events.");
-    return [];
-  }
-
-  const headers = { "x-luma-api-key": LUMA_API_KEY };
-  const allEvents = [];
-  let cursor = null;
-
-  // Paginate through all events
-  while (true) {
-    const params = new URLSearchParams();
-    if (cursor) params.set("pagination_cursor", cursor);
-    params.set("pagination_limit", "50");
-    params.set("sort_column", "start_at");
-    params.set("sort_direction", "asc");
-
-    const url = `${LUMA_BASE}/v1/calendar/list-events?${params}`;
-    const res = await fetch(url, { headers });
-
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`  Luma API error ${res.status}: ${body}`);
-      break;
-    }
-
-    const data = await res.json();
-    const entries = data.entries || [];
-    if (entries.length === 0) break;
-
-    for (const entry of entries) {
-      const ev = entry.event || entry;
-      // Public events only — private / unlisted Luma events must never be
-      // written to the public events.json fallback (mirrors luma-merge.js).
-      if (String(ev?.visibility || "").trim().toLowerCase() !== "public") continue;
-      allEvents.push(ev);
-    }
-
-    if (!data.has_more) break;
-    cursor = data.next_cursor;
-  }
-
-  console.log(`  Fetched ${allEvents.length} public events from Luma.`);
-
-  return allEvents.map((ev) => {
-    const urlLink = normalizeLumaEventUrl(ev.url);
-    const externalLink = urlLink || (ev.api_id ? `https://lu.ma/e/${ev.api_id}` : null);
-    const location =
-      ev.geo_address_json?.full_address ||
-      ev.geo_address_json?.city_state ||
-      ev.geo_address_json?.address ||
-      ev.geo_address_json?.city ||
-      ev.geo_address_info?.full_address ||
-      ev.geo_address_info?.city_state ||
-      ev.geo_address_info?.address ||
-      ev.geo_address_info?.city ||
-      ev.meeting_url ||
-      "TBA";
-    const geoHasSignal = Boolean(
-      ev.geo_address_json?.full_address ||
-      ev.geo_address_json?.city_state ||
-      ev.geo_address_json?.address ||
-      ev.geo_address_json?.city ||
-      ev.geo_address_json?.region ||
-      ev.geo_address_json?.country ||
-      ev.geo_address_json?.country_code ||
-      ev.geo_address_info?.full_address ||
-      ev.geo_address_info?.city_state ||
-      ev.geo_address_info?.address ||
-      ev.geo_address_info?.city ||
-      ev.geo_address_info?.region ||
-      ev.geo_address_info?.country ||
-      ev.geo_address_info?.country_code,
-    );
-    const nodeSlug =
-      isLocationUnspecified(location) || (isUrlLikeLocation(location) && !geoHasSignal)
-        ? "global"
-        : guessNode(ev);
-    const coverUrl = (ev.cover_url && String(ev.cover_url).trim()) || null;
-    return {
-      _lumaApiId: ev.api_id,
-      _lumaUrl: urlLink || externalLink,
-      id: `luma-${ev.api_id}`,
-      nodeSlug,
-      title: ev.name || "Untitled Event",
-      description: (ev.description_md || ev.description || "").trim(),
-      location,
-      startAt: ev.start_at,
-      endAt: ev.end_at,
-      type: mapLumaType(ev),
-      tags: [],
-      visibility: ev.visibility === "public" ? "public" : "internal",
-      capacity: ev.max_capacity || null,
-      externalLink,
-      coverImageUrl: coverUrl,
-      recurrenceGroupId: ev.recurrence_id || null,
-    };
-  });
-}
-
 /* ── merge + deduplicate ─────────────────────────────────────────────── */
 
 function mergeEvents(sheetEvents, lumaEvents) {
@@ -363,7 +171,7 @@ function mergeEvents(sheetEvents, lumaEvents) {
   // Add Luma-only events (not matched to any Sheet row)
   for (const lumaEv of lumaEvents) {
     if (!matchedLumaIds.has(lumaEv._lumaApiId)) {
-      const { _lumaApiId, _lumaUrl, ...clean } = lumaEv;
+      const { _lumaApiId, ...clean } = lumaEv;
       if (isLocationUnspecified(clean.location)) clean.nodeSlug = "global";
       merged.push(clean);
     }
@@ -385,9 +193,13 @@ function mergeEvents(sheetEvents, lumaEvents) {
 async function main() {
   console.log("Syncing events…");
 
+  if (!LUMA_API_KEY) {
+    console.log("  No LUMA_API_KEY — skipping Luma events.");
+  }
+
   const [rawSheetEvents, lumaEvents] = await Promise.all([
     fetchSheetEvents(),
-    fetchLumaEvents(),
+    LUMA_API_KEY ? fetchLumaEvents() : Promise.resolve([]),
   ]);
   const sheetEvents = applyBerlinSecureWorkshopSheetOverrides(rawSheetEvents);
 

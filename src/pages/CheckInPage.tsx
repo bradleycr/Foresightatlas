@@ -24,7 +24,7 @@ import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 
 import { Button } from "../components/ui/button";
-import { NanowheelBadge } from "../components/NanowheelBadge";
+import { NanowheelBadge, NanowheelPending } from "../components/NanowheelBadge";
 import { NanowheelBurst } from "../components/NanowheelBurst";
 import { useTodayKey } from "../hooks/useTodayKey";
 import type { Identity } from "../services/identity";
@@ -230,12 +230,14 @@ export function CheckInPage({
 
         <div className="flex items-start justify-between gap-4">
           <IconHero />
-          {summary && (
+          {summary ? (
             <NanowheelBadge
               count={summary.total}
               size="lg"
               ariaLabel={`You have ${summary.total} nanowheels`}
             />
+          ) : (
+            <NanowheelPending size="lg" />
           )}
         </div>
 

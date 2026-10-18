@@ -142,8 +142,20 @@ Events need a `lumaEventId` (auto-set for pure Luma events, or via the sheet `lu
 ## Luma API reference
 
 - [Getting Started](https://docs.luma.com/reference/getting-started-with-your-api)
-- [List Events](https://docs.luma.com/reference/get_v1-calendar-list-events) — `GET /v1/calendar/list-events`
+- [List Events](https://docs.luma.com/reference/get_v1-calendars-events-list) — `GET /v1/calendars/events/list` (legacy `GET /v1/calendar/list-events` still works as a fallback)
+- [Rate Limits](https://docs.luma.com/reference/rate-limits) — calendar keys are ~200 requests/minute; we honor `429` / `Retry-After` and cache ~10 minutes
 - Base URL: `https://public-api.luma.com`
 - Auth header: `x-luma-api-key: YOUR_KEY`
+
+**What we request from the list endpoint**
+
+- `access=manage&access=view` — includes partnership / mirrored events that are *listed* on the Foresight calendar but managed elsewhere
+- `platforms=luma&platforms=external` — includes external events hosts added onto the calendar
+- `after` / `before` — only the recent past (~1 week) through ~6 months ahead, so we do not paginate years of history
+- Public visibility only — private / unlisted Luma events never reach the atlas
+
+List responses no longer include `description` / `description_md` (July 2026). We hydrate a small capped set of missing descriptions via `GET /v1/events/get` so cards still have copy without burning the rate limit.
+
+**Guest RSVPs:** Luma only allows `guests/list` for events the calendar **manages**. Mirrored partnership events (`access=view`) still appear on Programming pages, but we do not call the guests API for them (Luma returns 403).
 
 Events returned by the API can include a **`cover_url`** (cover image). The sync script passes this through as **`coverImageUrl`**; event cards show the image when present. Cards without a cover render as before (no empty placeholder).

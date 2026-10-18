@@ -60,6 +60,39 @@ const SIZE_CLASSES: Record<NanowheelBadgeSize, {
 const DEFAULT_TOOLTIP =
   "Nanowheels — collected by checking in at a node or RSVPing to an event.";
 
+/**
+ * The same spinning Foresight mark the full-page loader uses, sized to the
+ * slot the count will occupy. Shown only while the sheet read is in flight.
+ */
+export function NanowheelPending({
+  size = "md",
+  className,
+}: {
+  size?: NanowheelBadgeSize;
+  className?: string;
+}) {
+  const s = SIZE_CLASSES[size];
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-indigo-50/60 text-sky-900 shadow-sm",
+        s.container,
+        className,
+      )}
+      role="status"
+      aria-label="Loading nanowheels"
+    >
+      <img
+        src={foresightIconUrl}
+        alt=""
+        className={cn("animate-spin object-contain", s.icon)}
+        aria-hidden
+      />
+    </span>
+  );
+}
+
 export function NanowheelBadge({
   count,
   size = "md",

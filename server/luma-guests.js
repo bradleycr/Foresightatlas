@@ -16,11 +16,18 @@
  * never write back to Luma.
  */
 
-const LUMA_BASE = "https://public-api.luma.com";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+/** Cap parallel guest list fetches so a busy calendar cannot stampede the 200/min limit. */
+const GUEST_FETCH_CONCURRENCY = 4;
 
 const { isLocalMockMode, getMockLumaGuests } = require("./local-storage");
+const {
+  isInEventWindow,
+  lumaApiKey,
+  lumaGet,
+  mapPool,
+} = require("./luma-client");
 
 /** @type {Map<string, { guests: object[]; expiresAt: number }>} */
 const guestCache = new Map();
@@ -168,14 +175,12 @@ async function fetchLumaGuestsForEvent(lumaEventId) {
   const cached = guestCache.get(key);
   if (cached && cached.expiresAt > now) return cached.guests;
 
-  const apiKey = process.env.LUMA_API_KEY;
-  if (!apiKey) {
+  if (!lumaApiKey()) {
     const guests = isLocalMockMode() ? getMockLumaGuests(key) : [];
     guestCache.set(key, { guests, expiresAt: now + CACHE_TTL_MS });
     return guests;
   }
 
-  const headers = { "x-luma-api-key": apiKey };
   const guests = [];
   let cursor = null;
 
@@ -186,24 +191,25 @@ async function fetchLumaGuestsForEvent(lumaEventId) {
     params.set("pagination_limit", "50");
     if (cursor) params.set("pagination_cursor", cursor);
 
-    let res = await fetch(`${LUMA_BASE}/v1/events/guests/list?${params}`, { headers });
-    if (!res.ok && res.status === 404) {
+    let result = await lumaGet(`/v1/events/guests/list?${params}`);
+    if (!result.ok && result.status === 404) {
       // Legacy path for older calendar API keys.
       const legacyParams = new URLSearchParams();
       legacyParams.set("event_api_id", key);
       legacyParams.set("approval_status", "approved");
       legacyParams.set("pagination_limit", "50");
       if (cursor) legacyParams.set("pagination_cursor", cursor);
-      res = await fetch(`${LUMA_BASE}/v1/event/get-guests?${legacyParams}`, { headers });
+      result = await lumaGet(`/v1/event/get-guests?${legacyParams}`);
     }
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.warn(`[luma-guests] Luma guests API ${res.status} for ${key}: ${body.slice(0, 200)}`);
+    if (!result.ok) {
+      console.warn(
+        `[luma-guests] Luma guests API ${result.status} for ${key}: ${(result.bodyText || "").slice(0, 200)}`,
+      );
       break;
     }
 
-    const data = await res.json().catch(() => ({}));
+    const data = result.data || {};
     const entries = data.entries || data.guests || [];
     if (entries.length === 0) break;
 
@@ -221,15 +227,6 @@ async function fetchLumaGuestsForEvent(lumaEventId) {
 
   guestCache.set(key, { guests, expiresAt: now + CACHE_TTL_MS });
   return guests;
-}
-
-function isRelevantEventWindow(event, now = Date.now()) {
-  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const sixMonthsAhead = now + 180 * 24 * 60 * 60 * 1000;
-  const end = new Date(event.endAt).getTime();
-  const start = new Date(event.startAt).getTime();
-  if (!Number.isFinite(end) || !Number.isFinite(start)) return true;
-  return end >= weekAgo && start <= sixMonthsAhead;
 }
 
 /**
@@ -253,51 +250,52 @@ async function enrichRsvpsWithLumaGuests(sheetRsvps, events, records) {
       source: r.source === "luma" ? "luma" : "atlas",
     }));
 
-  if (!process.env.LUMA_API_KEY && !isLocalMockMode()) {
+  if (!lumaApiKey() && !isLocalMockMode()) {
     return taggedAtlas;
   }
 
-  const lumaEvents = (events || []).filter(
-    (ev) => resolveLumaEventId(ev) && isRelevantEventWindow(ev),
-  );
+  const lumaEvents = (events || []).filter((ev) => {
+    if (!resolveLumaEventId(ev) || !isInEventWindow(ev.startAt, ev.endAt)) return false;
+    // Mirrored / partnership events (access=view) are listed on our calendar but
+    // Luma rejects guests/list with 403 — skip them to avoid noise and wasted quota.
+    return String(ev.lumaAccess || "manage").toLowerCase() !== "view";
+  });
 
   /** @type {Map<string, object>} person×event keys overridden by Luma */
   const lumaByKey = new Map();
 
-  await Promise.all(
-    lumaEvents.map(async (event) => {
-      const lumaEventId = resolveLumaEventId(event);
-      if (!lumaEventId) return;
-      let guests;
-      try {
-        guests = await fetchLumaGuestsForEvent(lumaEventId);
-      } catch (err) {
-        console.warn(
-          `[luma-guests] Failed to load guests for ${lumaEventId}:`,
-          err?.message || err,
-        );
-        return;
-      }
+  await mapPool(lumaEvents, GUEST_FETCH_CONCURRENCY, async (event) => {
+    const lumaEventId = resolveLumaEventId(event);
+    if (!lumaEventId) return;
+    let guests;
+    try {
+      guests = await fetchLumaGuestsForEvent(lumaEventId);
+    } catch (err) {
+      console.warn(
+        `[luma-guests] Failed to load guests for ${lumaEventId}:`,
+        err?.message || err,
+      );
+      return;
+    }
 
-      for (const guest of guests) {
-        const match = matchGuestToPerson(guest, emailToPerson, nameToPerson);
-        if (!match) continue;
+    for (const guest of guests) {
+      const match = matchGuestToPerson(guest, emailToPerson, nameToPerson);
+      if (!match) continue;
 
-        const key = `${event.id}\t${match.personId}`;
-        const registeredAt = guestRegisteredAt(guest);
-        lumaByKey.set(key, {
-          eventId: event.id,
-          eventTitle: event.title || "",
-          personId: match.personId,
-          fullName: match.fullName,
-          status: "going",
-          createdAt: registeredAt,
-          updatedAt: registeredAt,
-          source: "luma",
-        });
-      }
-    }),
-  );
+      const key = `${event.id}\t${match.personId}`;
+      const registeredAt = guestRegisteredAt(guest);
+      lumaByKey.set(key, {
+        eventId: event.id,
+        eventTitle: event.title || "",
+        personId: match.personId,
+        fullName: match.fullName,
+        status: "going",
+        createdAt: registeredAt,
+        updatedAt: registeredAt,
+        source: "luma",
+      });
+    }
+  });
 
   if (lumaByKey.size === 0) return taggedAtlas;
 

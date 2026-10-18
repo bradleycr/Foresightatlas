@@ -15,6 +15,7 @@
 import type { NodeSlug } from "../types/events";
 import { fetchCheckInsFromAPI, getPersonCheckIns, toDateKey } from "./checkin";
 import { fetchRSVPsFromAPI, getPersonRSVPs } from "./rsvp";
+import { subscribeToDataChanges } from "./sync";
 
 /** Per-person nanowheel breakdown. Totals are always checkIns + rsvpsGoing. */
 export interface NanowheelSummary {
@@ -42,8 +43,36 @@ export interface NanowheelActivity {
 
 const NODE_SLUGS: NodeSlug[] = ["berlin", "sf", "global"];
 
-/** Warm merged check-in / RSVP caches before reading person totals. */
-async function ensureCachesWarm(): Promise<void> {
+/**
+ * How long a warmed check-in / RSVP read stays good.
+ * The first badge in a session still waits on the sheet. Everyone after that
+ * reads the same in-memory merge, until a check-in, RSVP, or focus refresh
+ * marks it stale.
+ */
+const WARM_TTL_MS = 90_000;
+
+let warmUntil = 0;
+let warming: Promise<void> | null = null;
+/** Bumped when check-ins or RSVPs change, so a fetch already in flight cannot look fresh. */
+let warmGeneration = 0;
+
+if (typeof window !== "undefined") {
+  subscribeToDataChanges((msg) => {
+    if (msg.scope === "checkins" || msg.scope === "rsvps" || msg.scope === "all") {
+      warmUntil = 0;
+      warmGeneration += 1;
+    }
+  });
+}
+
+/**
+ * Pull every node's check-ins and the RSVP list once, then share that read.
+ * Opening a second person must not start another four sheet requests.
+ */
+function ensureCachesWarm(): Promise<void> {
+  if (Date.now() < warmUntil) return Promise.resolve();
+  if (warming) return warming;
+
   const now = new Date();
   const start = toDateKey(
     new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
@@ -51,10 +80,23 @@ async function ensureCachesWarm(): Promise<void> {
   const end = toDateKey(
     new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()),
   );
-  await Promise.all([
+
+  const generation = warmGeneration;
+  warming = Promise.all([
     ...NODE_SLUGS.map((slug) => fetchCheckInsFromAPI(slug, start, end)),
     fetchRSVPsFromAPI(),
-  ]);
+  ])
+    .then(() => {
+      if (generation === warmGeneration) warmUntil = Date.now() + WARM_TTL_MS;
+    })
+    .catch(() => {
+      /* Leave the window expired so the next badge retries the sheet. */
+    })
+    .finally(() => {
+      warming = null;
+    });
+
+  return warming;
 }
 
 /**
