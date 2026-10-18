@@ -25,12 +25,11 @@ import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import { useResizableMapSidebar } from "../hooks/useResizableMapSidebar";
 import { MapSidebarResizeHandle } from "./map/MapSidebarResizeHandle";
-import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
+import { ROLE_COLORS } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
 import { isEventUpcoming } from "../utils/eventTiming";
 import { effectiveIsAlumni } from "../utils/cohortLabel";
-import { getPresetFocusTags } from "../data/focusAreas";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -319,53 +318,27 @@ const escapeHtml = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-/** Build popup HTML for one marker (location + list of people). */
+/** Build popup HTML for one marker (location + clean scrollable name list). */
 function buildPopupHtml(marker: MarkerData): string {
   const cityCountry = escapeHtml(
     marker.country ? `${marker.city}, ${marker.country}` : marker.city,
   );
   const n = marker.people.length;
-  const peopleWord = n === 1 ? "person" : "people";
-  const alumniCount = marker.people.filter(({ person }) => effectiveIsAlumni(person)).length;
-  const currentCount = n - alumniCount;
-  const statusSummary =
-    alumniCount === 0
-      ? "current ecosystem"
-      : currentCount === 0
-        ? "alumni"
-        : `${currentCount} current · ${alumniCount} alumni`;
-  const markerSummary = `${n} ${peopleWord} · ${escapeHtml(statusSummary)} — tap a name to see in list; tap profile icon for full profile`;
+  const countLabel = n === 1 ? "1 person" : `${n} people`;
   const rows = marker.people
     .map(({ person }) => {
       const name = escapeHtml(person.fullName);
-      const roleGradient = getRoleGradient(person.roleType);
-      const roleStyle = `background:${roleGradient};color:${getRoleTextColor(person.roleType)}`;
-      const alumni = effectiveIsAlumni(person)
-        ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium text-slate-50 shrink-0" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 1px solid rgba(100,116,139,0.4)">Alumni</span>'
-        : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
-      const focusTags = getPresetFocusTags(person.focusTags)
-        .slice(0, 3)
-        .map(
-          (tag) =>
-            `<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[80px] truncate" title="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`,
-        )
-        .join("");
-      return `<button type="button" class="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1 cursor-pointer" data-person-id="${escapeHtml(person.id)}">
+      return `<button type="button" class="map-node-popup__person w-full text-left px-3 py-2.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] flex items-center cursor-pointer" data-person-id="${escapeHtml(person.id)}">
         <span class="text-sm font-medium text-gray-900 truncate">${name}</span>
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0" style="${roleStyle}">${escapeHtml(person.roleType)}</span>
-          ${alumni}
-          ${focusTags}
-        </div>
       </button>`;
     })
     .join("");
   return `<div class="map-node-popup__inner bg-white">
-    <div class="map-node-popup__header px-3 pt-2 pb-1.5 pr-10 border-b border-gray-100">
+    <div class="map-node-popup__header px-3 pt-2.5 pb-2 pr-10 border-b border-gray-100">
       <h4 class="font-semibold text-gray-900 text-sm leading-tight sm:text-base font-heading">${cityCountry}</h4>
-      <p class="text-xs text-gray-500 mt-0.5 leading-snug">${markerSummary}</p>
+      <p class="text-xs text-gray-500 mt-0.5">${countLabel}</p>
     </div>
-    <div class="map-node-popup__list pt-px">${rows}</div>
+    <div class="map-node-popup__list">${rows}</div>
   </div>`;
 }
 
@@ -1181,15 +1154,19 @@ export function MapView({
               onPersonClick={(personId) => {
                 setSelectedPerson(personId);
                 setFiltersExpanded(false);
-                setIsSidebarOpen(true);
+                // Mobile: stay on the map under the profile modal. Opening the
+                // list sheet here made X feel like “back to list,” not map.
+                if (!isMobile) {
+                  setIsSidebarOpen(true);
+                  requestAnimationFrame(() => {
+                    const el = personRefs.current[personId];
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  });
+                }
                 const navContext = selectedMarker
                   ? { peopleIds: sidebarPeople.map((p) => p.id), label: selectedMarkerLabel }
                   : undefined;
                 onViewPersonDetails?.(personId, navContext);
-                requestAnimationFrame(() => {
-                  const el = personRefs.current[personId];
-                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                });
               }}
             />
           </MapContainer>
@@ -1354,56 +1331,64 @@ export function MapView({
       {/* Mobile: full-screen fellows sheet — above header/hamburger so list is on top */}
       {isMobile && isSidebarOpen && (
         <div className="fixed inset-0 bg-white flex flex-col shadow-2xl min-h-0" style={{ zIndex: Z_INDEX_MOBILE_SIDEBAR_SHEET }}>
-          {/* Sticky header: always visible so "Back to map" is always reachable without scrolling */}
+          {/* Sticky header: “Back to map” always visible without scrolling */}
           <header
             className="shrink-0 px-4 pt-4 pb-3 border-b border-gray-200 bg-app-sidebar"
             style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 0px) + 1rem)" }}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                  {selectedMarker ? selectedMarkerLabel : "Grantees, Fellows, Nodees & Alumni"}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                    {selectedMarker
-                      ? `${sidebarPeople.length} at this location`
-                      : `${filteredPeople.length} people${peopleMissingLocationsCount > 0 ? ` · ${peopleMissingLocationsCount} missing map locations` : ""}`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {selectedMarker && (
-                  <button
-                    type="button"
-                    onClick={clearLocationSelection}
-                    className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50"
-                  >
-                    Show all
-                  </button>
-                )}
-                {onMobileMenuToggle && (
-                  <button
-                    type="button"
-                    onClick={onMobileMenuToggle}
-                    className={cn(
-                      "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all touch-manipulation shrink-0",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2",
-                      mobileMenuOpen
-                        ? "bg-app-tab-active text-gray-900 shadow-sm border-white/50"
-                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm",
-                    )}
-                    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                    aria-expanded={mobileMenuOpen}
-                    aria-haspopup="dialog"
-                  >
-                    {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-                  </button>
-                )}
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-gray-300 text-gray-700 bg-white touch-manipulation"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <ArrowLeft className="size-3.5 mr-1.5 opacity-80" aria-hidden />
+                Back to map
+              </Button>
+              <div className="flex-1" />
+              {selectedMarker && (
+                <button
+                  type="button"
+                  onClick={clearLocationSelection}
+                  className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50 touch-manipulation"
+                >
+                  Show all
+                </button>
+              )}
+              {onMobileMenuToggle && (
+                <button
+                  type="button"
+                  onClick={onMobileMenuToggle}
+                  className={cn(
+                    "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all touch-manipulation shrink-0",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2",
+                    mobileMenuOpen
+                      ? "bg-app-tab-active text-gray-900 shadow-sm border-white/50"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm",
+                  )}
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-haspopup="dialog"
+                >
+                  {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+                </button>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
+                {selectedMarker ? selectedMarkerLabel : "Grantees, Fellows, Nodees & Alumni"}
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {selectedMarker
+                  ? `${sidebarPeople.length} at this location`
+                  : `${filteredPeople.length} people${peopleMissingLocationsCount > 0 ? ` · ${peopleMissingLocationsCount} missing map locations` : ""}`}
+              </p>
             </div>
           </header>
           {/* Scrollable area: sticky search/filters at top, then list */}
           <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
-            {/* Sticky block: search + filters stay visible when scrolling the list */}
             <div className="sticky top-0 z-10 px-4 pt-3 pb-4 border-b border-gray-200 bg-app-sidebar">
               {filters && onFiltersChange && defaultYear !== undefined && (
                 <InlineFilters
@@ -1413,19 +1398,6 @@ export function MapView({
                   resultCount={sidebarPeople.length}
                   expanded={filtersExpanded}
                   onExpandedChange={setFiltersExpanded}
-                  filterToggleStartSlot={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 border-gray-300 text-gray-700 bg-white/90 text-xs sm:text-sm px-2.5 sm:px-3 touch-manipulation"
-                      onClick={() => setIsSidebarOpen(false)}
-                    >
-                      <ArrowLeft className="size-3.5 sm:size-4 mr-1 sm:mr-1.5 opacity-80" aria-hidden />
-                      <span className="hidden min-[360px]:inline">Back to map</span>
-                      <span className="min-[360px]:hidden">Map</span>
-                    </Button>
-                  }
                 />
               )}
             </div>

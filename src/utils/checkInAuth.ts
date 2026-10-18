@@ -28,12 +28,17 @@ export function atlasPasswordResetMailto(fullName?: string): string {
   return mailto(subject, body);
 }
 
+export interface BugReportDraft {
+  to: string;
+  subject: string;
+  body: string;
+}
+
 /**
- * Light-touch bug report. Opens the member's own mail app with prompts for
- * what happened, when, and what they were doing — plus the page (and error,
- * when the app already knows it).
+ * Shared bug-report copy — page URL, timestamp, and optional known error —
+ * so every compose path (Gmail, Outlook, mailto) stays in sync.
  */
-export function atlasBugReportMailto(options?: { error?: string }): string {
+export function buildBugReportDraft(options?: { error?: string }): BugReportDraft {
   const page = typeof window !== "undefined" ? window.location.href : "";
   const when = new Date().toISOString();
   const error = String(options?.error || "").trim();
@@ -52,7 +57,37 @@ export function atlasBugReportMailto(options?: { error?: string }): string {
   ];
   if (page) lines.push(`Page: ${page}`);
   if (error) lines.push(`Error: ${error.slice(0, 500)}`);
-  return mailto("Foresight Atlas — bug report", lines.join("\n"));
+  return {
+    to: SUPPORT_EMAIL,
+    subject: "Foresight Atlas — bug report",
+    body: lines.join("\n"),
+  };
+}
+
+/** Native mail handler. Prefer web compose URLs when no desktop client is set. */
+export function atlasBugReportMailto(options?: { error?: string }): string {
+  const draft = buildBugReportDraft(options);
+  return mailto(draft.subject, draft.body);
+}
+
+/**
+ * Browser compose links that actually open a drafted message.
+ * `mailto:` alone often yields a blank tab when no default mail app is configured.
+ */
+export function atlasBugReportComposeUrls(options?: { error?: string }): {
+  mailto: string;
+  gmail: string;
+  outlook: string;
+} {
+  const draft = buildBugReportDraft(options);
+  const to = encodeURIComponent(draft.to);
+  const subject = encodeURIComponent(draft.subject);
+  const body = encodeURIComponent(draft.body);
+  return {
+    mailto: mailto(draft.subject, draft.body),
+    gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`,
+    outlook: `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${subject}&body=${body}`,
+  };
 }
 
 /** Ask staff to wipe a roster row entirely (beyond the self-serve “hide from atlas” toggle). */

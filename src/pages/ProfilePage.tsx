@@ -819,7 +819,7 @@ export function ProfilePage({
           {/* Header: identity only, no actions */}
           {/* Header: Foresight icon + initials, then name */}
           <div
-            className="border-b border-gray-200/80 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            className="border-b border-gray-200/80 px-4 py-8 sm:px-8 lg:px-10 lg:py-10"
             style={{ background: `linear-gradient(135deg, ${"#f0f9ff"} 0%, ${"#ecfdf5"} 50%, ${"#faf5ff"} 100%)` }}
           >
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 sm:gap-5">
@@ -847,8 +847,8 @@ export function ProfilePage({
             <OpenToMeetProfileStatus person={draft} />
           </div>
 
-          <div className="grid gap-10 px-6 py-8 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)] lg:px-10 lg:py-10 lg:gap-12">
-            <section className="space-y-8">
+          <div className="grid min-w-0 gap-10 px-4 py-8 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)] lg:px-10 lg:py-10 lg:gap-12">
+            <section className="min-w-0 space-y-8">
               <ProfileSection
                 title="Core profile"
                 icon={<User className="size-4 text-sky-500" />}
@@ -1036,7 +1036,7 @@ export function ProfilePage({
 
             <section
               id="profile-location-section"
-              className={`space-y-8 ${showLocationSetup ? "rounded-2xl ring-2 ring-sky-300/80 ring-offset-2" : ""}`}
+              className={`min-w-0 space-y-8 ${showLocationSetup ? "rounded-2xl ring-2 ring-sky-300/80 ring-offset-2" : ""}`}
             >
               <ProfileSection
                 title="Location and map"
@@ -1288,8 +1288,8 @@ export function ProfilePage({
           </div>
 
           {/* Bottom actions: Sign out and Save profile */}
-          <div className="border-t border-gray-200 bg-gray-50/80 px-6 py-5 sm:px-8 lg:px-10">
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
+          <div className="border-t border-gray-200 bg-gray-50/80 px-4 py-5 sm:px-8 lg:px-10">
+            <div className="flex min-w-0 flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
               <Button
                 variant="outline"
                 onClick={onSignOut}
@@ -1603,14 +1603,14 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <Label className="text-sm font-medium text-gray-700">
         {label}
         {required ? " *" : ""}
       </Label>
       {children}
       {description ? (
-        <p className="text-xs leading-5 text-gray-500">{description}</p>
+        <p className="text-xs leading-5 text-gray-500 break-words">{description}</p>
       ) : null}
     </div>
   );

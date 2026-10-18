@@ -1,9 +1,9 @@
 /**
- * Opens the member's mail app with a short bug-report draft.
- * The visible label never names a person — the address lives only in the mailto.
+ * Inline “email our team” link. Uses Gmail compose so the draft opens in the
+ * browser; mailto alone often fails when no desktop client is configured.
  */
 
-import { atlasBugReportMailto } from "../utils/checkInAuth";
+import { atlasBugReportComposeUrls } from "../utils/checkInAuth";
 
 interface BugReportLinkProps {
   className?: string;
@@ -17,8 +17,14 @@ export function BugReportLink({
   error,
   children = "Report a bug",
 }: BugReportLinkProps) {
+  const { gmail } = atlasBugReportComposeUrls({ error });
   return (
-    <a href={atlasBugReportMailto({ error })} className={className}>
+    <a
+      href={gmail}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+    >
       {children}
     </a>
   );
