@@ -1,20 +1,14 @@
 /**
- * BugReportFab — compact map-chrome control in the corner.
- * Opens a small menu of mail providers with a prefilled draft (mailto alone
- * often opens a blank tab when no desktop client is configured).
+ * BugReportFab — a small corner control that asks before it opens mail.
+ * The first tap only confirms they found a bug. "Tell us" then offers a
+ * drafted message in Gmail, Outlook, or the device mail app.
  */
 
+import { useState, type ReactNode } from "react";
 import { Bug, ExternalLink, Mail } from "lucide-react";
 import { Z_INDEX_BUG_REPORT } from "../constants/zIndex";
 import { atlasBugReportComposeUrls } from "../utils/checkInAuth";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 function openCompose(kind: "gmail" | "outlook" | "mailto") {
   const urls = atlasBugReportComposeUrls();
@@ -27,55 +21,95 @@ function openCompose(kind: "gmail" | "outlook" | "mailto") {
 }
 
 export function BugReportFab() {
+  const [open, setOpen] = useState(false);
+  const [readyToSend, setReadyToSend] = useState(false);
+
   return (
     <div
       className="fixed right-3 bottom-[max(2.5rem,calc(env(safe-area-inset-bottom,0px)+1.75rem))] md:bottom-[4.25rem]"
       style={{ zIndex: Z_INDEX_BUG_REPORT }}
     >
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setReadyToSend(false);
+        }}
+      >
+        <PopoverTrigger asChild>
           <button
             type="button"
             aria-label="Report a bug"
             title="Report a bug"
-            className="inline-flex size-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-1 touch-manipulation"
+            className="inline-grid size-8 place-items-center rounded-md border border-gray-300 bg-white p-0 text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-1 touch-manipulation"
           >
-            <Bug className="size-3.5" aria-hidden />
+            {/*
+              The bug glyph sits a hair left in its box, so the right side
+              of the button looked emptier than the left. Nudge it back to center.
+            */}
+            <Bug className="size-3.5 translate-x-px" aria-hidden />
           </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+        </PopoverTrigger>
+        <PopoverContent
           align="end"
           side="top"
-          sideOffset={6}
-          className="z-[1300] min-w-[11.5rem] border-gray-200 bg-white text-gray-800 shadow-md"
+          sideOffset={8}
+          className="w-[min(18rem,calc(100vw-1.5rem))] rounded-2xl border-gray-200 bg-white p-3.5 text-gray-800 shadow-lg"
+          style={{ zIndex: Z_INDEX_BUG_REPORT + 1 }}
         >
-          <DropdownMenuLabel className="text-xs font-medium text-gray-500">
-            Report a bug
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onSelect={() => openCompose("gmail")}
-          >
-            <ExternalLink className="size-3.5 text-gray-500" aria-hidden />
-            Gmail
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onSelect={() => openCompose("outlook")}
-          >
-            <ExternalLink className="size-3.5 text-gray-500" aria-hidden />
-            Outlook
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onSelect={() => openCompose("mailto")}
-          >
-            <Mail className="size-3.5 text-gray-500" aria-hidden />
-            Mail app
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <p className="text-sm leading-relaxed text-gray-700">
+            The Foresight Atlas is humbly in beta. Did you find a bug?
+          </p>
+          {readyToSend ? (
+            <div className="mt-3 grid gap-1.5">
+              <p className="text-xs font-medium text-gray-500">Tell us with</p>
+              <ComposeChoice icon={<ExternalLink className="size-3.5" />} label="Gmail" onClick={() => openCompose("gmail")} />
+              <ComposeChoice icon={<ExternalLink className="size-3.5" />} label="Outlook" onClick={() => openCompose("outlook")} />
+              <ComposeChoice icon={<Mail className="size-3.5" />} label="Mail app" onClick={() => openCompose("mailto")} />
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="min-h-9 rounded-lg px-2.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+              >
+                Not now
+              </button>
+              <button
+                type="button"
+                onClick={() => setReadyToSend(true)}
+                className="min-h-9 rounded-lg bg-gray-900 px-3 text-sm font-medium text-white hover:bg-gray-800"
+              >
+                Tell us
+              </button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
+  );
+}
+
+function ComposeChoice({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-9 items-center gap-2 rounded-lg px-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
+    >
+      <span className="text-gray-500" aria-hidden>
+        {icon}
+      </span>
+      {label}
+    </button>
   );
 }
