@@ -405,7 +405,7 @@ export function AppHeader({
                       className="min-h-[44px] w-full"
                     >
                       <CalendarDays className="size-4" />
-                      Calendar
+                      Community calendar
                     </Button>
                     <Button
                       type="button"
@@ -578,7 +578,6 @@ export function AppHeader({
                     Global programming
                   </button>
                 </li>
-                {/* Connections removed from nav; users reach it from the profile dialog. */}
                 {suggestFormUrl && (
                   <li className="pt-2 mt-2 border-t border-gray-100">
                     <a
@@ -594,7 +593,7 @@ export function AppHeader({
                 )}
               </ul>
 
-              {/* Mobile identity strip */}
+              {/* Mobile identity strip — profile actions + community shortcuts */}
               {identity && (
                 <div className="mx-3 mt-4 mb-2 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-emerald-50 border border-sky-100">
                   <div className="flex items-start gap-3">
@@ -629,6 +628,28 @@ export function AppHeader({
                     >
                       <LogOut className="size-4" />
                       Sign out
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate("/connections");
+                        closeMobileMenu();
+                      }}
+                      className="min-h-[44px] rounded-xl border border-sky-200 bg-white px-3 text-sm font-medium text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors inline-flex items-center justify-center gap-1.5"
+                    >
+                      <Bookmark className="size-3.5 shrink-0" aria-hidden />
+                      Connections
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate("/calendar");
+                        closeMobileMenu();
+                      }}
+                      className="min-h-[44px] rounded-xl border border-sky-200 bg-white px-2.5 text-sm font-medium text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors inline-flex items-center justify-center gap-1.5"
+                    >
+                      <CalendarDays className="size-3.5 shrink-0" aria-hidden />
+                      <span className="leading-tight text-center">Community calendar</span>
                     </button>
                   </div>
                 </div>
