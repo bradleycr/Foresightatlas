@@ -984,7 +984,7 @@ export function PersonDetailModal({
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
-                            <Label className="text-xs text-gray-600">Calendar invite email</Label>
+                            <Label className="text-xs text-gray-600">Calendar invite email (not the community Calendar)</Label>
                             <Input
                               value={editingPerson.calendarEmail || ""}
                               onChange={(e) =>

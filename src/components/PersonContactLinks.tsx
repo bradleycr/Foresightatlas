@@ -230,7 +230,7 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
             details: `Inviting ${person.fullName}.`,
             addGuests: [person.calendarEmail!],
           })}
-          label="Invite via Google Calendar"
+          label="Invite on Google Calendar"
           icon={<CalendarDays className="h-4 w-4" />}
           ariaLabel={`Create a Google Calendar invite for ${person.fullName}`}
         />

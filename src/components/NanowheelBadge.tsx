@@ -33,6 +33,8 @@ interface NanowheelBadgeProps {
   tooltipLabel?: string;
   /** ARIA label for screen readers when the number alone isn't enough context. */
   ariaLabel?: string;
+  /** When set, the badge is a button (no hover tooltip) — used for the own-profile explainer. */
+  onClick?: () => void;
 }
 
 const SIZE_CLASSES: Record<NanowheelBadgeSize, {
@@ -100,34 +102,50 @@ export function NanowheelBadge({
   className,
   tooltipLabel = DEFAULT_TOOLTIP,
   ariaLabel,
+  onClick,
 }: NanowheelBadgeProps) {
   if (hideWhenZero && count <= 0) return null;
 
   const s = SIZE_CLASSES[size];
   const label = ariaLabel ?? `${count} nanowheels`;
+  const mark = (
+    <>
+      <img
+        src={foresightIconUrl}
+        alt=""
+        className={cn(
+          "object-contain drop-shadow-[0_0_1px_rgba(14,165,233,0.15)]",
+          s.icon,
+        )}
+        aria-hidden
+      />
+      <span className={s.text}>{count}</span>
+    </>
+  );
+  const chrome = cn(
+    "inline-flex items-center border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-indigo-50/60 text-sky-900 shadow-sm",
+    s.container,
+    className,
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(chrome, "cursor-pointer touch-manipulation active:scale-[0.98] transition-transform")}
+        aria-label={label}
+      >
+        {mark}
+      </button>
+    );
+  }
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span
-          className={cn(
-            "inline-flex items-center border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-indigo-50/60 text-sky-900 shadow-sm",
-            s.container,
-            className,
-          )}
-          aria-label={label}
-          role="img"
-        >
-          <img
-            src={foresightIconUrl}
-            alt=""
-            className={cn(
-              "object-contain drop-shadow-[0_0_1px_rgba(14,165,233,0.15)]",
-              s.icon,
-            )}
-            aria-hidden
-          />
-          <span className={s.text}>{count}</span>
+        <span className={chrome} aria-label={label} role="img">
+          {mark}
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">

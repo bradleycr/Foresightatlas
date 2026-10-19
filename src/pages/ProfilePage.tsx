@@ -32,6 +32,13 @@ import { peekRegisterInviteRole } from "../utils/inviteToken";
 import { buildFullPath } from "../utils/router";
 import { atlasProfileRemovalMailto } from "../utils/checkInAuth";
 import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
@@ -1241,48 +1248,37 @@ export function ProfilePage({
               </ProfileSection>
 
               <ProfileSection
-                title="Open to meet & calendar"
+                title="Open to meet"
                 icon={<CalendarDays className="size-4 text-sky-500" />}
               >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Calendar invite email">
-                    <Input
-                      value={draft.calendarEmail ?? ""}
-                      onChange={(e) =>
-                        updateDraft("calendarEmail", e.target.value.trim() || null)
-                      }
-                      placeholder="name@gmail.com"
-                      inputMode="email"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                    />
-                    <p className="mt-2 text-xs text-gray-500">
-                      Others can use this to add you as a guest on a Google Calendar event.
-                    </p>
-                  </Field>
-                  <Field label="Open to meet link">
-                    <Input
-                      value={draft.availabilityUrl ?? ""}
-                      onChange={(e) =>
-                        updateDraft("availabilityUrl", e.target.value.trim() || null)
-                      }
-                      placeholder="https://calendly.com/…"
-                      inputMode="url"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                    />
-                    <p className="mt-2 text-xs text-gray-500">
-                      Calendly, Google appointment schedule, etc. Appears on the{" "}
-                      <a
-                        href={buildFullPath("/calendar")}
-                        className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
-                      >
-                        community Calendar
-                      </a>{" "}
-                      page when set.
-                    </p>
-                  </Field>
-                </div>
+                <Field
+                  label="Booking link"
+                  description="This is what puts you on the community Calendar. A plain email does not."
+                >
+                  <Input
+                    value={draft.availabilityUrl ?? ""}
+                    onChange={(e) =>
+                      updateDraft("availabilityUrl", e.target.value.trim() || null)
+                    }
+                    placeholder="https://calendar.app.google/… or https://calendly.com/you"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                  <p className="mt-2 text-xs leading-relaxed text-gray-500">
+                    Paste a public booking page — Google Calendar appointment
+                    schedule, Calendly, Cal.com, or similar. Signed-in members
+                    then see you under Open to meet on the{" "}
+                    <a
+                      href={buildFullPath("/calendar")}
+                      className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                    >
+                      community Calendar
+                    </a>{" "}
+                    and can book a slot you already offer. Leave this blank to
+                    stay off that list.
+                  </p>
+                </Field>
               </ProfileSection>
             </section>
           </div>
@@ -1658,6 +1654,7 @@ function FieldCheckNotice({ state }: { state: FieldCheckState }) {
  */
 function NanowheelHero({ personId, refreshTick = 0 }: { personId: string; refreshTick?: number }) {
   const [summary, setSummary] = useState<NanowheelSummary | null>(null);
+  const [explainOpen, setExplainOpen] = useState(false);
 
   useEffect(() => {
     if (!personId) {
@@ -1686,9 +1683,31 @@ function NanowheelHero({ personId, refreshTick = 0 }: { personId: string; refres
       <NanowheelBadge
         count={count}
         size="lg"
-        ariaLabel={`You have ${count} nanowheels`}
+        ariaLabel={`You have ${count} nanowheels. Tap for what they mean.`}
         className={count === 0 ? "opacity-75" : undefined}
+        onClick={() => setExplainOpen(true)}
       />
+      <Dialog open={explainOpen} onOpenChange={setExplainOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nanowheels</DialogTitle>
+            <DialogDescription>
+              A symbolic count of showing up — one for each node check-in and
+              each event you mark going. Right now they don&apos;t unlock
+              anything. We may do more with them later.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-gray-700">
+            Yours: <span className="font-semibold tabular-nums">{count}</span>
+            {" "}
+            <span className="text-gray-500">
+              ({summary.checkIns} check-in{summary.checkIns === 1 ? "" : "s"}
+              {" · "}
+              {summary.rsvpsGoing} going RSVP{summary.rsvpsGoing === 1 ? "" : "s"})
+            </span>
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1731,9 +1750,8 @@ function OpenToMeetProfileStatus({ person }: { person: Person }) {
   return (
     <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white/50 px-4 py-4 sm:px-5">
       <p className="text-sm leading-relaxed text-gray-600">
-        <span className="font-medium text-gray-800">Open to meet?</span> Add a booking link in{" "}
-        <span className="font-medium text-gray-800">Open to meet &amp; calendar</span> below
-        (Calendly, Google appointment schedule, etc.) to appear on the{" "}
+        <span className="font-medium text-gray-800">Open to meet?</span> Add a booking link below
+        (Google appointment schedule, Calendly, Cal.com) to appear on the{" "}
         <a
           href={buildFullPath("/calendar")}
           className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
