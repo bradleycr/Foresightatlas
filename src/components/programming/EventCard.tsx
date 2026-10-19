@@ -176,8 +176,8 @@ export function EventCard({
   const [isClamped, setIsClamped] = useState(false);
   /** `null` until the cover image loads — we default to square layout (typical Luma art). */
   const [coverLayout, setCoverLayout] = useState<CoverLayoutMode | null>(null);
-  /** Residence-day Going gate: ask → email, or confirm → RSVP. */
-  const [residentsGate, setResidentsGate] = useState<"closed" | "ask" | "email">("closed");
+  /** Residence-day Going gate — confirm node membership before RSVP. */
+  const [residentsGateOpen, setResidentsGateOpen] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const badge = badgeStyle(event.type);
   const { date, time } = formatTime(event.startAt, event.endAt);
@@ -225,13 +225,24 @@ export function EventCard({
         status === "going" &&
         currentUserStatus !== "going"
       ) {
-        setResidentsGate("ask");
+        setResidentsGateOpen(true);
         return;
       }
       onRSVPChange(event.id, status, event.title);
     },
     [isResidentsDay, currentUserStatus, onRSVPChange, event.id, event.title],
   );
+
+  const confirmResidentsGoing = useCallback(() => {
+    setResidentsGateOpen(false);
+    onRSVPChange(event.id, "going", event.title);
+  }, [onRSVPChange, event.id, event.title]);
+
+  const requestResidentsAccess = useCallback(() => {
+    setResidentsGateOpen(false);
+    // Prefer a real navigation — AlertDialogAction+asChild mailto was unreliable.
+    window.location.href = residentsMailto;
+  }, [residentsMailto]);
 
   const eventEnded = isEventPast(event);
 
@@ -530,68 +541,37 @@ export function EventCard({
       )}
       </div>
 
-      {/* Residence-day access gate — node members RSVP; others get a mailto to Bradley */}
-      <AlertDialog
-        open={residentsGate !== "closed"}
-        onOpenChange={(open) => {
-          if (!open) setResidentsGate("closed");
-        }}
-      >
+      {/* Residence-day access gate — Yes RSVPs; No opens mailto to Bradley */}
+      <AlertDialog open={residentsGateOpen} onOpenChange={setResidentsGateOpen}>
         <AlertDialogContent>
-          {residentsGate === "ask" ? (
-            <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Are you already part of the {nodeName}?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Residence days are for node members (nodees, residents, and
-                  community already using the space). Roles on the Atlas vary —
-                  fellows and grantees who are part of the node can say yes.
-                  If you&apos;re not sure or want to join for the day, we&apos;ll
-                  point you to email for access instructions.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <button
-                  type="button"
-                  className={cn(
-                    "inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium",
-                    "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
-                  )}
-                  onClick={() => setResidentsGate("email")}
-                >
-                  No — I need access
-                </button>
-                <AlertDialogAction
-                  onClick={() => {
-                    setResidentsGate("closed");
-                    onRSVPChange(event.id, "going", event.title);
-                  }}
-                >
-                  Yes — RSVP me
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </>
-          ) : (
-            <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Email for access instructions</AlertDialogTitle>
-                <AlertDialogDescription>
-                  To join a residence day at the {nodeName}, please email{" "}
-                  {RESIDENTS_DAY_ACCESS_EMAIL} for access instructions. We&apos;ll
-                  get you set up — this isn&apos;t an open RSVP for visitors yet.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Close</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <a href={residentsMailto}>Email {RESIDENTS_DAY_ACCESS_EMAIL}</a>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </>
-          )}
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Are you already part of the {nodeName}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Residence days are for node members (nodees, residents, and
+              community already using the space). Roles on the Atlas vary —
+              fellows and grantees who are part of the node can say yes. If
+              you&apos;re not sure or want to join for the day, email{" "}
+              {RESIDENTS_DAY_ACCESS_EMAIL} for access instructions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium",
+                "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+              )}
+              onClick={requestResidentsAccess}
+            >
+              No — email for access
+            </button>
+            <AlertDialogAction onClick={confirmResidentsGoing}>
+              Yes — RSVP me
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

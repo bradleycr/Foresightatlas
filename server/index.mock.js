@@ -112,7 +112,7 @@ app.get("/api/directory-names", async (req, res) => {
   try {
     const database = await getLocalDatabase();
     const people = (database.people || [])
-      .filter((p) => p && p.fullName && p.roleType !== "Senior Fellow" && p.isPrivate !== true)
+      .filter((p) => p && p.fullName && p.isPrivate !== true)
       .map((p) => ({ id: p.id, fullName: p.fullName }));
     res.json({ people });
   } catch (error) {
@@ -129,11 +129,11 @@ app.get("/api/database", async (req, res) => {
   }
   try {
     const database = await getLocalDatabase();
-    // Mirror the production privacy gate (see server/sheet-database.js): never
-    // serve Senior Fellows or private profiles on the public directory.
-    database.people = (database.people || []).filter(
-      (p) => p && p.roleType !== "Senior Fellow" && p.isPrivate !== true,
-    );
+    // Mirror production: hide private profiles; redact contact for senior roles.
+    const { redactPublicContactFields } = require("./role-types");
+    database.people = (database.people || [])
+      .filter((p) => p && p.isPrivate !== true)
+      .map((p) => redactPublicContactFields(p));
     database.events = applyBerlinSecureWorkshopSheetOverrides(database.events || []);
     database.rsvps = normalizeBerlinSecureWorkshopRsvps(database.rsvps || []);
     database.events = await mergeSheetEventsWithLuma(database.events || []);

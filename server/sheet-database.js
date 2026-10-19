@@ -305,25 +305,18 @@ async function getFullDatabaseFromSheet() {
     ]);
 
     /*
-     * Public atlas privacy gate. Two classes of people are withheld from the
-     * public /api/database response so their information is never served to
-     * anonymous visitors:
-     *
-     *   1. Senior Fellows — their profiles are not meant to be publicly listed.
-     *   2. Members who opted out via the "make my profile private" setting.
-     *
-     * Note this only affects the public directory payload. Sign-in and profile
-     * editing read from RealData directly (loadRealDataRecords), and the client
-     * keeps the signed-in member's own record from the auth response, so a
-     * hidden member can still see and edit their own profile.
+     * Public atlas privacy gate:
+     *   1. Members who opted out via "make my profile private".
+     *   2. Senior Fellows + Prize Winners stay on the atlas, but contact /
+     *      booking fields are redacted (see redactPublicContactFields).
+     * Roster email is never broadcast to the client.
      */
+    const { redactPublicContactFields } = require("./role-types");
     const people = (loaded.records || [])
       .map((r) => r.person)
       .filter((p) => p && p.fullName)
-      .filter((p) => p.roleType !== "Senior Fellow")
       .filter((p) => p.isPrivate !== true)
-      // Roster email is server-side only — never broadcast it to the client.
-      .map(({ email, ...rest }) => rest);
+      .map(({ email, ...rest }) => redactPublicContactFields(rest));
     const travelWindows = rowsToObjects(
       tabValues.travelWindows,
       TRAVEL_WINDOWS_HEADERS,
@@ -369,17 +362,16 @@ async function getFullDatabaseFromSheet() {
 
 /**
  * Minimal directory for the (unauthenticated) sign-in picker: id + fullName
- * only, filtered to the same set as the public atlas (no Senior Fellows, no
- * private profiles). This is the ONLY person data served before login; the
- * full database (locations, projects, connections, emails) requires a session.
- * Hidden members can still sign in by typing their exact name.
+ * only, filtered to the same set as the public atlas (no private profiles).
+ * This is the ONLY person data served before login; the full database
+ * requires a session. Private members can still sign in by typing their
+ * exact name.
  */
 async function getDirectoryNamesFromSheet() {
   const loaded = await loadRealDataRecords();
   return (loaded.records || [])
     .map((r) => r.person)
     .filter((p) => p && p.fullName)
-    .filter((p) => p.roleType !== "Senior Fellow")
     .filter((p) => p.isPrivate !== true)
     .map((p) => ({ id: p.id, fullName: p.fullName }));
 }

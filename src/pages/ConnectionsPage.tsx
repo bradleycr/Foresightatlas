@@ -76,17 +76,16 @@ export function ConnectionsPage({
 
   const handleRemoveBookmark = (personId: string) => {
     if (!identity) return;
-    void (async () => {
-      try {
-        await removeConnection(identity.personId, personId);
-        setTick((t) => t + 1);
-      } catch (err) {
-        setTick((t) => t + 1);
-        toast.error(
-          err instanceof Error ? err.message : "Could not remove connection",
-        );
-      }
-    })();
+    // Local store updates before the network await — tick right after kickoff.
+    const pending = removeConnection(identity.personId, personId);
+    setTick((t) => t + 1);
+    toast.message("Removed from connections", { duration: 1400 });
+    void pending.catch((err) => {
+      setTick((t) => t + 1);
+      toast.error(
+        err instanceof Error ? err.message : "Could not remove connection",
+      );
+    });
   };
 
   if (!identity) {

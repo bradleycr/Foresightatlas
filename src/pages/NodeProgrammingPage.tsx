@@ -313,14 +313,22 @@ export function NodeProgrammingPage({
           ? withdrawRSVP(eventId, identity.personId, identity.fullName, eventTitle)
           : setRSVP(eventId, identity.personId, status, identity.fullName, eventTitle);
 
-      void writePromise
-        .then(() => setRsvpTick((t) => t + 1))
-        .catch((e) => {
-          toast.error("RSVP not synced", {
-            description: e instanceof Error ? e.message : "Please try again in a moment.",
-          });
-          setRsvpTick((t) => t + 1);
+      // Local store updates before the network await — tick immediately so pills flip now.
+      setRsvpTick((t) => t + 1);
+      if (status === "going") {
+        toast.success("You're going", { duration: 1600 });
+      } else if (status === "interested") {
+        toast.success("Marked interested", { duration: 1600 });
+      } else if (status === null) {
+        toast.message("RSVP cleared", { duration: 1400 });
+      }
+
+      void writePromise.catch((e) => {
+        toast.error("RSVP not synced", {
+          description: e instanceof Error ? e.message : "Please try again in a moment.",
         });
+        setRsvpTick((t) => t + 1);
+      });
     },
     [identity, allEvents],
   );

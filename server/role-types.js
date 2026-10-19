@@ -73,18 +73,53 @@ const INVITE_LOCKABLE_ROLES = new Set([
 
 const STAFF_ROLES = new Set(["Foresight Team", "Senior Fellow"]);
 
+/**
+ * Roles that appear on the atlas but must never expose contact / booking
+ * fields in the public payload (Lydia, Oct 2026 — senior community).
+ * See scripts/data/parked-from-atlas/README.md.
+ */
+const CONTACT_SUPPRESSED_ROLES = new Set(["Senior Fellow", "Prize Winner"]);
+
+function personRoleList(person) {
+  if (Array.isArray(person?.roleTypes) && person.roleTypes.length) {
+    return person.roleTypes.map((r) => String(r || "").trim()).filter(Boolean);
+  }
+  const single = String(person?.roleType || "").trim();
+  return single ? [single] : [];
+}
+
 function personHasStaffRole(person) {
-  const roles = Array.isArray(person?.roleTypes) && person.roleTypes.length
-    ? person.roleTypes
-    : [person?.roleType];
-  return roles.some((role) => STAFF_ROLES.has(String(role || "").trim()));
+  return personRoleList(person).some((role) => STAFF_ROLES.has(role));
+}
+
+/** True when public API / UI must omit contact and booking links. */
+function isContactSuppressed(person) {
+  return personRoleList(person).some((role) => CONTACT_SUPPRESSED_ROLES.has(role));
+}
+
+/**
+ * Strip outreach fields before serving a person on the public atlas.
+ * Caller still removes roster `email` separately.
+ */
+function redactPublicContactFields(person) {
+  if (!person || !isContactSuppressed(person)) return person;
+  return {
+    ...person,
+    contactUrlOrHandle: null,
+    calendarEmail: null,
+    availabilityUrl: null,
+    profileUrl: "",
+  };
 }
 
 module.exports = {
   VALID_ROLE_TYPES,
   INVITE_LOCKABLE_ROLES,
   STAFF_ROLES,
+  CONTACT_SUPPRESSED_ROLES,
   personHasStaffRole,
+  isContactSuppressed,
+  redactPublicContactFields,
   parseRoleTypes,
   serializeRoleTypes,
   normalizeRoleTypesInput,

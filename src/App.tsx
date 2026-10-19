@@ -105,9 +105,9 @@ export default function App() {
   /**
    * The signed-in member's own full record, sourced from the auth response
    * (login + session refresh) rather than the public directory. This is what
-   * lets members who are hidden from the public atlas (Senior Fellows or
-   * anyone who toggled their profile private) still see and edit themselves —
-   * their record is intentionally absent from the public /api/database list.
+   * lets members who are hidden from the public atlas (anyone who toggled
+   * their profile private) still see and edit themselves — their record is
+   * intentionally absent from the public /api/database list.
    */
   const [selfPerson, setSelfPerson] = useState<Person | null>(null);
   /** Bumps when bookmarks sync or toggle so ConnectionsPage re-reads. */
@@ -638,8 +638,8 @@ export default function App() {
   /*
    * Resolve the signed-in member's record. Prefer the public directory copy
    * (kept in sync by edits across tabs), but fall back to the auth-sourced
-   * `selfPerson` so members hidden from the public atlas (Senior Fellows or
-   * private profiles, absent from `people`) can still open and edit theirs.
+   * `selfPerson` so members hidden from the public atlas (private profiles,
+   * absent from `people`) can still open and edit theirs.
    */
   const signedInPerson = identity
     ? people.find((person) => person.id === identity.personId) ??

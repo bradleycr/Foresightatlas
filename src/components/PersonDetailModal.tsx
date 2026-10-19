@@ -9,7 +9,7 @@
  * Beautiful, modular design with elegant mobile styling and production-ready error handling.
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   X,
   ChevronLeft,
@@ -85,6 +85,10 @@ import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowhee
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
 import { isOpenToMeet } from "../utils/openToMeet";
+import {
+  MISSING_DETAILS_MESSAGE,
+  MISSING_LOCATION_MESSAGE,
+} from "../utils/contactPrivacy";
 import { FocusNeighbors } from "./FocusNeighbors";
 
 /** Cohort years 2017–current plus 0 for Unknown. */
@@ -160,6 +164,9 @@ export function PersonDetailModal({
   const [editCustomFocusStr, setEditCustomFocusStr] = useState("");
   /** When true, show full expanded project description; otherwise truncate with "Show more". */
   const [projectDescriptionExpanded, setProjectDescriptionExpanded] = useState(false);
+  /** Optimistic bookmark fill — don't wait on the API round-trip. */
+  const [bookmarkFilled, setBookmarkFilled] = useState(false);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
 
   /**
    * Nanowheel totals for the currently viewed person. Loaded lazily whenever
@@ -170,7 +177,17 @@ export function PersonDetailModal({
 
   useEffect(() => {
     setProjectDescriptionExpanded(false);
+    // Focus-neighbor / prev-next navigation: always return to the top of the card.
+    scrollBodyRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }, [person?.id]);
+
+  useEffect(() => {
+    if (!identity || !person) {
+      setBookmarkFilled(false);
+      return;
+    }
+    setBookmarkFilled(isConnected(identity.personId, person.id));
+  }, [identity?.personId, person?.id, isOpen]);
 
   useEffect(() => {
     // Only fetch when a person is actually on screen; clear between swaps so
@@ -497,12 +514,15 @@ export function PersonDetailModal({
       : getEffectiveProfileImageUrl(person)
     : null;
 
-  // Whether the person has any project content worth showing a project section for
-  const hasProject = !!(
-    isEditing ||
+  // Project/bio + location — empty profiles still show a short “not added yet” note.
+  const hasProjectContent = !!(
     (displayPerson.shortProjectTagline ?? "").trim() ||
     (displayPerson.expandedProjectDescription ?? "").trim() ||
     (displayPerson.affiliationOrInstitution ?? "").trim()
+  );
+  const hasMapLocation = !!(
+    (displayPerson.currentCity ?? "").trim() ||
+    (displayPerson.currentCountry ?? "").trim()
   );
 
   return (
@@ -526,118 +546,121 @@ export function PersonDetailModal({
           }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Sticky chrome — close / bookmark stay visible while the body scrolls */}
+          <div
+            className="person-detail-sticky-bar shrink-0 flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[var(--pdm-border)] bg-[var(--pdm-surface)]/95 backdrop-blur-md px-4 py-2.5 sm:px-6 sm:py-3"
+            style={isMobile ? {
+              paddingLeft: 'max(1rem, env(safe-area-inset-left, 0px) + 0.75rem)',
+              paddingRight: 'max(1rem, env(safe-area-inset-right, 0px) + 0.75rem)',
+            } : undefined}
+          >
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              {!isEditing && (hasPrevious || hasNext) && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevious}
+                    disabled={!hasPrevious}
+                    className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation"
+                    aria-label="Previous person"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!hasNext}
+                    className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation"
+                    aria-label="Next person"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              {!isEditing && navigationList.length > 1 && currentIndex >= 0 && (
+                <span className="text-xs text-[var(--pdm-text-muted)] tabular-nums ml-1">
+                  {currentIndex + 1} / {navigationList.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              {identity && person && identity.personId !== person.id && !isEditing && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !bookmarkFilled;
+                    setBookmarkFilled(next);
+                    toast.success(
+                      next ? "Added to connections" : "Removed from connections",
+                      { duration: 1400 },
+                    );
+                    void toggleConnection(identity.personId, person.id)
+                      .then(() => onConnectionsChange?.())
+                      .catch((err) => {
+                        setBookmarkFilled(!next);
+                        onConnectionsChange?.();
+                        toast.error(
+                          err instanceof Error
+                            ? err.message
+                            : "Could not update connection",
+                        );
+                      });
+                  }}
+                  className={cn(
+                    "person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation active:scale-95 transition-transform",
+                    bookmarkFilled
+                      ? "text-gray-900 border border-gray-200"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 active:bg-gray-100",
+                  )}
+                  style={bookmarkFilled ? { background: connectionsAccentGradient } : undefined}
+                  aria-label={bookmarkFilled ? "Remove from connections" : "Add to connections"}
+                >
+                  <Bookmark
+                    className={cn("h-5 w-5", bookmarkFilled && "fill-current")}
+                  />
+                </button>
+              )}
+              {isAdmin && !isEditing && (
+                <button type="button" onClick={handleEdit} className="person-detail-toolbar-btn flex min-h-[44px] sm:min-h-9 items-center gap-1.5 px-3 sm:px-3">
+                  <Edit className="h-4 w-4 sm:mr-0.5" />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+              )}
+              {isEditing && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving} className="person-detail-toolbar-btn border-[var(--pdm-border)] bg-[var(--pdm-surface)]">
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSavePerson} disabled={isSaving} className="bg-teal-600 hover:bg-teal-700 text-white">
+                    <Save className="h-4 w-4 mr-1" />
+                    Save
+                  </Button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="person-detail-toolbar-btn-close flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-2.5 touch-manipulation"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
           <div 
+            ref={scrollBodyRef}
             className="person-detail-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
             style={isMobile ? { paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 0px) + 1.5rem)' } : undefined}
           >
             {/* Generous padding on all sides — never flush to edges; respect safe area on mobile */}
             <div 
-              className="px-6 pt-6 pb-10 sm:px-8 sm:pt-7 sm:pb-12 lg:px-12 lg:pt-10 lg:pb-16 break-words min-w-0"
+              className="px-6 pt-4 pb-10 sm:px-8 sm:pt-5 sm:pb-12 lg:px-12 lg:pt-6 lg:pb-16 break-words min-w-0"
               style={isMobile ? {
                 paddingLeft: 'max(1.5rem, env(safe-area-inset-left, 0px) + 1rem)',
                 paddingRight: 'max(1.5rem, env(safe-area-inset-right, 0px) + 1rem)',
               } : undefined}
             >
-              {/* Toolbar: nav + context left, actions right */}
-              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
-                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                  {!isEditing && (hasPrevious || hasNext) && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handlePrevious}
-                        disabled={!hasPrevious}
-                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation"
-                        aria-label="Previous person"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        disabled={!hasNext}
-                        className="person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation"
-                        aria-label="Next person"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                  {!isEditing && navigationList.length > 1 && currentIndex >= 0 && (
-                    <span className="text-xs text-[var(--pdm-text-muted)] tabular-nums ml-1">
-                      {currentIndex + 1} / {navigationList.length}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                  {identity && person && identity.personId !== person.id && !isEditing && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void (async () => {
-                          try {
-                            const nowConnected = await toggleConnection(
-                              identity.personId,
-                              person.id,
-                            );
-                            onConnectionsChange?.();
-                            toast.success(
-                              nowConnected
-                                ? "Added to connections"
-                                : "Removed from connections",
-                            );
-                          } catch (err) {
-                            onConnectionsChange?.();
-                            toast.error(
-                              err instanceof Error
-                                ? err.message
-                                : "Could not update connection",
-                            );
-                          }
-                        })();
-                      }}
-                      className={cn(
-                        "person-detail-toolbar-btn flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-0 touch-manipulation active:scale-95 transition-transform",
-                        isConnected(identity.personId, person.id)
-                          ? "text-gray-900 border border-gray-200"
-                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 active:bg-gray-100",
-                      )}
-                      style={isConnected(identity.personId, person.id) ? { background: connectionsAccentGradient } : undefined}
-                      aria-label={isConnected(identity.personId, person.id) ? "Remove from connections" : "Add to connections"}
-                    >
-                      <Bookmark
-                        className={cn("h-5 w-5", isConnected(identity.personId, person.id) && "fill-current")}
-                      />
-                    </button>
-                  )}
-                  {isAdmin && !isEditing && (
-                    <button type="button" onClick={handleEdit} className="person-detail-toolbar-btn flex min-h-[44px] sm:min-h-9 items-center gap-1.5 px-3 sm:px-3">
-                      <Edit className="h-4 w-4 sm:mr-0.5" />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
-                  )}
-                  {isEditing && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving} className="person-detail-toolbar-btn border-[var(--pdm-border)] bg-[var(--pdm-surface)]">
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleSavePerson} disabled={isSaving} className="bg-teal-600 hover:bg-teal-700 text-white">
-                        <Save className="h-4 w-4 mr-1" />
-                        Save
-                      </Button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="person-detail-toolbar-btn-close flex min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center p-2.5 touch-manipulation"
-                    aria-label="Close"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-
               {/* Navigation context bar — tells user what subset they're browsing */}
               {!isEditing && (
                 <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-5">
@@ -827,61 +850,61 @@ export function PersonDetailModal({
                   When details block is absent the sidebar spans full width — no ghost left column. */}
               <div className={cn(
                 "person-detail-grid grid grid-cols-1 gap-6 md:gap-8 lg:gap-10",
-                hasProject && "md:grid-cols-[1fr_minmax(0,280px)]"
+                "md:grid-cols-[1fr_minmax(0,280px)]"
               )}>
-                {/* Left: Details — bio/tagline/affiliation; only rendered when content exists or admin editing */}
-                {hasProject && (
-                  <section className="person-detail-section space-y-2">
-                    <h3 className="person-detail-section-title">Details</h3>
-                    {isEditing && editingPerson ? (
-                      <div className="space-y-3">
-                        <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
-                        <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="About you, your work, or project — full description" />
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
-                          <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value || null })} placeholder="Institution or company" className="mt-1" />
-                        </div>
+                {/* Left: Details — bio/tagline/affiliation; empty-state when nothing yet */}
+                <section className="person-detail-section space-y-2">
+                  <h3 className="person-detail-section-title">Details</h3>
+                  {isEditing && editingPerson ? (
+                    <div className="space-y-3">
+                      <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
+                      <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="About you, your work, or project — full description" />
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
+                        <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value || null })} placeholder="Institution or company" className="mt-1" />
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {(() => {
-                          const tagline = (displayPerson.shortProjectTagline ?? "").trim();
-                          const expanded = (displayPerson.expandedProjectDescription ?? "").trim();
-                          const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
-                          const showTagline = tagline && !taglineIsPrefix;
-                          const showExpandedOnly = expanded.length > 0;
-                          const truncateLength = 320;
-                          const isLong = expanded.length > truncateLength;
-                          const showMore = isLong && !projectDescriptionExpanded;
-                          const visibleDescription = showMore ? `${expanded.slice(0, truncateLength).trim()}\u2026` : expanded;
-                          return (
-                            <>
-                              {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
-                              {showExpandedOnly && (
-                                <>
-                                  <p className="person-detail-body leading-relaxed whitespace-pre-wrap">{visibleDescription}</p>
-                                  {isLong && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setProjectDescriptionExpanded((v) => !v)}
-                                      className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 rounded"
-                                    >
-                                      {projectDescriptionExpanded ? "Show less" : "Show more"}
-                                      <ChevronDown className={`size-3.5 transition-transform ${projectDescriptionExpanded ? "rotate-180" : ""}`} />
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                              {(displayPerson.affiliationOrInstitution ?? "").trim() && (
-                                <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </section>
-                )}
+                    </div>
+                  ) : hasProjectContent ? (
+                    <div className="space-y-2">
+                      {(() => {
+                        const tagline = (displayPerson.shortProjectTagline ?? "").trim();
+                        const expanded = (displayPerson.expandedProjectDescription ?? "").trim();
+                        const taglineIsPrefix = tagline && expanded.toLowerCase().startsWith(tagline.toLowerCase());
+                        const showTagline = tagline && !taglineIsPrefix;
+                        const showExpandedOnly = expanded.length > 0;
+                        const truncateLength = 320;
+                        const isLong = expanded.length > truncateLength;
+                        const showMore = isLong && !projectDescriptionExpanded;
+                        const visibleDescription = showMore ? `${expanded.slice(0, truncateLength).trim()}\u2026` : expanded;
+                        return (
+                          <>
+                            {showTagline && <p className="person-detail-body text-base font-medium">{tagline}</p>}
+                            {showExpandedOnly && (
+                              <>
+                                <p className="person-detail-body leading-relaxed whitespace-pre-wrap">{visibleDescription}</p>
+                                {isLong && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setProjectDescriptionExpanded((v) => !v)}
+                                    className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1 rounded"
+                                  >
+                                    {projectDescriptionExpanded ? "Show less" : "Show more"}
+                                    <ChevronDown className={`size-3.5 transition-transform ${projectDescriptionExpanded ? "rotate-180" : ""}`} />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                            {(displayPerson.affiliationOrInstitution ?? "").trim() && (
+                              <p className="person-detail-body-muted mt-1">{displayPerson.affiliationOrInstitution}</p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 leading-relaxed">{MISSING_DETAILS_MESSAGE}</p>
+                  )}
+                </section>
 
                 {/* Right sidebar: meta + contact */}
                 <div className="person-detail-sidebar space-y-5">
@@ -921,9 +944,17 @@ export function PersonDetailModal({
                             <MapPin className="h-3 w-3 shrink-0" />
                             Location
                           </h3>
-                          <p className="person-detail-body">
-                            {[displayPerson.currentCity, displayPerson.currentCountry].filter(Boolean).join(", ") || "—"}
-                          </p>
+                          {hasMapLocation ? (
+                            <p className="person-detail-body">
+                              {[displayPerson.currentCity, displayPerson.currentCountry]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                              {MISSING_LOCATION_MESSAGE}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <h3 className="person-detail-section-title">Node</h3>

@@ -29,12 +29,12 @@ interface InlineFiltersProps {
 import { PRESET_FOCUS_AREAS } from "../data/focusAreas";
 
 /**
- * Program filter chips. "Senior Fellow" is intentionally omitted: those
- * profiles are withheld from the public atlas, so a chip for them would only
- * ever return zero results.
+ * Program filter chips. Senior Fellows and Prize Winners appear on the atlas
+ * with contact redacted (see CONTACT_SUPPRESSED_ROLES).
  */
 const PROGRAMS: RoleType[] = [
   "Fellow",
+  "Senior Fellow",
   "Grantee",
   "Prize Winner",
   "Nodee",

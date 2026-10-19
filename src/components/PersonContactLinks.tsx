@@ -34,6 +34,10 @@ import {
   type ParsedContact,
 } from "../utils/contactInfo";
 import type { Person } from "../types";
+import {
+  CONTACT_NOT_SHOWN_MESSAGE,
+  isContactSuppressed,
+} from "../utils/contactPrivacy";
 
 const KIND_STYLES: Record<
   ContactKind,
@@ -173,6 +177,15 @@ interface PersonContactLinksProps {
 }
 
 export function PersonContactLinks({ person, isSelf = false }: PersonContactLinksProps) {
+  // Prize Winners / Senior Fellows: never surface outreach channels.
+  if (!isSelf && isContactSuppressed(person)) {
+    return (
+      <p className="text-sm text-gray-600 leading-relaxed">
+        {CONTACT_NOT_SHOWN_MESSAGE}
+      </p>
+    );
+  }
+
   const preferredContacts = parseContacts(person.contactUrlOrHandle);
   const profileLink = parseWebsiteLink(person.profileUrl, "Profile");
   const showProfileLink =
@@ -187,10 +200,10 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
 
   if (!hasAny) {
     return (
-      <p className="text-sm text-gray-500 italic">
+      <p className="text-sm text-gray-600 leading-relaxed">
         {isSelf
-          ? "No contact info yet. You can add it when you log in and edit your profile."
-          : "No contact info added yet."}
+          ? "No contact info yet. Add an email, LinkedIn, or booking link when you edit your profile."
+          : CONTACT_NOT_SHOWN_MESSAGE}
       </p>
     );
   }
