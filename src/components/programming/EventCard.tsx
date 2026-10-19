@@ -6,8 +6,8 @@
  * gets indigo–rose accents and SF gets amber–sky accents — no hardcoded teal.
  */
 
-import { useState, useMemo, useRef, useEffect, type SyntheticEvent } from "react";
-import { Calendar, MapPin, ChevronDown, Users, ExternalLink, Ticket } from "lucide-react";
+import { useState, useMemo, useRef, useEffect, useCallback, type SyntheticEvent } from "react";
+import { Calendar, MapPin, ChevronDown, Users, ExternalLink, Ticket, Bookmark } from "lucide-react";
 import { NodeEvent, NodeColorTheme, RSVPStatus, RSVPSummary } from "../../types/events";
 import { Person } from "../../types";
 import { RSVPButtonGroup } from "./RSVPButtonGroup";
@@ -16,8 +16,22 @@ import { cn } from "../ui/utils";
 import { isLumaUrl, normalizeExternalUrl } from "../../utils/externalUrl";
 import { badgeGradient } from "../../styles/gradients";
 import { formatEventDescriptionToHtml } from "./eventDescription";
-import { BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID } from "../../data/events";
+import {
+  BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID,
+  isResidentsDayEvent,
+  RESIDENTS_DAY_ACCESS_EMAIL,
+} from "../../data/events";
 import { isEventPast } from "../../utils/eventTiming";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 /** Show "Read more" when description is clamped (overflow) or when it's long enough that it likely wraps (fallback for HTML content). */
 const READ_MORE_MIN_LENGTH = 60;
@@ -136,6 +150,14 @@ interface EventCardProps {
   isAuthenticated: boolean;
   onPersonClick?: (personId: string) => void;
   theme: NodeColorTheme;
+  /** Signed-in user's connection target IDs — highlighted as "Your connections". */
+  connectionPersonIds?: string[];
+}
+
+function nodeLabelForResidentsDay(slug: NodeEvent["nodeSlug"]): string {
+  if (slug === "berlin") return "Berlin node";
+  if (slug === "sf") return "SF node";
+  return "this node";
 }
 
 export function EventCard({
@@ -148,11 +170,14 @@ export function EventCard({
   isAuthenticated,
   onPersonClick,
   theme,
+  connectionPersonIds = [],
 }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
   /** `null` until the cover image loads — we default to square layout (typical Luma art). */
   const [coverLayout, setCoverLayout] = useState<CoverLayoutMode | null>(null);
+  /** Residence-day Going gate: ask → email, or confirm → RSVP. */
+  const [residentsGate, setResidentsGate] = useState<"closed" | "ask" | "email">("closed");
   const descriptionRef = useRef<HTMLDivElement>(null);
   const badge = badgeStyle(event.type);
   const { date, time } = formatTime(event.startAt, event.endAt);
@@ -161,6 +186,8 @@ export function EventCard({
   /** Injected weekly Berlin resident day — calmer card, no “Read more” theatrics. */
   const isRoutineResidentsDay =
     event.recurrenceGroupId === BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID;
+  const isResidentsDay = isResidentsDayEvent(event);
+  const nodeName = nodeLabelForResidentsDay(event.nodeSlug);
 
   const showReadMore =
     !isRoutineResidentsDay &&
@@ -175,6 +202,35 @@ export function EventCard({
   const interestedPeople = useMemo(
     () => allPeople.filter((p) => rsvpSummary.interestedPersonIds.includes(p.id)),
     [allPeople, rsvpSummary.interestedPersonIds],
+  );
+  const connectionGoingPeople = useMemo(() => {
+    if (!connectionPersonIds.length) return [];
+    const connected = new Set(connectionPersonIds);
+    return goingPeople.filter((p) => connected.has(p.id));
+  }, [goingPeople, connectionPersonIds]);
+
+  const residentsMailto = useMemo(() => {
+    const subject = encodeURIComponent(`Residence day access — ${nodeName}`);
+    const body = encodeURIComponent(
+      `Hi Bradley,\n\nI'd like to join a Coworking / Resident's Day at the ${nodeName}.\n\nEvent: ${event.title}\nDate: ${event.startAt.slice(0, 10)}\n\nThanks!`,
+    );
+    return `mailto:${RESIDENTS_DAY_ACCESS_EMAIL}?subject=${subject}&body=${body}`;
+  }, [event.title, event.startAt, nodeName]);
+
+  const handleStatusChange = useCallback(
+    (status: RSVPStatus | null) => {
+      // Gate only when newly marking Going on a residence day (not withdraw / interested).
+      if (
+        isResidentsDay &&
+        status === "going" &&
+        currentUserStatus !== "going"
+      ) {
+        setResidentsGate("ask");
+        return;
+      }
+      onRSVPChange(event.id, status, event.title);
+    },
+    [isResidentsDay, currentUserStatus, onRSVPChange, event.id, event.title],
   );
 
   const eventEnded = isEventPast(event);
@@ -375,7 +431,7 @@ export function EventCard({
             <>
               <RSVPButtonGroup
                 currentStatus={currentUserStatus}
-                onStatusChange={(s) => onRSVPChange(event.id, s, event.title)}
+                onStatusChange={handleStatusChange}
                 lumaBacked={currentUserLumaBacked}
                 goingCount={rsvpSummary.going}
                 interestedCount={rsvpSummary.interested}
@@ -445,6 +501,19 @@ export function EventCard({
               )}
             </p>
           )}
+          {isAuthenticated && connectionGoingPeople.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-teal-50/70 border border-teal-100/80 px-3 py-2">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-teal-800">
+                <Bookmark className="size-3 shrink-0" aria-hidden />
+                Your connections:
+              </span>
+              <AttendanceAvatars
+                people={connectionGoingPeople}
+                label="connections going"
+                onPersonClick={onPersonClick}
+              />
+            </div>
+          )}
           {goingPeople.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-emerald-700">Going:</span>
@@ -460,6 +529,71 @@ export function EventCard({
         </div>
       )}
       </div>
+
+      {/* Residence-day access gate — node members RSVP; others get a mailto to Bradley */}
+      <AlertDialog
+        open={residentsGate !== "closed"}
+        onOpenChange={(open) => {
+          if (!open) setResidentsGate("closed");
+        }}
+      >
+        <AlertDialogContent>
+          {residentsGate === "ask" ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Are you already part of the {nodeName}?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Residence days are for node members (nodees, residents, and
+                  community already using the space). Roles on the Atlas vary —
+                  fellows and grantees who are part of the node can say yes.
+                  If you&apos;re not sure or want to join for the day, we&apos;ll
+                  point you to email for access instructions.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium",
+                    "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                  )}
+                  onClick={() => setResidentsGate("email")}
+                >
+                  No — I need access
+                </button>
+                <AlertDialogAction
+                  onClick={() => {
+                    setResidentsGate("closed");
+                    onRSVPChange(event.id, "going", event.title);
+                  }}
+                >
+                  Yes — RSVP me
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Email for access instructions</AlertDialogTitle>
+                <AlertDialogDescription>
+                  To join a residence day at the {nodeName}, please email{" "}
+                  {RESIDENTS_DAY_ACCESS_EMAIL} for access instructions. We&apos;ll
+                  get you set up — this isn&apos;t an open RSVP for visitors yet.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Close</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <a href={residentsMailto}>Email {RESIDENTS_DAY_ACCESS_EMAIL}</a>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

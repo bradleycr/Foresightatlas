@@ -85,6 +85,7 @@ import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowhee
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
 import { isOpenToMeet } from "../utils/openToMeet";
+import { FocusNeighbors } from "./FocusNeighbors";
 
 /** Cohort years 2017–current plus 0 for Unknown. */
 const COHORT_YEAR_OPTIONS: number[] = (() => {
@@ -108,6 +109,11 @@ interface PersonDetailModalProps {
   /** Events list (from loadEvents) for resolving RSVP event details; null until loaded. */
   events?: NodeEvent[] | null;
   allPeople: Person[];
+  /**
+   * Full Atlas directory for focus-neighbor suggestions.
+   * Falls back to allPeople when omitted (e.g. filtered map slice only).
+   */
+  directoryPeople?: Person[];
   /** When set, arrows cycle through this subset instead of allPeople. */
   navigationContext?: NavigationContext | null;
   /** Active filters — shown as context badges so the user knows what slice they're browsing. */
@@ -130,6 +136,7 @@ export function PersonDetailModal({
   travelWindows,
   events = null,
   allPeople,
+  directoryPeople,
   navigationContext,
   filters,
   isOpen,
@@ -141,6 +148,7 @@ export function PersonDetailModal({
   onExpandNavigation,
   onDataUpdate,
 }: PersonDetailModalProps) {
+  const neighborDirectory = directoryPeople ?? allPeople;
   const [isEditing, setIsEditing] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [editingTravelWindows, setEditingTravelWindows] = useState<TravelWindow[]>([]);
@@ -1109,6 +1117,15 @@ export function PersonDetailModal({
 
               {/* Node check-in schedule — upcoming days they plan to be at a node */}
               {!isEditing && <PersonCheckIns personId={person.id} />}
+
+              {/* People who share focus areas — discovery nudge beyond map filters */}
+              {!isEditing && displayPerson && (
+                <FocusNeighbors
+                  person={displayPerson}
+                  directory={neighborDirectory}
+                  onPersonClick={onNavigate}
+                />
+              )}
 
               <div className="h-8 lg:h-10" aria-hidden />
             </div>

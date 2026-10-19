@@ -91,7 +91,17 @@ function berlinOffset(dateISO: string): "+01:00" | "+02:00" {
   return d >= dstStart && d < dstEnd ? "+02:00" : "+01:00";
 }
 
-/** Every Thursday in [start, end] that is NOT a Berlin public holiday. */
+/**
+ * Christmas / New Year node closure — Dec 20 through Jan 5 inclusive.
+ * Covers Dec 24/31 Thursdays that aren't official public holidays but
+ * when the Berlin (and SF) nodes are not hosting residence days.
+ */
+export function isWinterBreakISO(isoDate: string): boolean {
+  const md = isoDate.slice(5, 10); // MM-DD
+  return md >= "12-20" || md <= "01-05";
+}
+
+/** Every Thursday in [start, end] that is NOT a Berlin public holiday or winter break. */
 function nonHolidayThursdays(start: Date, end: Date): Date[] {
   const holidaysByYear = new Map<number, Set<string>>();
   const getHolidays = (year: number) => {
@@ -108,7 +118,7 @@ function nonHolidayThursdays(start: Date, end: Date): Date[] {
   while (cur.getUTCDay() !== 4) cur.setUTCDate(cur.getUTCDate() + 1);
   while (cur <= end) {
     const iso = ymd(cur);
-    if (!getHolidays(cur.getUTCFullYear()).has(iso)) {
+    if (!getHolidays(cur.getUTCFullYear()).has(iso) && !isWinterBreakISO(iso)) {
       result.push(new Date(cur));
     }
     cur.setUTCDate(cur.getUTCDate() + 7);
@@ -124,14 +134,28 @@ export const BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID = "berlin-coworking-reside
 /** First Thursday with this programme (rollout); no occurrences before this date. */
 const FIRST_BERLIN_RESIDENTS_DAY_ISO = "2026-04-23";
 
+/** Contact for visitors who aren't yet part of a node and want a residence day. */
+export const RESIDENTS_DAY_ACCESS_EMAIL = "bradley@foresight.org";
+
+/**
+ * True for injected Berlin residence days (and sheet/Luma rows tagged the same).
+ * Used by EventCard for muted styling and the RSVP access gate.
+ */
+export function isResidentsDayEvent(event: Pick<NodeEvent, "recurrenceGroupId" | "tags" | "type">): boolean {
+  if (event.recurrenceGroupId === BERLIN_RESIDENTS_DAY_RECURRENCE_GROUP_ID) return true;
+  if (event.type === "coworking") return true;
+  return (event.tags ?? []).includes("residents-day");
+}
+
 /**
  * The Berlin Node hosts **Coworking / Resident's Day (Nodees)** every Thursday
- * that isn't a German public holiday — internal residents and nodees, not a
- * public open house. Lives in code (not Luma); injected on the Berlin page
- * alongside Luma-backed events.
+ * that isn't a German public holiday or winter break — internal residents and
+ * nodees, not a public open house. Lives in code (not Luma); injected on the
+ * Berlin page alongside Luma-backed events.
  *
  * Schedule: 10:00–17:00 local (Berlin), CET/CEST per date. Series starts
  * {@link FIRST_BERLIN_RESIDENTS_DAY_ISO} (nothing earlier on the calendar).
+ * Skips Dec 20–Jan 5 (Christmas / New Year closure).
  */
 function berlinWeeklyCoworking(
   start: Date = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1)),
@@ -147,7 +171,7 @@ function berlinWeeklyCoworking(
       nodeSlug: "berlin",
       title: "Coworking / Resident's Day (Nodees)",
       description:
-        "Internal coworking and resident day for Nodees at the Berlin Node — 10:00–17:00, every Thursday that isn't a German public holiday.",
+        "Internal coworking and resident day for Nodees at the Berlin Node — 10:00–17:00, every Thursday except German public holidays and the Christmas / New Year break (Dec 20–Jan 5). Not a public open house.",
       location: "Berlin Node",
       startAt: `${iso}T10:00:00${offset}`,
       endAt: `${iso}T17:00:00${offset}`,
@@ -469,10 +493,18 @@ export function getEventsByNodeForDisplay(
   const byStart = (a: NodeEvent, b: NodeEvent) =>
     new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
 
+  /** Drop sheet/Luma coworking rows that fall in the Christmas / NY closure. */
+  const withoutWinterCoworking = (list: NodeEvent[]) =>
+    list.filter(
+      (e) => !(isCoworkingLike(e) && isWinterBreakISO(e.startAt.slice(0, 10))),
+    );
+
   if (slug === "berlin") {
     const coworking = berlinWeeklyCoworking();
     if (apiHasRows) {
-      const fromApi = dynamicEvents!.filter((e) => e.nodeSlug === "berlin");
+      const fromApi = withoutWinterCoworking(
+        dynamicEvents!.filter((e) => e.nodeSlug === "berlin"),
+      );
       const apiCoworkingDates = new Set(
         fromApi
           .filter((e) => isCoworkingLike(e))
@@ -487,7 +519,9 @@ export function getEventsByNodeForDisplay(
   }
 
   if (apiHasRows) {
-    const forNode = dynamicEvents!.filter((e) => e.nodeSlug === slug);
+    const forNode = withoutWinterCoworking(
+      dynamicEvents!.filter((e) => e.nodeSlug === slug),
+    );
     if (forNode.length > 0) return forNode;
   }
   return getSeedEventsByNode(slug);

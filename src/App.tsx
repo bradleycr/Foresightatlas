@@ -887,6 +887,7 @@ export default function App() {
         travelWindows={travelWindows}
         events={events}
         allPeople={filteredPeople}
+        directoryPeople={people}
         navigationContext={detailNavContext}
         filters={filters}
         isOpen={selectedPersonId !== null}

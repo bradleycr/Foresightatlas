@@ -44,6 +44,7 @@ import { NodeTableView } from "../components/programming/NodeTableView";
 import { QRCheckIn } from "../components/programming/QRCheckIn";
 import { cn } from "../components/ui/utils";
 import { toast } from "sonner";
+import { fetchConnectionsFromAPI, getConnectionIds } from "../services/connections";
 
 type PageTab = "events" | "table";
 
@@ -106,6 +107,7 @@ export function NodeProgrammingPage({
   const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
   const [eventsSheetError, setEventsSheetError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [connectionsTick, setConnectionsTick] = useState(0);
 
   const isGlobal = activeNode === "global";
   const isPhysicalNode = (activeNode === "berlin" || activeNode === "sf") && ENABLE_CHECKIN_TABLE;
@@ -137,6 +139,18 @@ export function NodeProgrammingPage({
       setEventsSheetError(getEventsSheetLoadError());
     });
   }, []);
+
+  useEffect(() => {
+    if (!identity?.personId) return;
+    void fetchConnectionsFromAPI(identity.personId).then(() => {
+      setConnectionsTick((t) => t + 1);
+    });
+  }, [identity?.personId]);
+
+  const connectionPersonIds = useMemo(
+    () => (identity ? getConnectionIds(identity.personId) : []),
+    [identity?.personId, connectionsTick],
+  );
 
   useEffect(() => {
     if (isGlobal) return;
@@ -532,6 +546,7 @@ export function NodeProgrammingPage({
                     isAuthenticated={isAuthed}
                     onPersonClick={(personId) => openProfile(personId, summaryOf(ev.id).goingPersonIds, "Going to this event")}
                     theme={theme}
+                    connectionPersonIds={connectionPersonIds}
                   />
                 ))}
               </div>

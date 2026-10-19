@@ -33,6 +33,7 @@ interface ProgrammingTimelineProps {
   isAuthenticated: boolean;
   scrollToMonth?: number | null;
   theme?: NodeColorTheme;
+  connectionPersonIds?: string[];
 }
 
 /* ── constants ──────────────────────────────────────────────────────── */
@@ -117,6 +118,7 @@ export function ProgrammingTimeline({
   onShowOnMap,
   isAuthenticated,
   theme,
+  connectionPersonIds = [],
 }: ProgrammingTimelineProps) {
   const [filter, setFilter] = useState<TimeFilter>("upcoming");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -272,6 +274,7 @@ export function ProgrammingTimeline({
                 allPeople={allPeople}
                 isAuthenticated={isAuthenticated}
                 theme={cardTheme}
+                connectionPersonIds={connectionPersonIds}
               />
             ))}
           </div>
@@ -305,6 +308,7 @@ export function ProgrammingTimeline({
                 allPeople={allPeople}
                 isAuthenticated={isAuthenticated}
                 theme={cardTheme}
+                connectionPersonIds={connectionPersonIds}
               />
             ))}
           </div>
