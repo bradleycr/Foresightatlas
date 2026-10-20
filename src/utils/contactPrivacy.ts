@@ -41,12 +41,43 @@ export function isForesightPeopleProfileUrl(value: string | null | undefined): b
   }
 }
 
-/** Shared empty-state copy when contact is missing or withheld. */
-export const CONTACT_NOT_SHOWN_MESSAGE =
-  "This person has not added contact info yet.";
+const HONORIFICS = new Set(["dr", "prof", "professor", "mr", "mrs", "ms", "mx"]);
 
-export const MISSING_LOCATION_MESSAGE =
-  "This person has not added a map location yet.";
+/**
+ * The name we speak in empty states. "Erin has not added…", not "This person".
+ * Titles and bare initials (B.L.) are skipped so the sentence still sounds like a name.
+ */
+export function givenName(fullName: string | null | undefined): string {
+  const cleaned = String(fullName || "")
+    .split(/\r?\n/)[0]
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/["“”]/g, "")
+    .trim();
+  const parts = cleaned.split(/[\s,]+/).map((part) => part.trim()).filter(Boolean);
+  const name = parts.find((part) => {
+    const bare = part.replace(/\./g, "").toLowerCase();
+    if (!bare || HONORIFICS.has(bare)) return false;
+    if (/^([a-z]\.)+$/i.test(part)) return false;
+    if (bare.length < 2) return false;
+    return true;
+  });
+  return name?.replace(/\.$/, "") || cleaned || "They";
+}
 
-export const MISSING_DETAILS_MESSAGE =
-  "This person has not added project or bio details yet.";
+function hasNotAdded(fullName: string | null | undefined, thing: string): string {
+  const name = givenName(fullName);
+  if (name === "They") return `They haven't added ${thing} yet.`;
+  return `${name} has not added ${thing} yet.`;
+}
+
+export function missingContactMessage(fullName: string | null | undefined): string {
+  return hasNotAdded(fullName, "contact info");
+}
+
+export function missingLocationMessage(fullName: string | null | undefined): string {
+  return hasNotAdded(fullName, "a map location");
+}
+
+export function missingDetailsMessage(fullName: string | null | undefined): string {
+  return hasNotAdded(fullName, "project or bio details");
+}

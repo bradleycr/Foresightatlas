@@ -87,8 +87,8 @@ import { PersonAvatar } from "./PersonAvatar";
 import { isOpenToMeet } from "../utils/openToMeet";
 import { profileUrlHint } from "../utils/contactInfo";
 import {
-  MISSING_DETAILS_MESSAGE,
-  MISSING_LOCATION_MESSAGE,
+  missingDetailsMessage,
+  missingLocationMessage,
 } from "../utils/contactPrivacy";
 import { FocusNeighbors } from "./FocusNeighbors";
 
@@ -903,7 +903,7 @@ export function PersonDetailModal({
                       })()}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-600 leading-relaxed">{MISSING_DETAILS_MESSAGE}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{missingDetailsMessage(displayPerson.fullName)}</p>
                   )}
                 </section>
 
@@ -953,7 +953,7 @@ export function PersonDetailModal({
                             </p>
                           ) : (
                             <p className="text-sm text-gray-600 leading-relaxed">
-                              {MISSING_LOCATION_MESSAGE}
+                              {missingLocationMessage(displayPerson.fullName)}
                             </p>
                           )}
                         </div>

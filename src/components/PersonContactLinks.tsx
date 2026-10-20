@@ -36,9 +36,9 @@ import {
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import type { Person } from "../types";
 import {
-  CONTACT_NOT_SHOWN_MESSAGE,
   isContactSuppressed,
   isForesightPeopleProfileUrl,
+  missingContactMessage,
 } from "../utils/contactPrivacy";
 
 const KIND_STYLES: Record<
@@ -222,7 +222,7 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
     return (
       <div className="flex flex-col gap-2.5">
         <p className="text-sm text-gray-600 leading-relaxed">
-          {CONTACT_NOT_SHOWN_MESSAGE}
+          {missingContactMessage(person.fullName)}
         </p>
         {instituteProfile ? (
           <SimpleContactLink
@@ -255,7 +255,7 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
       <p className="text-sm text-gray-600 leading-relaxed">
         {isSelf
           ? "No contact info yet. Add an email, LinkedIn, or booking link when you edit your profile."
-          : CONTACT_NOT_SHOWN_MESSAGE}
+          : missingContactMessage(person.fullName)}
       </p>
     );
   }
