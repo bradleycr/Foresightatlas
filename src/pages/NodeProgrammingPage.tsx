@@ -105,6 +105,8 @@ export function NodeProgrammingPage({
   const [rsvpTick, setRsvpTick] = useState(0);
   const [checkInTick, setCheckInTick] = useState(0);
   const [dynamicEvents, setDynamicEvents] = useState<NodeEvent[] | null>(null);
+  /** False until the first live events read settles, so seed events don't flash. */
+  const [eventsReady, setEventsReady] = useState(false);
   const [eventsSheetError, setEventsSheetError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [connectionsTick, setConnectionsTick] = useState(0);
@@ -137,6 +139,7 @@ export function NodeProgrammingPage({
     loadEvents().then((ev) => {
       setDynamicEvents(ev);
       setEventsSheetError(getEventsSheetLoadError());
+      setEventsReady(true);
     });
   }, []);
 
@@ -492,7 +495,20 @@ export function NodeProgrammingPage({
           />
         )}
 
-        {activeTab === "events" ? (
+        {activeTab === "events" && !eventsReady ? (
+          <div
+            className="flex items-center justify-center gap-3 py-20 text-sm text-gray-500"
+            role="status"
+          >
+            <img
+              src={foresightIconUrl}
+              alt=""
+              className="size-8 animate-spin opacity-80"
+              aria-hidden
+            />
+            Loading events
+          </div>
+        ) : activeTab === "events" ? (
           /* ── Events tab ────────────────────────────────────────────── */
           <>
             <div ref={eventsTopRef} className="rounded-2xl border border-gray-200 shadow p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden" style={{ background: theme.headerGradient }}>

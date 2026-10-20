@@ -14,6 +14,7 @@ process.env.FORESIGHT_FORCE_MOCK = "1";
 const express = require("express");
 const fs = require("fs").promises;
 const cors = require("cors");
+const { atlasScope } = require("./atlas-read");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const { enrichRsvpsForApi } = require("./rsvp-enrichment");
 const {
@@ -136,8 +137,18 @@ app.get("/api/database", async (req, res) => {
       .map((p) => redactPublicContactFields(p));
     database.events = applyBerlinSecureWorkshopSheetOverrides(database.events || []);
     database.rsvps = normalizeBerlinSecureWorkshopRsvps(database.rsvps || []);
+    const scope = atlasScope(req.query?.scope);
+    if (scope === "map") {
+      return res.json({
+        people: database.people,
+        travelWindows: database.travelWindows || [],
+      });
+    }
     database.events = await mergeSheetEventsWithLuma(database.events || []);
     database.rsvps = await enrichRsvpsForApi(database.rsvps || []);
+    if (scope === "programming") {
+      return res.json({ events: database.events, rsvps: database.rsvps });
+    }
     return res.json(database);
   } catch (error) {
     console.error("Error reading local mock database:", error);

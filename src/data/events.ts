@@ -415,7 +415,7 @@ export async function loadEvents(force = false): Promise<NodeEvent[]> {
   // A forced or aged-out reload must not read a stale `/api/database` copy —
   // bust it first so we re-pull the sheet + live Luma merge. The very first
   // load reuses whatever the app already fetched (no needless double request).
-  if (force || (_dynamicLoaded && !isFresh)) invalidateDatabaseCache();
+  if (force || (_dynamicLoaded && !isFresh)) invalidateDatabaseCache("programming");
 
   const result = await fetchSheetEvents();
   if (result.ok && result.events.length > 0) {

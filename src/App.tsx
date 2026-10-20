@@ -12,9 +12,12 @@ import { getPrimaryRoleType } from "./utils/roleTypes";
 import {
   getAllPeople,
   getAllTravelWindows,
+  getRsvps,
   invalidateDatabaseCache,
   UnauthorizedError,
 } from "./services/database";
+import { DEFER_PROGRAMMING_LOAD } from "./constants/loadStrategy";
+import { setAPIRsvpsFromBuild } from "./services/rsvp";
 import { AuthGate } from "./components/auth/AuthGate";
 import {
   publishLocalDataChanged,
@@ -165,7 +168,7 @@ export default function App() {
   useEffect(() => {
     const onChange = (msg: DataChangeMessage) => {
       if (msg.scope !== "people" && msg.scope !== "all") return;
-      invalidateDatabaseCache();
+      invalidateDatabaseCache(msg.scope === "people" ? "map" : "all");
       // Background sync must never flash the cold-load overlay — keep the
       // current UI on screen while we swap in fresh people/events.
       void loadData({ silent: true });
@@ -330,15 +333,38 @@ export default function App() {
         setIsLoading(true);
         setError(null);
       }
-      const [peopleData, travelWindowsData, eventsData] = await Promise.all([
+      if (!DEFER_PROGRAMMING_LOAD) {
+        const [peopleData, travelWindowsData, eventsData] = await Promise.all([
+          getAllPeople(),
+          getAllTravelWindows(),
+          loadEvents(),
+        ]);
+        setPeople(peopleData);
+        setTravelWindows(travelWindowsData);
+        setEvents(eventsData);
+        if (silent) setError(null);
+        return;
+      }
+
+      // Pins first. Luma and RSVPs are still live; they just don't hold the mark.
+      const [peopleData, travelWindowsData] = await Promise.all([
         getAllPeople(),
         getAllTravelWindows(),
-        loadEvents(),
       ]);
       setPeople(peopleData);
       setTravelWindows(travelWindowsData);
-      setEvents(eventsData);
       if (silent) setError(null);
+      void loadEvents()
+        .then((eventsData) => {
+          setEvents(eventsData);
+          return getRsvps();
+        })
+        .then((rsvps) => {
+          setAPIRsvpsFromBuild(rsvps);
+        })
+        .catch((err) => {
+          console.warn("[atlas] programming data will retry on the next open", err);
+        });
     } catch (err) {
       // A rejected session means the directory is gated and our token is
       // gone/expired — drop identity so the AuthGate takes over cleanly.

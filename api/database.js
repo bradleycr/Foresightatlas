@@ -1,9 +1,10 @@
 /**
  * Vercel serverless: GET /api/database
  *
- * Returns the full database (people, travelWindows, suggestions, adminUsers, rsvps, events)
- * from the Google Sheet. Events are merged with Luma live (cached 10 min).
- * In-memory cache (60s TTL) per instance reduces sheet reads and speeds repeat loads.
+ * scope=map reads people and travel live from the sheet (no Luma).
+ * scope=programming reads events, merges Luma live, and returns RSVPs.
+ * No scope returns the full payload. Nothing is written to a JSON file.
+ * In-memory cache (60s TTL) per instance reduces repeat sheet reads.
  *
  * Env: GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY, SPREADSHEET_ID; optional LUMA_API_KEY for events.
  */
@@ -17,17 +18,15 @@ if (credPath && !fs.existsSync(path.resolve(credPath))) {
   delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
 }
 
-const { getFullDatabaseFromSheet } = require("../server/sheet-database");
-const { mergeSheetEventsWithLuma } = require("../server/luma-merge");
-const { enrichRsvpsForApi } = require("../server/rsvp-enrichment");
+const { atlasScope, readAtlasDatabase } = require("../server/atlas-read");
 const {
   verifyDirectorySessionToken,
   readDirectoryTokenFromRequest,
 } = require("../server/directory-auth");
 
 const CACHE_TTL_MS = 60 * 1000; // 60s per instance (Vercel serverless may reuse the same instance)
-let cached = null;
-let cachedAt = 0;
+/** @type {Record<string, { at: number, value: unknown }>} */
+const cachedByScope = {};
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
@@ -47,22 +46,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    const scope = atlasScope(req.query?.scope);
     const now = Date.now();
-    if (cached && now - cachedAt < CACHE_TTL_MS) {
-      return res.status(200).json(cached);
+    const hit = cachedByScope[scope];
+    if (hit && now - hit.at < CACHE_TTL_MS) {
+      return res.status(200).json(hit.value);
     }
-    const database = await getFullDatabaseFromSheet();
-    const rosterRecords = database._rosterRecords;
-    delete database._rosterRecords;
-    database.events = await mergeSheetEventsWithLuma(database.events || []);
-    // Reuse the sheet payload we already loaded — never re-fetch for Luma enrich.
-    database.rsvps = await enrichRsvpsForApi(database.rsvps, {
-      events: database.events,
-      records: rosterRecords,
-      skipEventMerge: true,
-    });
-    cached = database;
-    cachedAt = now;
+    const database = await readAtlasDatabase(scope);
+    cachedByScope[scope] = { at: now, value: database };
     return res.status(200).json(database);
   } catch (error) {
     console.error("GET /api/database", error?.message || error);

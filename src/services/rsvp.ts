@@ -293,7 +293,27 @@ export function getPersonRSVPs(personId: string): RSVPRecord[] {
   return results;
 }
 
-/** Seed the merged cache from `/api/database` (which already includes RSVPs). */
+/**
+ * Seed RSVPs from the programming read.
+ * A later live `/api/rsvps` fetch wins when it is newer, and a late seed must
+ * not wipe that fetch.
+ */
 export function setAPIRsvpsFromBuild(records: RSVPRecord[]): void {
-  apiRsvps = Array.isArray(records) ? records : [];
+  const incoming = Array.isArray(records) ? records : [];
+  if (apiRsvps.length === 0) {
+    apiRsvps = incoming;
+    return;
+  }
+  const byKey = new Map<string, RSVPRecord>();
+  for (const record of apiRsvps) {
+    byKey.set(`${record.eventId}\t${record.personId}`, record);
+  }
+  for (const record of incoming) {
+    const key = `${record.eventId}\t${record.personId}`;
+    const prev = byKey.get(key);
+    if (!prev || new Date(record.updatedAt) >= new Date(prev.updatedAt)) {
+      byKey.set(key, record);
+    }
+  }
+  apiRsvps = [...byKey.values()];
 }

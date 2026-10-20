@@ -13,9 +13,8 @@ const express = require("express");
 const fs = require("fs").promises;
 const cors = require("cors");
 const { saveProfile, createProfile } = require("./profile-store");
-const { getFullDatabaseFromSheet, getDirectoryNamesFromSheet } = require("./sheet-database");
-const { mergeSheetEventsWithLuma } = require("./luma-merge");
-const { enrichRsvpsForApi } = require("./rsvp-enrichment");
+const { getDirectoryNamesFromSheet } = require("./sheet-database");
+const { atlasScope, readAtlasDatabase } = require("./atlas-read");
 const {
   authenticateDirectoryLogin,
   changeDirectoryPassword,
@@ -78,16 +77,7 @@ app.get("/api/database", async (req, res) => {
     return res.status(401).json({ error: "Sign in to view the directory." });
   }
   try {
-    const database = await getFullDatabaseFromSheet();
-    const rosterRecords = database._rosterRecords;
-    delete database._rosterRecords;
-    database.events = await mergeSheetEventsWithLuma(database.events || []);
-    // Reuse the sheet payload we already loaded — never re-fetch for Luma enrich.
-    database.rsvps = await enrichRsvpsForApi(database.rsvps, {
-      events: database.events,
-      records: rosterRecords,
-      skipEventMerge: true,
-    });
+    const database = await readAtlasDatabase(atlasScope(req.query?.scope));
     return res.json(database);
   } catch (error) {
     console.error("Error reading database from sheet:", error);

@@ -311,12 +311,7 @@ async function getFullDatabaseFromSheet() {
      *      booking fields are redacted (see redactPublicContactFields).
      * Roster email is never broadcast to the client.
      */
-    const { redactPublicContactFields } = require("./role-types");
-    const people = (loaded.records || [])
-      .map((r) => r.person)
-      .filter((p) => p && p.fullName)
-      .filter((p) => p.isPrivate !== true)
-      .map(({ email, ...rest }) => redactPublicContactFields(rest));
+    const people = publicPeopleFromRecords(loaded.records);
     const travelWindows = rowsToObjects(
       tabValues.travelWindows,
       TRAVEL_WINDOWS_HEADERS,
@@ -361,6 +356,51 @@ async function getFullDatabaseFromSheet() {
 }
 
 /**
+ * People the atlas is allowed to show, with roster email removed.
+ * Shared by the full read and the map read so the privacy gate cannot drift.
+ */
+function publicPeopleFromRecords(records) {
+  const { redactPublicContactFields } = require("./role-types");
+  return (records || [])
+    .map((r) => r.person)
+    .filter((p) => p && p.fullName)
+    .filter((p) => p.isPrivate !== true)
+    .map(({ email, ...rest }) => redactPublicContactFields(rest));
+}
+
+/**
+ * Roster + travel only. Live sheet read, no Luma and no RSVPs.
+ * This is what the map paints. Programming data is a separate request so a
+ * phone is not stuck on the loading mark while event copy is fetched.
+ */
+async function getMapDatabaseFromSheet() {
+  const { cachedSheetRead } = require("./sheet-read-cache");
+  const db = await cachedSheetRead(`map-db:${SPREADSHEET_ID}`, async () => {
+    const sheets = await getSheetsClient({ write: false });
+    if (!sheets) {
+      const envHint = process.env.VERCEL
+        ? " Set GOOGLE_SHEETS_API_KEY or GOOGLE_SERVICE_ACCOUNT_KEY (and SPREADSHEET_ID) in Vercel → Project → Settings → Environment Variables. See docs/VERCEL_ENV.md."
+        : " Set GOOGLE_SHEETS_API_KEY (read-only) or GOOGLE_SERVICE_ACCOUNT_KEY in .env.local. Optional: SPREADSHEET_ID. See docs/SHEETS_SYNC.md.";
+      throw new Error("Google Sheets credentials not configured. " + envHint);
+    }
+    const [loaded, travelRows] = await Promise.all([
+      loadRealDataRecords({ sheets, write: false }),
+      fetchSheetRange(sheets, SHEET_NAMES.TRAVEL_WINDOWS, "A:K"),
+    ]);
+    return {
+      people: publicPeopleFromRecords(loaded.records),
+      travelWindows: rowsToObjects(travelRows, TRAVEL_WINDOWS_HEADERS, (row) =>
+        rowToTravelWindow(row),
+      ),
+    };
+  });
+  return {
+    people: db.people,
+    travelWindows: db.travelWindows,
+  };
+}
+
+/**
  * Minimal directory for the (unauthenticated) sign-in picker: id + fullName
  * only, filtered to the same set as the public atlas (no private profiles).
  * This is the ONLY person data served before login; the full database
@@ -378,5 +418,6 @@ async function getDirectoryNamesFromSheet() {
 
 module.exports = {
   getFullDatabaseFromSheet,
+  getMapDatabaseFromSheet,
   getDirectoryNamesFromSheet,
 };

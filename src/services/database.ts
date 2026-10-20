@@ -13,6 +13,7 @@ import { getApiBase } from "./api-base";
 import { publishDataChanged } from "./sync";
 import { getIdentity } from "./identity";
 import { getPersonRoleTypes, primaryRoleType } from "../utils/roleTypes";
+import { DEFER_PROGRAMMING_LOAD } from "../constants/loadStrategy";
 
 /** Thrown when the API rejects our session — App clears identity and shows login. */
 export class UnauthorizedError extends Error {
@@ -41,6 +42,17 @@ interface CachedDatabase {
 
 let cachedDatabase: CachedDatabase | null = null;
 let cachedAt = 0;
+
+type DatabaseScope = "full" | "map" | "programming";
+
+/** Separate from the full payload so a map read never looks like "no events". */
+let mapCache: CachedDatabase | null = null;
+let mapCachedAt = 0;
+let mapFlight: Promise<CachedDatabase> | null = null;
+
+let programmingCache: CachedDatabase | null = null;
+let programmingCachedAt = 0;
+let programmingFlight: Promise<CachedDatabase> | null = null;
 
 /**
  * How long a cached `/api/database` payload is considered fresh.
@@ -105,42 +117,49 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
+async function fetchScoped(scope: DatabaseScope): Promise<CachedDatabase> {
+  const apiBase = getApiBase();
+  const apiUrl = `${apiBase}/database?scope=${scope}`.replace(/([^:]\/)\/+/g, "$1");
+  const response = await fetchWithTimeout(apiUrl);
+  if (response.status === 401) {
+    throw new UnauthorizedError();
+  }
+  if (!response.ok) {
+    const text = await response.text();
+    let message = `Failed to load data (${response.status}).`;
+    try {
+      const json = JSON.parse(text);
+      if (json?.error) message = json.error;
+    } catch {
+      if (text) message = text.slice(0, 200);
+    }
+    throw new Error(message);
+  }
+  const raw = await response.json();
+  if (!raw || typeof raw !== "object") {
+    throw new Error("Invalid response from /api/database.");
+  }
+  return raw as CachedDatabase;
+}
+
+/**
+ * Full /api/database payload. Used only when {@link DEFER_PROGRAMMING_LOAD}
+ * is off, so the old single request is one flip away.
+ */
 async function fetchDatabase(): Promise<CachedDatabase> {
-  // Serve the in-memory copy only while it's within the freshness window; once
-  // it ages out we fall through and re-pull so Luma/sheet edits surface without
-  // a manual reload.
   if (cachedDatabase && Date.now() - cachedAt < DATABASE_MAX_AGE_MS) {
     return cachedDatabase;
   }
   if (inFlightFetch) return inFlightFetch;
 
-  const apiBase = getApiBase();
-  const apiUrl = `${apiBase}/database`.replace(/([^:]\/)\/+/g, "$1");
-
   inFlightFetch = (async () => {
     try {
-      const response = await fetchWithTimeout(apiUrl);
-      if (response.status === 401) {
-        throw new UnauthorizedError();
-      }
-      if (!response.ok) {
-        const text = await response.text();
-        let message = `Failed to load data (${response.status}).`;
-        try {
-          const json = JSON.parse(text);
-          if (json?.error) message = json.error;
-        } catch {
-          if (text) message = text.slice(0, 200);
-        }
-        throw new Error(message);
-      }
-
-      const raw = await response.json();
-      if (!raw || typeof raw !== "object" || !Array.isArray(raw.people)) {
+      const raw = await fetchScoped("full");
+      if (!Array.isArray(raw.people)) {
         throw new Error("Invalid response: missing or non-array 'people'.");
       }
       raw.people = dedupePeople(raw.people as unknown[]);
-      cachedDatabase = raw as CachedDatabase;
+      cachedDatabase = raw;
       cachedAt = Date.now();
       return cachedDatabase;
     } finally {
@@ -151,13 +170,84 @@ async function fetchDatabase(): Promise<CachedDatabase> {
   return inFlightFetch;
 }
 
+/** Live people + travel. Does not wait on Luma. */
+async function fetchMapDatabase(): Promise<CachedDatabase> {
+  if (mapCache && Date.now() - mapCachedAt < DATABASE_MAX_AGE_MS) {
+    return mapCache;
+  }
+  if (mapFlight) return mapFlight;
+
+  mapFlight = (async () => {
+    try {
+      const raw = await fetchScoped("map");
+      if (!Array.isArray(raw.people)) {
+        throw new Error("Invalid response: missing or non-array 'people'.");
+      }
+      raw.people = dedupePeople(raw.people as unknown[]);
+      raw.travelWindows = Array.isArray(raw.travelWindows) ? raw.travelWindows : [];
+      mapCache = raw;
+      mapCachedAt = Date.now();
+      return mapCache;
+    } finally {
+      mapFlight = null;
+    }
+  })();
+
+  return mapFlight;
+}
+
+/**
+ * Live events (sheet + Luma) and RSVPs. Shared by the background refresh and
+ * the programming page so two screens do not start two Luma merges.
+ */
+export async function fetchProgrammingDatabase(): Promise<CachedDatabase> {
+  if (programmingCache && Date.now() - programmingCachedAt < DATABASE_MAX_AGE_MS) {
+    return programmingCache;
+  }
+  if (programmingFlight) return programmingFlight;
+
+  programmingFlight = (async () => {
+    try {
+      const raw = await fetchScoped("programming");
+      raw.events = Array.isArray(raw.events) ? raw.events : [];
+      raw.rsvps = Array.isArray(raw.rsvps) ? raw.rsvps : [];
+      programmingCache = raw;
+      programmingCachedAt = Date.now();
+      return programmingCache;
+    } finally {
+      programmingFlight = null;
+    }
+  })();
+
+  return programmingFlight;
+}
+
+function directorySource(): Promise<CachedDatabase> {
+  return DEFER_PROGRAMMING_LOAD ? fetchMapDatabase() : fetchDatabase();
+}
+
 /**
  * Drop the in-memory cache so the next read refetches from the server.
  * Safe to call at any time; idempotent.
  */
-export function clearDatabaseCache(): void {
-  cachedDatabase = null;
-  cachedAt = 0;
+/**
+ * Drop cached reads so the next fetch hits the sheet.
+ * A profile save only needs the map cache cleared. Luma stays put until an
+ * events refresh, so saving a bio does not start another event merge.
+ */
+export function clearDatabaseCache(part: "map" | "programming" | "all" = "all"): void {
+  if (part === "all" || part === "map") {
+    cachedDatabase = null;
+    cachedAt = 0;
+    mapCache = null;
+    mapCachedAt = 0;
+  }
+  if (part === "all" || part === "programming") {
+    cachedDatabase = null;
+    cachedAt = 0;
+    programmingCache = null;
+    programmingCachedAt = 0;
+  }
 }
 
 /** Alias with a less ambiguous name, used from writers. */
@@ -302,7 +392,7 @@ function normalizeTravelWindow(raw: Partial<TravelWindow> & { id: string; person
 // ── Read operations ──────────────────────────────────────────────────
 
 export async function getAllPeople(): Promise<Person[]> {
-  const db = await fetchDatabase();
+  const db = await directorySource();
   return (db.people || []).map(normalizePerson);
 }
 
@@ -328,7 +418,7 @@ export async function getDirectoryNames(): Promise<Person[]> {
 }
 
 export async function getAllTravelWindows(): Promise<TravelWindow[]> {
-  const db = await fetchDatabase();
+  const db = await directorySource();
   return (db.travelWindows || []).map((tw) =>
     normalizeTravelWindow(tw as Partial<TravelWindow> & { id: string; personId: string }),
   );
@@ -342,9 +432,11 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   return [];
 }
 
-/** RSVPs from the sheet (via GET /api/database). */
+/** RSVPs from the sheet (via GET /api/database). Live, not a saved file. */
 export async function getRsvps(): Promise<RSVPRecord[]> {
-  const db = await fetchDatabase();
+  const db = DEFER_PROGRAMMING_LOAD
+    ? await fetchProgrammingDatabase()
+    : await fetchDatabase();
   return db.rsvps ?? [];
 }
 
@@ -359,7 +451,9 @@ export type SheetEventsFetchResult =
  */
 export async function fetchSheetEvents(): Promise<SheetEventsFetchResult> {
   try {
-    const db = await fetchDatabase();
+    const db = DEFER_PROGRAMMING_LOAD
+      ? await fetchProgrammingDatabase()
+      : await fetchDatabase();
     return { ok: true, events: Array.isArray(db.events) ? db.events : [] };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
