@@ -393,23 +393,68 @@ async function fetchSheetRows(sheets, sheetName) {
   });
 }
 
-function hasRequiredHeaders(headerRow) {
-  return PEOPLE_HEADERS.every((header) =>
-    headerRow.some((cell) => String(cell).trim() === header),
+/**
+ * Column positions are the password store. "passwordHash" existing somewhere
+ * in the header is not enough — it has to sit in the schema's column, or the
+ * next row write drops a hash into the wrong cell.
+ */
+function realDataHeadersMatch(headerRow) {
+  return PEOPLE_HEADERS.every(
+    (header, index) => String(headerRow?.[index] ?? "").trim() === header,
   );
 }
 
-async function ensureRealDataHeaders(sheets, sheetName, headerRow) {
-  if (hasRequiredHeaders(headerRow)) return;
+function assertRealDataHeaderOrder(headerRow) {
+  if (realDataHeadersMatch(headerRow)) return;
+  const shifted = PEOPLE_HEADERS.filter(
+    (header, index) => String(headerRow?.[index] ?? "").trim() !== header,
+  );
+  throw new Error(
+    "Refusing to write RealData. The header row does not match the schema column-for-column (" +
+      shifted.slice(0, 6).join(", ") +
+      "). Do not insert, delete, or reorder columns. Append new fields at the end in scripts/sheet-schema.js, then backfill cells. Never rewrite row 1 over existing people.",
+  );
+}
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `'${sheetName}'!A1:${PEOPLE_SHEET_WIDTH}1`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [PEOPLE_HEADERS] },
-  });
-  const { invalidateSheetReadCache } = require("./sheet-read-cache");
-  invalidateSheetReadCache(`realdata-rows:${SPREADSHEET_ID}:${sheetName}`);
+/**
+ * A profile edit must not blank a hash that is already on the sheet.
+ * Setting a new non-empty hash (claim, reset, password change) is allowed.
+ */
+function assertPasswordHashPreserved(existingRow, nextRow) {
+  if (!Array.isArray(nextRow) || nextRow.length !== PEOPLE_HEADERS.length) {
+    throw new Error(
+      "Refusing to write a RealData row that is not exactly " +
+        PEOPLE_HEADERS.length +
+        " cells. That width is what keeps passwordHash in its column.",
+    );
+  }
+  const hashIndex = PEOPLE_HEADERS.indexOf("passwordHash");
+  const existing = String(existingRow?.[hashIndex] ?? "").trim();
+  const next = String(nextRow[hashIndex] ?? "").trim();
+  if (existing && !next) {
+    throw new Error(
+      "Refusing to clear passwordHash on an existing RealData row. Copy the hash already on the sheet into the record before saving.",
+    );
+  }
+}
+
+async function ensureRealDataHeaders(sheets, sheetName, headerRow, dataRowCount) {
+  if (realDataHeadersMatch(headerRow)) return;
+
+  const headerEmpty = !(headerRow || []).some((cell) => String(cell ?? "").trim());
+  if (headerEmpty && dataRowCount === 0) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${sheetName}'!A1:${PEOPLE_SHEET_WIDTH}1`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [PEOPLE_HEADERS] },
+    });
+    const { invalidateSheetReadCache } = require("./sheet-read-cache");
+    invalidateSheetReadCache(`realdata-rows:${SPREADSHEET_ID}:${sheetName}`);
+    return;
+  }
+
+  assertRealDataHeaderOrder(headerRow);
 }
 
 async function loadRealDataRecords(options = {}) {
@@ -433,11 +478,12 @@ async function loadRealDataRecords(options = {}) {
 
       let [headerRow = [], ...dataRows] = rows;
       if (options.write) {
-        await ensureRealDataHeaders(sheets, tabName, headerRow);
-        if (!hasRequiredHeaders(headerRow)) {
+        await ensureRealDataHeaders(sheets, tabName, headerRow, dataRows.length);
+        if (!realDataHeadersMatch(headerRow)) {
           const refreshedRows = await fetchSheetRows(sheets, tabName);
           [headerRow = [], ...dataRows] = refreshedRows;
         }
+        assertRealDataHeaderOrder(headerRow);
       }
       const indexMap = toColumnIndexMap(headerRow);
       const records = dataRows
@@ -512,16 +558,19 @@ async function upsertRealDataRecord(sheets, sheetName, record) {
   }
 
   const [headerRow = [], ...dataRows] = rows;
+  assertRealDataHeaderOrder(headerRow);
+  const nextRow = personRecordToRow(record);
   if (
     Number.isInteger(record.rowNumber) &&
     record.rowNumber >= 2 &&
     record.rowNumber <= dataRows.length + 1
   ) {
+    assertPasswordHashPreserved(dataRows[record.rowNumber - 2], nextRow);
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${sheetName}'!A${record.rowNumber}:${PEOPLE_SHEET_WIDTH}${record.rowNumber}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [personRecordToRow(record)] },
+      requestBody: { values: [nextRow] },
     });
     invalidateSheetReadCache();
     return record;
@@ -535,25 +584,26 @@ async function upsertRealDataRecord(sheets, sheetName, record) {
         )
       : -1;
 
-  const values = [personRecordToRow(record)];
   if (rowIndex >= 0) {
     const rowNumber = rowIndex + 2;
+    assertPasswordHashPreserved(dataRows[rowIndex], nextRow);
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${sheetName}'!A${rowNumber}:${PEOPLE_SHEET_WIDTH}${rowNumber}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values },
+      requestBody: { values: [nextRow] },
     });
     invalidateSheetReadCache();
     return { ...record, rowNumber };
   }
 
+  assertPasswordHashPreserved(undefined, nextRow);
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `'${sheetName}'!A:${PEOPLE_SHEET_WIDTH}`,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
-    requestBody: { values },
+    requestBody: { values: [nextRow] },
   });
 
   invalidateSheetReadCache();
@@ -579,4 +629,7 @@ module.exports = {
   chooseCanonicalRecord,
   upsertRealDataRecord,
   cloneRecord,
+  assertRealDataHeaderOrder,
+  assertPasswordHashPreserved,
+  realDataHeadersMatch,
 };
