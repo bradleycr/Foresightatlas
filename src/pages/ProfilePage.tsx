@@ -30,6 +30,7 @@ import {
 import { getNode } from "../data/nodes";
 import { peekRegisterInviteRole } from "../utils/inviteToken";
 import { buildFullPath } from "../utils/router";
+import { armWelcomeLetter } from "../services/welcomeLetter";
 import { atlasProfileRemovalMailto } from "../utils/checkInAuth";
 import { Button } from "../components/ui/button";
 import {
@@ -440,6 +441,7 @@ export function ProfilePage({
             ),
           };
           const result = await createPerson(payload, createPassword.password, inviteToken);
+          armWelcomeLetter(result.person.id);
           onProfileSaved(result.person, result.auth);
           if (!result.person.currentCity?.trim()) {
             onRequestLocationSetup?.();

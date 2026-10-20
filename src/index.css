@@ -357,12 +357,160 @@ select optgroup {
     min-width: 240px;
     max-width: min(320px, calc(100vw - 48px));
   }
+
+  .atlas-globe-popup.maplibregl-popup .maplibregl-popup-content {
+    min-width: 260px;
+    max-width: min(320px, calc(100vw - 32px));
+  }
+}
+
+/*
+ * Globe / flat switch. It sits in the same top-left corner as the zoom
+ * stack: zoom buttons on the left, this control immediately to their right.
+ * Heights match Leaflet's zoom buttons (26px, 36px on small screens).
+ */
+.atlas-projection-toggle {
+  position: absolute;
+  top: 10px;
+  left: 46px;
+  display: flex;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+}
+
+.atlas-projection-toggle button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
+.atlas-projection-toggle button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.atlas-projection-toggle button:first-child {
+  border-left: 0;
+}
+
+.atlas-projection-toggle button.is-active {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.atlas-projection-toggle button:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: -2px;
+}
+
+.atlas-globe-map {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  background: #05070d;
+}
+
+.atlas-globe-map .maplibregl-map,
+.atlas-globe-map .maplibregl-canvas-container {
+  background: transparent;
+}
+
+.atlas-globe-pin {
+  cursor: pointer;
+  line-height: 0;
+}
+
+.atlas-globe-pin img {
+  display: block;
+}
+
+/* Pins on the far side of the earth are faded out by MapLibre. Don't let them catch taps. */
+.atlas-globe-map .maplibregl-marker-covered {
+  pointer-events: none;
+}
+
+.atlas-globe-map .maplibregl-ctrl-top-left .maplibregl-ctrl {
+  margin: 10px 0 0 10px;
+}
+
+.atlas-globe-map .maplibregl-ctrl-group button {
+  width: 26px;
+  height: 26px;
+}
+
+.atlas-globe-popup.maplibregl-popup {
+  font-family: var(--font-body);
+}
+
+/*
+ * Leaflet insets the card with a content margin the globe does not inherit.
+ * The same inset, as padding, so a person's name sits in the same air.
+ */
+.atlas-globe-popup.maplibregl-popup .maplibregl-popup-content {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 13px 24px 13px 20px;
+  min-width: 284px;
+  max-width: min(364px, calc(100vw - 32px));
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.atlas-globe-popup .maplibregl-popup-close-button {
+  color: #6b7280;
+  font-size: 18px;
+  padding: 8px;
+  right: 4px;
+  top: 4px;
+  width: 28px;
+  height: 28px;
+}
+
+.atlas-globe-popup .maplibregl-popup-close-button:hover {
+  color: #374151;
+  background: transparent;
 }
 
 @media (max-width: 768px) {
   .leaflet-top.leaflet-left {
     top: 1rem !important;
     left: 1rem !important;
+  }
+
+  .atlas-projection-toggle {
+    top: 1rem;
+    left: calc(1rem + 36px + 8px);
+  }
+
+  .atlas-projection-toggle button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .atlas-projection-toggle button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .atlas-globe-map .maplibregl-ctrl-top-left .maplibregl-ctrl {
+    margin: 1rem 0 0 1rem;
+  }
+
+  .atlas-globe-map .maplibregl-ctrl-group button {
+    width: 36px;
+    height: 36px;
   }
 
   .leaflet-control-zoom a {

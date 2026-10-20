@@ -34,38 +34,66 @@ export interface BugReportDraft {
   body: string;
 }
 
+/** A broken thing, or an idea. Both leave through the same corner control. */
+export type AtlasNoteIntent = "bug" | "feature";
+
 /**
- * Shared bug-report copy — page URL, timestamp, and optional known error —
+ * Shared note copy — page URL, timestamp, and optional known error —
  * so every compose path (Gmail, Outlook, mailto) stays in sync.
  */
-export function buildBugReportDraft(options?: { error?: string }): BugReportDraft {
+export function buildBugReportDraft(options?: {
+  error?: string;
+  intent?: AtlasNoteIntent;
+}): BugReportDraft {
   const page = typeof window !== "undefined" ? window.location.href : "";
   const when = new Date().toISOString();
   const error = String(options?.error || "").trim();
-  const lines = [
-    "Hi,",
-    "",
-    "What happened:",
-    "",
-    "",
-    "When:",
-    when,
-    "",
-    "What were you doing:",
-    "",
-    "",
-  ];
+  const intent = options?.intent === "feature" ? "feature" : "bug";
+  const lines =
+    intent === "feature"
+      ? [
+          "Hi,",
+          "",
+          "A feature I'd like to see:",
+          "",
+          "",
+          "Why it would help:",
+          "",
+          "",
+          "When:",
+          when,
+          "",
+        ]
+      : [
+          "Hi,",
+          "",
+          "What happened:",
+          "",
+          "",
+          "When:",
+          when,
+          "",
+          "What were you doing:",
+          "",
+          "",
+        ];
   if (page) lines.push(`Page: ${page}`);
-  if (error) lines.push(`Error: ${error.slice(0, 500)}`);
+  if (error && intent === "bug") lines.push(`Error: ${error.slice(0, 500)}`);
   return {
     to: SUPPORT_EMAIL,
-    subject: "Foresight Atlas — bug report",
+    subject:
+      intent === "feature"
+        ? "Foresight Atlas — feature request"
+        : "Foresight Atlas — bug report",
     body: lines.join("\n"),
   };
 }
 
 /** Native mail handler. Prefer web compose URLs when no desktop client is set. */
-export function atlasBugReportMailto(options?: { error?: string }): string {
+export function atlasBugReportMailto(options?: {
+  error?: string;
+  intent?: AtlasNoteIntent;
+}): string {
   const draft = buildBugReportDraft(options);
   return mailto(draft.subject, draft.body);
 }
@@ -75,7 +103,10 @@ export function atlasBugReportMailto(options?: { error?: string }): string {
  * Phones should not use these — mobile Gmail ignores the compose params and
  * lands on a random inbox.
  */
-export function atlasBugReportComposeUrls(options?: { error?: string }): {
+export function atlasBugReportComposeUrls(options?: {
+  error?: string;
+  intent?: AtlasNoteIntent;
+}): {
   mailto: string;
   gmail: string;
   outlook: string;
@@ -104,7 +135,7 @@ export function isPhoneBrowser(): boolean {
  */
 export function openBugReportCompose(
   kind: "gmail" | "outlook" | "mailto",
-  options?: { error?: string },
+  options?: { error?: string; intent?: AtlasNoteIntent },
 ) {
   const urls = atlasBugReportComposeUrls(options);
   if (kind === "mailto") {

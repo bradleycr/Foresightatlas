@@ -11,7 +11,7 @@
  * mental model people actually use: "where does this person live?"
  */
 
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L, { divIcon, LatLngBounds } from "leaflet";
 import { Person, TravelWindow, RoleType, Filters } from "../types";
@@ -25,11 +25,24 @@ import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import { useResizableMapSidebar } from "../hooks/useResizableMapSidebar";
 import { MapSidebarResizeHandle } from "./map/MapSidebarResizeHandle";
-import { ROLE_COLORS, getRoleGradient, getRoleTextColor } from "../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS, Z_INDEX_SIDEBAR, Z_INDEX_MOBILE_SIDEBAR_SHEET } from "../constants/zIndex";
+import {
+  GLOBE_MAP_ENABLED,
+  readMapProjection,
+  supportsWebGL,
+  writeMapProjection,
+  type MapProjection,
+} from "./map/globeMapFlag";
+import { MapProjectionToggle } from "./map/MapProjectionToggle";
+import {
+  buildPopupHtml,
+  clusterBadgeHtml,
+  getCommunityStatus,
+  locationPinHtml,
+  type CommunityStatus,
+} from "./map/pinAppearance";
 import { reverseGeocode, geocodeCity } from "../services/geocoding";
 import { isEventUpcoming } from "../utils/eventTiming";
-import { effectiveIsAlumni } from "../utils/cohortLabel";
 // @ts-ignore - Image import via alias
 import foresightIcon from "@/assets/Foresight_RGB_Icon_Black.png";
 
@@ -203,153 +216,25 @@ function MapResizer({
   return null;
 }
 
-// Canonical order for segment layout so the badge always looks consistent
-const ROLE_ORDER: RoleType[] = [
-  "Fellow",
-  "Senior Fellow",
-  "Grantee",
-  "Prize Winner",
-  "Nodee",
-  "Foresight Team",
-];
-type CommunityStatus = "current" | "alumni" | "mixed";
+const GlobeMap = lazy(() => import("./map/GlobeMap").then((mod) => ({ default: mod.GlobeMap })));
 
-function getCommunityStatus(people: Person[]): CommunityStatus {
-  const alumniCount = people.filter((person) => effectiveIsAlumni(person)).length;
-  if (alumniCount === 0) return "current";
-  if (alumniCount === people.length) return "alumni";
-  return "mixed";
-}
-
-/**
- * Badge background: one color for a single role type; segmented (halves, thirds,
- * or quarters) for multiple types so you can see the mix at a glance.
- */
-const createRoleBasedBadgeBackground = (roleTypes: Set<RoleType>): string => {
-  const roles = ROLE_ORDER.filter((r) => roleTypes.has(r));
-  if (roles.length === 0) return "linear-gradient(135deg, #f2dcff 0%, #d8c6f7 100%)";
-  if (roles.length === 1) {
-    const { start, end } = ROLE_COLORS[roles[0]];
-    return `linear-gradient(135deg, ${start} 0%, ${end} 100%)`;
-  }
-  if (roles.length === 2) {
-    const [a, b] = roles.map((r) => ROLE_COLORS[r].end);
-    return `conic-gradient(from 0deg, ${a} 0deg 180deg, ${b} 180deg 360deg)`;
-  }
-  if (roles.length === 3) {
-    const [a, b, c] = roles.map((r) => ROLE_COLORS[r].end);
-    return `conic-gradient(from 0deg, ${a} 0deg 120deg, ${b} 120deg 240deg, ${c} 240deg 360deg)`;
-  }
-  const [a, b, c, d] = roles.slice(0, 4).map((r) => ROLE_COLORS[r].end);
-  return `conic-gradient(from 0deg, ${a} 0deg 90deg, ${b} 90deg 180deg, ${c} 180deg 270deg, ${d} 270deg 360deg)`;
-};
-
-// Create custom icon for markers with badge (moved outside component)
+/** Leaflet wrapper around the shared pin markup. The globe uses the same HTML. */
 const createCustomIcon = (
   count: number,
   roleTypes: Set<RoleType>,
   communityStatus: CommunityStatus,
   isSelected: boolean,
-  foresightIcon: string
+  foresightIcon: string,
 ) => {
-  const background = createRoleBasedBadgeBackground(roleTypes);
   const iconSize = isSelected ? 48 : 40;
-  const badgeSize = isSelected ? 28 : 24;
-  const badgeBorder =
-    communityStatus === "current"
-      ? "#ffffff"
-      : communityStatus === "alumni"
-        ? "#cbd5e1"
-        : "#f8fafc";
-  const iconFilter =
-    communityStatus === "current"
-      ? "drop-shadow(0 6px 14px rgba(15, 23, 42, 0.22))"
-      : communityStatus === "alumni"
-        ? "grayscale(0.35) saturate(0.75) opacity(0.88) drop-shadow(0 4px 10px rgba(100, 116, 139, 0.24))"
-        : "saturate(0.92) drop-shadow(0 6px 14px rgba(15, 23, 42, 0.18))";
-  const badgeShadow =
-    communityStatus === "alumni"
-      ? "0 2px 8px rgba(100, 116, 139, 0.2)"
-      : "0 2px 8px rgba(15, 23, 42, 0.22)";
-
-  const iconHtml = `
-    <div style="position: relative; width: ${iconSize}px; height: ${iconSize}px;">
-      <img 
-        src="${foresightIcon}" 
-        alt="Location" 
-        style="width: ${iconSize}px; height: ${iconSize}px; filter: ${iconFilter};"
-      />
-      <div style="
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: ${badgeSize}px;
-        height: ${badgeSize}px;
-        border-radius: 50%;
-        background: ${background};
-        border: 2px solid ${badgeBorder};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: ${badgeShadow};
-        font-weight: 600;
-        font-size: ${isSelected ? '12px' : '10px'};
-        color: #fff;
-        text-shadow: 0 0 1px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
-      ">
-        ${count}
-      </div>
-    </div>
-  `;
-
   return divIcon({
-    html: iconHtml,
-    className: 'custom-marker-icon',
+    html: locationPinHtml({ count, roleTypes, communityStatus, isSelected, iconUrl: foresightIcon }),
+    className: "custom-marker-icon",
     iconSize: [iconSize, iconSize],
     iconAnchor: [iconSize / 2, iconSize],
     popupAnchor: [0, -iconSize],
   });
 };
-
-const escapeHtml = (s: string) =>
-  String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-/** Build popup HTML for one marker (location + scrollable names with role pills). */
-function buildPopupHtml(marker: MarkerData): string {
-  const cityCountry = escapeHtml(
-    marker.country ? `${marker.city}, ${marker.country}` : marker.city,
-  );
-  const n = marker.people.length;
-  const countLabel = n === 1 ? "1 person" : `${n} people`;
-  const rows = marker.people
-    .map(({ person }) => {
-      const name = escapeHtml(person.fullName);
-      const roleGradient = getRoleGradient(person.roleType);
-      const roleStyle = `background:${roleGradient};color:${getRoleTextColor(person.roleType)}`;
-      const alumni = effectiveIsAlumni(person)
-        ? '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium text-slate-50 shrink-0" style="background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 1px solid rgba(100,116,139,0.4)">Alumni</span>'
-        : '<span class="text-[11px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 shrink-0">Current</span>';
-      return `<button type="button" class="map-node-popup__person w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-[40px] flex flex-col justify-center gap-1 cursor-pointer" data-person-id="${escapeHtml(person.id)}">
-        <span class="text-sm font-medium text-gray-900 truncate">${name}</span>
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0" style="${roleStyle}">${escapeHtml(person.roleType)}</span>
-          ${alumni}
-        </div>
-      </button>`;
-    })
-    .join("");
-  return `<div class="map-node-popup__inner bg-white">
-    <div class="map-node-popup__header px-3 pt-2.5 pb-2 pr-10 border-b border-gray-100">
-      <h4 class="font-semibold text-gray-900 text-sm leading-tight sm:text-base font-heading">${cityCountry}</h4>
-      <p class="text-xs text-gray-500 mt-0.5">${countLabel}</p>
-    </div>
-    <div class="map-node-popup__list">${rows}</div>
-  </div>`;
-}
 
 /**
  * Keep a finger-drag inside the name list. Leaflet already stops click
@@ -544,7 +429,6 @@ function ImperativeMarkerClusters({
         cluster.getAllChildMarkers().forEach((m) => {
           (m as MarkerWithRoles).__roleTypes?.forEach((t) => allRoles.add(t));
         });
-        const background = createRoleBasedBadgeBackground(allRoles);
         const clusterPeople = cluster
           .getAllChildMarkers()
           .flatMap((m) => (m as MarkerWithRoles).__markerData?.people.map((entry) => entry.person) ?? []);
@@ -555,23 +439,11 @@ function ImperativeMarkerClusters({
          * Dedupe by person id in case the same person ever lands in two pins.
          */
         const count = new Set(clusterPeople.map((person) => person.id)).size || cluster.getChildCount();
-        const communityStatus: CommunityStatus =
-          clusterPeople.every((person) => !effectiveIsAlumni(person))
-            ? "current"
-            : clusterPeople.every((person) => effectiveIsAlumni(person))
-              ? "alumni"
-              : "mixed";
+        const communityStatus = getCommunityStatus(clusterPeople);
         const sizeClass = count < 10 ? "small" : count < 100 ? "medium" : "large";
-        const clusterBorder =
-          communityStatus === "current"
-            ? "#ffffff"
-            : communityStatus === "alumni"
-              ? "#cbd5e1"
-              : "#f8fafc";
         // Single circle: role-based segments (conic gradient for multiple roles) with count centered. No inner circle.
-        const singleCircleStyle = `background:${background};border:2px solid ${clusterBorder};border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-weight:600;font-size:12px;color:#fff;text-shadow:0 0 1px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);overflow:hidden;transform:translateZ(0)`;
         return L.divIcon({
-          html: `<div class="marker-cluster-role-outer" style="${singleCircleStyle}">${count}</div>`,
+          html: clusterBadgeHtml({ count, roleTypes: allRoles, communityStatus }),
           className: `marker-cluster marker-cluster-${sizeClass} marker-cluster-role`,
           iconSize: L.point(40, 40),
           iconAnchor: L.point(20, 20),
@@ -754,6 +626,12 @@ export function MapView({
   mobileMenuOpen = false,
   onMobileMenuToggle,
 }: MapViewProps) {
+  const [globeAvailable] = useState(() => GLOBE_MAP_ENABLED && supportsWebGL());
+  const [projection, setProjection] = useState<MapProjection>(() =>
+    GLOBE_MAP_ENABLED && supportsWebGL() ? readMapProjection() : "flat",
+  );
+  const [globeFailed, setGlobeFailed] = useState(false);
+  const showGlobe = globeAvailable && !globeFailed && projection === "globe";
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
   /** When true, selection came from the list (sidebar); when false, from map click. Used so we only fly to marker when selecting from list. */
@@ -1067,6 +945,38 @@ export function MapView({
       : selectedMarker.city
     : "";
 
+  const chooseProjection = (next: MapProjection) => {
+    if (next === "globe") setGlobeFailed(false);
+    setProjection(next);
+    writeMapProjection(next);
+  };
+
+  const handleMarkerClick = useCallback((marker: MarkerData) => {
+    setSelectedMarker(marker);
+    setSelectedMarkerFromList(false);
+    setSelectedPerson(null);
+    setFiltersExpanded(false);
+    if (!isMobile) setIsSidebarOpen(true);
+  }, [isMobile]);
+
+  const handlePersonClick = useCallback((personId: string) => {
+    setSelectedPerson(personId);
+    setFiltersExpanded(false);
+    // Mobile: stay on the map under the profile modal. Opening the
+    // list sheet here made X feel like "back to list," not map.
+    if (!isMobile) {
+      setIsSidebarOpen(true);
+      requestAnimationFrame(() => {
+        const el = personRefs.current[personId];
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    const navContext = selectedMarker
+      ? { peopleIds: sidebarPeople.map((person) => person.id), label: selectedMarkerLabel }
+      : undefined;
+    onViewPersonDetails?.(personId, navContext);
+  }, [isMobile, onViewPersonDetails, selectedMarker, selectedMarkerLabel, sidebarPeople]);
+
   // Shared people list: card click = highlight + scroll; profile icon = open full profile modal.
   const peopleListContent = (
     <>
@@ -1122,7 +1032,26 @@ export function MapView({
           useCustomSidebarLayout && "lg:rounded-r-none lg:border-r-0",
         )}
       >
-      {/* Map Panel — always show the map so the world view and tiles are visible; markers appear as geocoding completes */}
+      {/* Map Panel — globe by default. Flat is the original Leaflet map, unchanged. */}
+        {showGlobe ? (
+          <Suspense fallback={<div className="atlas-globe-map" />}>
+            <GlobeMap
+              markers={markers}
+              iconUrl={foresightIcon}
+              isMobile={isMobile}
+              skipIfMarkerSelected={selectedMarker !== null}
+              selectedMarker={selectedMarker}
+              selectedMarkerFromList={selectedMarkerFromList}
+              onMarkerClick={handleMarkerClick}
+              onPersonClick={handlePersonClick}
+              onUnavailable={() => {
+                setGlobeFailed(true);
+                setProjection("flat");
+                writeMapProjection("flat");
+              }}
+            />
+          </Suspense>
+        ) : (
         <MapContainer
             center={WORLD_VIEW_CENTER}
             zoom={WORLD_VIEW_ZOOM}
@@ -1153,32 +1082,15 @@ export function MapView({
             <ImperativeMarkerClusters
               markers={markers}
               foresightIcon={foresightIcon}
-              onMarkerClick={(marker) => {
-                setSelectedMarker(marker);
-                setSelectedMarkerFromList(false);
-                setSelectedPerson(null);
-                setFiltersExpanded(false); // Collapse filter section so the person list is visible
-                if (!isMobile) setIsSidebarOpen(true);
-              }}
-              onPersonClick={(personId) => {
-                setSelectedPerson(personId);
-                setFiltersExpanded(false);
-                // Mobile: stay on the map under the profile modal. Opening the
-                // list sheet here made X feel like “back to list,” not map.
-                if (!isMobile) {
-                  setIsSidebarOpen(true);
-                  requestAnimationFrame(() => {
-                    const el = personRefs.current[personId];
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  });
-                }
-                const navContext = selectedMarker
-                  ? { peopleIds: sidebarPeople.map((p) => p.id), label: selectedMarkerLabel }
-                  : undefined;
-                onViewPersonDetails?.(personId, navContext);
-              }}
+              onMarkerClick={handleMarkerClick}
+              onPersonClick={handlePersonClick}
             />
           </MapContainer>
+        )}
+
+        {globeAvailable && (
+          <MapProjectionToggle mode={showGlobe ? "globe" : "flat"} onChange={chooseProjection} />
+        )}
 
         {/* Empty state overlay when we have people but no marker coords yet (e.g. still geocoding) or no one matches filters */}
         {markers.length === 0 && (
@@ -1224,14 +1136,12 @@ export function MapView({
               {isSidebarOpen ? (
                 <>
                   <X className="size-4" />
-                  <span className="hidden sm:inline">Hide list</span>
-                  <span className="sm:hidden">Hide</span>
+                  <span>Hide</span>
                 </>
               ) : (
                 <>
                   <List className="size-4" />
-                  <span className="hidden sm:inline">Show list</span>
-                  <span className="sm:hidden">List</span>
+                  <span>People</span>
                 </>
               )}
             </Button>
@@ -1256,7 +1166,7 @@ export function MapView({
             variant="outline"
             onClick={() => setIsSidebarOpen(true)}
           >
-            Open list
+            People
           </Button>
         </div>
       )}
@@ -1321,7 +1231,7 @@ export function MapView({
                     </button>
                   )}
                   <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900" onClick={() => setIsSidebarOpen(false)}>
-                    Hide list
+                    Hide
                   </Button>
                 </div>
               </div>

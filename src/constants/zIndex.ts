@@ -41,4 +41,6 @@ export const Z_INDEX_MODAL_DROPDOWN = 10002; // Dropdowns inside modals
 // Loading and error overlays
 export const Z_INDEX_LOADING = 10003;
 export const Z_INDEX_ERROR = 10004;
+/** First-arrival letter. Sits above the loading veil so the atlas can fade behind it. */
+export const Z_INDEX_WELCOME = 10010;
 

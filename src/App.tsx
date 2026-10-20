@@ -71,6 +71,13 @@ import {
 } from "./services/memberAuth";
 import { fetchConnectionsFromAPI } from "./services/connections";
 import { consumePostLoginReturnUrl } from "./services/returnUrl";
+import { WelcomeLetter } from "./components/welcome/WelcomeLetter";
+import {
+  armWelcomeLetter,
+  dismissWelcomeLetter,
+  noteExistingSession,
+  welcomeLetterIsPending,
+} from "./services/welcomeLetter";
 
 /**
  * How often the open tab asks the server to roll the session forward.
@@ -105,6 +112,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentityState] = useState<Identity | null>(() => getIdentity());
+  /** Bumps when the welcome letter closes so the pending flag is re-read. */
+  const [welcomeEpoch, setWelcomeEpoch] = useState(0);
   /**
    * The signed-in member's own full record, sourced from the auth response
    * (login + session refresh) rather than the public directory. This is what
@@ -133,6 +142,11 @@ export default function App() {
     referenceDate: today.toISOString(),
     timelineViewMode: "location",
   });
+
+  // A session already open at boot belongs to someone who has been here.
+  useEffect(() => {
+    noteExistingSession(getIdentity()?.personId ?? null);
+  }, []);
 
   // Load the gated directory only once we have a member session. Anonymous
   // visitors see the AuthGate (or the claim/join pages), which don't need it.
@@ -507,6 +521,7 @@ export default function App() {
           mustChangePassword: result.auth.mustChangePassword,
         });
         setIdentityState(getIdentity());
+        armWelcomeLetter(result.person.id);
         // Remember our own record so a hidden profile remains editable.
         setSelfPerson(result.person);
 
@@ -675,6 +690,13 @@ export default function App() {
   useEffect(() => {
     setMapLocationNudgeHidden(false);
   }, [signedInPerson?.id]);
+
+  const showWelcomeLetter = Boolean(
+    identity &&
+    !isLoading &&
+    welcomeEpoch >= 0 &&
+    welcomeLetterIsPending(identity.personId),
+  );
 
   const showMapLocationNudge =
     route === "/" &&
@@ -976,6 +998,16 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {showWelcomeLetter && identity ? (
+        <WelcomeLetter
+          fullName={identity.fullName}
+          onDismiss={() => {
+            dismissWelcomeLetter(identity.personId);
+            setWelcomeEpoch((n) => n + 1);
+          }}
+        />
+      ) : null}
 
       <Toaster />
     </>

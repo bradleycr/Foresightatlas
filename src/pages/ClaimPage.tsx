@@ -23,6 +23,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { peekClaim } from "../services/memberAuth";
+import { getIdentity } from "../services/identity";
+import { armWelcomeLetter } from "../services/welcomeLetter";
 import { ATLAS_PASSWORD_RESET_MAILTO } from "../utils/checkInAuth";
 
 interface ClaimPageProps {
@@ -144,6 +146,11 @@ export function ClaimPage({
         if (!result.ok) {
           setError(result.error ?? "We couldn't set up your profile.");
           return;
+        }
+        // A password reset is a return visit. Only a first claim gets the letter.
+        if (peek.status === "ready" && peek.mode !== "reset") {
+          const personId = getIdentity()?.personId;
+          if (personId) armWelcomeLetter(personId);
         }
         toast.success("You're all set", {
           description: "Next: add your city so you appear on the map.",

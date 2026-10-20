@@ -9,6 +9,7 @@ import {
   peekInviteClaim,
   type InviteClaimPeek,
 } from "../services/memberAuth";
+import { armWelcomeLetter } from "../services/welcomeLetter";
 import { ATLAS_ACCESS_MAILTO } from "../utils/checkInAuth";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Button } from "../components/ui/button";
@@ -265,6 +266,7 @@ function ExistingClaimForm({
       toast.success("You're in", {
         description: "Your profile is claimed. You can edit it any time.",
       });
+      armWelcomeLetter(result.person.id);
       onClaimed(result.person, result.auth);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not claim this profile.");

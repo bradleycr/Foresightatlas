@@ -1,18 +1,29 @@
 /**
- * BugReportFab — a small corner control that asks before it opens mail.
- * The first tap only confirms they found a bug. "Tell us" then opens a draft
- * in the Gmail or Outlook app on a phone, or in the browser on a computer.
+ * BugReportFab — a small corner control for two kinds of notes.
+ *
+ * The first tap only asks what they want to send. Choosing "Report a bug"
+ * or "Request a feature" then opens a draft in Gmail, Outlook, or the
+ * device mail app, with the subject and prompts already matched to that choice.
  */
 
 import { useState, type ReactNode } from "react";
-import { Bug, ExternalLink, Mail } from "lucide-react";
+import { Bug, ChevronLeft, ExternalLink, Lightbulb, Mail } from "lucide-react";
 import { Z_INDEX_BUG_REPORT } from "../constants/zIndex";
-import { isPhoneBrowser, openBugReportCompose } from "../utils/checkInAuth";
+import {
+  isPhoneBrowser,
+  openBugReportCompose,
+  type AtlasNoteIntent,
+} from "../utils/checkInAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 export function BugReportFab() {
   const [open, setOpen] = useState(false);
-  const [readyToSend, setReadyToSend] = useState(false);
+  const [intent, setIntent] = useState<AtlasNoteIntent | null>(null);
+
+  const close = () => {
+    setOpen(false);
+    setIntent(null);
+  };
 
   return (
     <div
@@ -23,14 +34,14 @@ export function BugReportFab() {
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
-          if (!next) setReadyToSend(false);
+          if (!next) setIntent(null);
         }}
       >
         <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label="Report a bug"
-            title="Report a bug"
+            aria-label="Report a bug or request a feature"
+            title="Report a bug or request a feature"
             className="inline-grid size-8 place-items-center rounded-md border border-gray-300 bg-white p-0 text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-1 touch-manipulation"
           >
             {/*
@@ -44,57 +55,133 @@ export function BugReportFab() {
           align="end"
           side="top"
           sideOffset={8}
-          className="w-[min(18rem,calc(100vw-1.5rem))] rounded-2xl border-gray-200 bg-white p-3.5 text-gray-800 shadow-lg"
+          className="w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border-gray-200 bg-white p-3.5 text-gray-800 shadow-lg"
           style={{ zIndex: Z_INDEX_BUG_REPORT + 1 }}
         >
-          <p className="text-sm leading-relaxed text-gray-700">
-            The Foresight Atlas is humbly in beta. Did you find a bug?
-          </p>
-          {readyToSend ? (
-            <div className="mt-3 grid gap-1.5">
-              <p className="text-xs font-medium text-gray-500">Tell us with</p>
-              <ComposeChoice
-                icon={<ExternalLink className="size-3.5" />}
-                label={isPhoneBrowser() ? "Gmail app" : "Gmail"}
-                onClick={() => openBugReportCompose("gmail")}
-              />
-              <ComposeChoice
-                icon={<ExternalLink className="size-3.5" />}
-                label={isPhoneBrowser() ? "Outlook app" : "Outlook"}
-                onClick={() => openBugReportCompose("outlook")}
-              />
-              <ComposeChoice
-                icon={<Mail className="size-3.5" />}
-                label="Mail app"
-                onClick={() => openBugReportCompose("mailto")}
-              />
-              {isPhoneBrowser() ? (
-                <p className="px-2 pt-1 text-xs leading-snug text-gray-500">
-                  Gmail and Outlook open the installed app. If that app isn’t on this phone, use Mail.
-                </p>
-              ) : null}
-            </div>
+          {intent ? (
+            <ComposeStep intent={intent} onBack={() => setIntent(null)} />
           ) : (
-            <div className="mt-3 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="min-h-9 rounded-lg px-2.5 text-sm font-medium text-gray-500 hover:text-gray-800"
-              >
-                Not now
-              </button>
-              <button
-                type="button"
-                onClick={() => setReadyToSend(true)}
-                className="min-h-9 rounded-lg bg-gray-900 px-3 text-sm font-medium text-white hover:bg-gray-800"
-              >
-                Tell us
-              </button>
-            </div>
+            <ChooseStep onChoose={setIntent} onDismiss={close} />
           )}
         </PopoverContent>
       </Popover>
     </div>
+  );
+}
+
+function ChooseStep({
+  onChoose,
+  onDismiss,
+}: {
+  onChoose: (intent: AtlasNoteIntent) => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <>
+      <p className="text-sm leading-relaxed text-gray-700">
+        The Foresight Atlas is humbly in beta.
+      </p>
+      <div className="mt-3 grid gap-1">
+        <IntentChoice
+          icon={<Bug className="size-3.5" />}
+          label="Report a bug"
+          hint="Something broke"
+          onClick={() => onChoose("bug")}
+        />
+        <IntentChoice
+          icon={<Lightbulb className="size-3.5" />}
+          label="Request a feature"
+          hint="Something you'd like to see"
+          onClick={() => onChoose("feature")}
+        />
+      </div>
+      <div className="mt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="min-h-9 rounded-lg px-2.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+        >
+          Not now
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ComposeStep({
+  intent,
+  onBack,
+}: {
+  intent: AtlasNoteIntent;
+  onBack: () => void;
+}) {
+  const feature = intent === "feature";
+  return (
+    <div className="grid gap-1.5">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-1 inline-flex min-h-8 w-fit items-center gap-1 rounded-lg pr-2 text-xs font-medium text-gray-500 hover:text-gray-800"
+      >
+        <ChevronLeft className="size-3.5" aria-hidden />
+        Back
+      </button>
+      <p className="text-sm leading-relaxed text-gray-700">
+        {feature ? "Tell us what you'd like to see." : "Tell us what went wrong."}
+      </p>
+      <p className="pt-1 text-xs font-medium text-gray-500">Send with</p>
+      <ComposeChoice
+        icon={<ExternalLink className="size-3.5" />}
+        label={isPhoneBrowser() ? "Gmail app" : "Gmail"}
+        onClick={() => openBugReportCompose("gmail", { intent })}
+      />
+      <ComposeChoice
+        icon={<ExternalLink className="size-3.5" />}
+        label={isPhoneBrowser() ? "Outlook app" : "Outlook"}
+        onClick={() => openBugReportCompose("outlook", { intent })}
+      />
+      <ComposeChoice
+        icon={<Mail className="size-3.5" />}
+        label="Mail app"
+        onClick={() => openBugReportCompose("mailto", { intent })}
+      />
+      {isPhoneBrowser() ? (
+        <p className="px-2 pt-1 text-xs leading-snug text-gray-500">
+          Gmail and Outlook open the installed app. If that app isn’t on this phone, use Mail.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function IntentChoice({
+  icon,
+  label,
+  hint,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  hint: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-11 items-center gap-2.5 rounded-xl px-2 text-left hover:bg-gray-50"
+    >
+      <span
+        className="inline-grid size-8 shrink-0 place-items-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600"
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <span>
+        <span className="block text-sm font-medium text-gray-900">{label}</span>
+        <span className="block text-xs text-gray-500">{hint}</span>
+      </span>
+    </button>
   );
 }
 

@@ -55,6 +55,14 @@
       target: 'esnext',
       outDir: 'dist',
     },
+    /*
+     * MapLibre looks for its worker beside the prebundled module. Excluding it
+     * keeps that relative path intact. GlobeMap also sets the worker URL
+     * explicitly, so a stale optimize cache cannot blank the globe.
+     */
+    optimizeDeps: {
+      exclude: ['maplibre-gl'],
+    },
     server: {
       port: 3000,
       open: true,
