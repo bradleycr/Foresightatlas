@@ -98,17 +98,39 @@ function isContactSuppressed(person) {
 }
 
 /**
+ * Public institute biography, not a personal outreach channel.
+ * Senior Fellows and Prize Winners may show this Profile button and nothing else.
+ */
+function isForesightPeopleProfileUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return false;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname.toLowerCase();
+    if (host !== "foresight.org" && host !== "www.foresight.org") return false;
+    return /^\/people\/[a-z0-9-]+\/?$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Strip outreach fields before serving a person on the public atlas.
- * Caller still removes roster `email` separately.
+ * A confirmed foresight.org/people page is kept so the Profile button can
+ * stay in sync with the institute site. Caller still removes roster email.
  */
 function redactPublicContactFields(person) {
   if (!person || !isContactSuppressed(person)) return person;
+  const profileUrl = isForesightPeopleProfileUrl(person.profileUrl)
+    ? String(person.profileUrl).trim()
+    : "";
   return {
     ...person,
     contactUrlOrHandle: null,
     calendarEmail: null,
     availabilityUrl: null,
-    profileUrl: "",
+    profileUrl,
   };
 }
 
@@ -119,6 +141,7 @@ module.exports = {
   CONTACT_SUPPRESSED_ROLES,
   personHasStaffRole,
   isContactSuppressed,
+  isForesightPeopleProfileUrl,
   redactPublicContactFields,
   parseRoleTypes,
   serializeRoleTypes,

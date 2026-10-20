@@ -26,6 +26,21 @@ export function isContactSuppressed(person: Person): boolean {
   );
 }
 
+/** Institute biography page. Safe to show even when personal contact is withheld. */
+export function isForesightPeopleProfileUrl(value: string | null | undefined): boolean {
+  const raw = String(value || "").trim();
+  if (!raw) return false;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname.toLowerCase();
+    if (host !== "foresight.org" && host !== "www.foresight.org") return false;
+    return /^\/people\/[a-z0-9-]+\/?$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
 /** Shared empty-state copy when contact is missing or withheld. */
 export const CONTACT_NOT_SHOWN_MESSAGE =
   "This person has not added contact info yet.";

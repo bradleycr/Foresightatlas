@@ -7,8 +7,9 @@ hiding the whole profile was too strong.
 
 **How it works:** `CONTACT_SUPPRESSED_ROLES` in `server/role-types.js`
 (`Senior Fellow`, `Prize Winner`) → `redactPublicContactFields` strips
-`contactUrlOrHandle`, `calendarEmail`, `availabilityUrl`, and `profileUrl`
-before `/api/database` (and assistant cards). The UI shows:
+`contactUrlOrHandle`, `calendarEmail`, and `availabilityUrl` before
+`/api/database`. A confirmed `https://foresight.org/people/…` link is kept
+so the Profile button can match the institute site. The UI shows:
 
 > Contact info is not shown for this person. They have either not added it
 > yet, or do not want to be contacted at this time — we ask the community to

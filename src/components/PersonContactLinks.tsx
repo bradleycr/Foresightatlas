@@ -37,6 +37,7 @@ import type { Person } from "../types";
 import {
   CONTACT_NOT_SHOWN_MESSAGE,
   isContactSuppressed,
+  isForesightPeopleProfileUrl,
 } from "../utils/contactPrivacy";
 
 const KIND_STYLES: Record<
@@ -177,12 +178,26 @@ interface PersonContactLinksProps {
 }
 
 export function PersonContactLinks({ person, isSelf = false }: PersonContactLinksProps) {
-  // Prize Winners / Senior Fellows: never surface outreach channels.
+  // Prize Winners / Senior Fellows stay uncontactable. Their public
+  // foresight.org biography can still appear as a Profile button.
   if (!isSelf && isContactSuppressed(person)) {
+    const instituteProfile = isForesightPeopleProfileUrl(person.profileUrl)
+      ? parseWebsiteLink(person.profileUrl, "Profile")
+      : null;
     return (
-      <p className="text-sm text-gray-600 leading-relaxed">
-        {CONTACT_NOT_SHOWN_MESSAGE}
-      </p>
+      <div className="flex flex-col gap-2.5">
+        <p className="text-sm text-gray-600 leading-relaxed">
+          {CONTACT_NOT_SHOWN_MESSAGE}
+        </p>
+        {instituteProfile ? (
+          <SimpleContactLink
+            href={instituteProfile.href}
+            label={instituteProfile.label}
+            icon={<Globe className="h-4 w-4" />}
+            ariaLabel={`Open Foresight profile for ${person.fullName}`}
+          />
+        ) : null}
+      </div>
     );
   }
 
