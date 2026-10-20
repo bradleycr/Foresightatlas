@@ -549,7 +549,7 @@ h4 {
 }
 
 .person-detail-modal .person-detail-section + .person-detail-section {
-  margin-top: 1.5rem;
+  margin-top: 1.35rem;
 }
 
 .person-detail-modal .person-detail-section-title {
@@ -558,20 +558,15 @@ h4 {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--pdm-text-muted);
-  margin-bottom: 0.375rem;
+  margin-bottom: 0.55rem;
 }
 
+/* One column at every width. Two columns crushed empty-state sentences
+   ("not added yet") into the next label on phones. */
 .person-detail-modal .person-detail-meta-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .person-detail-modal .person-detail-meta-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem 0;
-  }
+  grid-template-columns: 1fr;
+  gap: 1.15rem;
 }
 
 .person-detail-modal .person-detail-body {
@@ -631,7 +626,7 @@ h4 {
 
 .person-detail-modal .person-detail-divider {
   border-top: 1px solid var(--pdm-border-light);
-  padding-top: 1.5rem;
+  padding-top: 1.15rem;
 }
 
 .person-detail-modal .person-detail-link-primary {

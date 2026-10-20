@@ -849,7 +849,7 @@ export function PersonDetailModal({
               {/* Main content: 2-col from md (tablet) up, single col on mobile.
                   When details block is absent the sidebar spans full width — no ghost left column. */}
               <div className={cn(
-                "person-detail-grid grid grid-cols-1 gap-6 md:gap-8 lg:gap-10",
+                "person-detail-grid grid grid-cols-1 items-start gap-8 md:gap-10 lg:gap-12",
                 "md:grid-cols-[1fr_minmax(0,280px)]"
               )}>
                 {/* Left: Details — bio/tagline/affiliation; empty-state when nothing yet */}

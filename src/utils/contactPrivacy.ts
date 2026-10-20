@@ -26,9 +26,9 @@ export function isContactSuppressed(person: Person): boolean {
   );
 }
 
-/** Shared empty-state copy when contact is missing or suppressed. */
+/** Shared empty-state copy when contact is missing or withheld. */
 export const CONTACT_NOT_SHOWN_MESSAGE =
-  "Contact info is not shown for this person. They have either not added it yet, or do not want to be contacted at this time — we ask the community to respect that.";
+  "This person has not added contact info yet.";
 
 export const MISSING_LOCATION_MESSAGE =
   "This person has not added a map location yet.";
