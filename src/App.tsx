@@ -691,11 +691,21 @@ export default function App() {
     setMapLocationNudgeHidden(false);
   }, [signedInPerson?.id]);
 
+  /*
+   * Local-only: ?welcomePreview=1 opens the letter without a session, so we
+   * can check the copy and the Zoom player before a real first arrival.
+   */
+  const welcomePreview =
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("welcomePreview");
+
   const showWelcomeLetter = Boolean(
-    identity &&
-    !isLoading &&
-    welcomeEpoch >= 0 &&
-    welcomeLetterIsPending(identity.personId),
+    welcomePreview ||
+      (identity &&
+        !isLoading &&
+        welcomeEpoch >= 0 &&
+        welcomeLetterIsPending(identity.personId)),
   );
 
   const showMapLocationNudge =
@@ -865,11 +875,30 @@ export default function App() {
     !isClaimRoute &&
     !isJoinRoute &&
     !isAccessRoute &&
-    !isPollsPublicExperience
+    !isPollsPublicExperience &&
+    !welcomePreview
   ) {
     return (
       <>
         <AuthGate route={route} onSignIn={handleDirectorySignIn} />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (welcomePreview && !identity) {
+    return (
+      <>
+        <div className="min-h-dvh bg-[#e8eef2]" aria-hidden />
+        <WelcomeLetter
+          fullName="Alex"
+          onDismiss={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("welcomePreview");
+            window.history.replaceState({}, "", url.pathname + url.search);
+            setWelcomeEpoch((n) => n + 1);
+          }}
+        />
         <Toaster />
       </>
     );
@@ -999,11 +1028,16 @@ export default function App() {
         </div>
       )}
 
-      {showWelcomeLetter && identity ? (
+      {showWelcomeLetter && (identity || welcomePreview) ? (
         <WelcomeLetter
-          fullName={identity.fullName}
+          fullName={identity?.fullName ?? "Alex"}
           onDismiss={() => {
-            dismissWelcomeLetter(identity.personId);
+            if (identity) dismissWelcomeLetter(identity.personId);
+            if (welcomePreview) {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("welcomePreview");
+              window.history.replaceState({}, "", url.pathname + url.search);
+            }
             setWelcomeEpoch((n) => n + 1);
           }}
         />

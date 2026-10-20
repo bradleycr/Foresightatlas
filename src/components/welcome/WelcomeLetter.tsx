@@ -73,33 +73,48 @@ export function WelcomeLetter({ fullName, onDismiss }: WelcomeLetterProps) {
           }}
         >
           {playing ? (
-            <AtlasDemoPlayer backRef={backRef} onBack={() => setPlaying(false)} />
+            <AtlasDemoPlayer
+              backRef={backRef}
+              onBack={() => setPlaying(false)}
+              onEnterAtlas={onDismiss}
+            />
           ) : (
           <>
+          {/*
+           * Sized to sit on one screen. Overflow is a last resort on very
+           * short phones — the type is kept small enough that most people
+           * never scroll.
+           */}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-7 pb-2 sm:px-10 sm:pt-9">
             <img
               src={foresightIconUrl}
               alt=""
-              className="size-9 object-contain opacity-80"
+              className="size-8 object-contain opacity-80 sm:size-9"
               aria-hidden
             />
 
-            <p className="mt-6 text-[0.68rem] font-medium tracking-[0.22em] text-sky-800/70 uppercase">
+            <p className="mt-5 text-[0.65rem] font-medium tracking-[0.22em] text-sky-800/70 uppercase not-italic sm:mt-6 sm:text-[0.68rem]">
               A note from the team
             </p>
             <DialogPrimitive.Title
-              className="mt-2 text-[1.85rem] leading-tight font-normal tracking-tight text-slate-900 sm:text-[2.15rem]"
+              className="mt-2 text-[1.65rem] leading-tight font-normal tracking-tight text-slate-900 sm:text-[2rem]"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               Welcome to the Atlas
             </DialogPrimitive.Title>
 
+            {/*
+             * The body is set in the heading face, italic — a short letter
+             * rather than a product screen. The eyebrow and title stay upright
+             * so the hierarchy still reads at a glance.
+             */}
             <div
               id="atlas-welcome-body"
-              className="mt-5 space-y-4 text-[0.95rem] leading-7 text-slate-700"
+              className="mt-4 space-y-3 text-[0.9rem] leading-[1.65] text-slate-700 italic sm:mt-5 sm:space-y-3.5 sm:text-[0.95rem] sm:leading-[1.7]"
+              style={{ fontFamily: "var(--font-heading)" }}
             >
               {name ? (
-                <p style={{ fontFamily: "var(--font-heading)" }} className="text-slate-900">
+                <p className="text-slate-900">
                   Dear {name},
                 </p>
               ) : null}
@@ -115,21 +130,22 @@ export function WelcomeLetter({ fullName, onDismiss }: WelcomeLetterProps) {
                 there is a feature you would really like to see, tap the small
                 bug{" "}
                 <span
-                  className="mx-0.5 inline-grid size-[1.35rem] translate-y-[-1px] place-items-center rounded-md border border-gray-300 bg-white align-middle text-gray-600 shadow-sm"
+                  className="mx-0.5 inline-grid size-[1.2rem] translate-y-[-1px] place-items-center rounded-md border border-gray-300 bg-white align-middle text-gray-600 shadow-sm not-italic"
                   aria-hidden
                 >
-                  <Bug className="size-3 translate-x-px" />
+                  <Bug className="size-2.5 translate-x-px" />
                 </span>{" "}
                 in the corner of any page.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-slate-200/70 bg-[#fbfaf7]/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10"
+          <div
+            className="flex flex-col gap-2 border-t border-slate-200/70 bg-[#fbfaf7]/95 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10"
             style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
           >
             <p
-              className="hidden text-sm text-slate-500 sm:block"
+              className="hidden text-sm italic text-slate-500 sm:block"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               With care, the Foresight team
@@ -149,11 +165,11 @@ export function WelcomeLetter({ fullName, onDismiss }: WelcomeLetterProps) {
                 onClick={onDismiss}
                 className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
               >
-                Explore on your own
+                Enter Atlas
               </button>
             </div>
             <p
-              className="text-center text-sm text-slate-500 sm:hidden"
+              className="text-center text-sm italic text-slate-500 sm:hidden"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               With care, the Foresight team
@@ -169,14 +185,16 @@ export function WelcomeLetter({ fullName, onDismiss }: WelcomeLetterProps) {
 
 /**
  * The Zoom recording, framed inside the letter.
- * Closing it only leaves the player. The atlas tab never changes.
+ * From here you can return to the note, or step into the atlas.
  */
 function AtlasDemoPlayer({
   backRef,
   onBack,
+  onEnterAtlas,
 }: {
   backRef: RefObject<HTMLButtonElement | null>;
   onBack: () => void;
+  onEnterAtlas: () => void;
 }) {
   const [ready, setReady] = useState(false);
 
@@ -195,9 +213,16 @@ function AtlasDemoPlayer({
           <ChevronLeft className="size-4" aria-hidden />
           Back to the note
         </button>
-        <DialogPrimitive.Title className="min-w-0 truncate text-sm font-medium tracking-tight text-white/70 sm:text-base">
+        <DialogPrimitive.Title className="min-w-0 flex-1 truncate text-sm font-medium tracking-tight text-white/70 sm:text-base">
           The Atlas, in under 4 minutes
         </DialogPrimitive.Title>
+        <button
+          type="button"
+          onClick={onEnterAtlas}
+          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-white px-3 text-sm font-medium text-slate-900 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:px-3.5"
+        >
+          Enter Atlas
+        </button>
       </div>
 
       <div
