@@ -3,6 +3,8 @@
  * Classification is strict so labels, icons, and actions always match.
  */
 
+import { isForesightPeopleProfileUrl } from "./contactPrivacy";
+
 export type ContactKind = "email" | "linkedin" | "twitter" | "github" | "website";
 
 export interface ParsedContact {
@@ -176,6 +178,20 @@ function parseSingleContact(raw: string): ParsedContact | null {
     openLabel: "Open link",
     copyLabel: "Copy link",
   };
+}
+
+/**
+ * Two labels only. A foresight.org people page is Profile; every other
+ * link in that field is Website.
+ */
+export function profileUrlHint(value: string | null | undefined): string {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "A foresight.org people page shows as Profile. Any other link shows as Website.";
+  }
+  if (isForesightPeopleProfileUrl(raw)) return "This shows as Profile.";
+  if (parseWebsiteLink(raw, "Link")) return "This shows as Website.";
+  return "Paste a full link, starting with https://.";
 }
 
 /** Parse a standalone website / profile URL. */

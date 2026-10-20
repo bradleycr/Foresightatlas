@@ -33,6 +33,7 @@ import {
   type ContactKind,
   type ParsedContact,
 } from "../utils/contactInfo";
+import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import type { Person } from "../types";
 import {
   CONTACT_NOT_SHOWN_MESSAGE,
@@ -146,23 +147,57 @@ function ContactActionButton({ contact }: { contact: ParsedContact }) {
   );
 }
 
+type ContactLinkTone = "secondary" | "profile" | "calendar" | "booking";
+
+const LINK_TONE_CLASS: Record<ContactLinkTone, string> = {
+  secondary: "person-detail-link-secondary",
+  profile: "person-detail-link-profile",
+  calendar: "person-detail-link-calendar",
+  booking: "person-detail-link-booking",
+};
+
+/** The Foresight mark, used only when the link is an institute people page. */
+function ForesightWheel({ className }: { className?: string }) {
+  return (
+    <img
+      src={foresightIconUrl}
+      alt=""
+      aria-hidden
+      className={cn("h-4 w-4 shrink-0 object-contain", className)}
+    />
+  );
+}
+
+function publicProfileLink(value: string | null | undefined): ParsedContact | null {
+  const link = parseWebsiteLink(value, "Link");
+  if (!link) return null;
+  const foresight = isForesightPeopleProfileUrl(link.href);
+  return {
+    ...link,
+    label: foresight ? "Profile" : "Website",
+    openLabel: foresight ? "Open profile" : "Open website",
+  };
+}
+
 function SimpleContactLink({
   href,
   label,
   icon,
   ariaLabel,
+  tone = "secondary",
 }: {
   href: string;
   label: string;
   icon: ReactNode;
   ariaLabel?: string;
+  tone?: ContactLinkTone;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="person-detail-link-secondary min-h-[44px] sm:min-h-[40px]"
+      className={cn(LINK_TONE_CLASS[tone], "min-h-[44px] sm:min-h-[40px]")}
       aria-label={ariaLabel ?? label}
     >
       {icon}
@@ -182,7 +217,7 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
   // foresight.org biography can still appear as a Profile button.
   if (!isSelf && isContactSuppressed(person)) {
     const instituteProfile = isForesightPeopleProfileUrl(person.profileUrl)
-      ? parseWebsiteLink(person.profileUrl, "Profile")
+      ? publicProfileLink(person.profileUrl)
       : null;
     return (
       <div className="flex flex-col gap-2.5">
@@ -193,8 +228,9 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
           <SimpleContactLink
             href={instituteProfile.href}
             label={instituteProfile.label}
-            icon={<Globe className="h-4 w-4" />}
+            icon={<ForesightWheel />}
             ariaLabel={`Open Foresight profile for ${person.fullName}`}
+            tone="profile"
           />
         ) : null}
       </div>
@@ -202,7 +238,8 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
   }
 
   const preferredContacts = parseContacts(person.contactUrlOrHandle);
-  const profileLink = parseWebsiteLink(person.profileUrl, "Profile");
+  const profileLink = publicProfileLink(person.profileUrl);
+  const profileIsForesight = isForesightPeopleProfileUrl(profileLink?.href);
   const showProfileLink =
     profileLink &&
     !preferredContacts.some((contact) => sameContactHref(profileLink.href, contact.href));
@@ -233,8 +270,13 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
         <SimpleContactLink
           href={profileLink.href}
           label={profileLink.label}
-          icon={<Globe className="h-4 w-4" />}
-          ariaLabel={`Open profile website for ${person.fullName}`}
+          icon={profileIsForesight ? <ForesightWheel /> : <Globe className="h-4 w-4" />}
+          ariaLabel={
+            profileIsForesight
+              ? `Open Foresight profile for ${person.fullName}`
+              : `Open website for ${person.fullName}`
+          }
+          tone={profileIsForesight ? "profile" : "secondary"}
         />
       ) : null}
 
@@ -248,6 +290,7 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
           label="Invite on Google Calendar"
           icon={<CalendarDays className="h-4 w-4" />}
           ariaLabel={`Create a Google Calendar invite for ${person.fullName}`}
+          tone="calendar"
         />
       ) : null}
 
@@ -257,6 +300,7 @@ export function PersonContactLinks({ person, isSelf = false }: PersonContactLink
           label="Open to meet — book time"
           icon={<Calendar className="h-4 w-4" />}
           ariaLabel={`Book time with ${person.fullName}`}
+          tone="booking"
         />
       ) : null}
     </div>

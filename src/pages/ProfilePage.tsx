@@ -50,6 +50,7 @@ import { NanowheelBadge, NanowheelPending } from "../components/NanowheelBadge";
 import { PersonAvatar } from "../components/PersonAvatar";
 import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowheels";
 import { isOpenToMeet, getOpenToMeetUrl } from "../utils/openToMeet";
+import { profileUrlHint } from "../utils/contactInfo";
 import {
   clearLocationSetupDismissed,
   clearLocationSetupUrl,
@@ -1237,12 +1238,18 @@ export function ProfilePage({
                   </div>
                 </Field>
 
-                <Field label="Profile URL">
+                <Field
+                  label="Profile or website"
+                  description={profileUrlHint(draft.profileUrl)}
+                >
                   <Input
                     type="url"
                     value={draft.profileUrl}
                     onChange={(event) => updateDraft("profileUrl", event.target.value)}
-                    placeholder="https://your-site-or-profile"
+                    placeholder="https://foresight.org/people/… or https://yoursite.com"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
                   />
                 </Field>
               </ProfileSection>

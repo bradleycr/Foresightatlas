@@ -552,6 +552,12 @@ h4 {
   margin-top: 1.35rem;
 }
 
+/* The block under the two-column profile is not a section sibling, so the
+   rule above never reaches it and its divider lands on the contact buttons. */
+.person-detail-modal .person-detail-grid + .person-detail-section {
+  margin-top: 1.75rem;
+}
+
 .person-detail-modal .person-detail-section-title {
   font-size: 0.6875rem;
   font-weight: 600;
@@ -648,7 +654,10 @@ h4 {
   color: #14532d;
 }
 
-.person-detail-modal .person-detail-link-secondary {
+.person-detail-modal .person-detail-link-secondary,
+.person-detail-modal .person-detail-link-profile,
+.person-detail-modal .person-detail-link-calendar,
+.person-detail-modal .person-detail-link-booking {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -656,16 +665,57 @@ h4 {
   border-radius: var(--pdm-radius-sm);
   font-size: 0.875rem;
   font-weight: 500;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* Quiet default for a generic website link. */
+.person-detail-modal .person-detail-link-secondary {
   background: var(--pdm-border-light);
   color: var(--pdm-text);
-  border: 1px solid var(--pdm-border);
-  text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
+  border-color: var(--pdm-border);
 }
 
 .person-detail-modal .person-detail-link-secondary:hover {
   background: #e5e7eb;
   border-color: #d1d5db;
+}
+
+/* Institute / personal profile — teal, same family as other website links. */
+.person-detail-modal .person-detail-link-profile {
+  background: #f0fdfa;
+  color: #115e59;
+  border-color: #99f6e4;
+}
+
+.person-detail-modal .person-detail-link-profile:hover {
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+/* Google Calendar invite — blue, distinct from LinkedIn's sky. */
+.person-detail-modal .person-detail-link-calendar {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.person-detail-modal .person-detail-link-calendar:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Booking link — amber, so "open to meet" is not another gray calendar. */
+.person-detail-modal .person-detail-link-booking {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.person-detail-modal .person-detail-link-booking:hover {
+  background: #fef3c7;
+  border-color: #fcd34d;
 }
 
 .person-detail-modal .person-detail-pill {

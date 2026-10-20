@@ -61,6 +61,7 @@ import {
 import { geocodeCity } from "../services/geocoding";
 import { toast } from "sonner";
 import { getNodeLabel } from "../utils/nodeLabels";
+import { profileUrlHint } from "../utils/contactInfo";
 import { effectiveIsAlumni } from "../utils/cohortLabel";
 
 interface AdminPanelProps {
@@ -954,7 +955,7 @@ function PersonEditForm({
         </div>
 
         <div>
-          <Label htmlFor="profileUrl">Profile URL</Label>
+          <Label htmlFor="profileUrl">Profile or website</Label>
           <Input
             id="profileUrl"
             type="url"
@@ -962,8 +963,9 @@ function PersonEditForm({
             onChange={(e) =>
               onChange({ ...person, profileUrl: e.target.value })
             }
-            placeholder="https://foresight.org/fellow/..."
+            placeholder="https://foresight.org/people/… or https://yoursite.com"
           />
+          <p className="mt-1 text-xs leading-relaxed text-gray-500">{profileUrlHint(person.profileUrl)}</p>
         </div>
 
         <div>

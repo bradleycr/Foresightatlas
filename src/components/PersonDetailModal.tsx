@@ -85,6 +85,7 @@ import { getNanowheelSummary, type NanowheelSummary } from "../services/nanowhee
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
 import { isOpenToMeet } from "../utils/openToMeet";
+import { profileUrlHint } from "../utils/contactInfo";
 import {
   MISSING_DETAILS_MESSAGE,
   MISSING_LOCATION_MESSAGE,
@@ -1019,8 +1020,9 @@ export function PersonDetailModal({
                           </div>
                         </div>
                         <div>
-                          <Label className="text-xs text-gray-600">Profile URL</Label>
-                          <Input type="url" value={editingPerson.profileUrl} onChange={(e) => setEditingPerson({ ...editingPerson, profileUrl: e.target.value })} placeholder="https://..." className="mt-1" />
+                          <Label className="text-xs text-gray-600">Profile or website</Label>
+                          <Input type="url" value={editingPerson.profileUrl} onChange={(e) => setEditingPerson({ ...editingPerson, profileUrl: e.target.value })} placeholder="https://foresight.org/people/… or https://yoursite.com" className="mt-1" />
+                          <p className="mt-1 text-xs leading-relaxed text-gray-500">{profileUrlHint(editingPerson.profileUrl)}</p>
                         </div>
                       </div>
                     ) : (
