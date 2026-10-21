@@ -500,12 +500,12 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
             </Panel>
           </div>
 
-          {/* Visits — not recoverable */}
           <Panel className="border-dashed border-gray-300 bg-gray-50/60">
             <PanelLabel>Site visits</PanelLabel>
             <p className="mt-3 text-sm text-gray-600">
-              Vercel Web Analytics was never enabled — no historical visits to recover.
-              Analytics is wired in the app; turn it on in the Vercel project to start counting.
+              {stats.visits?.available
+                ? "Web Analytics is on — pageviews collect from this point forward. Nothing recoverable before enablement."
+                : "Web Analytics not available yet."}
             </p>
           </Panel>
         </div>

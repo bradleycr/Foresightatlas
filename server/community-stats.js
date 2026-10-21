@@ -615,10 +615,16 @@ function buildCommunityStats({
     connections: connections || { activeEdges: 0, activeBookmarks: 0 },
     logins: logins || null,
     visits: {
-      /** Vercel Web Analytics is not enabled on this project — no historical visits. */
-      available: false,
-      reason: "web_analytics_not_enabled",
-      hint: "Enable Web Analytics in the Vercel project, then ship @vercel/analytics.",
+      /**
+       * Web Analytics is enabled on the Vercel project + @vercel/analytics is
+       * in the app. Historical pageviews before enablement are empty (0).
+       * Query via: vercel api /v1/query/web-analytics/visits/count?projectId=…
+       */
+      available: true,
+      reason: "collecting",
+      hint: "Pageviews start from Web Analytics enablement — nothing recoverable before that.",
+      pageviews: null,
+      visitors: null,
     },
     thisMonth: {
       month: thisMonthKey,
