@@ -26,6 +26,7 @@ const {
 const {
   isLocalMockMode,
   listLocalConnections,
+  listAllLocalConnections,
   appendLocalConnection,
 } = require("./local-storage");
 
@@ -266,8 +267,44 @@ async function setConnection(ownerPersonId, targetPersonId, status) {
   return row;
 }
 
+/**
+ * Privacy-safe aggregate: unique undirected active edges.
+ * Does not expose who↔who — only the count of bookmark pairs.
+ * Mutual bookmarks count once.
+ */
+async function countActiveConnections() {
+  let rows;
+  if (isLocalMockMode()) {
+    rows = await listAllLocalConnections();
+  } else {
+    try {
+      ({ rows } = await loadSheetRows({ write: false }));
+    } catch (err) {
+      console.warn("[connections] count skipped:", err?.message || err);
+      return { activeEdges: 0, activeBookmarks: 0 };
+    }
+  }
+
+  const latest = dedupeLatest(rows || []);
+  const active = latest.filter((r) => r.status === "active");
+  const undirected = new Set();
+  for (const r of active) {
+    const a = r.ownerPersonId;
+    const b = r.targetPersonId;
+    const key = a < b ? `${a}\t${b}` : `${b}\t${a}`;
+    undirected.add(key);
+  }
+  return {
+    /** Unique undirected pairs (A↔B counted once). */
+    activeEdges: undirected.size,
+    /** Directed active bookmarks (A→B and B→A both count). */
+    activeBookmarks: active.length,
+  };
+}
+
 module.exports = {
   listOwnerConnectionIds,
   setConnection,
+  countActiveConnections,
   CONNECTIONS_HEADERS,
 };

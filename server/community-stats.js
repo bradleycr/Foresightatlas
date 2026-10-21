@@ -18,6 +18,10 @@ const { normalizeBerlinSecureWorkshopRsvps } = require("./event-corrections");
 const { loadRealDataRecords } = require("./realdata-store");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const { enrichRsvpsWithLumaGuests } = require("./luma-guests");
+const { buildGeographyStats } = require("./geo-continents");
+const { countActiveConnections } = require("./connections-store");
+const { loadLoginStats } = require("./login-events");
+const { parseRoleTypes } = require("./role-types");
 
 const SPREADSHEET_ID = getSpreadsheetId();
 const NODE_SLUGS = ["berlin", "sf", "global"];
@@ -250,6 +254,131 @@ function isClaimedRecord(record) {
   return Boolean(record?.auth?.claimedAt || record?.auth?.passwordHash);
 }
 
+function personEmail(person) {
+  return String(person?.email || person?.calendarEmail || "").trim();
+}
+
+function startOfUtcDayMs(d = new Date()) {
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function countCheckInsInDays(checkIns, days) {
+  const since = startOfUtcDayMs() - (days - 1) * 24 * 60 * 60 * 1000;
+  return checkIns.filter((c) => {
+    const t = new Date(c.date).getTime();
+    return Number.isFinite(t) && t >= since;
+  }).length;
+}
+
+function buildCheckInWindows(checkIns) {
+  const byNode = Object.fromEntries(
+    NODE_SLUGS.map((slug) => [
+      slug,
+      {
+        nodeSlug: slug,
+        label: NODE_LABELS[slug],
+        last7Days: 0,
+        last30Days: 0,
+        allTime: 0,
+      },
+    ]),
+  );
+  const since7 = startOfUtcDayMs() - 6 * 24 * 60 * 60 * 1000;
+  const since30 = startOfUtcDayMs() - 29 * 24 * 60 * 60 * 1000;
+
+  for (const c of checkIns) {
+    const slug = normalizeNodeSlug(c.nodeSlug);
+    if (!byNode[slug]) continue;
+    byNode[slug].allTime += 1;
+    const t = new Date(c.date).getTime();
+    if (!Number.isFinite(t)) continue;
+    if (t >= since7) byNode[slug].last7Days += 1;
+    if (t >= since30) byNode[slug].last30Days += 1;
+  }
+
+  return {
+    last7Days: countCheckInsInDays(checkIns, 7),
+    last30Days: countCheckInsInDays(checkIns, 30),
+    allTime: checkIns.length,
+    byNode: NODE_SLUGS.map((s) => byNode[s]),
+  };
+}
+
+function buildRsvpSourceSplit(rsvpsGoing) {
+  let atlas = 0;
+  let luma = 0;
+  for (const r of rsvpsGoing) {
+    if (String(r.source || "").toLowerCase() === "luma") luma += 1;
+    else atlas += 1;
+  }
+  return {
+    atlas,
+    luma,
+    total: atlas + luma,
+  };
+}
+
+/**
+ * Unclaimed roster rows that have an email — for reminder CSV download.
+ * Never includes password hashes or tokens.
+ */
+function buildUnclaimedWithEmail(records) {
+  const rows = [];
+  for (const record of records || []) {
+    const person = record?.person;
+    if (!person?.fullName) continue;
+    if (isClaimedRecord(record)) continue;
+    const email = personEmail(person);
+    if (!email || !email.includes("@")) continue;
+    const roles = Array.isArray(person.roleTypes) && person.roleTypes.length
+      ? person.roleTypes
+      : parseRoleTypes(person.roleType);
+    rows.push({
+      fullName: person.fullName,
+      email,
+      roleType: roles[0] || String(person.roleType || "").trim() || "",
+      primaryNode: String(person.primaryNode || "").trim(),
+      personId: person.id || "",
+    });
+  }
+  rows.sort((a, b) => a.fullName.localeCompare(b.fullName));
+  return rows;
+}
+
+function buildClaimFunnel(rosterRecords) {
+  const unclaimedWithEmail = buildUnclaimedWithEmail(rosterRecords);
+  let claimed = 0;
+  let unclaimed = 0;
+  let unclaimedNoEmail = 0;
+  const since30 = startOfUtcDayMs() - 29 * 24 * 60 * 60 * 1000;
+  let claimedLast30Days = 0;
+
+  for (const record of rosterRecords || []) {
+    if (!record?.person?.fullName) continue;
+    if (isClaimedRecord(record)) {
+      claimed += 1;
+      const at = String(record?.auth?.claimedAt || "").trim();
+      if (at) {
+        const t = new Date(at).getTime();
+        if (Number.isFinite(t) && t >= since30) claimedLast30Days += 1;
+      }
+    } else {
+      unclaimed += 1;
+      const email = personEmail(record.person);
+      if (!email || !email.includes("@")) unclaimedNoEmail += 1;
+    }
+  }
+
+  return {
+    claimed,
+    unclaimed,
+    unclaimedWithEmail: unclaimedWithEmail.length,
+    unclaimedNoEmail,
+    claimedLast30Days,
+    reminderList: unclaimedWithEmail,
+  };
+}
+
 function todayDateKeyUtc() {
   const d = new Date();
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
@@ -368,6 +497,8 @@ function buildCommunityStats({
   eventMetaMap,
   rosterRecords,
   travelWindowRows,
+  connections,
+  logins,
 }) {
   const byNode = Object.fromEntries(NODE_SLUGS.map((s) => [s, emptyNodeStats(s)]));
   const participantSets = Object.fromEntries(NODE_SLUGS.map((s) => [s, new Set()]));
@@ -457,12 +588,7 @@ function buildCommunityStats({
     nanowheels: 0,
   };
 
-  const cutoff30 = new Date();
-  cutoff30.setUTCDate(cutoff30.getUTCDate() - 30);
-  const checkInsLast30Days = checkIns.filter((c) => {
-    const d = new Date(c.date);
-    return !Number.isNaN(d.getTime()) && d >= cutoff30;
-  }).length;
+  const checkInWindows = buildCheckInWindows(checkIns);
 
   const topEvents = [...eventGoingCounts.values()]
     .sort((a, b) => b.going - a.going)
@@ -474,11 +600,26 @@ function buildCommunityStats({
   const topParticipants = buildTopParticipants({ checkIns, rsvpsGoing, nameByPersonId });
 
   const roster = buildRosterStats(rosterRecords || []);
+  const claims = buildClaimFunnel(rosterRecords || []);
+  const geography = buildGeographyStats(rosterRecords || []);
+  const rsvpSources = buildRsvpSourceSplit(rsvpsGoing);
 
   return {
     generatedAt: new Date().toISOString(),
     totals,
     roster,
+    claims,
+    geography,
+    rsvpSources,
+    checkIns: checkInWindows,
+    connections: connections || { activeEdges: 0, activeBookmarks: 0 },
+    logins: logins || null,
+    visits: {
+      /** Vercel Web Analytics is not enabled on this project — no historical visits. */
+      available: false,
+      reason: "web_analytics_not_enabled",
+      hint: "Enable Web Analytics in the Vercel project, then ship @vercel/analytics.",
+    },
     thisMonth: {
       month: thisMonthKey,
       nanowheels: thisMonthRow.nanowheels,
@@ -486,7 +627,8 @@ function buildCommunityStats({
       rsvpsGoing: thisMonthRow.rsvpsGoing,
     },
     activity: {
-      checkInsLast30Days,
+      checkInsLast7Days: checkInWindows.last7Days,
+      checkInsLast30Days: checkInWindows.last30Days,
       avgNanowheelsPerParticipant:
         totals.uniqueParticipants > 0
           ? Math.round((totals.nanowheels / totals.uniqueParticipants) * 10) / 10
@@ -587,6 +729,15 @@ async function loadCommunityStatsFromSheet() {
   const rsvpsGoing = latestRsvps.filter((r) => r.status === "going");
   const rsvpsInterested = latestRsvps.filter((r) => r.status === "interested");
 
+  let connections = { activeEdges: 0, activeBookmarks: 0 };
+  try {
+    connections = await countActiveConnections();
+  } catch (err) {
+    console.warn("[community-stats] connections skipped:", err?.message || err);
+  }
+
+  const logins = await loadLoginStats();
+
   return buildCommunityStats({
     checkIns,
     rsvpsGoing,
@@ -594,12 +745,16 @@ async function loadCommunityStatsFromSheet() {
     eventMetaMap,
     rosterRecords,
     travelWindowRows,
+    connections,
+    logins,
   });
 }
 
 module.exports = {
   buildCommunityStats,
   buildRosterStats,
+  buildClaimFunnel,
+  buildUnclaimedWithEmail,
   collapseCheckIns,
   inferEventMeta,
   loadCommunityStatsFromSheet,

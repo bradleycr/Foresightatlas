@@ -53,6 +53,7 @@ function normalizeLocalDatabase(raw) {
     polls: Array.isArray(base.polls) ? base.polls : [],
     pollVotes: Array.isArray(base.pollVotes) ? base.pollVotes : [],
     connections: Array.isArray(base.connections) ? base.connections : [],
+    loginEvents: Array.isArray(base.loginEvents) ? base.loginEvents : [],
     meta: {
       updatedAt:
         base.meta && typeof base.meta === "object" && typeof base.meta.updatedAt === "string"
@@ -968,6 +969,31 @@ async function appendLocalConnection(row) {
   return next;
 }
 
+/** All connection rows (all owners) — used for privacy-safe aggregate counts. */
+async function listAllLocalConnections() {
+  const db = await getLocalDatabase();
+  return Array.isArray(db.connections) ? db.connections : [];
+}
+
+async function listLocalLoginEvents() {
+  const db = await getLocalDatabase();
+  return Array.isArray(db.loginEvents) ? db.loginEvents : [];
+}
+
+async function appendLocalLoginEvent(row) {
+  const db = await getLocalDatabase();
+  const next = {
+    personId: String(row.personId || "").trim(),
+    fullName: String(row.fullName || "").trim(),
+    kind: String(row.kind || "login").trim() || "login",
+    at: String(row.at || new Date().toISOString()),
+  };
+  if (!next.personId) throw new Error("personId required for login event");
+  db.loginEvents.push(next);
+  await saveLocalDatabase(db);
+  return next;
+}
+
 async function upsertLocalPoll(poll) {
   const db = await getLocalDatabase();
   const next = {
@@ -1093,7 +1119,10 @@ module.exports = {
   listLocalCheckins,
   appendLocalCheckin,
   listLocalConnections,
+  listAllLocalConnections,
   appendLocalConnection,
+  listLocalLoginEvents,
+  appendLocalLoginEvent,
   appendLocalSuggestion,
   upsertLocalPoll,
   appendLocalPollVote,

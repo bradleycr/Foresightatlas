@@ -1,32 +1,50 @@
 /**
- * StatsPage — community engagement totals from the portal.
- *
- * Nanowheels (◎) = check-ins at a node + RSVPs marked "going".
- * Roster counts come from RealData; engagement from CheckIns + RSVPs + Events tabs.
+ * StatsPage — visual community pulse for Foresight Team.
+ * Numbers and charts first; almost no prose.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowLeft,
-  CalendarDays,
+  Download,
+  Link2,
   Loader2,
+  Lock,
   MapPin,
-  Plane,
   RefreshCw,
-  Sparkles,
   UserCheck,
   Users,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { Identity } from "../services/identity";
 import {
+  downloadClaimReminderCsv,
   fetchCommunityStats,
   type CommunityStats,
   type NodeCommunityStats,
-  type RosterStats,
-  type TopParticipantStat,
 } from "../services/communityStats";
 import { NanowheelBadge } from "../components/NanowheelBadge";
 import { Button } from "../components/ui/button";
+
+const SKY = "#0ea5e9";
+const EMERALD = "#10b981";
+const AMBER = "#f59e0b";
+const VIOLET = "#8b5cf6";
+const SLATE = "#64748b";
+const ROSE = "#f43f5e";
+const INDIGO = "#6366f1";
+
+const CONTINENT_COLORS = [SKY, EMERALD, AMBER, VIOLET, ROSE, INDIGO, SLATE];
 
 interface StatsPageProps {
   identity: Identity | null;
@@ -37,16 +55,20 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
 
   const load = async () => {
     if (!identity?.token) return;
     setLoading(true);
     setError(null);
+    setForbidden(false);
     try {
       const data = await fetchCommunityStats(identity.token);
       setStats(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load stats.");
+      const msg = err instanceof Error ? err.message : "Could not load stats.";
+      setForbidden(/team only/i.test(msg) || /403/.test(msg));
+      setError(msg);
       setStats(null);
     } finally {
       setLoading(false);
@@ -58,470 +80,676 @@ export function StatsPage({ identity, onNavigateHome }: StatsPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity?.token]);
 
-  const maxMonthly = useMemo(() => {
-    if (!stats?.monthly.length) return 1;
-    return Math.max(1, ...stats.monthly.map((m) => m.nanowheels));
+  const claimPct = useMemo(() => {
+    if (!stats) return 0;
+    const t = stats.claims.claimed + stats.claims.unclaimed;
+    return t > 0 ? Math.round((stats.claims.claimed / t) * 100) : 0;
   }, [stats]);
 
-  const updatedLabel = stats
-    ? new Date(stats.generatedAt).toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : null;
+  const rsvpPie = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { name: "Atlas", value: stats.rsvpSources.atlas, color: SKY },
+      { name: "Luma", value: stats.rsvpSources.luma, color: AMBER },
+    ].filter((d) => d.value > 0);
+  }, [stats]);
+
+  const continentPie = useMemo(() => {
+    if (!stats?.geography.continents.length) return [];
+    return stats.geography.continents.map((c, i) => ({
+      name: c.name,
+      value: c.count,
+      color: CONTINENT_COLORS[i % CONTINENT_COLORS.length],
+    }));
+  }, [stats]);
+
+  const monthlyChart = useMemo(() => {
+    if (!stats?.monthly.length) return [];
+    return stats.monthly.slice(-8).map((m) => ({
+      label: formatMonthShort(m.month),
+      nanowheels: m.nanowheels,
+      checkIns: m.checkIns,
+      rsvps: m.rsvpsGoing,
+    }));
+  }, [stats]);
+
+  const nodeCheckInBars = useMemo(() => {
+    if (!stats) return [];
+    return stats.checkIns.byNode
+      .filter((n) => n.nodeSlug !== "global" || n.allTime > 0)
+      .map((n) => ({
+        name: n.nodeSlug === "berlin" ? "Berlin" : n.nodeSlug === "sf" ? "SF" : "Global",
+        "7d": n.last7Days,
+        "30d": n.last30Days,
+      }));
+  }, [stats]);
+
+  if (!identity?.token) {
+    return (
+      <Shell onNavigateHome={onNavigateHome}>
+        <EmptyState
+          icon={<Lock className="size-6 text-sky-600" />}
+          title="Sign in required"
+        />
+      </Shell>
+    );
+  }
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-b from-slate-50 via-white to-sky-50/40">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <button
-          type="button"
-          onClick={onNavigateHome}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-lg py-2 pr-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 touch-manipulation"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          Back to map
-        </button>
+    <Shell onNavigateHome={onNavigateHome} onRefresh={() => void load()} loading={loading}>
+      {loading && !stats ? (
+        <div className="mt-16 flex items-center justify-center gap-3 text-gray-500">
+          <Loader2 className="size-5 animate-spin" aria-hidden />
+        </div>
+      ) : null}
 
-        <header className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
-              Admin · not in navigation
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
-              Nanowheels &amp; engagement
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600">
-              Live totals from the Google Sheet — roster, check-ins, RSVPs, and
-              upcoming events. Reach this page directly at{" "}
-              <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-800">/stats</code>
-              ; it is not linked anywhere in the app.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void load()}
-            disabled={loading}
-            className="min-h-[44px] shrink-0 gap-2 self-start sm:self-auto"
-          >
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden />
-            Refresh
-          </Button>
-        </header>
+      {forbidden ? (
+        <EmptyState
+          icon={<Lock className="size-6 text-amber-600" />}
+          title="Foresight Team only"
+        />
+      ) : null}
 
-        {loading && !stats ? (
-          <div className="mt-12 flex items-center justify-center gap-3 text-gray-600">
-            <Loader2 className="size-5 animate-spin" aria-hidden />
-            Loading community stats…
-          </div>
-        ) : null}
+      {error && !forbidden ? (
+        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          {error}
+        </div>
+      ) : null}
 
-        {error ? (
-          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            {error}
-          </div>
-        ) : null}
-
-        {stats ? (
-          <div className="mt-8 space-y-10">
-            {updatedLabel ? (
-              <p className="text-xs text-gray-500">Last updated {updatedLabel}</p>
-            ) : null}
-
-            <ThisMonthBanner month={stats.thisMonth} />
-
-            <section>
-              <h2 className="text-lg font-semibold text-gray-900">Engagement totals</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Nanowheels = check-ins plus &ldquo;going&rdquo; RSVPs.
-              </p>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <TotalCard
-                  label="Total nanowheels"
-                  value={stats.totals.nanowheels}
-                  hint="Check-ins + going RSVPs"
-                  showBadge
-                />
-                <TotalCard
-                  label="Unique people"
-                  value={stats.totals.uniqueParticipants}
-                  hint="At least one check-in or going RSVP"
-                  icon={<Users className="size-5 text-violet-600" />}
-                />
-                <TotalCard
-                  label="Check-ins"
-                  value={stats.totals.checkIns}
-                  hint="Node table & QR check-in"
-                  icon={<MapPin className="size-5 text-sky-600" />}
-                />
-                <TotalCard
-                  label="Going RSVPs"
-                  value={stats.totals.rsvpsGoing}
-                  hint="Events & coworking days"
-                  icon={<span className="text-lg leading-none">◎</span>}
-                />
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <TotalCard
-                  label="Interested RSVPs"
-                  value={stats.totals.rsvpsInterested}
-                  hint="Marked interested (not going yet)"
-                  icon={<Sparkles className="size-5 text-amber-600" />}
-                />
-                <TotalCard
-                  label="Upcoming events"
-                  value={stats.totals.upcomingEvents}
-                  hint="On the Events tab, end date not passed"
-                  icon={<CalendarDays className="size-5 text-emerald-600" />}
-                />
-                <TotalCard
-                  label="Going · upcoming"
-                  value={stats.totals.upcomingGoingRsvps}
-                  hint="Going RSVPs for future events"
-                  icon={<CalendarDays className="size-5 text-teal-600" />}
-                />
-                <TotalCard
-                  label="Active travel"
-                  value={stats.totals.activeTravelWindows}
-                  hint="Travel windows ending today or later"
-                  icon={<Plane className="size-5 text-indigo-600" />}
-                />
-              </div>
-            </section>
-
-            <ActivitySnapshot stats={stats} />
-
-            <RosterSection roster={stats.roster} />
-
-            <section>
-              <h2 className="text-lg font-semibold text-gray-900">By node</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Berlin, San Francisco, and global programming each get their own
-                column. Coworking counts are RSVPs to coworking / resident-day
-                events.
-              </p>
-              <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                {stats.byNode.map((node) => (
-                  <NodeStatsCard key={node.nodeSlug} node={node} />
-                ))}
-              </div>
-            </section>
-
-            {stats.monthly.length > 0 ? (
-              <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900">Over time</h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  New nanowheels per month (check-in date or first RSVP month).
+      {stats ? (
+        <div className="mt-6 space-y-6 pb-16">
+          {/* Pulse hero */}
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-emerald-50/70 p-6 sm:p-8">
+            <div
+              className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-sky-200/30 blur-3xl"
+              aria-hidden
+            />
+            <div className="relative flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <p
+                  className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  Community pulse
                 </p>
-                <ul className="mt-6 space-y-3">
-                  {stats.monthly.map((row) => (
-                    <li key={row.month} className="flex items-center gap-3">
-                      <span className="w-14 shrink-0 text-xs font-medium tabular-nums text-gray-500">
-                        {formatMonth(row.month)}
-                      </span>
-                      <div className="relative h-7 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all"
-                          style={{
-                            width: `${Math.max(4, (row.nanowheels / maxMonthly) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="w-20 shrink-0 text-right text-sm tabular-nums text-gray-800">
-                        {row.nanowheels}{" "}
-                        <span className="text-xs text-gray-500">
-                          ({row.checkIns}c · {row.rsvpsGoing}r)
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
-            {stats.topParticipants.length > 0 ? (
-              <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900">Most engaged</h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  People with the most nanowheels (check-ins + going RSVPs).
-                </p>
-                <ul className="mt-5 divide-y divide-gray-100">
-                  {stats.topParticipants.map((person, index) => (
-                    <TopParticipantRow key={person.personId} rank={index + 1} person={person} />
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
-            {stats.topEvents.length > 0 ? (
-              <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900">Top events</h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  Events with the most &ldquo;going&rdquo; RSVPs right now.
-                </p>
-                <ul className="mt-5 divide-y divide-gray-100">
-                  {stats.topEvents.map((ev) => (
-                    <li
-                      key={ev.eventId}
-                      className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
+                <div className="mt-3 flex items-center gap-3">
+                  <NanowheelBadge
+                    count={stats.totals.nanowheels}
+                    size="lg"
+                    ariaLabel={`${stats.totals.nanowheels} nanowheels`}
+                  />
+                  <div>
+                    <p
+                      className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl"
+                      style={{ fontFamily: "var(--font-heading)" }}
                     >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-gray-900">{ev.title}</p>
-                        <p className="text-xs text-gray-500">
-                          {nodeLabel(ev.nodeSlug)}
-                          {ev.isCoworking ? " · Coworking" : ""}
-                        </p>
-                      </div>
-                      <p className="shrink-0 text-sm tabular-nums text-gray-700">
-                        {ev.going} going
-                      </p>
-                    </li>
+                      {stats.totals.nanowheels.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-500">nanowheels · all time</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                <HeroStat label="This month" value={stats.thisMonth.nanowheels} />
+                <HeroStat label="People" value={stats.totals.uniqueParticipants} />
+                <HeroStat label="Travel" value={stats.totals.activeTravelWindows} />
+              </div>
+            </div>
+          </section>
+
+          {/* Claim + connections + usage */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Panel className="lg:col-span-1">
+              <PanelLabel>Claims</PanelLabel>
+              <div className="mt-4 flex items-center gap-5">
+                <Ring percent={claimPct} color={EMERALD} />
+                <div className="min-w-0 space-y-1">
+                  <BigNum value={stats.claims.claimed} />
+                  <p className="text-xs text-gray-500">
+                    of {(stats.claims.claimed + stats.claims.unclaimed).toLocaleString()} ·{" "}
+                    {stats.claims.claimedLast30Days} new / 30d
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    {stats.claims.unclaimedWithEmail} unclaimed w/ email
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-5 min-h-[44px] w-full gap-2"
+                disabled={stats.claims.reminderList.length === 0}
+                onClick={() => downloadClaimReminderCsv(stats.claims.reminderList)}
+              >
+                <Download className="size-4" aria-hidden />
+                Reminder CSV
+              </Button>
+            </Panel>
+
+            <Panel>
+              <PanelLabel>Logins</PanelLabel>
+              {stats.logins && stats.logins.totalEvents > 0 ? (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MiniStat label="Today" value={stats.logins.logins.today} />
+                  <MiniStat label="7 days" value={stats.logins.logins.last7Days} />
+                  <MiniStat label="30 days" value={stats.logins.logins.last30Days} />
+                  <MiniStat label="All time" value={stats.logins.logins.allTime} />
+                </div>
+              ) : (
+                <p className="mt-6 text-sm text-gray-500">
+                  Tracking from now — sign-ins will appear here.
+                </p>
+              )}
+            </Panel>
+
+            <Panel>
+              <PanelLabel>Connections</PanelLabel>
+              <div className="mt-4 flex items-end gap-3">
+                <Link2 className="mb-1 size-5 text-violet-600" aria-hidden />
+                <BigNum value={stats.connections.activeEdges} />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                unique pairs · {stats.connections.activeBookmarks} bookmarks
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <MiniStat label="Check-ins 7d" value={stats.checkIns.last7Days} />
+                <MiniStat label="Check-ins 30d" value={stats.checkIns.last30Days} />
+              </div>
+            </Panel>
+          </div>
+
+          {/* Geography + RSVP source */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel>
+              <PanelLabel>Geography</PanelLabel>
+              <div className="mt-2 flex h-48 items-center gap-4">
+                {continentPie.length > 0 ? (
+                  <>
+                    <div className="h-full min-w-0 flex-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={continentPie}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius="55%"
+                            outerRadius="80%"
+                            paddingAngle={2}
+                            strokeWidth={0}
+                          >
+                            {continentPie.map((d) => (
+                              <Cell key={d.name} fill={d.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(v: number) => [v.toLocaleString(), "people"]}
+                            contentStyle={tooltipStyle}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <ul className="w-28 shrink-0 space-y-1.5 text-xs">
+                      {continentPie.slice(0, 5).map((d) => (
+                        <li key={d.name} className="flex items-center gap-2">
+                          <span
+                            className="size-2 shrink-0 rounded-full"
+                            style={{ background: d.color }}
+                          />
+                          <span className="truncate text-gray-600">{d.name}</span>
+                          <span className="ml-auto tabular-nums text-gray-900">{d.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">No country pins yet.</p>
+                )}
+              </div>
+              {stats.geography.countries.length > 0 ? (
+                <ul className="mt-2 space-y-1.5 border-t border-gray-100 pt-3">
+                  {stats.geography.countries.slice(0, 5).map((c) => (
+                    <BarRow
+                      key={c.name}
+                      label={c.name}
+                      value={c.count}
+                      max={stats.geography.countries[0]?.count || 1}
+                      color={SKY}
+                    />
                   ))}
                 </ul>
-              </section>
-            ) : null}
+              ) : null}
+            </Panel>
+
+            <Panel>
+              <PanelLabel>RSVPs · Atlas vs Luma</PanelLabel>
+              <div className="mt-2 flex h-48 items-center gap-4">
+                {rsvpPie.length > 0 ? (
+                  <>
+                    <div className="h-full min-w-0 flex-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={rsvpPie}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius="55%"
+                            outerRadius="80%"
+                            paddingAngle={3}
+                            strokeWidth={0}
+                          >
+                            {rsvpPie.map((d) => (
+                              <Cell key={d.name} fill={d.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(v: number) => [v.toLocaleString(), "going"]}
+                            contentStyle={tooltipStyle}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-28 shrink-0 space-y-3">
+                      {rsvpPie.map((d) => (
+                        <div key={d.name}>
+                          <p className="text-xs text-gray-500">{d.name}</p>
+                          <p className="text-xl font-semibold tabular-nums text-gray-900">
+                            {d.value.toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">No going RSVPs yet.</p>
+                )}
+              </div>
+            </Panel>
           </div>
-        ) : null}
+
+          {/* Node check-ins + monthly */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel>
+              <PanelLabel>Node check-ins</PanelLabel>
+              <div className="mt-4 h-52">
+                {nodeCheckInBars.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={nodeCheckInBars} barGap={4}>
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={28}
+                      />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Bar dataKey="7d" name="7 days" fill={SKY} radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="30d" name="30 days" fill={EMERALD} radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-gray-500">No check-ins yet.</p>
+                )}
+              </div>
+            </Panel>
+
+            <Panel>
+              <PanelLabel>Nanowheels over time</PanelLabel>
+              <div className="mt-4 h-52">
+                {monthlyChart.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyChart}>
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={28}
+                      />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Bar
+                        dataKey="nanowheels"
+                        name="Nanowheels"
+                        fill={SKY}
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-gray-500">No monthly data yet.</p>
+                )}
+              </div>
+            </Panel>
+          </div>
+
+          {/* Roster strip + nodes */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StripStat
+              icon={<Users className="size-4 text-gray-600" />}
+              label="Roster"
+              value={stats.roster.total}
+            />
+            <StripStat
+              icon={<UserCheck className="size-4 text-emerald-600" />}
+              label="Claimed"
+              value={stats.roster.claimed}
+            />
+            <StripStat
+              icon={<MapPin className="size-4 text-sky-600" />}
+              label="On map"
+              value={stats.roster.onMap}
+            />
+            <StripStat
+              icon={<Users className="size-4 text-violet-600" />}
+              label="Open to meet"
+              value={stats.roster.openToMeet}
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {stats.byNode.map((node) => (
+              <NodeCard key={node.nodeSlug} node={node} />
+            ))}
+          </div>
+
+          {/* Tops — compact */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel>
+              <PanelLabel>Most engaged</PanelLabel>
+              <ul className="mt-3 space-y-2">
+                {stats.topParticipants.slice(0, 6).map((p, i) => (
+                  <li key={p.personId} className="flex items-center gap-3">
+                    <span className="w-5 text-xs tabular-nums text-gray-400">{i + 1}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
+                      {p.fullName}
+                    </span>
+                    <NanowheelBadge
+                      count={p.nanowheels}
+                      size="sm"
+                      ariaLabel={`${p.nanowheels} for ${p.fullName}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+            <Panel>
+              <PanelLabel>Top events</PanelLabel>
+              <ul className="mt-3 space-y-2">
+                {stats.topEvents.slice(0, 6).map((ev) => (
+                  <li key={ev.eventId} className="flex items-center gap-3">
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
+                      {ev.title}
+                    </span>
+                    <span className="shrink-0 text-sm tabular-nums text-gray-600">
+                      {ev.going}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          </div>
+
+          {/* Visits — not recoverable */}
+          <Panel className="border-dashed border-gray-300 bg-gray-50/60">
+            <PanelLabel>Site visits</PanelLabel>
+            <p className="mt-3 text-sm text-gray-600">
+              Vercel Web Analytics was never enabled — no historical visits to recover.
+              Analytics is wired in the app; turn it on in the Vercel project to start counting.
+            </p>
+          </Panel>
+        </div>
+      ) : null}
+    </Shell>
+  );
+}
+
+const tooltipStyle: CSSProperties = {
+  borderRadius: 12,
+  border: "1px solid #e2e8f0",
+  fontSize: 12,
+  boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+};
+
+function Shell({
+  children,
+  onNavigateHome,
+  onRefresh,
+  loading,
+}: {
+  children: ReactNode;
+  onNavigateHome: () => void;
+  onRefresh?: () => void;
+  loading?: boolean;
+}) {
+  return (
+    <div className="flex-1 overflow-auto bg-gradient-to-b from-slate-50 via-white to-sky-50/50">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onNavigateHome}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg py-2 pr-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 touch-manipulation"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            Map
+          </button>
+          {onRefresh ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              disabled={loading}
+              className="min-h-[44px] gap-2"
+              aria-label="Refresh stats"
+            >
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden />
+            </Button>
+          ) : null}
+        </div>
+        <h1
+          className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Atlas stats
+        </h1>
+        {children}
       </div>
     </div>
   );
 }
 
-function ThisMonthBanner({ month }: { month: CommunityStats["thisMonth"] }) {
+function EmptyState({ icon, title }: { icon: ReactNode; title: string }) {
   return (
-    <section className="rounded-[1.75rem] border border-sky-200/80 bg-gradient-to-br from-sky-50 via-white to-emerald-50/60 p-6 shadow-sm sm:p-7">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
-        {formatMonth(month.month)}
-      </p>
-      <div className="mt-3 flex flex-wrap items-end gap-6">
-        <div>
-          <p className="text-sm text-gray-600">Nanowheels this month</p>
-          <div className="mt-1 flex items-center gap-2">
-            <NanowheelBadge
-              count={month.nanowheels}
-              size="lg"
-              ariaLabel={`${month.nanowheels} nanowheels this month`}
-            />
-          </div>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Check-ins</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
-            {month.checkIns.toLocaleString()}
-          </p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Going RSVPs</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
-            {month.rsvpsGoing.toLocaleString()}
-          </p>
-        </div>
+    <div className="mt-16 flex flex-col items-center gap-3 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
+        {icon}
       </div>
-    </section>
+      <p
+        className="text-lg text-gray-800"
+        style={{ fontFamily: "var(--font-heading)" }}
+      >
+        {title}
+      </p>
+    </div>
   );
 }
 
-function ActivitySnapshot({ stats }: { stats: CommunityStats }) {
+function Panel({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <section className="rounded-[1.75rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-lg font-semibold text-gray-900">Activity snapshot</h2>
-      <p className="mt-1 text-sm text-gray-600">Derived from the same sheet rows as above.</p>
-      <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SnapshotItem
-          label="Check-ins · 30 days"
-          value={stats.activity.checkInsLast30Days}
-        />
-        <SnapshotItem
-          label="Avg nanowheels / person"
-          value={stats.activity.avgNanowheelsPerParticipant}
-          decimal
-        />
-        <SnapshotItem label="Events with RSVPs" value={stats.totals.eventsWithGoing} />
-        <SnapshotItem label="Coworking RSVPs" value={stats.totals.coworkingEngagements} />
-      </dl>
+    <section
+      className={`rounded-[1.5rem] border border-gray-200/90 bg-white p-5 shadow-sm sm:p-6 ${className}`}
+    >
+      {children}
     </section>
   );
 }
 
-function SnapshotItem({
+function PanelLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+      {children}
+    </p>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="mt-0.5 text-2xl font-semibold tabular-nums text-gray-900">
+        {value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+function BigNum({ value }: { value: number }) {
+  return (
+    <p className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900">
+      {value.toLocaleString()}
+    </p>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-gray-50 px-3 py-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
+      <p className="mt-0.5 text-xl font-semibold tabular-nums text-gray-900">
+        {value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+function StripStat({
+  icon,
   label,
   value,
-  decimal,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-200/90 bg-white px-4 py-3 shadow-sm">
+      <span aria-hidden>{icon}</span>
+      <div>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
+        <p className="text-xl font-semibold tabular-nums text-gray-900">
+          {value.toLocaleString()}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Ring({ percent, color }: { percent: number; color: string }) {
+  const r = 36;
+  const c = 2 * Math.PI * r;
+  const offset = c - (Math.min(100, Math.max(0, percent)) / 100) * c;
+  return (
+    <div className="relative size-24 shrink-0">
+      <svg viewBox="0 0 88 88" className="size-full -rotate-90">
+        <circle cx="44" cy="44" r={r} fill="none" stroke="#e2e8f0" strokeWidth="8" />
+        <circle
+          cx="44"
+          cy="44"
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-lg font-semibold tabular-nums text-gray-900">
+        {percent}%
+      </span>
+    </div>
+  );
+}
+
+function BarRow({
+  label,
+  value,
+  max,
+  color,
 }: {
   label: string;
   value: number;
-  decimal?: boolean;
+  max: number;
+  color: string;
 }) {
+  const pct = Math.max(6, (value / Math.max(1, max)) * 100);
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3">
-      <dt className="text-xs font-medium text-gray-500">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
-        {decimal ? value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : value.toLocaleString()}
-      </dd>
-    </div>
-  );
-}
-
-function RosterSection({ roster }: { roster: RosterStats }) {
-  return (
-    <section>
-      <h2 className="text-lg font-semibold text-gray-900">Directory</h2>
-      <p className="mt-1 text-sm text-gray-600">
-        Roster from RealData — who is in the atlas and how complete profiles are.
-      </p>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <TotalCard
-          label="People in roster"
-          value={roster.total}
-          hint={`${roster.publicProfiles} visible on the map`}
-          icon={<Users className="size-5 text-gray-700" />}
-        />
-        <TotalCard
-          label="Claimed accounts"
-          value={roster.claimed}
-          hint={`${roster.unclaimed} not claimed yet`}
-          icon={<UserCheck className="size-5 text-emerald-600" />}
-        />
-        <TotalCard
-          label="On the map"
-          value={roster.onMap}
-          hint={`${roster.withoutLocation} missing city / coords`}
-          icon={<MapPin className="size-5 text-sky-600" />}
-        />
-        <TotalCard
-          label="Open to meet"
-          value={roster.openToMeet}
-          hint="Availability link on profile"
-          icon={<Sparkles className="size-5 text-violet-600" />}
+    <li className="flex items-center gap-2 text-xs">
+      <span className="w-24 shrink-0 truncate text-gray-600">{label}</span>
+      <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-100">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color }}
         />
       </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <TotalCard label="Current" value={roster.current} hint="Active cohort / fellows" />
-        <TotalCard label="Alumni" value={roster.alumni} hint="From sheet flag or end year" />
-        <TotalCard
-          label="With photo"
-          value={roster.withPhoto}
-          hint="profileImageUrl on RealData"
-        />
-        <TotalCard
-          label="With contact"
-          value={roster.withContact}
-          hint="Email, handle, or calendar email"
-        />
-      </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        {roster.byPrimaryNode.map((node) => (
-          <div
-            key={node.nodeSlug}
-            className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
-          >
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-              {node.label}
-            </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
-              {node.count.toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-500">primary node on profile</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function TopParticipantRow({ rank, person }: { rank: number; person: TopParticipantStat }) {
-  return (
-    <li className="flex items-center gap-4 py-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold tabular-nums text-gray-700">
-        {rank}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-gray-900">{person.fullName}</p>
-        <p className="text-xs text-gray-500">
-          {person.checkIns} check-in{person.checkIns === 1 ? "" : "s"} · {person.rsvpsGoing} going
-        </p>
-      </div>
-      <NanowheelBadge
-        count={person.nanowheels}
-        size="sm"
-        ariaLabel={`${person.nanowheels} nanowheels for ${person.fullName}`}
-      />
+      <span className="w-8 shrink-0 text-right tabular-nums text-gray-800">{value}</span>
     </li>
   );
 }
 
-function TotalCard({
-  label,
-  value,
-  hint,
-  showBadge,
-  icon,
-}: {
-  label: string;
-  value: number;
-  hint: string;
-  showBadge?: boolean;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-      <div className="mt-2 flex items-center gap-3">
-        {showBadge ? (
-          <NanowheelBadge count={value} size="lg" ariaLabel={`${value} total nanowheels`} />
-        ) : (
-          <>
-            {icon ? <span aria-hidden>{icon}</span> : null}
-            <span className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900">
-              {value.toLocaleString()}
-            </span>
-          </>
-        )}
-      </div>
-      <p className="mt-2 text-xs leading-relaxed text-gray-500">{hint}</p>
-    </div>
-  );
-}
-
-function NodeStatsCard({ node }: { node: NodeCommunityStats }) {
+function NodeCard({ node }: { node: NodeCommunityStats }) {
   const accent =
     node.nodeSlug === "berlin"
-      ? "from-amber-50 to-orange-50 border-amber-200/80"
+      ? "from-amber-50 to-orange-50/80 border-amber-200/70"
       : node.nodeSlug === "sf"
-        ? "from-indigo-50 to-rose-50 border-indigo-200/80"
-        : "from-sky-50 to-violet-50 border-sky-200/80";
+        ? "from-indigo-50 to-rose-50/70 border-indigo-200/70"
+        : "from-sky-50 to-violet-50/70 border-sky-200/70";
 
   return (
-    <article
-      className={`rounded-2xl border bg-gradient-to-br p-5 shadow-sm ${accent}`}
-    >
-      <h3 className="text-base font-semibold text-gray-900">{node.label}</h3>
-      <div className="mt-4 flex items-center gap-2">
+    <article className={`rounded-[1.5rem] border bg-gradient-to-br p-5 shadow-sm ${accent}`}>
+      <p
+        className="text-sm font-semibold text-gray-900"
+        style={{ fontFamily: "var(--font-heading)" }}
+      >
+        {node.label}
+      </p>
+      <div className="mt-3 flex items-center gap-2">
         <NanowheelBadge
           count={node.nanowheels}
           size="md"
-          ariaLabel={`${node.nanowheels} nanowheels at ${node.label}`}
+          ariaLabel={`${node.nanowheels} at ${node.label}`}
         />
-        <span className="text-sm text-gray-600">nanowheels</span>
       </div>
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+      <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
         <div>
-          <dt className="text-gray-500">Check-ins</dt>
-          <dd className="font-semibold tabular-nums text-gray-900">{node.checkIns}</dd>
+          <dt className="text-[10px] uppercase tracking-wide text-gray-500">In</dt>
+          <dd className="text-lg font-semibold tabular-nums text-gray-900">{node.checkIns}</dd>
         </div>
         <div>
-          <dt className="text-gray-500">Going RSVPs</dt>
-          <dd className="font-semibold tabular-nums text-gray-900">{node.rsvpsGoing}</dd>
+          <dt className="text-[10px] uppercase tracking-wide text-gray-500">RSVP</dt>
+          <dd className="text-lg font-semibold tabular-nums text-gray-900">{node.rsvpsGoing}</dd>
         </div>
         <div>
-          <dt className="text-gray-500">Coworking RSVPs</dt>
-          <dd className="font-semibold tabular-nums text-gray-900">
-            {node.coworkingEngagements}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-gray-500">Unique people</dt>
-          <dd className="font-semibold tabular-nums text-gray-900">
+          <dt className="text-[10px] uppercase tracking-wide text-gray-500">People</dt>
+          <dd className="text-lg font-semibold tabular-nums text-gray-900">
             {node.uniqueParticipants}
           </dd>
         </div>
@@ -530,14 +758,8 @@ function NodeStatsCard({ node }: { node: NodeCommunityStats }) {
   );
 }
 
-function formatMonth(key: string): string {
+function formatMonthShort(key: string): string {
   const [y, m] = key.split("-");
   const d = new Date(Number(y), Number(m) - 1, 1);
-  return d.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
-}
-
-function nodeLabel(slug: string): string {
-  if (slug === "berlin") return "Berlin Node";
-  if (slug === "sf") return "SF Node";
-  return "Global";
+  return d.toLocaleDateString(undefined, { month: "short" });
 }

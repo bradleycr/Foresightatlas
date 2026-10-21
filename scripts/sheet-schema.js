@@ -43,6 +43,11 @@ const SHEET_NAMES = {
   POLL_VOTES: "PollVotes",
   /** Private bookmarks — never served via /api/database; session-scoped only. */
   CONNECTIONS: "Connections",
+  /**
+   * Append-only directory sign-ins (login + claim). Never served via /api/database.
+   * Created on first write by server/login-events.js.
+   */
+  LOGIN_EVENTS: "LoginEvents",
 };
 
 /** Try these in order when resolving the Real Data tab (sheet may use "Real Data" or "RealData"). */
@@ -234,6 +239,17 @@ const CONNECTIONS_HEADERS = [
   "updatedAt",
 ];
 
+/**
+ * Directory authentication events. Append-only; no PII beyond personId + name.
+ * kind is "login" | "claim".
+ */
+const LOGIN_EVENTS_HEADERS = [
+  "personId",
+  "fullName",
+  "kind",
+  "at",
+];
+
 /** Resolve a DailyTable tab name from a node slug ("berlin" → "DailyTable-Berlin"). */
 function dailyTableTabName(nodeSlug) {
   const label = { berlin: "Berlin", sf: "SF" }[nodeSlug];
@@ -285,6 +301,7 @@ module.exports = {
   POLLS_HEADERS,
   POLL_VOTES_HEADERS,
   CONNECTIONS_HEADERS,
+  LOGIN_EVENTS_HEADERS,
   dailyTableTabName,
   isLocationUnspecified,
   getSheetColumnLetter,

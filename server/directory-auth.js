@@ -43,6 +43,18 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 
+/** Fire-and-forget login/claim telemetry — never blocks auth on sheet errors. */
+function queueLoginEvent(input) {
+  try {
+    const { recordLoginEvent } = require("./login-events");
+    void recordLoginEvent(input).catch((err) => {
+      console.warn("[login-events] record skipped:", err?.message || err);
+    });
+  } catch (err) {
+    console.warn("[login-events] unavailable:", err?.message || err);
+  }
+}
+
 const DEFAULT_DIRECTORY_PASSWORD =
   process.env.DIRECTORY_DEFAULT_PASSWORD || "password123";
 const SESSION_SECRET =
@@ -229,6 +241,11 @@ async function authenticateDirectoryLogin(fullName, password) {
   }
 
   const session = issueDirectorySession(sessionRecord);
+  queueLoginEvent({
+    personId: record.person?.id,
+    fullName: record.person?.fullName,
+    kind: "login",
+  });
   return {
     person: record.person,
     auth: session,
@@ -568,6 +585,12 @@ async function claimProfileWithInvite(inviteToken, fullName, email, password) {
   updated.auth.lastPasswordChangedAt = now;
   await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updated);
 
+  queueLoginEvent({
+    personId: updated.person?.id,
+    fullName: updated.person?.fullName,
+    kind: "claim",
+  });
+
   return {
     person: updated.person,
     auth: issueDirectorySession(updated),
@@ -666,6 +689,12 @@ async function claimDirectoryProfile(token, newPassword, options = {}) {
   updated.auth.lastPasswordChangedAt = now;
 
   await upsertRealDataRecord(loaded.sheets, loaded.sheetName, updated);
+
+  queueLoginEvent({
+    personId: updated.person?.id,
+    fullName: updated.person?.fullName,
+    kind: payload.purpose === "reset" ? "login" : "claim",
+  });
 
   return {
     person: updated.person,

@@ -196,6 +196,13 @@ export function InlineFilters({
             >
               Alumni only
             </TogglePill>
+            <TogglePill
+              active={filters.communityFilter === "openToMeet"}
+              activeStyle={{ background: activeToggle, border: "1px solid rgba(255,255,255,0.5)" }}
+              onClick={() => onFiltersChange({ ...filters, communityFilter: "openToMeet" })}
+            >
+              Open to meet
+            </TogglePill>
           </QuickRow>
 
           {/*

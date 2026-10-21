@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 import App from "./App.tsx";
 import "./tailwind.css";
 import "./index.css";
@@ -34,6 +35,8 @@ try {
     <ErrorBoundary>
       <App />
       <BugReportFab />
+      {/* Pageviews once Web Analytics is enabled on the Vercel project. */}
+      <Analytics />
     </ErrorBoundary>,
   );
 } catch (err) {

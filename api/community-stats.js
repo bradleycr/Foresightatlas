@@ -1,8 +1,8 @@
 /**
  * Vercel serverless: GET /api/community-stats
  *
- * Signed-in members only. Aggregates nanowheels, check-ins, and RSVPs
- * from the CheckIns + RSVPs sheet tabs, broken down by node and month.
+ * Foresight Team only. Aggregates nanowheels, check-ins, RSVPs, claim funnel,
+ * geography, connections, and login windows from sheet tabs.
  */
 
 const path = require("path");
@@ -17,10 +17,34 @@ const {
   verifyDirectorySessionToken,
   readDirectoryTokenFromRequest,
 } = require("../server/directory-auth");
+const { loadRealDataRecords } = require("../server/realdata-store");
+const { parseRoleTypes } = require("../server/role-types");
 
+const TEAM_ROLE = "Foresight Team";
 const CACHE_TTL_MS = 60 * 1000;
 let cached = null;
 let cachedAt = 0;
+
+function personHasTeamRole(person) {
+  if (!person) return false;
+  const roles =
+    Array.isArray(person.roleTypes) && person.roleTypes.length
+      ? person.roleTypes
+      : parseRoleTypes(person.roleType);
+  return roles.includes(TEAM_ROLE);
+}
+
+async function requireForesightTeam(req) {
+  const session = verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
+  const { records } = await loadRealDataRecords();
+  const match = records.find((r) => r.person?.id === session.personId);
+  if (!personHasTeamRole(match?.person)) {
+    const err = new Error("Foresight Team only.");
+    err.statusCode = 403;
+    throw err;
+  }
+  return session;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
@@ -32,9 +56,20 @@ module.exports = async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
-  } catch {
-    return res.status(401).json({ error: "Sign in to view community stats." });
+    await requireForesightTeam(req);
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && typeof error.statusCode === "number"
+        ? error.statusCode
+        : 401;
+    return res.status(status).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : status === 403
+            ? "Foresight Team only."
+            : "Sign in to view community stats.",
+    });
   }
 
   try {

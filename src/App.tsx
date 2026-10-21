@@ -8,6 +8,7 @@ import { PersonDetailModal } from "./components/PersonDetailModal";
 import { Filters, Person, TravelWindow } from "./types";
 import { getPresetFocusTags } from "./data/focusAreas";
 import { effectiveIsAlumni } from "./utils/cohortLabel";
+import { isOpenToMeet } from "./utils/openToMeet";
 import { getPrimaryRoleType } from "./utils/roleTypes";
 import {
   getAllPeople,
@@ -431,6 +432,7 @@ export default function App() {
 
       if (filters.communityFilter === "current" && effectiveIsAlumni(person)) return false;
       if (filters.communityFilter === "alumni" && !effectiveIsAlumni(person)) return false;
+      if (filters.communityFilter === "openToMeet" && !isOpenToMeet(person)) return false;
 
       if (filters.search) {
         const q = filters.search.toLowerCase();

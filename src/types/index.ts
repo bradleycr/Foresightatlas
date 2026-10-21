@@ -91,8 +91,12 @@ export interface Filters {
   focusTags: string[];
   nodes: PrimaryNode[];
   cities: string[]; // Selected cities to filter by
-  /** "all" = current + alumni; "current" = current only; "alumni" = alumni only */
-  communityFilter: "all" | "current" | "alumni";
+  /**
+   * "all" = current + alumni;
+   * "current" / "alumni" = by cohort status;
+   * "openToMeet" = members who published an availability / booking link.
+   */
+  communityFilter: "all" | "current" | "alumni" | "openToMeet";
   year: number | null; // null means "All time"
   granularity: Granularity;
   /**
