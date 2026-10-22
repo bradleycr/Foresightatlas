@@ -10,6 +10,7 @@ import { CalendarDays, Loader2, LogIn, X } from "lucide-react";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
+import { MapRoleLegend } from "../components/map/MapRoleLegend";
 import { useIsMobile } from "../components/ui/use-mobile";
 import type { PinLocation } from "../components/map/pinAppearance";
 import { FORESIGHT_LUMA_URL, FORESIGHT_ORG_URL } from "../constants/foresight";
@@ -220,6 +221,12 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/60 via-black/25 to-transparent"
+      />
+
+      {/* Above showcase zoom (bottom-left) and clear of the centered sign-in CTA */}
+      <MapRoleLegend
+        tone="dark"
+        mobileBottomClassName="bottom-[max(5.75rem,env(safe-area-inset-bottom)+4.5rem)]"
       />
 
       {/*
