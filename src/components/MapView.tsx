@@ -19,7 +19,7 @@ import type { NodeEvent } from "../types/events";
 import { getPersonRSVPs } from "../services/rsvp";
 import { FellowCard, type AttendingEvent } from "./FellowCard";
 import { InlineFilters } from "./InlineFilters";
-import { ArrowLeft, List, Menu, X } from "lucide-react";
+import { ArrowLeft, Menu, Users, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
@@ -987,6 +987,35 @@ export function MapView({
     }).length;
   }, [filteredPeople, forwardGeocodedCoordinates]);
 
+  /** Distinct cities in the current list — useful beside Filters without repeating the people count. */
+  const sidebarCityCount = useMemo(() => {
+    const cities = new Set<string>();
+    for (const person of sidebarPeople) {
+      const city = String(person.currentCity || "").trim();
+      const country = String(person.currentCountry || "").trim();
+      const key = [city, country].filter(Boolean).join(", ").toLowerCase();
+      if (key) cities.add(key);
+    }
+    return cities.size;
+  }, [sidebarPeople]);
+
+  const listFiltersActive = Boolean(
+    filters &&
+      (String(filters.search || "").trim() ||
+        filters.programs.length > 0 ||
+        filters.focusTags.length > 0 ||
+        filters.year !== null ||
+        filters.communityFilter !== "all"),
+  );
+
+  const listFilterResultLabel = selectedMarker
+    ? `${sidebarPeople.length} here`
+    : listFiltersActive
+      ? `${sidebarPeople.length} matching`
+      : sidebarCityCount > 0
+        ? `${sidebarCityCount} ${sidebarCityCount === 1 ? "city" : "cities"}`
+        : `${sidebarPeople.length} on the list`;
+
   const openSidebarAndScrollToPerson = (personId: string) => {
     setSelectedPerson(personId);
     setIsSidebarOpen(true);
@@ -1227,8 +1256,8 @@ export function MapView({
                 </>
               ) : (
                 <>
-                  <List className="size-4" />
-                  <span>People</span>
+                  <Users className="size-4" aria-hidden />
+                  <span>List</span>
                 </>
               )}
             </Button>
@@ -1249,11 +1278,13 @@ export function MapView({
         >
           <Button
             size="sm"
-            className="shadow-lg border border-white/70 bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white font-medium"
+            className="shadow-lg border border-white/70 bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white font-medium inline-flex items-center gap-1.5"
             variant="outline"
             onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open people list"
           >
-            People
+            <Users className="size-3.5" aria-hidden />
+            List
           </Button>
         </div>
       )}
@@ -1323,7 +1354,15 @@ export function MapView({
                 </div>
               </div>
               {filters && onFiltersChange && defaultYear !== undefined && (
-                <InlineFilters filters={filters} onFiltersChange={onFiltersChange} defaultYear={defaultYear} resultCount={sidebarPeople.length} expanded={filtersExpanded} onExpandedChange={setFiltersExpanded} />
+                <InlineFilters
+                  filters={filters}
+                  onFiltersChange={onFiltersChange}
+                  defaultYear={defaultYear}
+                  resultCount={sidebarPeople.length}
+                  resultLabel={listFilterResultLabel}
+                  expanded={filtersExpanded}
+                  onExpandedChange={setFiltersExpanded}
+                />
               )}
             </div>
             <div className="p-4 space-y-3">
@@ -1337,28 +1376,27 @@ export function MapView({
       {/* Mobile: full-screen fellows sheet — above header/hamburger so list is on top */}
       {isMobile && isSidebarOpen && (
         <div className="fixed inset-0 bg-white flex flex-col shadow-2xl min-h-0" style={{ zIndex: Z_INDEX_MOBILE_SIDEBAR_SHEET }}>
-          {/* Sticky header: “Back to map” always visible without scrolling */}
+          {/* Title + menu on one row — Back to map lives beside Filters below */}
           <header
-            className="shrink-0 px-4 pt-4 pb-3 border-b border-gray-200 bg-app-sidebar"
-            style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 0px) + 1rem)" }}
+            className="shrink-0 border-b border-gray-200 bg-app-sidebar px-4 pb-2.5"
+            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top, 0px) + 0.5rem)" }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 border-gray-300 text-gray-700 bg-white touch-manipulation"
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <ArrowLeft className="size-3.5 mr-1.5 opacity-80" aria-hidden />
-                Back to map
-              </Button>
-              <div className="flex-1" />
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-heading text-[13px] font-semibold leading-tight tracking-tight text-gray-900 sm:text-sm">
+                  {selectedMarker ? selectedMarkerLabel : "Grantees, Fellows, Nodees & Alumni"}
+                </h3>
+                <p className="mt-0.5 truncate text-[11px] leading-snug text-gray-500">
+                  {selectedMarker
+                    ? `${sidebarPeople.length} at this location`
+                    : `${filteredPeople.length} people${peopleMissingLocationsCount > 0 ? ` · ${peopleMissingLocationsCount} missing map locations` : ""}`}
+                </p>
+              </div>
               {selectedMarker && (
                 <button
                   type="button"
                   onClick={clearLocationSelection}
-                  className="text-xs font-medium text-teal-600 hover:text-teal-700 px-3 py-2 rounded hover:bg-teal-50 touch-manipulation"
+                  className="shrink-0 rounded px-2.5 py-2 text-xs font-medium text-teal-600 touch-manipulation hover:bg-teal-50 hover:text-teal-700"
                 >
                   Show all
                 </button>
@@ -1368,11 +1406,11 @@ export function MapView({
                   type="button"
                   onClick={onMobileMenuToggle}
                   className={cn(
-                    "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all touch-manipulation shrink-0",
+                    "flex size-10 shrink-0 items-center justify-center rounded-xl border transition-all touch-manipulation",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2",
                     mobileMenuOpen
-                      ? "bg-app-tab-active text-gray-900 shadow-sm border-white/50"
-                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm",
+                      ? "border-white/50 bg-app-tab-active text-gray-900 shadow-sm"
+                      : "border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 hover:text-gray-900",
                   )}
                   aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                   aria-expanded={mobileMenuOpen}
@@ -1382,32 +1420,35 @@ export function MapView({
                 </button>
               )}
             </div>
-            <div className="min-w-0">
-              <h3 className="text-gray-900 text-lg font-semibold truncate font-heading">
-                {selectedMarker ? selectedMarkerLabel : "Grantees, Fellows, Nodees & Alumni"}
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {selectedMarker
-                  ? `${sidebarPeople.length} at this location`
-                  : `${filteredPeople.length} people${peopleMissingLocationsCount > 0 ? ` · ${peopleMissingLocationsCount} missing map locations` : ""}`}
-              </p>
-            </div>
           </header>
           {/* Scrollable area: sticky search/filters at top, then list */}
           <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
-            <div className="sticky top-0 z-10 px-4 pt-3 pb-4 border-b border-gray-200 bg-app-sidebar">
+            <div className="sticky top-0 z-10 border-b border-gray-200 bg-app-sidebar px-4 pt-3 pb-4">
               {filters && onFiltersChange && defaultYear !== undefined && (
                 <InlineFilters
                   filters={filters}
                   onFiltersChange={onFiltersChange}
                   defaultYear={defaultYear}
                   resultCount={sidebarPeople.length}
+                  resultLabel={listFilterResultLabel}
                   expanded={filtersExpanded}
                   onExpandedChange={setFiltersExpanded}
+                  filterToggleStartSlot={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-11 shrink-0 border-gray-300 bg-white px-2.5 text-gray-700 touch-manipulation sm:px-3"
+                      onClick={() => setIsSidebarOpen(false)}
+                    >
+                      <ArrowLeft className="mr-1 size-3.5 opacity-80 sm:mr-1.5" aria-hidden />
+                      <span className="whitespace-nowrap">Back to map</span>
+                    </Button>
+                  }
                 />
               )}
             </div>
-            <div className="p-4 space-y-3">
+            <div className="space-y-3 p-4">
               {peopleListContent}
             </div>
           </div>

@@ -19,10 +19,15 @@ interface InlineFiltersProps {
   onFiltersChange: (filters: Filters) => void;
   defaultYear: number;
   resultCount: number;
+  /**
+   * Left of the Filters toggle. Defaults to “N people”.
+   * Pass richer copy when the header already shows the people count.
+   */
+  resultLabel?: React.ReactNode;
   /** Controlled expand/collapse of the filter section (e.g. collapse when user selects from map). */
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
-  /** Rendered beside the Filters toggle (e.g. mobile “Back to map”). */
+  /** Rendered before the Filters toggle (e.g. mobile “Back to map”). */
   filterToggleStartSlot?: React.ReactNode;
 }
 
@@ -46,6 +51,7 @@ export function InlineFilters({
   onFiltersChange,
   defaultYear,
   resultCount,
+  resultLabel,
   expanded: controlledExpanded,
   onExpandedChange,
   filterToggleStartSlot,
@@ -108,10 +114,11 @@ export function InlineFilters({
         </div>
       </div>
 
-      {/* Result count + prominent Filters button */}
+      {/* Summary + Back to map (optional) + Filters */}
       <div className="flex items-center justify-between gap-2 sm:gap-3">
-        <p className="text-xs font-medium text-neutral-500 min-w-0">
-          {resultCount} {resultCount === 1 ? "person" : "people"}
+        <p className="min-w-0 truncate text-xs font-medium text-neutral-500">
+          {resultLabel ??
+            `${resultCount} ${resultCount === 1 ? "person" : "people"}`}
         </p>
         <div className="flex items-center gap-2 shrink-0">
           {filterToggleStartSlot}
