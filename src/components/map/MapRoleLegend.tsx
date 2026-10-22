@@ -1,7 +1,7 @@
 /**
- * Minimal pin-color key — main roles only (Fellow, Grantee, Nodee, Team).
- * Dot fills use the same gradients as map pin badges.
- * Mobile: top-left. Desktop: bottom-left (above zoom when logged in).
+ * Minimal pin-color key — Fellow, Grantee, Nodee, Team.
+ * Pastel dots use the same gradients as map pin badges.
+ * Bottom-left everywhere; sits above the zoom stack when logged in.
  */
 
 import type { CSSProperties } from "react";
@@ -21,8 +21,8 @@ interface MapRoleLegendProps {
   /** Public globe sits on a dark sky — light text. Logged-in map uses light. */
   tone?: "light" | "dark";
   /**
-   * `public` sits under the brand header on mobile.
-   * `app` (logged-in) uses a tighter top inset — zoom lives bottom-left.
+   * `app` clears the bottom-left zoom + projection stack.
+   * `public` has no corner zoom — just safe-area inset.
    */
   surface?: "app" | "public";
   className?: string;
@@ -39,12 +39,9 @@ export function MapRoleLegend({
     <div
       className={cn(
         "pointer-events-none absolute left-3",
-        surface === "public"
-          ? "top-[max(4.25rem,calc(env(safe-area-inset-top)+3.5rem))]"
-          : "top-[max(0.75rem,env(safe-area-inset-top))]",
         surface === "app"
-          ? "md:top-auto md:bottom-[5.75rem]"
-          : "md:top-auto md:bottom-[max(1rem,env(safe-area-inset-bottom))]",
+          ? "bottom-[5.75rem]"
+          : "bottom-[max(1rem,env(safe-area-inset-bottom))]",
         className,
       )}
       style={{ zIndex: Z_INDEX_MAP_CONTROLS } satisfies CSSProperties}
