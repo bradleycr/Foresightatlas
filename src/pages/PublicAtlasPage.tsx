@@ -10,6 +10,7 @@ import { CalendarDays, Loader2, LogIn, X } from "lucide-react";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
+import { MapRoleLegend } from "../components/map/MapRoleLegend";
 import { useIsMobile } from "../components/ui/use-mobile";
 import type { PinLocation } from "../components/map/pinAppearance";
 import { FORESIGHT_LUMA_URL, FORESIGHT_ORG_URL } from "../constants/foresight";
@@ -222,6 +223,9 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
         className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/60 via-black/25 to-transparent"
       />
 
+      {/* Logged-out only — legend stays off the signed-in map */}
+      <MapRoleLegend tone="dark" surface="public" />
+
       {/*
         Three equal columns: product name · institute mark · Events.
         Logo sits bare on the sky — no glass frame — so it reads as the brand.
@@ -252,7 +256,7 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
             <img
               src={foresightLogo}
               alt=""
-              className="h-8 w-auto brightness-0 invert drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:h-10 md:h-11"
+              className="h-11 w-auto brightness-0 invert drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:h-12 md:h-14"
             />
           </a>
 

@@ -35,8 +35,8 @@ interface OpenToMeetPanelProps {
 const FILTERS: { id: OpenToMeetFilter; label: string; needsViewer?: boolean }[] = [
   { id: "all", label: "All" },
   { id: "connections", label: "Connections" },
-  { id: "focus", label: "Shares focus", needsViewer: true },
-  { id: "city", label: "Shares city", needsViewer: true },
+  { id: "focus", label: "Same focus", needsViewer: true },
+  { id: "city", label: "Same city", needsViewer: true },
 ];
 
 export function OpenToMeetPanel({
@@ -98,12 +98,9 @@ export function OpenToMeetPanel({
         </p>
       </div>
 
-      {/*
-        One horizontal row on every width — short labels + soft scroll if the
-        viewport is narrow, so filters never stack into a second line.
-      */}
+      {/* Wrap onto a second line on narrow screens — no horizontal scroll. */}
       <div
-        className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto overscroll-x-contain px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mt-3 flex flex-wrap gap-1.5"
         role="group"
         aria-label="Filter open to meet"
       >
@@ -117,7 +114,7 @@ export function OpenToMeetPanel({
               disabled={disabled}
               onClick={() => setFilter(f.id)}
               className={cn(
-                "shrink-0 min-h-[36px] rounded-full border px-3 text-xs font-medium transition-colors touch-manipulation sm:min-h-[40px] sm:px-3.5 sm:text-sm",
+                "min-h-[36px] rounded-full border px-3 text-xs font-medium transition-colors touch-manipulation sm:min-h-[40px] sm:px-3.5 sm:text-sm",
                 active
                   ? "border-teal-700 bg-teal-700 text-white shadow-sm"
                   : "border-gray-200/90 bg-white/90 text-gray-700 hover:border-teal-300 hover:bg-teal-50/80",
