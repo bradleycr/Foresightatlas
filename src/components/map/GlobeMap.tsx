@@ -304,11 +304,13 @@ export function GlobeMap({
     map.on("load", mountStarfield);
     if (map.loaded() || map.isStyleLoaded()) mountStarfield();
 
-    map.addControl(
-      new NavigationControl({ showCompass: false, visualizePitch: false }),
-      /* Showcase chrome owns the top corners — keep zoom clear of the brand bar. */
-      showcase ? "bottom-left" : "top-left",
-    );
+    /* Public showcase is pinch/scroll only — chrome owns the corners. */
+    if (!showcase) {
+      map.addControl(
+        new NavigationControl({ showCompass: false, visualizePitch: false }),
+        "top-left",
+      );
+    }
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
     /*

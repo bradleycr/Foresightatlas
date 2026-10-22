@@ -130,19 +130,6 @@ function pinsToMarkers(pins: AtlasPreviewPin[]): PinLocation[] {
   });
 }
 
-/** e.g. "Last update October 22, 2026" */
-function formatLastUpdate(iso?: string): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  const when = d.toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-  return `Last update ${when}`;
-}
-
 export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProps) {
   const isMobile = useIsMobile();
   const [preview, setPreview] = useState<AtlasPreviewFile | null>(null);
@@ -189,8 +176,6 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
     [preview],
   );
 
-  const lastUpdate = formatLastUpdate(preview?.generatedAt);
-
   return (
     <main className="relative h-[100svh] w-full overflow-hidden bg-[#0b1220] sm:h-[100dvh]">
       {!globeFailed && markers.length > 0 ? (
@@ -227,64 +212,67 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
         </div>
       )}
 
+      {/* Soft vignettes so chrome stays readable over the globe */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/50 via-black/20 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/55 via-black/20 to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/60 via-black/25 to-transparent"
       />
 
       {/*
-        Three-up chrome: Foresight wordmark left, Atlas title center, actions right.
-        Absolute center title so it stays true-center regardless of side widths.
+        Three equal columns: product name · institute mark · Events.
+        Logo sits bare on the sky — no glass frame — so it reads as the brand.
       */}
-      <header className="absolute inset-x-0 top-0 z-20 p-3 sm:p-5">
-        <div className="relative flex items-start justify-between gap-2">
+      <header className="absolute inset-x-0 top-0 z-20 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
+        <div className="grid grid-cols-3 items-center gap-2 sm:gap-4">
+          <div className="justify-self-start">
+            <p className="max-w-[9.5rem] text-[15px] font-semibold leading-tight tracking-tight text-white sm:max-w-none sm:text-lg md:text-xl">
+              The Foresight Atlas
+            </p>
+          </div>
+
           <a
             href={FORESIGHT_ORG_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative z-10 flex shrink-0 items-center rounded-xl border border-white/15 bg-black/35 px-2.5 py-2 shadow-lg backdrop-blur-md transition hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 sm:px-3 sm:py-2.5"
+            className="justify-self-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
             aria-label="Foresight Institute — opens foresight.org in a new tab"
           >
             <img
               src={foresightLogo}
               alt=""
-              className="h-7 w-auto brightness-0 invert sm:h-8 md:h-9"
+              className="h-8 w-auto brightness-0 invert drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:h-10 md:h-11"
             />
           </a>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-16 sm:px-28">
-            <div className="max-w-[min(100%,16rem)] rounded-2xl border border-white/15 bg-black/35 px-3 py-2 text-center shadow-lg backdrop-blur-md sm:max-w-none sm:px-5 sm:py-2.5">
-              <p className="text-sm font-semibold tracking-tight text-white sm:text-base">
-                The Foresight Atlas
-              </p>
-              {lastUpdate ? (
-                <p className="mt-0.5 text-[11px] text-white/65 sm:text-xs">{lastUpdate}</p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="relative z-10 flex shrink-0 flex-col items-stretch gap-2 sm:flex-row">
+          <div className="justify-self-end">
             <a
               href={FORESIGHT_LUMA_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3.5 text-sm font-medium text-white shadow-lg backdrop-blur-md transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 sm:min-h-11 sm:gap-2 sm:px-4"
             >
-              <CalendarDays className="size-4 shrink-0 opacity-90" aria-hidden />
+              <CalendarDays className="size-3.5 shrink-0 opacity-90 sm:size-4" aria-hidden />
               Events
             </a>
-            <button
-              type="button"
-              onClick={() => setShowLogin(true)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white px-3.5 text-sm font-semibold text-gray-900 shadow-lg transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-            >
-              <LogIn className="size-4 shrink-0" aria-hidden />
-              <span className="sm:hidden">Sign in</span>
-              <span className="hidden sm:inline">Community sign-in</span>
-            </button>
           </div>
         </div>
       </header>
+
+      {/* Thumb-zone CTA — centered in the bottom third, above map attribution */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-[max(4.75rem,12vh)] z-20 flex justify-center px-4 sm:bottom-[max(5.5rem,14vh)]">
+        <button
+          type="button"
+          onClick={() => setShowLogin(true)}
+          className="pointer-events-auto inline-flex min-h-12 min-w-[11.5rem] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white px-7 text-base font-semibold text-gray-900 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.65)] transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:min-h-11 sm:min-w-[13rem] sm:px-8"
+        >
+          <LogIn className="size-4 shrink-0" aria-hidden />
+          Sign in
+        </button>
+      </div>
 
       {showLogin ? (
         <div
