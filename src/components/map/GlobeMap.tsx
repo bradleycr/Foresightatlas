@@ -304,7 +304,11 @@ export function GlobeMap({
     map.on("load", mountStarfield);
     if (map.loaded() || map.isStyleLoaded()) mountStarfield();
 
-    map.addControl(new NavigationControl({ showCompass: false, visualizePitch: false }), "top-left");
+    map.addControl(
+      new NavigationControl({ showCompass: false, visualizePitch: false }),
+      /* Showcase chrome owns the top corners — keep zoom clear of the brand bar. */
+      showcase ? "bottom-left" : "top-left",
+    );
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
     /*
@@ -313,6 +317,8 @@ export function GlobeMap({
      * throw "_onEaseFrame is not a function" mid-frame — rAF avoids that.
      */
     let userInteracting = false;
+    /** True while a pin/cluster flyTo owns the camera — touchend must not restart spin mid-flight. */
+    let programmaticCamera = false;
     let spinEnabled = !reduceMotion;
     let introRunning = false;
     let spinRaf = 0;
@@ -329,7 +335,7 @@ export function GlobeMap({
 
     const tickSpin = (ts: number) => {
       spinRaf = 0;
-      if (!spinEnabled || userInteracting || introRunning) return;
+      if (!spinEnabled || userInteracting || introRunning || programmaticCamera) return;
       const zoom = map.getZoom();
       if (zoom >= SPIN_MAX_ZOOM) return;
 
@@ -352,7 +358,7 @@ export function GlobeMap({
     };
 
     const startSpinLoop = () => {
-      if (!spinEnabled || userInteracting || introRunning || spinRaf) return;
+      if (!spinEnabled || userInteracting || introRunning || programmaticCamera || spinRaf) return;
       lastSpinTs = 0;
       spinRaf = requestAnimationFrame(tickSpin);
     };
@@ -371,8 +377,24 @@ export function GlobeMap({
       }
     };
     const resumeSpin = () => {
+      /* A pin fly-in still owns the camera — don't jumpTo over it. */
+      if (programmaticCamera) return;
       userInteracting = false;
       startSpinLoop();
+    };
+
+    /** Fly/ease without the idle spin stomping the animation; run `after` on settle. */
+    const runCameraMove = (move: () => void, after?: () => void) => {
+      stopSpinLoop();
+      userInteracting = true;
+      programmaticCamera = true;
+      map.once("moveend", () => {
+        programmaticCamera = false;
+        userInteracting = false;
+        after?.();
+        startSpinLoop();
+      });
+      move();
     };
 
     map.on("mousedown", pauseSpin);
@@ -572,8 +594,18 @@ export function GlobeMap({
         if (!location) return;
         const lngLat: [number, number] = [location.coordinates.lng, location.coordinates.lat];
         if (!fromHover && map.getZoom() < MIN_ZOOM_ON_PIN_CLICK) {
-          map.once("moveend", () => openPopup(lngLat, location, false));
-          map.flyTo({ center: lngLat, zoom: MIN_ZOOM_ON_PIN_CLICK, duration: 300 });
+          const zoomDelta = MIN_ZOOM_ON_PIN_CLICK - map.getZoom();
+          const duration = Math.min(1100, Math.max(450, zoomDelta * 110));
+          runCameraMove(
+            () =>
+              map.flyTo({
+                center: lngLat,
+                zoom: MIN_ZOOM_ON_PIN_CLICK,
+                duration,
+                essential: true,
+              }),
+            () => openPopup(lngLat, location, false),
+          );
         } else {
           openPopup(lngLat, location, false);
         }
@@ -592,12 +624,33 @@ export function GlobeMap({
         if (!location) return;
         const tight = leafSpanMeters(leaves) <= CITY_CLUSTER_METERS || map.getZoom() >= 12;
         if (tight) {
-          openPopup(lngLat, location, true);
+          /*
+           * Same-city clusters used to open the card at globe zoom — spin
+           * paused, nothing flew. Mirror a single-pin tap: zoom in, then card.
+           */
+          if (map.getZoom() < MIN_ZOOM_ON_PIN_CLICK) {
+            const zoomDelta = MIN_ZOOM_ON_PIN_CLICK - map.getZoom();
+            const duration = Math.min(1100, Math.max(450, zoomDelta * 110));
+            runCameraMove(
+              () =>
+                map.flyTo({
+                  center: lngLat,
+                  zoom: MIN_ZOOM_ON_PIN_CLICK,
+                  duration,
+                  essential: true,
+                }),
+              () => openPopup(lngLat, location, true),
+            );
+          } else {
+            openPopup(lngLat, location, true);
+          }
           onMarkerClickRef.current(location);
           return;
         }
         const nextZoom = await source.getClusterExpansionZoom(clusterId);
-        map.easeTo({ center: lngLat, zoom: nextZoom, duration: 350 });
+        runCameraMove(() =>
+          map.easeTo({ center: lngLat, zoom: nextZoom, duration: 450, essential: true }),
+        );
       } catch {
         /* The cluster can expire if the zoom changed before the lookup returned. */
       }
