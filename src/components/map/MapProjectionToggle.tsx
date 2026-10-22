@@ -1,7 +1,7 @@
 /**
- * Sits beside the zoom stack on the top left of the map.
- * Two marks, no words: the earth for the globe, a map for the flat view.
- * Globe is the opening view. Flat is the original Leaflet map.
+ * Top-left projection switch: earth for the globe, map for the flat view.
+ * On desktop it sits beside the zoom stack; on mobile zoom is gone and this
+ * owns the corner alone, sized to mirror the List button on the right.
  */
 
 import { Globe, Map } from "lucide-react";

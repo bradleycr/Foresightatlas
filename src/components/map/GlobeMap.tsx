@@ -304,7 +304,10 @@ export function GlobeMap({
     map.on("load", mountStarfield);
     if (map.loaded() || map.isStyleLoaded()) mountStarfield();
 
-    /* Public showcase is pinch/scroll only — chrome owns the corners. */
+    /*
+     * Zoom +/- for desktop. Mobile hides them in CSS — pinch already zooms,
+     * and the top-left corner is reserved for the globe/map switch.
+     */
     if (!showcase) {
       map.addControl(
         new NavigationControl({ showCompass: false, visualizePitch: false }),

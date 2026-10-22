@@ -1174,7 +1174,7 @@ export function MapView({
             worldCopyJump={true}
             style={{ height: '100%', width: '100%', position: 'relative' }}
             className="rounded-xl"
-            zoomControl={true}
+            zoomControl={!isMobile}
             scrollWheelZoom={true}
             touchZoom={true}
             doubleClickZoom={true}
@@ -1273,9 +1273,10 @@ export function MapView({
             zIndex: Z_INDEX_MAP_CONTROLS
           }}
         >
+          {/* Height matches .atlas-projection-toggle on mobile (32px) for corner symmetry. */}
           <Button
             size="sm"
-            className="shadow-lg border border-white/70 bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white font-medium inline-flex items-center gap-1.5"
+            className="h-8 shadow-lg border border-black/15 bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white font-medium inline-flex items-center gap-1.5 px-3"
             variant="outline"
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open people list"

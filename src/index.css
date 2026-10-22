@@ -365,8 +365,8 @@ select optgroup {
 }
 
 /*
- * Globe / flat switch — top-left beside the zoom stack.
- * Heights match Leaflet's zoom buttons (26px, 36px on small screens).
+ * Globe / flat switch — top-left beside the zoom stack on desktop.
+ * On mobile zoom is hidden and this sits alone, matching the List control.
  */
 .atlas-projection-toggle {
   position: absolute;
@@ -501,44 +501,34 @@ select optgroup {
 }
 
 @media (max-width: 768px) {
-  .leaflet-top.leaflet-left {
-    top: 1rem !important;
-    left: 1rem !important;
+  /*
+   * Phones pinch to zoom — the +/- stack is noise. Drop it so the globe/map
+   * switch can sit alone in the top-left, mirroring List on the top-right.
+   */
+  .leaflet-control-zoom,
+  .atlas-globe-map .maplibregl-ctrl-top-left .maplibregl-ctrl-group {
+    display: none !important;
   }
 
   .atlas-projection-toggle {
     top: 1rem;
-    left: calc(1rem + 36px + 8px);
+    left: 1rem;
+    /* Match the List button: h-8, rounded-md, soft border + lift. */
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(4px);
   }
 
   .atlas-projection-toggle button {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
 
   .atlas-projection-toggle button svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .atlas-globe-map .maplibregl-ctrl-top-left .maplibregl-ctrl {
-    margin: 1rem 0 0 1rem;
-  }
-
-  .atlas-globe-map .maplibregl-ctrl-group button {
-    width: 36px;
-    height: 36px;
-  }
-
-  .leaflet-control-zoom a {
-    width: 36px !important;
-    height: 36px !important;
-    line-height: 36px !important;
-    font-size: 20px !important;
-  }
-
-  .leaflet-control-zoom {
-    margin: 0 !important;
+    width: 16px;
+    height: 16px;
   }
 }
 
