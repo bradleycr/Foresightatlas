@@ -795,8 +795,18 @@ export function GlobeMap({
       return element;
     };
 
-    const syncPins = () => {
+    /**
+     * Rebuild HTML markers from the cluster index.
+     *
+     * `prune: false` while the camera is panning/spinning — mid-move
+     * `querySourceFeatures` often returns a partial tile set, and deleting
+     * “missing” pins makes Israel vanish into Europe then pop back. Markers
+     * already track lng/lat themselves; we only need structural updates when
+     * zoom changes or the map goes idle.
+     */
+    const syncPins = (options?: { prune?: boolean }) => {
       if (!map.getSource("atlas-people") || !map.isStyleLoaded()) return;
+      const prune = options?.prune ?? true;
       let features: ClusterLeaf[] = [];
       try {
         features = map.querySourceFeatures("atlas-people") as ClusterLeaf[];
@@ -824,6 +834,11 @@ export function GlobeMap({
           const element = existing.marker.getElement();
           element.dataset.lng = String(coords[0]);
           element.dataset.lat = String(coords[1]);
+          continue;
+        }
+
+        if (!prune && !existing) {
+          /* Don't invent a new parent cluster from a half-loaded tile query. */
           continue;
         }
 
@@ -874,6 +889,8 @@ export function GlobeMap({
         pins.set(id, { marker, signature });
       }
 
+      if (!prune) return;
+
       for (const [id, entry] of pins) {
         if (seen.has(id)) continue;
         entry.marker.remove();
@@ -882,11 +899,15 @@ export function GlobeMap({
     };
 
     let frame = 0;
-    const requestSync = () => {
+    let pendingPrune = false;
+    const requestSync = (prune = true) => {
+      if (prune) pendingPrune = true;
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        syncPins();
+        const shouldPrune = pendingPrune;
+        pendingPrune = false;
+        syncPins({ prune: shouldPrune });
       });
     };
 
@@ -911,7 +932,12 @@ export function GlobeMap({
           type: "geojson",
           data: pinFeatureCollection(markersRef.current),
           cluster: true,
-          clusterRadius: 70,
+          /*
+           * Tighter than the flat map’s 70px. On a spinning globe a wide
+           * radius makes Israel fold into Europe (and similar) as soon as
+           * you aren’t staring straight at it — pins feel like they vanish.
+           */
+          clusterRadius: 42,
           clusterMaxZoom: 16,
           clusterProperties: {
             personCount: ["+", ["get", "personCount"]],
@@ -948,9 +974,22 @@ export function GlobeMap({
     map.on("load", mountPeople);
     if (map.loaded() || map.isStyleLoaded()) mountPeople();
 
-    map.on("move", requestSync);
-    map.on("sourcedata", requestSync);
-    map.on("idle", requestSync);
+    /*
+     * Zoom must rebuild clusters (split/merge). Pan/spin must not prune —
+     * idle spin + drag used to call querySourceFeatures every frame and
+     * delete pins that were only missing from a partial tile result.
+     */
+    map.on("zoom", () => requestSync(true));
+    map.on("zoomend", () => requestSync(true));
+    map.on("idle", () => requestSync(true));
+    map.on("sourcedata", (event) => {
+      if (event.sourceId !== "atlas-people") return;
+      if (map.isMoving() && !map.isZooming()) {
+        requestSync(false);
+        return;
+      }
+      requestSync(true);
+    });
     map.on("error", (event) => {
       const message = event.error?.message ?? "";
       if (/webgl|failed to initialize/i.test(message)) onUnavailable();
