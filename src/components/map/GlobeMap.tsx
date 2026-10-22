@@ -308,8 +308,7 @@ export function GlobeMap({
     if (!showcase) {
       map.addControl(
         new NavigationControl({ showCompass: false, visualizePitch: false }),
-        /* Bottom-left with the projection toggle; legend sits above on desktop. */
-        "bottom-left",
+        "top-left",
       );
     }
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");

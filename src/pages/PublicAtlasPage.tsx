@@ -10,7 +10,6 @@ import { CalendarDays, Loader2, LogIn, X } from "lucide-react";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
-import { MapRoleLegend } from "../components/map/MapRoleLegend";
 import { useIsMobile } from "../components/ui/use-mobile";
 import type { PinLocation } from "../components/map/pinAppearance";
 import { FORESIGHT_LUMA_URL, FORESIGHT_ORG_URL } from "../constants/foresight";
@@ -222,8 +221,6 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/60 via-black/25 to-transparent"
       />
-
-      <MapRoleLegend tone="dark" surface="public" />
 
       {/*
         Three equal columns: product name · institute mark · Events.

@@ -34,7 +34,6 @@ import {
   type MapProjection,
 } from "./map/globeMapFlag";
 import { MapProjectionToggle } from "./map/MapProjectionToggle";
-import { MapRoleLegend } from "./map/MapRoleLegend";
 import {
   buildPopupHtml,
   clusterBadgeHtml,
@@ -1205,8 +1204,6 @@ export function MapView({
         {globeAvailable && (
           <MapProjectionToggle mode={showGlobe ? "globe" : "flat"} onChange={chooseProjection} />
         )}
-
-        <MapRoleLegend />
 
         {/* Empty state overlay when we have people but no marker coords yet (e.g. still geocoding) or no one matches filters */}
         {markers.length === 0 && (

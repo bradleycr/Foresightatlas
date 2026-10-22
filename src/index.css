@@ -365,12 +365,12 @@ select optgroup {
 }
 
 /*
- * Globe / flat switch — bottom-left beside the zoom stack (legend above).
+ * Globe / flat switch — top-left beside the zoom stack.
  * Heights match Leaflet's zoom buttons (26px, 36px on small screens).
  */
 .atlas-projection-toggle {
   position: absolute;
-  bottom: 10px;
+  top: 10px;
   left: 46px;
   display: flex;
   overflow: hidden;
@@ -378,13 +378,6 @@ select optgroup {
   border: 2px solid rgba(0, 0, 0, 0.2);
   background: #fff;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
-}
-
-/* Leaflet zoom joins the same bottom-left pocket as the projection toggle */
-.atlas-map-panel .leaflet-top.leaflet-left {
-  top: auto !important;
-  bottom: 0;
-  left: 0;
 }
 
 .atlas-projection-toggle button {
@@ -463,8 +456,8 @@ select optgroup {
   pointer-events: none;
 }
 
-.atlas-globe-map .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
-  margin: 0 0 10px 10px;
+.atlas-globe-map .maplibregl-ctrl-top-left .maplibregl-ctrl {
+  margin: 10px 0 0 10px;
 }
 
 .atlas-globe-map .maplibregl-ctrl-group button {
@@ -508,15 +501,14 @@ select optgroup {
 }
 
 @media (max-width: 768px) {
-  .atlas-map-panel .leaflet-top.leaflet-left {
-    top: auto !important;
-    bottom: 0;
-    left: 0;
+  .leaflet-top.leaflet-left {
+    top: 1rem !important;
+    left: 1rem !important;
   }
 
   .atlas-projection-toggle {
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
-    left: calc(0.75rem + 36px + 8px);
+    top: 1rem;
+    left: calc(1rem + 36px + 8px);
   }
 
   .atlas-projection-toggle button {
@@ -529,8 +521,8 @@ select optgroup {
     height: 18px;
   }
 
-  .atlas-globe-map .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
-    margin: 0 0 max(0.75rem, env(safe-area-inset-bottom)) 0.75rem;
+  .atlas-globe-map .maplibregl-ctrl-top-left .maplibregl-ctrl {
+    margin: 1rem 0 0 1rem;
   }
 
   .atlas-globe-map .maplibregl-ctrl-group button {
@@ -545,8 +537,8 @@ select optgroup {
     font-size: 20px !important;
   }
 
-  .atlas-map-panel .leaflet-control-zoom {
-    margin: 0 0 max(0.75rem, env(safe-area-inset-bottom)) 0.75rem !important;
+  .leaflet-control-zoom {
+    margin: 0 !important;
   }
 }
 
