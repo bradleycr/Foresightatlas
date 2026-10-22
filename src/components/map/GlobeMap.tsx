@@ -183,6 +183,8 @@ export function GlobeMap({
   const iconUrlRef = useRef(iconUrl);
   /** First-load intro owns framing until it finishes — marker effects must not snap over it. */
   const introCompleteRef = useRef(prefersReducedMotion());
+  /** Stops the idle rAF spin before any programmatic easeTo/flyTo (avoids MapLibre ease races). */
+  const stopIdleSpinRef = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
 
   markersRef.current = markers;
@@ -297,35 +299,71 @@ export function GlobeMap({
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
     /*
-     * Idle spin (Mapbox rotating-globe pattern): chain easeTo on moveend.
-     * Pauses while the user drags / pinches; never asks for sensors.
+     * Idle spin via requestAnimationFrame + jumpTo.
+     * The Mapbox easeTo→moveend loop races MapLibre's camera stop() and can
+     * throw "_onEaseFrame is not a function" mid-frame — rAF avoids that.
      */
     let userInteracting = false;
     let spinEnabled = !reduceMotion;
     let introRunning = false;
+    let spinRaf = 0;
+    let lastSpinTs = 0;
 
-    const spinGlobe = () => {
+    const stopSpinLoop = () => {
+      if (spinRaf) {
+        cancelAnimationFrame(spinRaf);
+        spinRaf = 0;
+      }
+      lastSpinTs = 0;
+    };
+    stopIdleSpinRef.current = stopSpinLoop;
+
+    const tickSpin = (ts: number) => {
+      spinRaf = 0;
       if (!spinEnabled || userInteracting || introRunning) return;
       const zoom = map.getZoom();
       if (zoom >= SPIN_MAX_ZOOM) return;
+
       let degreesPerSecond = 360 / SPIN_SECONDS_PER_REVOLUTION;
       if (zoom > SPIN_SLOW_ZOOM) {
         const t = (SPIN_MAX_ZOOM - zoom) / (SPIN_MAX_ZOOM - SPIN_SLOW_ZOOM);
         degreesPerSecond *= Math.max(0, t);
       }
       if (degreesPerSecond < 0.02) return;
+
+      if (!lastSpinTs) lastSpinTs = ts;
+      const dtSec = Math.min(0.05, (ts - lastSpinTs) / 1000);
+      lastSpinTs = ts;
+
       const center = map.getCenter();
-      center.lng -= degreesPerSecond;
-      map.easeTo({ center, duration: 1000, easing: (n) => n });
+      center.lng -= degreesPerSecond * dtSec;
+      map.jumpTo({ center });
+
+      spinRaf = requestAnimationFrame(tickSpin);
+    };
+
+    const startSpinLoop = () => {
+      if (!spinEnabled || userInteracting || introRunning || spinRaf) return;
+      lastSpinTs = 0;
+      spinRaf = requestAnimationFrame(tickSpin);
     };
 
     const pauseSpin = () => {
       userInteracting = true;
-      map.stop();
+      stopSpinLoop();
+      if (introRunning) {
+        introRunning = false;
+        introCompleteRef.current = true;
+        try {
+          map.stop();
+        } catch {
+          /* MapLibre can race stop() against an in-flight ease frame. */
+        }
+      }
     };
     const resumeSpin = () => {
       userInteracting = false;
-      spinGlobe();
+      startSpinLoop();
     };
 
     map.on("mousedown", pauseSpin);
@@ -336,9 +374,6 @@ export function GlobeMap({
     map.on("pitchend", resumeSpin);
     map.on("rotateend", resumeSpin);
     map.on("zoomend", resumeSpin);
-    map.on("moveend", () => {
-      if (!userInteracting) spinGlobe();
-    });
 
     let introStarted = false;
     const startIntro = () => {
@@ -346,7 +381,7 @@ export function GlobeMap({
       introStarted = true;
       if (reduceMotion) {
         introCompleteRef.current = true;
-        spinGlobe();
+        startSpinLoop();
         return;
       }
       introRunning = true;
@@ -362,7 +397,7 @@ export function GlobeMap({
         if (!introRunning) return;
         introRunning = false;
         introCompleteRef.current = true;
-        spinGlobe();
+        startSpinLoop();
       });
     };
     map.once("load", startIntro);
@@ -729,6 +764,8 @@ export function GlobeMap({
     return () => {
       spinEnabled = false;
       introRunning = false;
+      stopSpinLoop();
+      stopIdleSpinRef.current = () => {};
       if (frame) cancelAnimationFrame(frame);
       cancelClose();
       resizeObserver.disconnect();
@@ -768,6 +805,7 @@ export function GlobeMap({
        */
       if (!introCompleteRef.current) return;
       if (map.getZoom() <= SPIN_MAX_ZOOM) return;
+      stopIdleSpinRef.current();
       const opening = map.getContainer().getBoundingClientRect();
       map.easeTo({
         center: GLOBE_HOME_CENTER,
@@ -794,6 +832,7 @@ export function GlobeMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !selectedMarker || !selectedMarkerFromList) return;
+    stopIdleSpinRef.current();
     map.flyTo({
       center: [selectedMarker.coordinates.lng, selectedMarker.coordinates.lat],
       zoom: Math.max(8, map.getZoom()),
@@ -806,6 +845,7 @@ export function GlobeMap({
     if (!ready || !map || !previewMarker || isMobile) return;
     /* Don't fight a deliberate list click fly-to. */
     if (selectedMarkerFromList && selectedMarker) return;
+    stopIdleSpinRef.current();
     const zoom = Math.max(map.getZoom(), 6.5);
     map.easeTo({
       center: [previewMarker.coordinates.lng, previewMarker.coordinates.lat],
