@@ -195,13 +195,13 @@ export function GlobeMap({
     if (!container) return;
 
     let map: MapLibreMap;
+    const opening = container.getBoundingClientRect();
+    const homeZoom = globeHomeZoom(opening.width, opening.height);
+    const reduceMotion = prefersReducedMotion();
+    const openingZoom = reduceMotion
+      ? homeZoom
+      : Math.min(homeZoom + INTRO_ZOOM_DELTA, 2.9);
     try {
-      const opening = container.getBoundingClientRect();
-      const homeZoom = globeHomeZoom(opening.width, opening.height);
-      const reduceMotion = prefersReducedMotion();
-      const openingZoom = reduceMotion
-        ? homeZoom
-        : Math.min(homeZoom + INTRO_ZOOM_DELTA, 2.9);
       map = new MapLibreMap({
         container,
         center: GLOBE_HOME_CENTER,
