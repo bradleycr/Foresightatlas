@@ -7,7 +7,7 @@ Use this after starting the app locally (`pnpm dev` and `pnpm dev:api` in two te
 ## Map & list
 
 - [ ] **Map loads** — Open `/`. Map shows world view; no console errors.
-- [ ] **Sidebar list** — "Fellows & Grantees" list shows people; count matches expectations (e.g. 361 after dedupe).
+- [ ] **Sidebar list** — Map **List** control (people icon) opens the sidebar; count matches expectations.
 - [ ] **No duplicate names** — Scan the list; same full name should not appear twice.
 - [ ] **Unknown-location marker** — People without current city appear in a single off-map marker (e.g. "Location needed"); hover/click shows "People who have not set a current city yet."
 - [ ] **Search** — Type a name in search; only one card per person. People without city still appear in results.
@@ -26,7 +26,9 @@ Use this after starting the app locally (`pnpm dev` and `pnpm dev:api` in two te
 ## Programming & mobile
 
 - [ ] **Programming tabs** — Berlin and SF programming pages load; events and RSVPs show as expected.
-- [ ] **Mobile list/map** — On narrow viewport, list/map toggle works; "Open list" / "Back to map" and touch targets are usable.
+- [ ] **Mobile list/map** — On narrow viewport, **List** / "Back to map" works; touch targets are usable.
+- [ ] **Past events** — On SF/Berlin, pick a past month (e.g. May) and confirm Luma salons/workshops still appear (not only “All upcoming”).
+- [ ] **The Table** — Physical node → The Table: short explainer + optional “About the table”; no print-QR control in the tab chrome.
 - [ ] **Safe areas** — On a device with notches or home indicator, content is not obscured.
 
 ## Quick verification commands

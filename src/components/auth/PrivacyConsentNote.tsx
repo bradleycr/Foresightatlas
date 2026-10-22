@@ -25,7 +25,7 @@ export function PrivacyConsentNote({
         type="checkbox"
         checked={checked}
         onChange={(event) => onCheckedChange(event.target.checked)}
-        className="mt-0.5 size-4 shrink-0 rounded border-gray-300 text-sky-600 focus:ring-sky-500/40"
+        className="mt-0.5 size-4 shrink-0 rounded border-gray-300 text-teal-700 focus:ring-teal-500/40"
       />
       <span>
         By creating an account, I agree my profile can appear to signed-in

@@ -151,10 +151,10 @@ Events need a `lumaEventId` (auto-set for pure Luma events, or via the sheet `lu
 
 - `access=manage&access=view` — includes partnership / mirrored events that are *listed* on the Foresight calendar but managed elsewhere
 - `platforms=luma&platforms=external` — includes external events hosts added onto the calendar
-- `after` / `before` — only the recent past (~1 week) through ~6 months ahead, so we do not paginate years of history
+- `after` / `before` — **archive list:** Jan 1 of the previous calendar year through ~6 months ahead (so past months stay on programming pages; in 2027 you still get 2026). Guest RSVP sync and description hydrate keep a shorter engagement window (~1 week past).
 - Public visibility only — private / unlisted Luma events never reach the atlas
 
-List responses no longer include `description` / `description_md` (July 2026). We hydrate a small capped set of missing descriptions via `GET /v1/events/get` so cards still have copy without burning the rate limit.
+List responses no longer include `description` / `description_md` (July 2026). We hydrate a small capped set of missing descriptions via `GET /v1/events/get` (upcoming first) so cards still have copy without burning the rate limit.
 
 **Guest RSVPs:** Luma only allows `guests/list` for events the calendar **manages**. Mirrored partnership events (`access=view`) still appear on Programming pages, but we do not call the guests API for them (Luma returns 403).
 

@@ -57,7 +57,7 @@ Set **SPREADSHEET_ID**, **GOOGLE_SERVICE_ACCOUNT_KEY**, and **DIRECTORY_SESSION_
 - React + TypeScript, Vite, Tailwind, shadcn/ui, React Leaflet
 - Express API in development and for self-host; Vercel serverless handlers under `api/` in cloud prod
 - **Private Google Sheet** as default source of truth (people, auth, events, RSVPs, check-ins)
-- Optional Luma (live merge) and Google Calendar
+- Optional Luma (live public-calendar merge on programming pages)
 
 ## Project structure (abbreviated)
 

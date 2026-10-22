@@ -230,14 +230,26 @@ async function fetchLumaEventPages() {
 /**
  * List responses omitted description_md (July 2026). Hydrate a small capped
  * set of upcoming events so cards have copy without burning the rate limit.
+ * Prefer soonest upcoming first — the list archive is years deep, but we only
+ * spend hydrate budget on what people are about to open.
  */
 async function hydrateMissingDescriptions(mapped) {
-  const need = mapped.filter(
-    (ev) =>
-      !String(ev.description || "").trim() &&
-      ev._lumaApiId &&
-      isInEventWindow(ev.startAt, ev.endAt),
-  );
+  const now = Date.now();
+  const need = mapped
+    .filter(
+      (ev) =>
+        !String(ev.description || "").trim() &&
+        ev._lumaApiId &&
+        isInEventWindow(ev.startAt, ev.endAt),
+    )
+    .sort((a, b) => {
+      const aT = new Date(a.startAt).getTime();
+      const bT = new Date(b.startAt).getTime();
+      const aUpcoming = aT >= now ? 0 : 1;
+      const bUpcoming = bT >= now ? 0 : 1;
+      if (aUpcoming !== bUpcoming) return aUpcoming - bUpcoming;
+      return aT - bT;
+    });
   if (need.length === 0) return;
 
   const batch = need.slice(0, MAX_DESCRIPTION_HYDRATIONS);

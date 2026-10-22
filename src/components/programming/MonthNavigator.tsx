@@ -20,6 +20,12 @@ interface MonthNavigatorProps {
   counts: number[];
   onChange: (month: number | null) => void;
   theme: NodeColorTheme;
+  /**
+   * When set with {@link onYearChange}, renders a compact year switcher
+   * (gated by the programming page until calendar year ≥ 2027).
+   */
+  years?: number[];
+  onYearChange?: (year: number) => void;
 }
 
 const SHORT = [
@@ -33,11 +39,15 @@ export function MonthNavigator({
   counts,
   onChange,
   theme,
+  years,
+  onYearChange,
 }: MonthNavigatorProps) {
   const [showEmptyMonths, setShowEmptyMonths] = useState(false);
   const now = new Date();
   const currentMonth = now.getFullYear() === year ? now.getMonth() : -1;
   const totalEvents = counts.reduce((a, b) => a + b, 0);
+  const showYearSwitcher =
+    Array.isArray(years) && years.length > 1 && typeof onYearChange === "function";
 
   const monthIndicesToShow = showEmptyMonths
     ? SHORT.map((_, i) => i)
@@ -49,8 +59,38 @@ export function MonthNavigator({
     <div className="min-w-0">
       {/* Year row */}
       <div className="flex items-center justify-between gap-2 mb-5 sm:mb-6 flex-wrap">
-        <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-sm font-semibold text-gray-900">{year}</span>
+        <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+          {showYearSwitcher ? (
+            <div
+              className="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white/80 p-0.5"
+              role="group"
+              aria-label="Programming year"
+            >
+              {years!.map((y) => {
+                const active = y === year;
+                return (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => onYearChange!(y)}
+                    className={cn(
+                      "text-sm font-semibold px-2.5 py-1 rounded-md transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2",
+                      theme.focusRing,
+                      active
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                    )}
+                    aria-pressed={active}
+                  >
+                    {y}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="text-sm font-semibold text-gray-900">{year}</span>
+          )}
           <span className="text-xs text-gray-400 shrink-0">{totalEvents} events</span>
         </div>
         <button

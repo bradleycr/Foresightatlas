@@ -34,9 +34,9 @@ interface OpenToMeetPanelProps {
 
 const FILTERS: { id: OpenToMeetFilter; label: string; needsViewer?: boolean }[] = [
   { id: "all", label: "All" },
-  { id: "connections", label: "My connections" },
-  { id: "focus", label: "Shares focus with me", needsViewer: true },
-  { id: "city", label: "Shares city with me", needsViewer: true },
+  { id: "connections", label: "Connections" },
+  { id: "focus", label: "Shares focus", needsViewer: true },
+  { id: "city", label: "Shares city", needsViewer: true },
 ];
 
 export function OpenToMeetPanel({
@@ -87,7 +87,7 @@ export function OpenToMeetPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, city, focus…"
-            className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 outline-none ring-emerald-500/30 placeholder:text-gray-400 focus:border-emerald-300 focus:ring-2"
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 outline-none ring-teal-500/25 placeholder:text-gray-400 focus:border-teal-300 focus:ring-2"
             aria-label="Search open to meet"
           />
         </div>
@@ -98,8 +98,12 @@ export function OpenToMeetPanel({
         </p>
       </div>
 
+      {/*
+        One horizontal row on every width — short labels + soft scroll if the
+        viewport is narrow, so filters never stack into a second line.
+      */}
       <div
-        className="mt-3 flex flex-wrap gap-2"
+        className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto overscroll-x-contain px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="group"
         aria-label="Filter open to meet"
       >
@@ -113,10 +117,10 @@ export function OpenToMeetPanel({
               disabled={disabled}
               onClick={() => setFilter(f.id)}
               className={cn(
-                "min-h-[40px] rounded-full border px-3.5 text-xs font-medium transition-colors touch-manipulation sm:text-sm",
+                "shrink-0 min-h-[36px] rounded-full border px-3 text-xs font-medium transition-colors touch-manipulation sm:min-h-[40px] sm:px-3.5 sm:text-sm",
                 active
-                  ? "border-emerald-600 bg-emerald-600 text-white"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:bg-emerald-50",
+                  ? "border-teal-700 bg-teal-700 text-white shadow-sm"
+                  : "border-gray-200/90 bg-white/90 text-gray-700 hover:border-teal-300 hover:bg-teal-50/80",
                 disabled && "cursor-not-allowed opacity-40 hover:border-gray-200 hover:bg-white",
               )}
               title={
@@ -132,7 +136,7 @@ export function OpenToMeetPanel({
       </div>
 
       {filtered.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-dashed border-emerald-200/80 bg-white/60 px-4 py-5 text-sm leading-relaxed text-gray-600">
+        <p className="mt-5 rounded-xl border border-dashed border-teal-200/70 bg-white/60 px-4 py-5 text-sm leading-relaxed text-gray-600">
           {totalOpen === 0
             ? (
               <>
@@ -154,7 +158,7 @@ export function OpenToMeetPanel({
                   <div
                     className={cn(
                       "flex flex-col gap-3 rounded-xl border bg-white/90 p-3.5 sm:flex-row sm:items-center sm:gap-4",
-                      isSelf ? "border-emerald-300 ring-1 ring-emerald-100" : "border-gray-200/90",
+                      isSelf ? "border-teal-300 ring-1 ring-teal-100" : "border-gray-200/90",
                     )}
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -162,7 +166,7 @@ export function OpenToMeetPanel({
                         <button
                           type="button"
                           onClick={() => onViewPerson(person.id)}
-                          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40"
                         >
                           <PersonAvatar
                             name={person.fullName}
@@ -236,14 +240,14 @@ export function OpenToMeetPanel({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/80 via-white to-sky-50/60 p-5 shadow-sm sm:p-6",
+        "rounded-2xl border border-teal-200/70 bg-gradient-to-br from-teal-50/70 via-white to-sky-50/50 p-5 shadow-sm sm:p-6",
         className,
       )}
       aria-labelledby="open-to-meet-heading"
     >
       <div className="mb-4 flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-emerald-200/60">
-          <Users className="size-5 text-emerald-600" aria-hidden />
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-teal-200/60">
+          <Users className="size-5 text-teal-700" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <h2 id="open-to-meet-heading" className="text-lg font-semibold text-gray-900">
@@ -273,7 +277,7 @@ function MemberMeta({
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <p className="truncate font-medium text-gray-900">{person.fullName}</p>
         {isSelf ? (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-800">
             You
           </span>
         ) : null}

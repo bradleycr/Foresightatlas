@@ -139,15 +139,15 @@ export function DirectoryLoginForm({
         {hasSelection ? (
           /* Confirmed selection: show only who they picked and the password step. */
           <div className="space-y-3">
-            <div className="rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-3">
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-sky-600/90">
-                You’ve selected
+            <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/80 via-white to-sky-50/70 px-4 py-3">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-teal-700/90">
+                You've selected
               </p>
               <p className="mt-1 font-medium text-gray-900">{selectedMatch!.fullName}</p>
               <button
                 type="button"
                 onClick={handleChooseSomeoneElse}
-                className="mt-2 inline-flex items-center gap-1.5 text-sm text-sky-600 transition-colors hover:text-sky-800"
+                className="mt-2 inline-flex items-center gap-1.5 text-sm text-teal-700 transition-colors hover:text-teal-900"
               >
                 <ChevronLeft className="size-3.5" />
                 Choose someone else
@@ -231,11 +231,11 @@ export function DirectoryLoginForm({
             <p className="text-sm text-gray-600">
               <a
                 href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
-                className="font-medium text-sky-600 transition-colors hover:text-sky-800"
+                className="font-medium text-teal-700 transition-colors hover:text-teal-900"
               >
                 Forgot your password?
               </a>{" "}
-              Email our team and we’ll send a new sign-in link.
+              Email our team and we'll send a new sign-in link.
             </p>
           ) : null}
         </div>
@@ -247,12 +247,12 @@ export function DirectoryLoginForm({
         team, who can send a private join link.
       */}
       {!hasSelection && (
-        <div className="rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3">
+        <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-amber-50/40 via-gray-50/80 to-sky-50/40 px-4 py-3">
           <p className="text-sm text-gray-600">
             Can't find your name?{" "}
             <a
               href={ATLAS_ACCESS_MAILTO}
-              className="font-medium text-sky-600 transition-colors hover:text-sky-800"
+              className="font-medium text-teal-700 transition-colors hover:text-teal-900"
             >
               Email our team for access
             </a>

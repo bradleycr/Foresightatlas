@@ -27,7 +27,7 @@
 - **Sheet is the only source of truth.** The app always fetches data from GET `/api/database`, which reads from the Google Sheet. Configure **GOOGLE_SHEETS_API_KEY** or **GOOGLE_SERVICE_ACCOUNT_KEY** (and **SPREADSHEET_ID**) so the API and app can load. No static `public/data/database.json` at runtime.
 - **Frontend.** `src/services/database.ts` fetches `/api/database` only; no JSON fallback. If the API or sheet is unavailable, the app shows the error from the API.
 - **Vercel / on-prem.** Set **GOOGLE_SERVICE_ACCOUNT_KEY**, **SPREADSHEET_ID**, and **DIRECTORY_SESSION_SECRET** so the app can load data and users can save profiles. Prefer a **private** sheet + service account (Editor). See `docs/VERCEL_ENV.md` and `docs/SELF_HOSTING.md`. Read-only API key is a weaker alternative (often needs a publicly viewable sheet).
-- **Events freshness.** Server merges Luma live (~10 min cache). Frontend `/api/database` + `loadEvents` also expire ~10 min; focus-resume and a 15‑min heartbeat re-pull for always-on tabs.
+- **Events freshness.** Server merges Luma live (~10 min cache). List window starts Jan 1 of the prior calendar year (past months stay browsable); guest RSVP sync stays on a short engagement window. Frontend `/api/database` + `loadEvents` also expire ~10 min; focus-resume and a 15‑min heartbeat re-pull for always-on tabs. Year switcher in the month navigator stays hidden until calendar year ≥ 2027.
 - **pnpm build scripts.** `@swc/core` and `esbuild` require approved build scripts via `pnpm.onlyBuiltDependencies` in `package.json`.
 - **CSS `@import` warning.** Build may emit a PostCSS warning about `@import` order; cosmetic only.
 - **Timeline view.** The Timeline tab exists but is “Coming soon” in the UI.

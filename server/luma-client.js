@@ -6,14 +6,24 @@
  * Safe defaults for the atlas:
  *   • Prefer current plurals routes, fall back to legacy paths when needed
  *   • Honor 429 Retry-After instead of hammering the calendar key (200/min)
- *   • Time-window helpers so we do not paginate years of past events
+ *   • List window keeps prior-year history on programming pages; engagement
+ *     window stays short so guest RSVP sync / description hydrate stay cheap
  */
 
 const LUMA_BASE = "https://public-api.luma.com";
 
-/** Same window guests use: recent past → near future. */
+/**
+ * Guest RSVP enrichment + description hydrate — recent activity only.
+ * Must stay narrow: past events do not need live guest pulls.
+ */
 const EVENT_WINDOW_PAST_MS = 7 * 24 * 60 * 60 * 1000;
 const EVENT_WINDOW_FUTURE_MS = 180 * 24 * 60 * 60 * 1000;
+
+/**
+ * How many prior calendar years of Luma history to list for programming pages.
+ * In 2026 → from 2025-01-01; in 2027 → from 2026-01-01 (so 2026 stays browsable).
+ */
+const EVENT_ARCHIVE_PRIOR_YEARS = 1;
 
 const MAX_RETRIES_ON_429 = 2;
 
@@ -29,14 +39,22 @@ function lumaHeaders(apiKey = lumaApiKey()) {
   return { "x-luma-api-key": apiKey };
 }
 
-/** ISO bounds for list-events `after` / `before` query params. */
+/**
+ * ISO bounds for list-events `after` / `before`.
+ * Archive starts Jan 1 of (currentYear − {@link EVENT_ARCHIVE_PRIOR_YEARS})
+ * so past months stay on the programming calendar; future bound matches the
+ * engagement horizon.
+ */
 function eventListWindow(now = Date.now()) {
+  const year = new Date(now).getUTCFullYear();
+  const archiveStart = Date.UTC(year - EVENT_ARCHIVE_PRIOR_YEARS, 0, 1);
   return {
-    after: new Date(now - EVENT_WINDOW_PAST_MS).toISOString(),
+    after: new Date(archiveStart).toISOString(),
     before: new Date(now + EVENT_WINDOW_FUTURE_MS).toISOString(),
   };
 }
 
+/** True when an event falls in the short engagement window (guests / hydrate). */
 function isInEventWindow(startAt, endAt, now = Date.now()) {
   const weekAgo = now - EVENT_WINDOW_PAST_MS;
   const sixMonthsAhead = now + EVENT_WINDOW_FUTURE_MS;
@@ -131,6 +149,7 @@ module.exports = {
   LUMA_BASE,
   EVENT_WINDOW_PAST_MS,
   EVENT_WINDOW_FUTURE_MS,
+  EVENT_ARCHIVE_PRIOR_YEARS,
   eventListWindow,
   isInEventWindow,
   lumaApiKey,

@@ -51,7 +51,12 @@ type PageTab = "events" | "table";
 /** Check-in table (The Table) is on for Berlin and SF. Set to false to hide the tab until Signal/etc. is ready. */
 const ENABLE_CHECKIN_TABLE = true;
 
-const YEAR = 2026;
+/**
+ * Year switcher (2026 ↔ 2027, …) stays hidden until we're in this calendar year.
+ * Until then the navigator shows the current year only; past months of that year
+ * are still browsable. Luma archive already keeps the prior year server-side.
+ */
+const PROGRAMMING_YEAR_SWITCH_FROM = 2027;
 const UPCOMING_DAYS = 90;
 
 const MONTH_NAMES = [
@@ -244,6 +249,8 @@ export function NodeProgrammingPage({
     });
   }, [identity]);
 
+  const currentCalendarYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentCalendarYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const eventsTopRef = useRef<HTMLDivElement>(null);
 
@@ -254,14 +261,37 @@ export function NodeProgrammingPage({
   );
   const isAuthed = identity !== null;
 
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const ev of allEvents) {
+      const y = new Date(ev.startAt).getFullYear();
+      if (Number.isFinite(y)) years.add(y);
+    }
+    years.add(currentCalendarYear);
+    return [...years].sort((a, b) => a - b);
+  }, [allEvents, currentCalendarYear]);
+
+  const showYearSwitcher =
+    currentCalendarYear >= PROGRAMMING_YEAR_SWITCH_FROM && availableYears.length > 1;
+
+  /* Keep selection valid when the event set or calendar year changes. */
+  useEffect(() => {
+    if (availableYears.includes(selectedYear)) return;
+    setSelectedYear(
+      availableYears.includes(currentCalendarYear)
+        ? currentCalendarYear
+        : availableYears[availableYears.length - 1] ?? currentCalendarYear,
+    );
+  }, [availableYears, selectedYear, currentCalendarYear]);
+
   const monthlyCounts = useMemo(() => {
     const c = new Array(12).fill(0) as number[];
     for (const ev of allEvents) {
       const m = new Date(ev.startAt);
-      if (m.getFullYear() === YEAR) c[m.getMonth()]++;
+      if (m.getFullYear() === selectedYear) c[m.getMonth()]++;
     }
     return c;
-  }, [allEvents]);
+  }, [allEvents, selectedYear]);
 
   const filteredEvents = useMemo(() => {
     if (selectedMonth === null) {
@@ -274,9 +304,9 @@ export function NodeProgrammingPage({
     }
     return allEvents.filter((e) => {
       const d = new Date(e.startAt);
-      return d.getFullYear() === YEAR && d.getMonth() === selectedMonth;
+      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
     });
-  }, [allEvents, selectedMonth]);
+  }, [allEvents, selectedMonth, selectedYear]);
 
   /* ── RSVP handlers ──────────────────────────────────────────────── */
 
@@ -514,10 +544,19 @@ export function NodeProgrammingPage({
             <div ref={eventsTopRef} className="rounded-2xl border border-gray-200 shadow p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden" style={{ background: theme.headerGradient }}>
               <MonthNavigator
                 selected={selectedMonth}
-                year={YEAR}
+                year={selectedYear}
                 counts={monthlyCounts}
                 onChange={setSelectedMonth}
                 theme={theme}
+                years={showYearSwitcher ? availableYears : undefined}
+                onYearChange={
+                  showYearSwitcher
+                    ? (y) => {
+                        setSelectedYear(y);
+                        setSelectedMonth(null);
+                      }
+                    : undefined
+                }
               />
             </div>
 
@@ -597,7 +636,6 @@ export function NodeProgrammingPage({
             onPersonClick={(personId, dayPeopleIds) =>
               openProfile(personId, dayPeopleIds, "At the node")
             }
-            onShowQR={() => setShowQR(true)}
           />
         )}
 

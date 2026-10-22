@@ -26,6 +26,9 @@ new_grantees*.csv
 public/data/events.json
 public/data/database.json
 scripts/website-fellows.json
+# One-off scrape / match dumps (often names + URLs; keep local)
+scripts/data/*-matches.json
+scripts/data/*-matches.csv
 scripts/sheet-export/*.csv
 
 # Maintainer script output (see reports/README.md)

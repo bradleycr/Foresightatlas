@@ -11,6 +11,7 @@ Programming pages (Berlin, SF, Global) load events from **GET `/api/database`**.
 ## 2. Luma API (public calendar events)
 
 - If `LUMA_API_KEY` is set, the server fetches the Luma calendar and merges **public** events only.
+- **List window:** from **Jan 1 of the previous calendar year** through ~**180 days** ahead — so past months (and last year’s programming once you’re in a new year) stay on the node pages. Guest RSVP sync and description hydrate still use a short “engagement” window (~7 days past) so we don’t pull guests for every historical salon.
 - Luma response is cached ~**10 minutes** server-side.
 - If a sheet row has `lumaEventId` matching a Luma `api_id`, Luma wins for title, description, times, location, link, and cover; the sheet can still set `nodeSlug` / type / tags.
 - Luma-only public events are appended automatically — **no deploy step** and **no `pnpm sync:events` required**.

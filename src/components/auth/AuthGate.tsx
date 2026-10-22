@@ -57,22 +57,33 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
   }, []);
 
   return (
-    <main className="relative flex min-h-[100svh] flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-y-contain bg-gradient-to-b from-slate-50 via-white to-sky-50 px-5 py-8 sm:min-h-[100dvh] sm:justify-center sm:py-10">
+    <main
+      className="relative flex min-h-[100svh] flex-col items-center justify-start overflow-y-auto overflow-x-hidden overscroll-y-contain px-5 py-8 sm:min-h-[100dvh] sm:justify-center sm:py-10"
+      style={{
+        /* Soft amber→sky wash — same pastel language as Berlin programming. */
+        background:
+          "linear-gradient(165deg, rgba(254,243,199,0.45) 0%, rgba(255,255,255,0.95) 42%, rgba(191,219,254,0.4) 100%)",
+      }}
+    >
       {/* Soft ambient glow so the card feels like it floats over the atlas. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/2 size-[36rem] -translate-x-1/2 rounded-full bg-sky-200/30 blur-3xl"
+        className="pointer-events-none absolute -top-36 left-[18%] size-[28rem] rounded-full bg-amber-200/25 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 right-[10%] size-[24rem] rounded-full bg-sky-200/30 blur-3xl"
       />
 
       <div className="relative w-full max-w-md">
         <div className="mb-7 flex flex-col items-center text-center">
           <div
-            className={`flex size-16 items-center justify-center rounded-3xl border bg-white shadow-sm ${
-              checkInCopy ? "border-sky-200" : "border-gray-200"
+            className={`flex size-16 items-center justify-center rounded-3xl border bg-white/95 shadow-sm ${
+              checkInCopy ? "border-amber-200/80" : "border-gray-200"
             }`}
           >
             {checkInCopy ? (
-              <MapPin className="size-8 text-sky-600" aria-hidden />
+              <MapPin className="size-8 text-teal-700" aria-hidden />
             ) : (
               <a
                 href={FORESIGHT_ORG_URL}

@@ -9,10 +9,11 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   MapPinCheck,
-  QrCode,
   Check,
   Coffee,
+  Info,
 } from "lucide-react";
 import type { NodeSlug, NodeColorTheme } from "../../types/events";
 import type { Person } from "../../types";
@@ -31,6 +32,12 @@ import { toast } from "sonner";
 import { cn } from "../ui/utils";
 import { PersonAvatar } from "../PersonAvatar";
 import { getEffectiveProfileImageUrl } from "../../services/profileImageOverride";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
+import foresightIconUrl from "../../assets/Foresight_RGB_Icon_Black.png?url";
 
 const MAX_HEADS = 15;
 
@@ -67,7 +74,6 @@ interface NodeTableViewProps {
   identity: Identity | null;
   people: Person[];
   onPersonClick?: (personId: string, dayPeopleIds: string[]) => void;
-  onShowQR?: () => void;
   tick: number;
   onTick: () => void;
 }
@@ -78,12 +84,12 @@ export function NodeTableView({
   identity,
   people,
   onPersonClick,
-  onShowQR,
   tick,
   onTick,
 }: NodeTableViewProps) {
   const todayKey = useTodayKey();
   const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const personMap = useMemo(() => {
     const m = new Map<string, Person>();
@@ -152,6 +158,52 @@ export function NodeTableView({
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {/* ─── What The Table is — one line + optional detail ─────────────────── */}
+      <Collapsible open={aboutOpen} onOpenChange={setAboutOpen}>
+        <div className="rounded-2xl border border-gray-200 bg-white/90 px-4 py-3.5 sm:px-5 sm:py-4 shadow-sm">
+          <p className="text-sm sm:text-[15px] text-gray-700 leading-snug">
+            For Nodees at the node today — check in so others know you're here.
+          </p>
+          <CollapsibleTrigger
+            type="button"
+            className={cn(
+              "mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors",
+              theme.focusRing,
+              "rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            )}
+          >
+            <Info className="size-3.5 shrink-0" aria-hidden />
+            About the table
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform duration-200",
+                aboutOpen && "rotate-180",
+              )}
+              aria-hidden
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+            <div className="mt-3 pt-3 border-t border-gray-100 flex gap-3 items-start">
+              <span
+                className="shrink-0 size-9 rounded-full border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-indigo-50/60 flex items-center justify-center shadow-sm"
+                aria-hidden
+              >
+                <img
+                  src={foresightIconUrl}
+                  alt=""
+                  className="size-4 object-contain"
+                />
+              </span>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Each check-in earns you one nanowheel — a tiny mark for showing
+                up in person. Flip days above to see who’s planned or who was
+                here.
+              </p>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+
       {/* ─── Day selector — visible background and contrast ─────────────────── */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-0.5 rounded-xl bg-white border border-gray-200 p-1.5 shadow-sm">
@@ -188,20 +240,6 @@ export function NodeTableView({
             )}
           >
             Today
-          </button>
-        )}
-        {onShowQR && (
-          <button
-            type="button"
-            onClick={onShowQR}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-300",
-              theme.focusRing,
-            )}
-            title="Print QR code for node check-in"
-          >
-            <QrCode className="size-4 shrink-0" />
-            <span className="hidden sm:inline">Node QR</span>
           </button>
         )}
       </div>
