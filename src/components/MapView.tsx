@@ -185,6 +185,32 @@ function ZoomToMarker({
   return null;
 }
 
+/** Desktop sidebar hover — soft fly to that person's pin (no selection / popup). */
+const HOVER_PREVIEW_ZOOM = 7;
+const HOVER_PREVIEW_DURATION_S = 0.85;
+
+function ZoomToHoverPreview({ marker }: { marker: MarkerData | null }) {
+  const map = useMap();
+  const lastKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!marker) {
+      lastKeyRef.current = null;
+      return;
+    }
+    const key = `${marker.coordinates.lat.toFixed(4)},${marker.coordinates.lng.toFixed(4)}`;
+    if (lastKeyRef.current === key) return;
+    lastKeyRef.current = key;
+    const zoom = Math.max(map.getZoom(), HOVER_PREVIEW_ZOOM);
+    map.flyTo([marker.coordinates.lat, marker.coordinates.lng], zoom, {
+      duration: HOVER_PREVIEW_DURATION_S,
+      easeLinearity: 0.35,
+    });
+  }, [map, marker]);
+
+  return null;
+}
+
 // Component to invalidate map size when sidebar state or width changes
 function MapResizer({
   isSidebarOpen,
@@ -636,6 +662,9 @@ export function MapView({
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
   /** When true, selection came from the list (sidebar); when false, from map click. Used so we only fly to marker when selecting from list. */
   const [selectedMarkerFromList, setSelectedMarkerFromList] = useState(false);
+  /** Desktop: person id under the pointer in the sidebar (debounced → previewMarker). */
+  const [hoverPersonId, setHoverPersonId] = useState<string | null>(null);
+  const [previewMarker, setPreviewMarker] = useState<MarkerData | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   /** Filter section expanded state; collapse when user selects a map node so the person list is visible. */
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -675,6 +704,8 @@ export function MapView({
   useEffect(() => {
     setSelectedMarker(null);
     setSelectedMarkerFromList(false);
+    setHoverPersonId(null);
+    setPreviewMarker(null);
   }, [filteredPeople]);
 
   /*
@@ -867,6 +898,37 @@ export function MapView({
     return Array.from(markerMap.values()).map(dedupeMarkerEntries);
   }, [filteredPeople, geocodedCities, forwardGeocodedCoordinates]);
 
+  /*
+   * Desktop sidebar hover → fly the map to that person's pin.
+   * Debounced so scrubbing the list doesn't thrash the camera.
+   * Fine-pointer + hover media only (phones stay put).
+   */
+  useEffect(() => {
+    if (isMobile) {
+      setPreviewMarker(null);
+      return;
+    }
+    const canHover =
+      typeof window !== "undefined" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (!canHover) {
+      setPreviewMarker(null);
+      return;
+    }
+    const delayMs = hoverPersonId ? 120 : 280;
+    const timer = window.setTimeout(() => {
+      if (!hoverPersonId) {
+        setPreviewMarker(null);
+        return;
+      }
+      const match = markers.find((m) =>
+        m.people.some((entry) => entry.person.id === hoverPersonId),
+      );
+      setPreviewMarker(match ?? null);
+    }, delayMs);
+    return () => window.clearTimeout(timer);
+  }, [hoverPersonId, markers, isMobile]);
+
   // Get next travel window for each person
   const getNextTravel = (personId: string): TravelWindow | undefined => {
     const personWindows = filteredTravelWindows
@@ -949,6 +1011,15 @@ export function MapView({
     if (next === "globe") setGlobeFailed(false);
     setProjection(next);
     writeMapProjection(next);
+    /*
+     * Switching views remounts the map — clear pin selection so both open
+     * at the world / home framing instead of staying zoomed into a city.
+     */
+    setSelectedMarker(null);
+    setSelectedMarkerFromList(false);
+    setSelectedPerson(null);
+    setHoverPersonId(null);
+    setPreviewMarker(null);
   };
 
   const handleMarkerClick = useCallback((marker: MarkerData) => {
@@ -1010,6 +1081,17 @@ export function MapView({
                 onViewPersonDetails?.(person.id, navContext);
               }}
               isHighlighted={selectedPerson === person.id}
+              onHoverStart={
+                isMobile ? undefined : () => setHoverPersonId(person.id)
+              }
+              onHoverEnd={
+                isMobile
+                  ? undefined
+                  : () =>
+                      setHoverPersonId((current) =>
+                        current === person.id ? null : current,
+                      )
+              }
             />
           </div>
         ))
@@ -1042,6 +1124,7 @@ export function MapView({
               skipIfMarkerSelected={selectedMarker !== null}
               selectedMarker={selectedMarker}
               selectedMarkerFromList={selectedMarkerFromList}
+              previewMarker={previewMarker}
               onMarkerClick={handleMarkerClick}
               onPersonClick={handlePersonClick}
               onUnavailable={() => {
@@ -1075,6 +1158,7 @@ export function MapView({
             />
             <FitBounds markers={markers} skipIfMarkerSelected={selectedMarker !== null} isMobile={isMobile} />
             <ZoomToMarker marker={selectedMarker} onlyWhenFromList={selectedMarkerFromList} />
+            <ZoomToHoverPreview marker={previewMarker} />
             <MapResizer
               isSidebarOpen={isSidebarOpen}
               sidebarWidth={useCustomSidebarLayout ? sidebarResize.width : undefined}

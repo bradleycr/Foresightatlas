@@ -31,6 +31,9 @@ interface FellowCardProps {
   /** Optional: when card body is clicked (not "More details"), highlight + scroll only; if not set, card click uses onSelect. */
   onHighlight?: () => void;
   isHighlighted?: boolean;
+  /** Desktop map preview — parent flies to this person's pin while hovering. */
+  onHoverStart?: () => void;
+  onHoverEnd?: () => void;
 }
 
 export function FellowCard({
@@ -40,6 +43,8 @@ export function FellowCard({
   onSelect,
   onHighlight,
   isHighlighted,
+  onHoverStart,
+  onHoverEnd,
 }: FellowCardProps) {
   const handleCardClick = () => (onHighlight ?? onSelect)?.();
   const detailsSummary =
@@ -69,6 +74,10 @@ export function FellowCard({
           : "bg-app-card"
       )}
       onClick={handleCardClick}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
+      onFocus={onHoverStart}
+      onBlur={onHoverEnd}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {

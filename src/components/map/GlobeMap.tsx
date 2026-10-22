@@ -51,6 +51,20 @@ import {
 const GLOBE_HOME_CENTER: [number, number] = [0, 20];
 
 /**
+ * Idle globe spin — Mapbox’s rotating-globe pattern (easeTo loop).
+ * No device sensors / permissions. Pauses on drag, stops when zoomed in.
+ * ~3 minutes per revolution reads as “alive”, not a carnival ride.
+ */
+const SPIN_SECONDS_PER_REVOLUTION = 180;
+/** Above this zoom the sphere is basically a flat map — stop spinning. */
+const SPIN_MAX_ZOOM = 3.25;
+/** Between this and SPIN_MAX_ZOOM, ease the spin to a halt. */
+const SPIN_SLOW_ZOOM = 2.35;
+/** First-load reveal: start a touch closer, ease out to home zoom. */
+const INTRO_ZOOM_DELTA = 0.8;
+const INTRO_DURATION_MS = 2400;
+
+/**
  * Sphere diameter at a zoom is about (512 × 2^zoom) / π.
  * Size it to the panel so the earth stays large and still has a margin.
  */
@@ -60,6 +74,11 @@ function globeHomeZoom(width: number, height: number): number {
   const targetDiameter = shorter * 0.78;
   const zoom = Math.log2((targetDiameter * Math.PI) / 512);
   return Math.max(0.95, Math.min(zoom, 2));
+}
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 /** Matches the Leaflet map: open the list instead of zooming when a cluster is one city. */
@@ -74,6 +93,8 @@ interface GlobeMapProps {
   skipIfMarkerSelected: boolean;
   selectedMarker: PinLocation | null;
   selectedMarkerFromList: boolean;
+  /** Desktop sidebar hover — soft fly to this pin without selecting it. */
+  previewMarker?: PinLocation | null;
   onMarkerClick: (marker: PinLocation) => void;
   onPersonClick: (personId: string) => void;
   /** WebGL or the style failed. The parent drops back to the flat map. */
@@ -149,6 +170,7 @@ export function GlobeMap({
   skipIfMarkerSelected,
   selectedMarker,
   selectedMarkerFromList,
+  previewMarker = null,
   onMarkerClick,
   onPersonClick,
   onUnavailable,
@@ -159,6 +181,8 @@ export function GlobeMap({
   const onMarkerClickRef = useRef(onMarkerClick);
   const onPersonClickRef = useRef(onPersonClick);
   const iconUrlRef = useRef(iconUrl);
+  /** First-load intro owns framing until it finishes — marker effects must not snap over it. */
+  const introCompleteRef = useRef(prefersReducedMotion());
   const [ready, setReady] = useState(false);
 
   markersRef.current = markers;
@@ -173,10 +197,15 @@ export function GlobeMap({
     let map: MapLibreMap;
     try {
       const opening = container.getBoundingClientRect();
+      const homeZoom = globeHomeZoom(opening.width, opening.height);
+      const reduceMotion = prefersReducedMotion();
+      const openingZoom = reduceMotion
+        ? homeZoom
+        : Math.min(homeZoom + INTRO_ZOOM_DELTA, 2.9);
       map = new MapLibreMap({
         container,
         center: GLOBE_HOME_CENTER,
-        zoom: globeHomeZoom(opening.width, opening.height),
+        zoom: openingZoom,
         minZoom: 0.55,
         maxZoom: 18,
         attributionControl: false,
@@ -266,6 +295,78 @@ export function GlobeMap({
 
     map.addControl(new NavigationControl({ showCompass: false, visualizePitch: false }), "top-left");
     map.addControl(new AttributionControl({ compact: true }), "bottom-right");
+
+    /*
+     * Idle spin (Mapbox rotating-globe pattern): chain easeTo on moveend.
+     * Pauses while the user drags / pinches; never asks for sensors.
+     */
+    let userInteracting = false;
+    let spinEnabled = !reduceMotion;
+    let introRunning = false;
+
+    const spinGlobe = () => {
+      if (!spinEnabled || userInteracting || introRunning) return;
+      const zoom = map.getZoom();
+      if (zoom >= SPIN_MAX_ZOOM) return;
+      let degreesPerSecond = 360 / SPIN_SECONDS_PER_REVOLUTION;
+      if (zoom > SPIN_SLOW_ZOOM) {
+        const t = (SPIN_MAX_ZOOM - zoom) / (SPIN_MAX_ZOOM - SPIN_SLOW_ZOOM);
+        degreesPerSecond *= Math.max(0, t);
+      }
+      if (degreesPerSecond < 0.02) return;
+      const center = map.getCenter();
+      center.lng -= degreesPerSecond;
+      map.easeTo({ center, duration: 1000, easing: (n) => n });
+    };
+
+    const pauseSpin = () => {
+      userInteracting = true;
+      map.stop();
+    };
+    const resumeSpin = () => {
+      userInteracting = false;
+      spinGlobe();
+    };
+
+    map.on("mousedown", pauseSpin);
+    map.on("touchstart", pauseSpin);
+    map.on("mouseup", resumeSpin);
+    map.on("touchend", resumeSpin);
+    map.on("dragend", resumeSpin);
+    map.on("pitchend", resumeSpin);
+    map.on("rotateend", resumeSpin);
+    map.on("zoomend", resumeSpin);
+    map.on("moveend", () => {
+      if (!userInteracting) spinGlobe();
+    });
+
+    let introStarted = false;
+    const startIntro = () => {
+      if (introStarted) return;
+      introStarted = true;
+      if (reduceMotion) {
+        introCompleteRef.current = true;
+        spinGlobe();
+        return;
+      }
+      introRunning = true;
+      const box = map.getContainer().getBoundingClientRect();
+      const targetZoom = globeHomeZoom(box.width, box.height);
+      map.easeTo({
+        center: GLOBE_HOME_CENTER,
+        zoom: targetZoom,
+        duration: INTRO_DURATION_MS,
+        easing: (t) => 1 - (1 - t) ** 2.4,
+      });
+      map.once("moveend", () => {
+        if (!introRunning) return;
+        introRunning = false;
+        introCompleteRef.current = true;
+        spinGlobe();
+      });
+    };
+    map.once("load", startIntro);
+    if (map.loaded()) startIntro();
 
     const popup = new Popup({
       closeButton: true,
@@ -626,6 +727,8 @@ export function GlobeMap({
     resizeObserver.observe(container);
 
     return () => {
+      spinEnabled = false;
+      introRunning = false;
       if (frame) cancelAnimationFrame(frame);
       cancelClose();
       resizeObserver.disconnect();
@@ -658,10 +761,18 @@ export function GlobeMap({
       isMobile && markers.length > 0 && markers.length <= MOBILE_FIT_MARKERS_THRESHOLD;
 
     if (!shouldFit) {
+      /*
+       * While the opening zoom-out runs, leave framing alone. After that,
+       * only snap home when the camera has left globe range (e.g. after a
+       * pin fly-to) — filter refreshes should not yank the idle spin.
+       */
+      if (!introCompleteRef.current) return;
+      if (map.getZoom() <= SPIN_MAX_ZOOM) return;
       const opening = map.getContainer().getBoundingClientRect();
-      map.jumpTo({
+      map.easeTo({
         center: GLOBE_HOME_CENTER,
         zoom: globeHomeZoom(opening.width, opening.height),
+        duration: 700,
       });
       return;
     }
@@ -689,6 +800,20 @@ export function GlobeMap({
       duration: 500,
     });
   }, [ready, selectedMarker, selectedMarkerFromList]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !previewMarker || isMobile) return;
+    /* Don't fight a deliberate list click fly-to. */
+    if (selectedMarkerFromList && selectedMarker) return;
+    const zoom = Math.max(map.getZoom(), 6.5);
+    map.easeTo({
+      center: [previewMarker.coordinates.lng, previewMarker.coordinates.lat],
+      zoom,
+      duration: 900,
+      easing: (t) => 1 - (1 - t) ** 2.2,
+    });
+  }, [ready, previewMarker, isMobile, selectedMarker, selectedMarkerFromList]);
 
   return <div ref={containerRef} className="atlas-globe-map" />;
 }
