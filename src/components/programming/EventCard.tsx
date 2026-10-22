@@ -543,13 +543,13 @@ export function EventCard({
 
       {/* Residence-day access gate — Yes RSVPs; No opens mailto to Bradley */}
       <AlertDialog open={residentsGateOpen} onOpenChange={setResidentsGateOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Are you already part of the {nodeName}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Residence days are for node members (nodees, residents, and
+              Residence days are for node members (Nodees, residents, and
               community already using the space). Roles on the Atlas vary —
               fellows and grantees who are part of the node can say yes. If
               you&apos;re not sure or want to join for the day, email{" "}
