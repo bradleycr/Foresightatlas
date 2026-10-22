@@ -1111,7 +1111,7 @@ export function MapView({
       {/* Map Panel */}
       <div
         className={cn(
-          "flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:min-h-0 lg:h-full shadow-lg border border-gray-100 min-w-0",
+          "atlas-map-panel flex-1 bg-white rounded-xl overflow-hidden relative min-h-[400px] sm:min-h-[500px] lg:min-h-0 lg:h-full shadow-lg border border-gray-100 min-w-0",
           useCustomSidebarLayout && "lg:rounded-r-none lg:border-r-0",
         )}
       >

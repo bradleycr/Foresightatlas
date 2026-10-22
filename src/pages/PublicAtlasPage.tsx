@@ -223,11 +223,7 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
         className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/60 via-black/25 to-transparent"
       />
 
-      {/* Above showcase zoom (bottom-left) and clear of the centered sign-in CTA */}
-      <MapRoleLegend
-        tone="dark"
-        mobileBottomClassName="bottom-[max(5.75rem,env(safe-area-inset-bottom)+4.5rem)]"
-      />
+      <MapRoleLegend tone="dark" surface="public" />
 
       {/*
         Three equal columns: product name · institute mark · Events.

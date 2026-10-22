@@ -1,5 +1,5 @@
 /**
- * Sits beside the zoom stack on the top left of the map.
+ * Sits beside the zoom stack at the bottom left of the map.
  * Two marks, no words: the earth for the globe, a map for the flat view.
  * Globe is the opening view. Flat is the original Leaflet map.
  */

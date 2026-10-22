@@ -1,18 +1,17 @@
 /**
- * Minimal pin-color key — circles match ROLE_COLORS on the map.
- * Mobile: bottom-left. Desktop: mid-left (standard map-legend pocket).
+ * Minimal pin-color key — main roles only (Fellow, Grantee, Nodee, Team).
+ * Mobile: top-left (clear of bottom chrome). Desktop: bottom-left.
  */
 
-import { ROLE_COLORS, getRoleGradient } from "../../styles/roleColors";
+import type { CSSProperties } from "react";
+import { ROLE_COLORS } from "../../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS } from "../../constants/zIndex";
 import type { RoleType } from "../../types";
 import { cn } from "../ui/utils";
 
 const LEGEND_ROLES: Array<{ role: RoleType; label: string }> = [
   { role: "Fellow", label: "Fellow" },
-  { role: "Senior Fellow", label: "Senior Fellow" },
   { role: "Grantee", label: "Grantee" },
-  { role: "Prize Winner", label: "Prize Winner" },
   { role: "Nodee", label: "Nodee" },
   { role: "Foresight Team", label: "Team" },
 ];
@@ -21,16 +20,16 @@ interface MapRoleLegendProps {
   /** Public globe sits on a dark sky — light text. Logged-in map uses light. */
   tone?: "light" | "dark";
   /**
-   * Extra bottom clearance (e.g. public showcase zoom stack at bottom-left).
-   * Mobile only; desktop stays mid-left.
+   * `public` sits under the brand header on mobile.
+   * `app` (logged-in) uses a tighter top inset — zoom lives bottom-left.
    */
-  mobileBottomClassName?: string;
+  surface?: "app" | "public";
   className?: string;
 }
 
 export function MapRoleLegend({
   tone = "light",
-  mobileBottomClassName = "bottom-[max(0.75rem,env(safe-area-inset-bottom))]",
+  surface = "app",
   className,
 }: MapRoleLegendProps) {
   const dark = tone === "dark";
@@ -39,17 +38,26 @@ export function MapRoleLegend({
     <div
       className={cn(
         "pointer-events-none absolute left-3",
-        mobileBottomClassName,
-        "md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:left-3",
+        /* Mobile: top-left, clear of header / safe area */
+        surface === "public"
+          ? "top-[max(4.25rem,calc(env(safe-area-inset-top)+3.5rem))]"
+          : "top-[max(0.75rem,env(safe-area-inset-top))]",
+        /*
+         * Desktop: bottom-left. Logged-in sits above the zoom + projection
+         * stack; public has no corner zoom so it can sit lower.
+         */
+        surface === "app"
+          ? "md:top-auto md:bottom-[5.75rem]"
+          : "md:top-auto md:bottom-[max(1rem,env(safe-area-inset-bottom))]",
         className,
       )}
-      style={{ zIndex: Z_INDEX_MAP_CONTROLS }}
+      style={{ zIndex: Z_INDEX_MAP_CONTROLS } satisfies CSSProperties}
       role="list"
       aria-label="Map pin colors by role"
     >
       <ul
         className={cn(
-          "flex flex-col gap-1 rounded-xl px-2.5 py-2 shadow-sm ring-1 backdrop-blur-md",
+          "flex flex-col gap-1.5 rounded-xl px-2.5 py-2.5 shadow-sm ring-1 backdrop-blur-md",
           dark
             ? "bg-black/45 text-white ring-white/15"
             : "bg-white/92 text-gray-800 ring-black/8",
@@ -58,11 +66,11 @@ export function MapRoleLegend({
         {LEGEND_ROLES.map(({ role, label }) => (
           <li key={role} className="flex items-center gap-2" role="listitem">
             <span
-              className="size-2.5 shrink-0 rounded-full shadow-sm ring-1 ring-black/10"
-              style={{
-                background: getRoleGradient(role),
-                boxShadow: `inset 0 0 0 1px ${ROLE_COLORS[role].solid}55`,
-              }}
+              className={cn(
+                "size-3.5 shrink-0 rounded-full ring-1",
+                dark ? "ring-white/25" : "ring-black/15",
+              )}
+              style={{ background: ROLE_COLORS[role].solid }}
               aria-hidden
             />
             <span className="text-[11px] font-medium leading-none tracking-tight">
