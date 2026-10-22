@@ -232,9 +232,17 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
       <header className="absolute inset-x-0 top-0 z-20 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
         <div className="grid grid-cols-3 items-center gap-2 sm:gap-4">
           <div className="justify-self-start">
-            <p className="max-w-[9.5rem] text-[15px] font-semibold leading-tight tracking-tight text-white sm:max-w-none sm:text-lg md:text-xl">
-              The Foresight Atlas
-            </p>
+            <div className="flex max-w-[11rem] flex-wrap items-center gap-x-2 gap-y-1 sm:max-w-none">
+              <p className="text-[15px] font-semibold leading-tight tracking-tight text-white sm:text-lg md:text-xl">
+                The Foresight Atlas
+              </p>
+              <span
+                className="inline-flex shrink-0 items-center rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/80 backdrop-blur-md"
+                aria-label="Beta — this app is still in development"
+              >
+                Beta
+              </span>
+            </div>
           </div>
 
           <a
@@ -256,7 +264,7 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
               href={FORESIGHT_LUMA_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 sm:min-h-11 sm:gap-2 sm:px-4"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-sm font-medium text-white shadow-[0_8px_24px_-12px_rgba(0,0,0,0.45)] backdrop-blur-xl transition duration-200 hover:border-white/35 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 sm:min-h-11 sm:gap-2 sm:px-4"
             >
               <CalendarDays className="size-3.5 shrink-0 opacity-90 sm:size-4" aria-hidden />
               Events
@@ -265,14 +273,14 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
         </div>
       </header>
 
-      {/* Thumb-zone CTA — centered in the bottom third, above map attribution */}
+      {/* Thumb-zone CTA — glass, matching Events; centered above attribution */}
       <div className="pointer-events-none absolute inset-x-0 bottom-[max(4.75rem,12vh)] z-20 flex justify-center px-4 sm:bottom-[max(5.5rem,14vh)]">
         <button
           type="button"
           onClick={() => setShowLogin(true)}
-          className="pointer-events-auto inline-flex min-h-12 min-w-[11.5rem] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white px-7 text-base font-semibold text-gray-900 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.65)] transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:min-h-11 sm:min-w-[13rem] sm:px-8"
+          className="pointer-events-auto inline-flex min-h-12 min-w-[11.5rem] items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-7 text-base font-semibold text-white shadow-[0_16px_48px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl transition duration-200 hover:border-white/40 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:min-h-11 sm:min-w-[13rem] sm:px-8"
         >
-          <LogIn className="size-4 shrink-0" aria-hidden />
+          <LogIn className="size-4 shrink-0 opacity-90" aria-hidden />
           Sign in
         </button>
       </div>

@@ -1,10 +1,11 @@
 /**
  * Minimal pin-color key — main roles only (Fellow, Grantee, Nodee, Team).
- * Mobile: top-left (clear of bottom chrome). Desktop: bottom-left.
+ * Dot fills use the same gradients as map pin badges.
+ * Mobile: top-left. Desktop: bottom-left (above zoom when logged in).
  */
 
 import type { CSSProperties } from "react";
-import { ROLE_COLORS } from "../../styles/roleColors";
+import { getRoleGradient } from "../../styles/roleColors";
 import { Z_INDEX_MAP_CONTROLS } from "../../constants/zIndex";
 import type { RoleType } from "../../types";
 import { cn } from "../ui/utils";
@@ -38,14 +39,9 @@ export function MapRoleLegend({
     <div
       className={cn(
         "pointer-events-none absolute left-3",
-        /* Mobile: top-left, clear of header / safe area */
         surface === "public"
           ? "top-[max(4.25rem,calc(env(safe-area-inset-top)+3.5rem))]"
           : "top-[max(0.75rem,env(safe-area-inset-top))]",
-        /*
-         * Desktop: bottom-left. Logged-in sits above the zoom + projection
-         * stack; public has no corner zoom so it can sit lower.
-         */
         surface === "app"
           ? "md:top-auto md:bottom-[5.75rem]"
           : "md:top-auto md:bottom-[max(1rem,env(safe-area-inset-bottom))]",
@@ -57,20 +53,20 @@ export function MapRoleLegend({
     >
       <ul
         className={cn(
-          "flex flex-col gap-1.5 rounded-xl px-2.5 py-2.5 shadow-sm ring-1 backdrop-blur-md",
+          "flex flex-col gap-1.5 rounded-xl px-2.5 py-2.5 shadow-[0_8px_28px_-12px_rgba(0,0,0,0.35)] ring-1 backdrop-blur-xl",
           dark
-            ? "bg-black/45 text-white ring-white/15"
-            : "bg-white/92 text-gray-800 ring-black/8",
+            ? "bg-white/12 text-white ring-white/25"
+            : "bg-white/55 text-gray-800 ring-white/50",
         )}
       >
         {LEGEND_ROLES.map(({ role, label }) => (
           <li key={role} className="flex items-center gap-2" role="listitem">
             <span
               className={cn(
-                "size-3.5 shrink-0 rounded-full ring-1",
-                dark ? "ring-white/25" : "ring-black/15",
+                "size-3.5 shrink-0 rounded-full shadow-sm ring-1",
+                dark ? "ring-white/30" : "ring-black/10",
               )}
-              style={{ background: ROLE_COLORS[role].solid }}
+              style={{ background: getRoleGradient(role) }}
               aria-hidden
             />
             <span className="text-[11px] font-medium leading-none tracking-tight">
