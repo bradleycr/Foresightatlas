@@ -172,6 +172,49 @@ const escapeHtml = (value: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+/**
+ * Public showcase popup — place + role counts only.
+ * Never renders a name, id, or contact field (those must not exist in the
+ * snapshot JSON either; this is belt-and-suspenders for the DOM).
+ */
+export function buildShowcasePopupHtml(marker: PinLocation): string {
+  const cityCountry = escapeHtml(marker.country ? `${marker.city}, ${marker.country}` : marker.city);
+  const count = marker.people.length;
+  const countLabel = count === 1 ? "1 community member" : `${count} community members`;
+  const alumniCount = marker.people.filter((entry) => effectiveIsAlumni(entry.person)).length;
+
+  const roleCounts = new Map<RoleType, number>();
+  for (const { person } of marker.people) {
+    roleCounts.set(person.roleType, (roleCounts.get(person.roleType) || 0) + 1);
+  }
+  const roleRows = ROLE_ORDER.filter((role) => (roleCounts.get(role) || 0) > 0)
+    .map((role) => {
+      const n = roleCounts.get(role) || 0;
+      const roleGradient = getRoleGradient(role);
+      const roleStyle = `background:${roleGradient};color:${getRoleTextColor(role)}`;
+      return `<div class="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-100 last:border-b-0">
+        <span class="text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0" style="${roleStyle}">${escapeHtml(role)}</span>
+        <span class="text-sm font-medium text-gray-800 tabular-nums">${n}</span>
+      </div>`;
+    })
+    .join("");
+
+  const alumniLine =
+    alumniCount > 0
+      ? `<p class="text-xs text-slate-500 mt-1">${alumniCount === count ? "Alumni" : `${alumniCount} alumni · ${count - alumniCount} current`}</p>`
+      : `<p class="text-xs text-emerald-700/80 mt-1">Current community</p>`;
+
+  return `<div class="map-node-popup__inner bg-white">
+    <div class="map-node-popup__header px-3 pt-2.5 pb-2 pr-10 border-b border-gray-100">
+      <h4 class="font-semibold text-gray-900 text-sm leading-tight sm:text-base font-heading">${cityCountry}</h4>
+      <p class="text-xs text-gray-500 mt-0.5">${countLabel}</p>
+      ${alumniLine}
+    </div>
+    <div class="map-node-popup__list">${roleRows}</div>
+    <p class="px-3 py-2.5 text-[11px] text-gray-500 border-t border-gray-100 leading-snug">Sign in to see who&rsquo;s here.</p>
+  </div>`;
+}
+
 /** Popup body: place name, then a scrollable list of people at that pin. */
 export function buildPopupHtml(marker: PinLocation): string {
   const cityCountry = escapeHtml(marker.country ? `${marker.city}, ${marker.country}` : marker.city);

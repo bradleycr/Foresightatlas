@@ -1,0 +1,1258 @@
+{
+  "generatedAt": "2026-10-22T16:58:18.701Z",
+  "personCount": 202,
+  "pinCount": 112,
+  "pins": [
+    {
+      "city": "London",
+      "country": "United Kingdom",
+      "lat": 51.507,
+      "lng": -0.128,
+      "total": 14,
+      "alumni": 14,
+      "byRole": {
+        "Fellow": 7,
+        "Grantee": 7
+      }
+    },
+    {
+      "city": "Berlin",
+      "country": "Germany",
+      "lat": 52.52,
+      "lng": 13.405,
+      "total": 12,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 1,
+        "Grantee": 7,
+        "Nodee": 3,
+        "Foresight Team": 1
+      }
+    },
+    {
+      "city": "San Francisco",
+      "country": "US",
+      "lat": 37.788,
+      "lng": -122.408,
+      "total": 10,
+      "alumni": 9,
+      "byRole": {
+        "Fellow": 7,
+        "Grantee": 2,
+        "Foresight Team": 1
+      }
+    },
+    {
+      "city": "Berkeley, CA",
+      "country": "US",
+      "lat": 37.871,
+      "lng": -122.273,
+      "total": 9,
+      "alumni": 9,
+      "byRole": {
+        "Fellow": 8,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "San Francisco",
+      "country": "USA",
+      "lat": 37.775,
+      "lng": -122.419,
+      "total": 7,
+      "alumni": 3,
+      "byRole": {
+        "Fellow": 5,
+        "Foresight Team": 2
+      }
+    },
+    {
+      "city": "Boston",
+      "country": "United States",
+      "lat": 42.359,
+      "lng": -71.058,
+      "total": 6,
+      "alumni": 6,
+      "byRole": {
+        "Fellow": 5,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Oxford, United Kingdom",
+      "country": "United Kingdom",
+      "lat": 51.752,
+      "lng": -1.258,
+      "total": 5,
+      "alumni": 5,
+      "byRole": {
+        "Fellow": 4,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Cambridge",
+      "country": "USA",
+      "lat": 42.377,
+      "lng": -71.117,
+      "total": 4,
+      "alumni": 4,
+      "byRole": {
+        "Fellow": 4
+      }
+    },
+    {
+      "city": "Cambridge, Massachusetts, USA",
+      "country": "US",
+      "lat": 42.366,
+      "lng": -71.104,
+      "total": 4,
+      "alumni": 4,
+      "byRole": {
+        "Fellow": 4
+      }
+    },
+    {
+      "city": "Zürich",
+      "country": "Switzerland",
+      "lat": 47.374,
+      "lng": 8.541,
+      "total": 4,
+      "alumni": 4,
+      "byRole": {
+        "Fellow": 3,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Cambridge",
+      "country": "United Kingdom",
+      "lat": 52.198,
+      "lng": 0.139,
+      "total": 3,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "New York",
+      "country": "USA",
+      "lat": 40.713,
+      "lng": -74.006,
+      "total": 3,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2,
+        "Foresight Team": 1
+      }
+    },
+    {
+      "city": "St. Louis",
+      "country": "USA",
+      "lat": 38.625,
+      "lng": -90.19,
+      "total": 3,
+      "alumni": 3,
+      "byRole": {
+        "Fellow": 3
+      }
+    },
+    {
+      "city": "Toronto",
+      "country": "Canada",
+      "lat": 43.653,
+      "lng": -79.384,
+      "total": 3,
+      "alumni": 3,
+      "byRole": {
+        "Fellow": 3
+      }
+    },
+    {
+      "city": "Washington, D.C.",
+      "country": "US",
+      "lat": 38.895,
+      "lng": -77.037,
+      "total": 3,
+      "alumni": 3,
+      "byRole": {
+        "Fellow": 2,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Austin, TX",
+      "country": "USA",
+      "lat": 30.271,
+      "lng": -97.744,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Bay Area",
+      "country": "US",
+      "lat": 37.788,
+      "lng": -122.356,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Berlin",
+      "country": "Germany",
+      "lat": 52.517,
+      "lng": 13.395,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 1,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Copenhagen",
+      "country": "Denmark",
+      "lat": 55.687,
+      "lng": 12.57,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 1,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Evanston",
+      "country": "USA",
+      "lat": 42.057,
+      "lng": -87.675,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Evanston, IL",
+      "country": "US",
+      "lat": 42.047,
+      "lng": -87.685,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Los Angeles",
+      "country": "United States",
+      "lat": 34.054,
+      "lng": -118.243,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 1,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Melbourne",
+      "country": "Australia",
+      "lat": -37.814,
+      "lng": 144.963,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 1,
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Munich",
+      "country": "Germany",
+      "lat": 48.137,
+      "lng": 11.575,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Oak Ridge",
+      "country": "USA",
+      "lat": 35.931,
+      "lng": -84.31,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Philadelphia",
+      "country": "United States",
+      "lat": 39.953,
+      "lng": -75.164,
+      "total": 2,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1,
+        "Foresight Team": 1
+      }
+    },
+    {
+      "city": "Santa Monica, CA",
+      "country": "United States",
+      "lat": 34.019,
+      "lng": -118.491,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Grantee": 2
+      }
+    },
+    {
+      "city": "Seattle",
+      "country": "USA",
+      "lat": 47.655,
+      "lng": -122.303,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "USA",
+      "country": "Berkeley, CA, USA",
+      "lat": 37.87,
+      "lng": -122.285,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Grantee": 2
+      }
+    },
+    {
+      "city": "Zurich",
+      "country": "Switzerland",
+      "lat": 47.377,
+      "lng": 8.542,
+      "total": 2,
+      "alumni": 2,
+      "byRole": {
+        "Fellow": 2
+      }
+    },
+    {
+      "city": "Ann Arbor",
+      "country": "United States",
+      "lat": 42.281,
+      "lng": -83.748,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Atlanta",
+      "country": "USA",
+      "lat": 33.793,
+      "lng": -84.323,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Austin",
+      "country": "USA",
+      "lat": 30.285,
+      "lng": -97.734,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Austin",
+      "country": "United States",
+      "lat": 30.265,
+      "lng": -97.747,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Bangalore",
+      "country": "India",
+      "lat": 12.977,
+      "lng": 77.59,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Barcelona",
+      "country": "Spain",
+      "lat": 41.383,
+      "lng": 2.177,
+      "total": 1,
+      "alumni": 0,
+      "byRole": {
+        "Foresight Team": 1
+      }
+    },
+    {
+      "city": "Beijing",
+      "country": "China",
+      "lat": 39.904,
+      "lng": 116.407,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Berkeley",
+      "country": "USA",
+      "lat": 37.872,
+      "lng": -122.273,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Birmingham",
+      "country": "UK",
+      "lat": 52.486,
+      "lng": -1.89,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Bonn",
+      "country": "Germany",
+      "lat": 50.734,
+      "lng": 7.1,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Boston",
+      "country": "USA",
+      "lat": 42.408,
+      "lng": -71.119,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Budapest, Hungary",
+      "country": "Magyarország",
+      "lat": 47.433,
+      "lng": 19.261,
+      "total": 1,
+      "alumni": 0,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Cambridge",
+      "country": "USA",
+      "lat": 42.36,
+      "lng": -71.094,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Canberra",
+      "country": "Australia",
+      "lat": -35.298,
+      "lng": 149.101,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Cardiff",
+      "country": "UK",
+      "lat": 51.482,
+      "lng": -3.179,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "College Station",
+      "country": "USA",
+      "lat": 30.619,
+      "lng": -96.336,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Dallas",
+      "country": "United States",
+      "lat": 32.776,
+      "lng": -96.797,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Durham",
+      "country": "USA",
+      "lat": 36.001,
+      "lng": -78.938,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Estonia",
+      "country": "We are working online. I am physically located in Rakvere, Estonia.",
+      "lat": 58.752,
+      "lng": 25.332,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Exeter",
+      "country": "UK",
+      "lat": 50.726,
+      "lng": -3.527,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Finland",
+      "country": "Helsinki, Finland",
+      "lat": 60.173,
+      "lng": 24.933,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Geneva",
+      "country": "Switzerland",
+      "lat": 46.202,
+      "lng": 6.147,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Germany",
+      "country": "Deutschland",
+      "lat": 51.164,
+      "lng": 10.448,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Glasgow",
+      "country": "UK",
+      "lat": 55.872,
+      "lng": -4.29,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Glasgow",
+      "country": "United Kingdom",
+      "lat": 55.861,
+      "lng": -4.25,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Groningen",
+      "country": "Netherlands",
+      "lat": 53.219,
+      "lng": 6.567,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Hamburg",
+      "country": "Germany",
+      "lat": 53.55,
+      "lng": 10.001,
+      "total": 1,
+      "alumni": 0,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Hong Kong",
+      "country": "China",
+      "lat": 22.282,
+      "lng": 114.158,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Irvine",
+      "country": "USA",
+      "lat": 33.641,
+      "lng": -117.844,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Ithaca, New York, USA",
+      "country": "US",
+      "lat": 42.437,
+      "lng": -76.548,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Leiden",
+      "country": "Netherlands",
+      "lat": 52.16,
+      "lng": 4.497,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Lexington, Massachusetts",
+      "country": "US",
+      "lat": 42.447,
+      "lng": -71.225,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Liège",
+      "country": "Belgium",
+      "lat": 50.633,
+      "lng": 5.58,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Lille",
+      "country": "France",
+      "lat": 50.637,
+      "lng": 3.064,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Lincoln",
+      "country": "United Kingdom",
+      "lat": 53.229,
+      "lng": -0.54,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "London",
+      "country": "UK",
+      "lat": 51.499,
+      "lng": -0.175,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Los Angeles",
+      "country": "USA",
+      "lat": 34.069,
+      "lng": -118.445,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Los Angeles",
+      "country": "USA",
+      "lat": 34.052,
+      "lng": -118.244,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Luxembourg",
+      "country": "Luxembourg",
+      "lat": 49.816,
+      "lng": 6.13,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Manchester",
+      "country": "UK",
+      "lat": 53.479,
+      "lng": -2.245,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Minneapolis, MN",
+      "country": "United States",
+      "lat": 44.977,
+      "lng": -93.265,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Montreal, Quebec, Canada",
+      "country": "Canada",
+      "lat": 45.503,
+      "lng": -73.57,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Munich",
+      "country": "Germany",
+      "lat": 48.15,
+      "lng": 11.568,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "New Haven, CT",
+      "country": "USA",
+      "lat": 41.308,
+      "lng": -72.925,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "New Zealand",
+      "country": "US",
+      "lat": 38.919,
+      "lng": -77.064,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Norman, OK",
+      "country": "USA",
+      "lat": 35.223,
+      "lng": -97.439,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Oxford, Mississippi",
+      "country": "USA",
+      "lat": 34.366,
+      "lng": -89.519,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Padova",
+      "country": "Italy",
+      "lat": 45.391,
+      "lng": 11.806,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Palo Alto, CA",
+      "country": "USA",
+      "lat": 37.444,
+      "lng": -122.16,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Paris",
+      "country": "France",
+      "lat": 48.859,
+      "lng": 2.32,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Parma",
+      "country": "Italy",
+      "lat": 44.695,
+      "lng": 10.098,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Pasadena, CA",
+      "country": "US",
+      "lat": 34.148,
+      "lng": -118.144,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Philadelphia",
+      "country": "USA",
+      "lat": 39.952,
+      "lng": -75.193,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Philadelphia",
+      "country": "USA",
+      "lat": 39.957,
+      "lng": -75.19,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Pittsburgh",
+      "country": "USA",
+      "lat": 40.441,
+      "lng": -79.996,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Pittsburgh",
+      "country": "United States",
+      "lat": 40.441,
+      "lng": -80.003,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Raleigh",
+      "country": "USA",
+      "lat": 35.787,
+      "lng": -78.67,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Reading",
+      "country": "UK",
+      "lat": 51.441,
+      "lng": -0.942,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Rehovot",
+      "country": "Israel",
+      "lat": 31.905,
+      "lng": 34.808,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Rome",
+      "country": "Italy",
+      "lat": 41.893,
+      "lng": 12.483,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Sacramento, California",
+      "country": "USA",
+      "lat": 38.581,
+      "lng": -121.494,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "San Antonio",
+      "country": "United States",
+      "lat": 29.425,
+      "lng": -98.495,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "San Francisco",
+      "country": "San Francisco, CA",
+      "lat": 37.777,
+      "lng": -122.395,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Seattle, WA, USA",
+      "country": "United States",
+      "lat": 47.604,
+      "lng": -122.33,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Singapore",
+      "country": "Singapore",
+      "lat": 1.297,
+      "lng": 103.776,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Singapore",
+      "country": "Singapore",
+      "lat": 1.357,
+      "lng": 103.819,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "South San Francisco",
+      "country": "USA",
+      "lat": 37.655,
+      "lng": -122.408,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Stockholm",
+      "country": "Sweden",
+      "lat": 59.35,
+      "lng": 18.027,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Stockholm",
+      "country": "Sweden",
+      "lat": 59.325,
+      "lng": 18.071,
+      "total": 1,
+      "alumni": 0,
+      "byRole": {
+        "Foresight Team": 1
+      }
+    },
+    {
+      "city": "Storrs",
+      "country": "USA",
+      "lat": 41.808,
+      "lng": -72.249,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Strasbourg",
+      "country": "France",
+      "lat": 48.573,
+      "lng": 7.752,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Strasbourg",
+      "country": "France",
+      "lat": 48.585,
+      "lng": 7.751,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Sunnyvale, California",
+      "country": "USA",
+      "lat": 37.369,
+      "lng": -122.036,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Switzerland",
+      "country": "Zurich, Switzerland",
+      "lat": 47.384,
+      "lng": 8.495,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Grantee": 1
+      }
+    },
+    {
+      "city": "Sydney",
+      "country": "Australia",
+      "lat": -33.87,
+      "lng": 151.208,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Torrance",
+      "country": "USA",
+      "lat": 33.837,
+      "lng": -118.341,
+      "total": 1,
+      "alumni": 0,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "United Kingdom",
+      "country": "Oxford/Prague/US",
+      "lat": 54.702,
+      "lng": -3.277,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Vienna",
+      "country": "Austria",
+      "lat": 48.208,
+      "lng": 16.373,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Waltham",
+      "country": "United States",
+      "lat": 42.376,
+      "lng": -71.236,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Washington",
+      "country": "United States",
+      "lat": 38.895,
+      "lng": -77.036,
+      "total": 1,
+      "alumni": 0,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Waterloo, Ontario",
+      "country": "Canada",
+      "lat": 43.465,
+      "lng": -80.522,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    },
+    {
+      "city": "Waterloo, Ontario, Canada",
+      "country": "Canada",
+      "lat": 43.499,
+      "lng": -80.544,
+      "total": 1,
+      "alumni": 1,
+      "byRole": {
+        "Fellow": 1
+      }
+    }
+  ]
+}

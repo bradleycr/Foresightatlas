@@ -100,6 +100,7 @@
         "dev:signal": "node server/signal/index.js",
         "dev:all": "concurrently \"pnpm run dev:api\" \"vite\" \"pnpm run dev:signal\"",
         "build": "vite build",
+        "preview:atlas": "node scripts/build-atlas-preview.js",
         "sync:sheet": "node scripts/sync-sheet-to-json.js",
         "merge:people": "node scripts/merge-people-into-realdata.js",
         "geocode:sheet": "node scripts/geocode-sheet.js",

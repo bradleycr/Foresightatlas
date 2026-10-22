@@ -20,6 +20,7 @@ import {
 import { DEFER_PROGRAMMING_LOAD } from "./constants/loadStrategy";
 import { setAPIRsvpsFromBuild } from "./services/rsvp";
 import { AuthGate } from "./components/auth/AuthGate";
+import { PublicAtlasPage } from "./pages/PublicAtlasPage";
 import {
   publishLocalDataChanged,
   subscribeToDataChanges,
@@ -869,10 +870,10 @@ export default function App() {
   );
 
   /*
-   * Whole-app auth gate. This is an internal tool: nothing renders until a
-   * member is signed in. The only exceptions are the magic-link flows that a
-   * signed-out person legitimately needs — claiming an existing profile and
-   * the invite-only join page — plus public event-poll QR / projector pages.
+   * Signed-out experience:
+   *   /              → public aggregate globe (static JSON, no directory API)
+   *   /checkin… etc. → AuthGate (check-in + other gated paths need a session)
+   * Claim / join / access / public polls stay ungated as before.
    */
   if (
     !identity &&
@@ -882,9 +883,14 @@ export default function App() {
     !isPollsPublicExperience &&
     !welcomePreview
   ) {
+    const isPublicHome = route === "/" || route === "";
     return (
       <>
-        <AuthGate route={route} onSignIn={handleDirectorySignIn} />
+        {isPublicHome ? (
+          <PublicAtlasPage onSignIn={handleDirectorySignIn} />
+        ) : (
+          <AuthGate route={route} onSignIn={handleDirectorySignIn} />
+        )}
         <Toaster />
       </>
     );

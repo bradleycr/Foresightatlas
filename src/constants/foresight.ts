@@ -1,6 +1,9 @@
 /** Canonical Foresight Institute website — logo clicks open this in a new tab. */
 export const FORESIGHT_ORG_URL = "https://foresight.org";
 
+/** Public Luma calendar — events without signing into the Atlas. */
+export const FORESIGHT_LUMA_URL = "https://luma.com/foresightinstitute";
+
 /**
  * Short walkthrough shown once, the first time someone enters the atlas.
  * A Zoom cloud recording. It plays inside the welcome letter, so closing

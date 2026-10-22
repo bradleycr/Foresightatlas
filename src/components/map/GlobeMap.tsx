@@ -39,6 +39,7 @@ import {
   ROLE_CLUSTER_KEYS,
   bindPopupPeople,
   buildPopupHtml,
+  buildShowcasePopupHtml,
   clusterBadgeHtml,
   communityStatusFromCounts,
   getCommunityStatus,
@@ -99,6 +100,11 @@ interface GlobeMapProps {
   onPersonClick: (personId: string) => void;
   /** WebGL or the style failed. The parent drops back to the flat map. */
   onUnavailable: () => void;
+  /**
+   * Public teaser: role-count popup only — never a name list.
+   * Person clicks are ignored even if synthetic ids exist on the markers.
+   */
+  showcase?: boolean;
 }
 
 function pinFeatureCollection(markers: PinLocation[]): GeoJSON.FeatureCollection {
@@ -174,6 +180,7 @@ export function GlobeMap({
   onMarkerClick,
   onPersonClick,
   onUnavailable,
+  showcase = false,
 }: GlobeMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -181,6 +188,7 @@ export function GlobeMap({
   const onMarkerClickRef = useRef(onMarkerClick);
   const onPersonClickRef = useRef(onPersonClick);
   const iconUrlRef = useRef(iconUrl);
+  const showcaseRef = useRef(showcase);
   /** First-load intro owns framing until it finishes — marker effects must not snap over it. */
   const introCompleteRef = useRef(prefersReducedMotion());
   /** Stops the idle rAF spin before any programmatic easeTo/flyTo (avoids MapLibre ease races). */
@@ -191,6 +199,7 @@ export function GlobeMap({
   onMarkerClickRef.current = onMarkerClick;
   onPersonClickRef.current = onPersonClick;
   iconUrlRef.current = iconUrl;
+  showcaseRef.current = showcase;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -486,8 +495,12 @@ export function GlobeMap({
       }
       openKey = key;
       const root = document.createElement("div");
-      root.innerHTML = buildPopupHtml(location);
-      bindPopupPeople(root, (personId) => onPersonClickRef.current(personId));
+      if (showcaseRef.current) {
+        root.innerHTML = buildShowcasePopupHtml(location);
+      } else {
+        root.innerHTML = buildPopupHtml(location);
+        bindPopupPeople(root, (personId) => onPersonClickRef.current(personId));
+      }
       popup.setOffset(clustered ? [0, -28] : [0, -52]);
       popup.setDOMContent(root).setLngLat(lngLat).addTo(map);
       /* The pan moves the pin out from under the cursor. Don't treat that as a leave. */
