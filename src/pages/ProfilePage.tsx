@@ -31,7 +31,12 @@ import { getNode } from "../data/nodes";
 import { peekRegisterInviteRole } from "../utils/inviteToken";
 import { buildFullPath } from "../utils/router";
 import { armWelcomeLetter } from "../services/welcomeLetter";
-import { atlasProfileRemovalMailto } from "../utils/checkInAuth";
+import { PrivacyConsentNote } from "../components/auth/PrivacyConsentNote";
+import { downloadMemberDataExport } from "../services/dataExport";
+import {
+  atlasPrivacyMailto,
+  atlasProfileRemovalMailto,
+} from "../utils/checkInAuth";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -186,6 +191,8 @@ export function ProfilePage({
   });
   /** For create mode: password and confirm. */
   const [createPassword, setCreatePassword] = useState({ password: "", confirm: "" });
+  /** Create-mode acknowledgment of Privacy & data. */
+  const [createPrivacyAccepted, setCreatePrivacyAccepted] = useState(false);
   /** Edit-form focus areas (used for map filtering). */
   const [editSelectedPresets, setEditSelectedPresets] = useState<string[]>([]);
   const [editCustomFocusStr, setEditCustomFocusStr] = useState("");
@@ -429,6 +436,10 @@ export function ProfilePage({
           toast.error("Passwords don't match.");
           return;
         }
+        if (!createPrivacyAccepted) {
+          toast.error("Please confirm you’ve read Privacy & data.");
+          return;
+        }
         setIsSaving(true);
         try {
           const roleType = inviteLockedRole || createDraft.roleType;
@@ -562,6 +573,13 @@ export function ProfilePage({
                     ) : null}
                   </Field>
                 </div>
+                <div className="mt-4">
+                  <PrivacyConsentNote
+                    checked={createPrivacyAccepted}
+                    onCheckedChange={setCreatePrivacyAccepted}
+                    id="create-privacy-consent"
+                  />
+                </div>
               </ProfileSection>
             </div>
 
@@ -572,7 +590,7 @@ export function ProfilePage({
                 </Button>
                 <Button
                   onClick={handleCreate}
-                  disabled={isSaving}
+                  disabled={isSaving || !createPrivacyAccepted}
                   className="min-h-[48px] px-6"
                 >
                   {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
@@ -1110,15 +1128,46 @@ export function ProfilePage({
                     check in, and edit this profile. Save profile to apply.
                   </p>
                 ) : null}
-                <p className="text-sm text-gray-600">
-                  Want your row removed entirely?{" "}
-                  <a
-                    href={atlasProfileRemovalMailto(draft.fullName || identity.fullName)}
-                    className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline"
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] justify-center sm:w-auto"
+                    onClick={() => {
+                      downloadMemberDataExport(draft);
+                      toast.success("Download started", {
+                        description: "Your data export is a JSON file in Downloads.",
+                      });
+                    }}
                   >
-                    Email us and we’ll delete it
+                    Download my data
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] justify-center sm:w-auto"
+                    asChild
+                  >
+                    <a href={atlasProfileRemovalMailto(draft.fullName || identity.fullName)}>
+                      Request deletion
+                    </a>
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Or hide yourself with Private above.{" "}
+                  <a
+                    href={buildFullPath("/privacy")}
+                    className="font-medium text-gray-700 underline underline-offset-2 hover:no-underline"
+                  >
+                    Privacy &amp; data
                   </a>
-                  .
+                  {" · "}
+                  <a
+                    href={atlasPrivacyMailto(draft.fullName || identity.fullName)}
+                    className="font-medium text-gray-700 underline underline-offset-2 hover:no-underline"
+                  >
+                    Other privacy request
+                  </a>
                 </p>
               </ProfileSection>
 

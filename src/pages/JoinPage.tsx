@@ -10,6 +10,7 @@ import {
   type InviteClaimPeek,
 } from "../services/memberAuth";
 import { armWelcomeLetter } from "../services/welcomeLetter";
+import { PrivacyConsentNote } from "../components/auth/PrivacyConsentNote";
 import { ATLAS_ACCESS_MAILTO } from "../utils/checkInAuth";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { Button } from "../components/ui/button";
@@ -177,6 +178,7 @@ function ExistingClaimForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -252,6 +254,10 @@ function ExistingClaimForm({
     }
     if (password !== confirm) {
       setError("Passwords don't match.");
+      return;
+    }
+    if (!privacyAccepted) {
+      setError("Please confirm you’ve read Privacy & data.");
       return;
     }
     setIsSubmitting(true);
@@ -475,6 +481,14 @@ function ExistingClaimForm({
             </>
           )}
 
+          {peek?.status === "ready" ? (
+            <PrivacyConsentNote
+              checked={privacyAccepted}
+              onCheckedChange={setPrivacyAccepted}
+              id="join-claim-privacy-consent"
+            />
+          ) : null}
+
           {error && (
             <p className="text-sm text-red-600" role="alert">
               {error}
@@ -484,7 +498,9 @@ function ExistingClaimForm({
           <div className="flex flex-wrap gap-3">
             <Button
               type="submit"
-              disabled={isSubmitting || peek?.status !== "ready"}
+              disabled={
+                isSubmitting || peek?.status !== "ready" || !privacyAccepted
+              }
               className="min-h-[44px] px-5"
             >
               {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}

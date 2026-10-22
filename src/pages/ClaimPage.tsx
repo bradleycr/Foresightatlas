@@ -22,6 +22,7 @@ import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { PrivacyConsentNote } from "../components/auth/PrivacyConsentNote";
 import { peekClaim } from "../services/memberAuth";
 import { getIdentity } from "../services/identity";
 import { armWelcomeLetter } from "../services/welcomeLetter";
@@ -65,6 +66,7 @@ export function ClaimPage({
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [email, setEmail] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -106,8 +108,9 @@ export function ClaimPage({
     if (peek.status !== "ready") return false;
     const emailOk =
       peek.mode === "reset" || !peek.needsEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-    return emailOk && password.length >= 8 && password === confirm;
-  }, [peek, password, confirm, email]);
+    const privacyOk = peek.mode === "reset" || privacyAccepted;
+    return emailOk && privacyOk && password.length >= 8 && password === confirm;
+  }, [peek, password, confirm, email, privacyAccepted]);
 
   const passwordsMismatch =
     confirm.length > 0 && password.length > 0 && password !== confirm;
@@ -135,6 +138,10 @@ export function ClaimPage({
         setError("Enter a valid email address.");
         return;
       }
+      if (peek.status === "ready" && peek.mode === "claim" && !privacyAccepted) {
+        setError("Please confirm you’ve read Privacy & data.");
+        return;
+      }
 
       setIsSubmitting(true);
       try {
@@ -160,7 +167,7 @@ export function ClaimPage({
         setIsSubmitting(false);
       }
     },
-    [token, password, confirm, email, peek, onClaim, onClaimed],
+    [token, password, confirm, email, peek, privacyAccepted, onClaim, onClaimed],
   );
 
   return (
@@ -324,6 +331,14 @@ export function ClaimPage({
                 </p>
               ) : null}
             </div>
+
+            {peek.mode === "claim" ? (
+              <PrivacyConsentNote
+                checked={privacyAccepted}
+                onCheckedChange={setPrivacyAccepted}
+                id="claim-privacy-consent"
+              />
+            ) : null}
 
             {error && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

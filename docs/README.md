@@ -33,6 +33,7 @@ Production is **https://atlas.foresight.org** (Vercel). A GitHub Pages workflow 
 
 | Doc | Purpose |
 |-----|---------|
+| [GDPR.md](GDPR.md) | Privacy notice + product controls vs org/legal checklist |
 | [MANUAL_UX_CHECKLIST.md](MANUAL_UX_CHECKLIST.md) | Smoke-test before a release |
 | [AGENTS.md](../AGENTS.md) | Maintainer / AI runbook (ports, naming, caveats) |
 | [.github/SECURITY.md](../.github/SECURITY.md) | Report vulnerabilities privately |

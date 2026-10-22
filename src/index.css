@@ -428,10 +428,28 @@ select optgroup {
 .atlas-globe-pin {
   cursor: pointer;
   line-height: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Clusters: bigger hit target than the 40px badge — especially when zoomed out. */
+.atlas-globe-pin[data-kind="cluster"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 6px;
+  box-sizing: content-box;
 }
 
 .atlas-globe-pin img {
   display: block;
+  pointer-events: none;
+}
+
+.atlas-globe-pin .marker-cluster-role-outer {
+  pointer-events: none;
 }
 
 /* Pins on the far side of the earth are faded out by MapLibre. Don't let them catch taps. */

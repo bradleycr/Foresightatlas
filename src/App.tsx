@@ -43,6 +43,7 @@ import { CheckInPage } from "./pages/CheckInPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { JoinPage } from "./pages/JoinPage";
 import { AccessPage } from "./pages/AccessPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { StatsPage } from "./pages/StatsPage";
 import { PollsPage } from "./pages/PollsPage";
 import { PollVotePage } from "./pages/PollVotePage";
@@ -243,7 +244,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/open-to-meet", "/stats", "/claim", "/join", "/access", "/polls"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/open-to-meet", "/stats", "/claim", "/join", "/access", "/privacy", "/polls"];
     const current = getRoutePath();
     // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
     // so we match them with a prefix rather than an exact list entry. Bare
@@ -676,10 +677,12 @@ export default function App() {
       : null;
   /** Self-serve claim / password-reset — on-screen magic link after roster match. */
   const isAccessRoute = route === "/access";
+  /** Privacy notice — public, no sign-in required. */
+  const isPrivacyRoute = route === "/privacy";
   const isMapRoute = route === "/" || route === "";
-  /** Magic-link onboarding — no chrome; the form needs the full viewport. */
+  /** Magic-link onboarding + privacy — no chrome; the form needs the full viewport. */
   const isTokenOnboardingRoute =
-    !identity && (isClaimRoute || isJoinRoute || isAccessRoute);
+    !identity && (isClaimRoute || isJoinRoute || isAccessRoute || isPrivacyRoute);
   const isPollsPublicExperience = isPollsPublicRoute(route);
   /*
    * Resolve the signed-in member's record. Prefer the public directory copy
@@ -817,6 +820,8 @@ export default function App() {
     />
   ) : isAccessRoute ? (
     <AccessPage onNavigateHome={() => navigate("/")} />
+  ) : isPrivacyRoute ? (
+    <PrivacyPage onNavigateHome={() => navigate("/")} />
   ) : (
     <>
       {showMapLocationNudge && signedInPerson ? (
@@ -880,6 +885,7 @@ export default function App() {
     !isClaimRoute &&
     !isJoinRoute &&
     !isAccessRoute &&
+    !isPrivacyRoute &&
     !isPollsPublicExperience &&
     !welcomePreview
   ) {
@@ -887,7 +893,10 @@ export default function App() {
     return (
       <>
         {isPublicHome ? (
-          <PublicAtlasPage onSignIn={handleDirectorySignIn} />
+          <PublicAtlasPage
+            onSignIn={handleDirectorySignIn}
+            onOpenPrivacy={() => navigate("/privacy")}
+          />
         ) : (
           <AuthGate route={route} onSignIn={handleDirectorySignIn} />
         )}
@@ -914,7 +923,7 @@ export default function App() {
     );
   }
 
-  if (isTokenOnboardingRoute || isPollsPublicExperience) {
+  if (isTokenOnboardingRoute || isPollsPublicExperience || isPrivacyRoute) {
     return (
       <>
         <div

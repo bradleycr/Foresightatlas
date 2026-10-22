@@ -166,6 +166,18 @@ export function atlasProfileRemovalMailto(fullName?: string): string {
   return mailto(subject, body);
 }
 
+/** General privacy / GDPR rights request (access, correction, objection, etc.). */
+export function atlasPrivacyMailto(fullName?: string): string {
+  const name = String(fullName || "").trim();
+  const subject = name
+    ? `Foresight Atlas — privacy request — ${name}`
+    : "Foresight Atlas — privacy request";
+  const body = name
+    ? `Hi,\n\nI have a privacy request about my Foresight Atlas data.\n\nFull name on the directory:\n${name}\n\nWhat I’m asking for (access / correction / erasure / objection / other):\n\n\nThanks`
+    : "Hi,\n\nI have a privacy request about my Foresight Atlas data.\n\nFull name on the directory:\n\n\nWhat I’m asking for (access / correction / erasure / objection / other):\n\n\nThanks";
+  return mailto(subject, body);
+}
+
 /** @deprecated Prefer {@link atlasPasswordResetMailto} so the body can include a name. */
 export const ATLAS_PASSWORD_RESET_MAILTO = atlasPasswordResetMailto();
 

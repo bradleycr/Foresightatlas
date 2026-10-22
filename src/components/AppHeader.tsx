@@ -428,6 +428,18 @@ export function AppHeader({
                       Cancel
                     </Button>
                   </div>
+                  <p className="mt-5 text-center text-[11px] leading-none text-gray-400">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeAccountDialog();
+                        navigate("/privacy");
+                      }}
+                      className="underline-offset-2 hover:text-gray-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 rounded-sm"
+                    >
+                      Privacy &amp; data
+                    </button>
+                  </p>
                 </div>
               ) : (
                 <div className="p-6 sm:p-7">
@@ -446,6 +458,18 @@ export function AppHeader({
                       return result;
                     }}
                   />
+                  <p className="mt-4 text-center text-[11px] leading-none text-gray-400">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeAccountDialog();
+                        navigate("/privacy");
+                      }}
+                      className="underline-offset-2 hover:text-gray-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 rounded-sm"
+                    >
+                      Privacy &amp; data
+                    </button>
+                  </p>
                 </div>
               )}
             </div>

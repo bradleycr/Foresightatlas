@@ -319,6 +319,12 @@ export function GlobeMap({
     let userInteracting = false;
     /** True while a pin/cluster flyTo owns the camera — touchend must not restart spin mid-flight. */
     let programmaticCamera = false;
+    /**
+     * True from pin pointerdown through activate(). Mobile fires touchend
+     * before click; without this the idle spin restarts and the cluster id
+     * expires under the finger — first tap feels dead, flat map does not.
+     */
+    let pinGestureActive = false;
     let spinEnabled = !reduceMotion;
     let introRunning = false;
     let spinRaf = 0;
@@ -377,8 +383,8 @@ export function GlobeMap({
       }
     };
     const resumeSpin = () => {
-      /* A pin fly-in still owns the camera — don't jumpTo over it. */
-      if (programmaticCamera) return;
+      /* A pin fly-in or in-flight cluster tap still owns the camera. */
+      if (programmaticCamera || pinGestureActive) return;
       userInteracting = false;
       startSpinLoop();
     };
@@ -387,6 +393,7 @@ export function GlobeMap({
     const runCameraMove = (move: () => void, after?: () => void) => {
       stopSpinLoop();
       userInteracting = true;
+      pinGestureActive = false;
       programmaticCamera = true;
       map.once("moveend", () => {
         programmaticCamera = false;
@@ -584,14 +591,94 @@ export function GlobeMap({
       };
     };
 
+    const beginPinGesture = () => {
+      pinGestureActive = true;
+      userInteracting = true;
+      stopSpinLoop();
+    };
+
+    const endPinGesture = () => {
+      pinGestureActive = false;
+      if (!programmaticCamera) {
+        userInteracting = false;
+        startSpinLoop();
+      }
+    };
+
+    /**
+     * Zoom until the cluster breaks apart — same idea as Leaflet
+     * zoomToBounds. Prefer MapLibre’s expansion zoom; if the cluster id
+     * expired mid-tap (common while the globe was spinning), fit the leaves.
+     */
+    const zoomToBreakCluster = async (
+      source: GeoJSONSource,
+      clusterId: number,
+      lngLat: [number, number],
+      leaves: ClusterLeaf[],
+    ) => {
+      let nextZoom: number | null = null;
+      try {
+        if (typeof source.getClusterExpansionZoom === "function") {
+          nextZoom = await source.getClusterExpansionZoom(clusterId);
+        }
+      } catch {
+        nextZoom = null;
+      }
+
+      if (nextZoom != null && Number.isFinite(nextZoom)) {
+        const targetZoom = Math.max(nextZoom, map.getZoom() + 0.75);
+        runCameraMove(() =>
+          map.easeTo({
+            center: lngLat,
+            zoom: Math.min(targetZoom, 14),
+            duration: 450,
+            essential: true,
+          }),
+        );
+        return;
+      }
+
+      const bounds = new LngLatBounds();
+      for (const leaf of leaves) {
+        if (leaf.geometry?.type !== "Point") continue;
+        const coords = leaf.geometry.coordinates as [number, number];
+        if (Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
+          bounds.extend(coords);
+        }
+      }
+      if (bounds.isEmpty()) {
+        runCameraMove(() =>
+          map.easeTo({
+            center: lngLat,
+            zoom: Math.min(map.getZoom() + 2.25, 14),
+            duration: 450,
+            essential: true,
+          }),
+        );
+        return;
+      }
+      runCameraMove(() =>
+        map.fitBounds(bounds, {
+          padding: 56,
+          maxZoom: 14,
+          duration: 450,
+          essential: true,
+        }),
+      );
+    };
+
     const activate = async (element: HTMLElement, fromHover: boolean) => {
       const kind = element.dataset.kind;
       if (fromHover && (kind !== "point" || map.getZoom() < MIN_ZOOM_ON_PIN_CLICK)) return;
       cancelClose();
+      if (!fromHover) beginPinGesture();
 
       if (kind === "point") {
         const location = markersRef.current[Number(element.dataset.markerIndex)];
-        if (!location) return;
+        if (!location) {
+          if (!fromHover) endPinGesture();
+          return;
+        }
         const lngLat: [number, number] = [location.coordinates.lng, location.coordinates.lat];
         if (!fromHover && map.getZoom() < MIN_ZOOM_ON_PIN_CLICK) {
           const zoomDelta = MIN_ZOOM_ON_PIN_CLICK - map.getZoom();
@@ -608,20 +695,30 @@ export function GlobeMap({
           );
         } else {
           openPopup(lngLat, location, false);
+          if (!fromHover) endPinGesture();
         }
         onMarkerClickRef.current(location);
         return;
       }
 
-      if (fromHover || kind !== "cluster") return;
+      if (fromHover || kind !== "cluster") {
+        if (!fromHover) endPinGesture();
+        return;
+      }
       const source = map.getSource("atlas-people") as GeoJSONSource | undefined;
-      if (!source || typeof source.getClusterLeaves !== "function") return;
+      if (!source || typeof source.getClusterLeaves !== "function") {
+        endPinGesture();
+        return;
+      }
       const clusterId = Number(element.dataset.clusterId);
       const lngLat: [number, number] = [Number(element.dataset.lng), Number(element.dataset.lat)];
       try {
         const leaves = (await source.getClusterLeaves(clusterId, 1000, 0)) as ClusterLeaf[];
         const location = locationFromLeaves(leaves);
-        if (!location) return;
+        if (!location) {
+          endPinGesture();
+          return;
+        }
         const tight = leafSpanMeters(leaves) <= CITY_CLUSTER_METERS || map.getZoom() >= 12;
         if (tight) {
           /*
@@ -643,16 +740,29 @@ export function GlobeMap({
             );
           } else {
             openPopup(lngLat, location, true);
+            endPinGesture();
           }
           onMarkerClickRef.current(location);
           return;
         }
-        const nextZoom = await source.getClusterExpansionZoom(clusterId);
-        runCameraMove(() =>
-          map.easeTo({ center: lngLat, zoom: nextZoom, duration: 450, essential: true }),
-        );
+        await zoomToBreakCluster(source, clusterId, lngLat, leaves);
       } catch {
-        /* The cluster can expire if the zoom changed before the lookup returned. */
+        /*
+         * Cluster expired (spin / concurrent move). Nudge in toward the
+         * badge so the next tile rebuild is under the finger’s target.
+         */
+        if (Number.isFinite(lngLat[0]) && Number.isFinite(lngLat[1])) {
+          runCameraMove(() =>
+            map.easeTo({
+              center: lngLat,
+              zoom: Math.min(map.getZoom() + 2.25, 14),
+              duration: 450,
+              essential: true,
+            }),
+          );
+        } else {
+          endPinGesture();
+        }
       }
     };
 
@@ -722,6 +832,12 @@ export function GlobeMap({
         element.dataset.clusterId = String(properties.cluster_id ?? "");
         element.dataset.lng = String(coords[0]);
         element.dataset.lat = String(coords[1]);
+        element.setAttribute(
+          "aria-label",
+          clustered
+            ? `Cluster of ${Number(properties.personCount) || Number(properties.point_count) || 0} people — tap to zoom`
+            : "Map pin",
+        );
 
         const marker = new Marker({
           element,
@@ -733,8 +849,22 @@ export function GlobeMap({
           .setLngLat(coords)
           .addTo(map);
 
+        /*
+         * Capture pointerdown before map touchend resumes spin. Without this,
+         * zoomed-out cluster taps often miss on the first try.
+         */
+        element.addEventListener(
+          "pointerdown",
+          (event) => {
+            if (event.button != null && event.button !== 0) return;
+            beginPinGesture();
+            event.stopPropagation();
+          },
+          { capture: true },
+        );
         marker.on("click", (event) => {
           event.originalEvent.stopPropagation();
+          event.originalEvent.preventDefault();
           void activate(element, false);
         });
         element.addEventListener("mouseenter", () => void activate(element, true));

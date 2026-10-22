@@ -43,6 +43,8 @@ interface PublicAtlasPageProps {
     username: string,
     password: string,
   ) => Promise<{ ok: boolean; error?: string }>;
+  /** Open the short privacy notice (SPA navigate from signed-out home). */
+  onOpenPrivacy?: () => void;
 }
 
 const ROLE_ORDER: RoleType[] = [
@@ -141,7 +143,7 @@ function formatLastUpdate(iso?: string): string | null {
   return `Last update ${when}`;
 }
 
-export function PublicAtlasPage({ onSignIn }: PublicAtlasPageProps) {
+export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProps) {
   const isMobile = useIsMobile();
   const [preview, setPreview] = useState<AtlasPreviewFile | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -321,6 +323,17 @@ export function PublicAtlasPage({ onSignIn }: PublicAtlasPageProps) {
               onSubmit={onSignIn}
               showAccountRecovery
             />
+            {onOpenPrivacy ? (
+              <p className="mt-4 text-center text-[11px] leading-none text-gray-400">
+                <button
+                  type="button"
+                  onClick={onOpenPrivacy}
+                  className="underline-offset-2 hover:text-gray-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 rounded-sm"
+                >
+                  Privacy &amp; data
+                </button>
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}
