@@ -1262,7 +1262,7 @@ export function ProfilePage({
               >
                 <Field
                   label="Booking link"
-                  description="This is what puts you on the community Calendar. A plain email does not."
+                  description="This is what puts you on Open to meet. A plain email does not."
                 >
                   <Input
                     value={draft.availabilityUrl ?? ""}
@@ -1277,12 +1277,12 @@ export function ProfilePage({
                   <p className="mt-2 text-xs leading-relaxed text-gray-500">
                     Paste a public booking page — Google Calendar appointment
                     schedule, Calendly, Cal.com, or similar. Signed-in members
-                    then see you under Open to meet on the{" "}
+                    then see you under{" "}
                     <a
-                      href={buildFullPath("/calendar")}
+                      href={buildFullPath("/open-to-meet")}
                       className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
                     >
-                      community Calendar
+                      Open to meet
                     </a>{" "}
                     and can book a slot you already offer. Leave this blank to
                     stay off that list.
@@ -1732,14 +1732,14 @@ function OpenToMeetProfileStatus({ person }: { person: Person }) {
           <div>
             <p className="font-medium text-gray-900">You&apos;re open to meet</p>
             <p className="mt-1 text-sm leading-relaxed text-gray-600">
-              Signed-in members can find you on the{" "}
+              Signed-in members can find you on{" "}
               <a
-                href={buildFullPath("/calendar")}
+                href={buildFullPath("/open-to-meet")}
                 className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
               >
-                community Calendar
+                Open to meet
               </a>{" "}
-              page and book time via your link. You control what slots you offer on your booking
+              and book time via your link. You control what slots you offer on your booking
               page.
             </p>
           </div>
@@ -1760,14 +1760,14 @@ function OpenToMeetProfileStatus({ person }: { person: Person }) {
     <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white/50 px-4 py-4 sm:px-5">
       <p className="text-sm leading-relaxed text-gray-600">
         <span className="font-medium text-gray-800">Open to meet?</span> Add a booking link below
-        (Google appointment schedule, Calendly, Cal.com) to appear on the{" "}
+        (Google appointment schedule, Calendly, Cal.com) to appear on{" "}
         <a
-          href={buildFullPath("/calendar")}
+          href={buildFullPath("/open-to-meet")}
           className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
         >
-          community Calendar
-        </a>{" "}
-        page.
+          Open to meet
+        </a>
+        .
       </p>
     </div>
   );

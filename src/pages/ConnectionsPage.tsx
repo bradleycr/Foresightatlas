@@ -1,11 +1,5 @@
 /**
- * ConnectionsPage
- *
- * Lists people the logged-in user has bookmarked for easy reconnection.
- * Shown only when signed in; otherwise prompts to sign in. Clean, scannable list
- * with mobile-friendly cards that open the person detail modal.
- * Styling uses the app’s pastel gradient language (pink→mint) so it sits
- * alongside programming nodes without repeating Berlin/SF/Global.
+ * ConnectionsPage — bookmarked people, with Open to meet actions inline.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -19,14 +13,16 @@ import {
   removeConnection,
 } from "../services/connections";
 import { Button } from "../components/ui/button";
+import { MeetActions, OpenToMeetBadge } from "../components/MeetActions";
 import { getRolePillClass } from "../styles/roleColors";
 import {
   connectionsAccentGradient,
   connectionsHeaderGradient,
 } from "../styles/gradients";
+import { isOpenToMeet } from "../utils/openToMeet";
+import { buildFullPath } from "../utils/router";
 import { cn } from "../components/ui/utils";
 
-/** Header band: white overlay + connections pastel (matches NodeProgrammingPage pattern). */
 const connectionsHeaderStyle: React.CSSProperties = {
   background: `linear-gradient(to bottom, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.82) 100%), ${connectionsHeaderGradient}`,
   backgroundBlendMode: "normal",
@@ -35,7 +31,6 @@ const connectionsHeaderStyle: React.CSSProperties = {
 export interface ConnectionsPageProps {
   identity: Identity | null;
   people: Person[];
-  /** When this changes, re-read connections from storage (e.g. after toggling in modal). */
   connectionsVersion?: number;
   onNavigateHome: () => void;
   onOpenProfile: () => void;
@@ -69,6 +64,11 @@ export function ConnectionsPage({
     [people, connectionIds],
   );
 
+  const openToMeetCount = useMemo(
+    () => connectedPeople.filter(isOpenToMeet).length,
+    [connectedPeople],
+  );
+
   const unresolvedIds = useMemo(
     () => connectionIds.filter((id) => !people.some((p) => p.id === id)),
     [connectionIds, people],
@@ -76,7 +76,6 @@ export function ConnectionsPage({
 
   const handleRemoveBookmark = (personId: string) => {
     if (!identity) return;
-    // Local store updates before the network await — tick right after kickoff.
     const pending = removeConnection(identity.personId, personId);
     setTick((t) => t + 1);
     toast.message("Removed from connections", { duration: 1400 });
@@ -90,7 +89,7 @@ export function ConnectionsPage({
 
   if (!identity) {
     return (
-      <div className="flex flex-1 flex-col min-h-0 bg-gradient-to-b from-pink-50/40 via-gray-50 to-emerald-50/30">
+      <div className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-pink-50/40 via-gray-50 to-emerald-50/30">
         <div
           className="border-b border-gray-200 px-4 py-4 md:px-8 md:py-5"
           style={connectionsHeaderStyle}
@@ -100,7 +99,7 @@ export function ConnectionsPage({
               variant="ghost"
               size="sm"
               onClick={onNavigateHome}
-              className="gap-2 text-gray-700 min-h-[44px] touch-manipulation pl-2"
+              className="min-h-[44px] gap-2 pl-2 text-gray-700 touch-manipulation"
             >
               <ArrowLeft className="size-4 shrink-0" />
               Back
@@ -109,16 +108,16 @@ export function ConnectionsPage({
         </div>
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
           <div
-            className="rounded-full p-6 mb-6 w-fit"
+            className="mb-6 w-fit rounded-full p-6"
             style={{ background: connectionsAccentGradient }}
           >
             <Bookmark className="size-12 text-gray-900" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Your connections</h2>
-          <p className="text-gray-600 max-w-sm mb-8">
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">Your connections</h2>
+          <p className="mb-8 max-w-sm text-gray-600">
             Sign in to bookmark people you want to connect with and see them here.
           </p>
-          <Button onClick={onOpenProfile} className="gap-2 min-h-[48px] px-6 touch-manipulation">
+          <Button onClick={onOpenProfile} className="min-h-[48px] gap-2 px-6 touch-manipulation">
             <UserCircle2 className="size-4" />
             Sign in
           </Button>
@@ -128,31 +127,34 @@ export function ConnectionsPage({
   }
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 bg-gradient-to-b from-pink-50/40 via-gray-50 to-emerald-50/30">
+    <div className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-pink-50/40 via-gray-50 to-emerald-50/30">
       <div
         className="border-b border-gray-200 px-4 py-4 md:px-8 md:py-5"
         style={connectionsHeaderStyle}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={onNavigateHome}
-              className="gap-2 text-gray-700 shrink-0 min-h-[44px] min-w-[44px] touch-manipulation"
+              className="min-h-[44px] min-w-[44px] shrink-0 gap-2 text-gray-700 touch-manipulation"
             >
               <ArrowLeft className="size-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
             <div className="min-w-0">
-              <h1 className="text-lg md:text-xl font-heading font-semibold text-gray-900 truncate">
+              <h1 className="truncate font-heading text-lg font-semibold text-gray-900 md:text-xl">
                 Connections
               </h1>
               {connectionIds.length > 0 ? (
-                <p className="text-sm text-gray-600 truncate">
+                <p className="truncate text-sm text-gray-600">
                   {unresolvedIds.length > 0
                     ? `${connectedPeople.length} visible · ${unresolvedIds.length} unavailable`
                     : `${connectedPeople.length} saved`}
+                  {openToMeetCount > 0
+                    ? ` · ${openToMeetCount} open to meet`
+                    : ""}
                 </p>
               ) : null}
             </div>
@@ -160,88 +162,109 @@ export function ConnectionsPage({
         </div>
       </div>
 
-      <main className="flex-1 overflow-auto px-4 py-6 md:px-8 md:py-8 pb-8">
+      <main className="flex-1 overflow-auto px-4 py-6 pb-8 md:px-8 md:py-8">
         <div
-          className="mb-6 max-w-2xl mx-auto flex gap-3 rounded-xl border border-gray-200/80 bg-white/70 px-4 py-3 text-sm leading-relaxed text-gray-600"
+          className="mx-auto mb-6 flex max-w-2xl gap-3 rounded-xl border border-gray-200/80 bg-white/70 px-4 py-3 text-sm leading-relaxed text-gray-600"
           role="note"
         >
-          <Shield className="size-4 shrink-0 mt-0.5 text-emerald-600" aria-hidden />
+          <Shield className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden />
           <p>
-            <span className="font-medium text-gray-800">Private to this device.</span>{" "}
-            Connections are saved only in your browser&apos;s local storage. If you switch
-            phones or browsers, bookmark people again on your other device.
+            <span className="font-medium text-gray-800">Private to you.</span>{" "}
+            Bookmarks sync with your account. If someone is{" "}
+            <span className="font-medium text-emerald-800">open to meet</span>, book or
+            invite them right from this list — or browse everyone on{" "}
+            <a
+              href={buildFullPath("/open-to-meet")}
+              className="font-medium text-emerald-800 underline-offset-2 hover:underline"
+            >
+              Open to meet
+            </a>
+            .
           </p>
         </div>
 
         {connectionIds.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-2">
+          <div className="flex flex-col items-center justify-center px-2 py-12 text-center sm:py-16">
             <div
-              className="rounded-full p-6 mb-6 w-fit"
+              className="mb-6 w-fit rounded-full p-6"
               style={{ background: connectionsAccentGradient }}
             >
               <Bookmark className="size-12 text-gray-900" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">No connections yet</h2>
-            <p className="text-gray-600 max-w-sm">
-              When you bookmark someone from their profile, they’ll show up here so you can
-              find them easily later.
+            <h2 className="mb-2 text-lg font-semibold text-gray-900">No connections yet</h2>
+            <p className="max-w-sm text-gray-600">
+              When you bookmark someone from their profile, they&apos;ll show up here so you
+              can find them — and book them if they&apos;re open to meet.
             </p>
           </div>
         ) : (
-          <div className="space-y-8 max-w-2xl mx-auto">
+          <div className="mx-auto max-w-2xl space-y-8">
             {connectedPeople.length > 0 ? (
               <ul className="space-y-3">
-            {connectedPeople.map((person) => (
-              <li key={person.id}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onViewPerson(person.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onViewPerson(person.id);
-                    }
-                  }}
-                  className={cn(
-                    "flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-xl border bg-white p-4",
-                    "border-gray-200 shadow-sm transition-colors",
-                    "hover:border-gray-300 hover:shadow-md hover:bg-gray-50/80 active:bg-gray-100",
-                    "cursor-pointer touch-manipulation min-h-[60px] sm:min-h-0",
-                  )}
-                >
-                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 order-1">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{person.fullName}</p>
-                      <p className="text-sm text-gray-600 truncate">
-                        {person.shortProjectTagline || person.affiliationOrInstitution || person.currentCity || "—"}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "shrink-0 self-start sm:self-center px-2.5 py-1 text-xs font-medium rounded-full",
-                        getRolePillClass(person.roleType),
-                      )}
-                    >
-                      {person.roleType}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      handleRemoveBookmark(person.id);
-                    }}
-                    className="shrink-0 self-end sm:self-center p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-all touch-manipulation -m-2 sm:m-0 text-gray-900 hover:opacity-90 active:scale-95"
-                    style={{ background: connectionsAccentGradient }}
-                    aria-label={`Remove ${person.fullName} from connections`}
-                  >
-                    <Bookmark className="size-5 fill-current" />
-                  </button>
-                </div>
-              </li>
-            ))}
+                {connectedPeople.map((person) => {
+                  const open = isOpenToMeet(person);
+                  return (
+                    <li key={person.id}>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onViewPerson(person.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onViewPerson(person.id);
+                          }
+                        }}
+                        className={cn(
+                          "flex flex-col gap-3 rounded-xl border bg-white p-4 sm:gap-4",
+                          "border-gray-200 shadow-sm transition-colors",
+                          open && "border-emerald-200/90 ring-1 ring-emerald-50",
+                          "hover:border-gray-300 hover:bg-gray-50/80 hover:shadow-md active:bg-gray-100",
+                          "min-h-[60px] cursor-pointer touch-manipulation sm:min-h-0",
+                        )}
+                      >
+                        <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <p className="truncate font-medium text-gray-900">
+                                {person.fullName}
+                              </p>
+                              {open ? <OpenToMeetBadge /> : null}
+                              <span
+                                className={cn(
+                                  "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium",
+                                  getRolePillClass(person.roleType),
+                                )}
+                              >
+                                {person.roleType}
+                              </span>
+                            </div>
+                            <p className="truncate text-sm text-gray-600">
+                              {person.shortProjectTagline ||
+                                person.affiliationOrInstitution ||
+                                person.currentCity ||
+                                "—"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleRemoveBookmark(person.id);
+                            }}
+                            className="-m-2 flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg p-2.5 text-gray-900 transition-all touch-manipulation hover:opacity-90 active:scale-95 sm:m-0"
+                            style={{ background: connectionsAccentGradient }}
+                            aria-label={`Remove ${person.fullName} from connections`}
+                          >
+                            <Bookmark className="size-5 fill-current" />
+                          </button>
+                        </div>
+                        <MeetActions person={person} compact />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
 
@@ -251,8 +274,8 @@ export function ConnectionsPage({
                   Unavailable profiles ({unresolvedIds.length})
                 </h2>
                 <p className="mt-1 text-sm text-amber-900/80">
-                  These bookmarks point to profiles that aren't visible in the directory (private or
-                  removed). You can remove them to tidy your list.
+                  These bookmarks point to profiles that aren&apos;t visible in the directory
+                  (private or removed). You can remove them to tidy your list.
                 </p>
                 <ul className="mt-4 space-y-2">
                   {unresolvedIds.map((id) => (
@@ -260,11 +283,11 @@ export function ConnectionsPage({
                       key={id}
                       className="flex items-center justify-between gap-3 rounded-lg border border-amber-200/60 bg-white/80 px-3 py-2.5"
                     >
-                      <span className="text-sm text-gray-700 truncate">Profile unavailable</span>
+                      <span className="truncate text-sm text-gray-700">Profile unavailable</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveBookmark(id)}
-                        className="shrink-0 text-sm font-medium text-amber-950 underline-offset-2 hover:underline touch-manipulation min-h-[44px] px-2"
+                        className="min-h-[44px] shrink-0 px-2 text-sm font-medium text-amber-950 underline-offset-2 touch-manipulation hover:underline"
                       >
                         Remove
                       </button>

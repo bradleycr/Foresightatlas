@@ -18,7 +18,7 @@ New here? **[CONTRIBUTING.md](CONTRIBUTING.md)** · **[docs/README.md](docs/READ
 
 - **Map** — One marker per person at their profile location; search and filters; travel and RSVPs as card context.
 - **Programming** — Per-node calendars with sheet + live Luma merge, RSVPs, and check-ins.
-- **Calendar** — Shared-node Google Calendar view for signed-in members (`/api/calendar-events`).
+- **Open to meet** — Members with booking links (`/open-to-meet`); book or invite from Connections too.
 - **Directory** — Claim / magic-link onboarding; member sessions are sheet-backed.
 
 The directory is **invitation / claim-link gated** (not a fully public directory browse).

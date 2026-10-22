@@ -1,33 +1,237 @@
 /**
- * OpenToMeetPanel — directory members who opted in with an availability URL.
+ * OpenToMeetPanel — members who published a booking link.
  *
- * Shown on the community Calendar page and reusable anywhere we surface
- * “who’s open to coffee / a call” without reading private calendars.
+ * Search + simple affinity filters (connections / shared focus / shared city)
+ * and paginated results. Used as the body of the Open to meet page.
  */
 
-import { Calendar, ExternalLink, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
 import type { Person } from "../types";
-import { getOpenToMeetMembers, getOpenToMeetUrl } from "../utils/openToMeet";
+import {
+  filterOpenToMeetMembers,
+  isOpenToMeet,
+  type OpenToMeetFilter,
+} from "../utils/openToMeet";
 import { getEffectiveProfileImageUrl } from "../services/profileImageOverride";
 import { PersonAvatar } from "./PersonAvatar";
+import { MeetActions, OpenToMeetBadge } from "./MeetActions";
 import { getRolePillClass } from "../styles/roleColors";
 import { cn } from "./ui/utils";
 
+const PAGE_SIZE = 12;
+
 interface OpenToMeetPanelProps {
   people: Person[];
-  /** Highlight the signed-in member in the list (optional). */
+  viewer: Person | null;
   currentPersonId?: string | null;
+  connectionIds?: string[];
   onViewPerson?: (personId: string) => void;
   className?: string;
+  /** When true, omit the outer section chrome (page already has a header). */
+  embedded?: boolean;
 }
+
+const FILTERS: { id: OpenToMeetFilter; label: string; needsViewer?: boolean }[] = [
+  { id: "all", label: "All" },
+  { id: "connections", label: "My connections" },
+  { id: "focus", label: "Shares focus with me", needsViewer: true },
+  { id: "city", label: "Shares city with me", needsViewer: true },
+];
 
 export function OpenToMeetPanel({
   people,
+  viewer,
   currentPersonId,
+  connectionIds = [],
   onViewPerson,
   className,
+  embedded = false,
 }: OpenToMeetPanelProps) {
-  const members = getOpenToMeetMembers(people);
+  const [filter, setFilter] = useState<OpenToMeetFilter>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+
+  const filtered = useMemo(
+    () =>
+      filterOpenToMeetMembers({
+        people,
+        viewer,
+        connectionIds,
+        filter,
+        search,
+      }),
+    [people, viewer, connectionIds, filter, search],
+  );
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageSlice = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(0);
+  }, [filter, search]);
+
+  const totalOpen = useMemo(() => people.filter(isOpenToMeet).length, [people]);
+
+  const body = (
+    <>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative min-w-0 flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name, city, focus…"
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 outline-none ring-emerald-500/30 placeholder:text-gray-400 focus:border-emerald-300 focus:ring-2"
+            aria-label="Search open to meet"
+          />
+        </div>
+        <p className="shrink-0 text-xs tabular-nums text-gray-500 sm:text-right">
+          {filtered.length === totalOpen
+            ? `${totalOpen} open`
+            : `${filtered.length} of ${totalOpen}`}
+        </p>
+      </div>
+
+      <div
+        className="mt-3 flex flex-wrap gap-2"
+        role="group"
+        aria-label="Filter open to meet"
+      >
+        {FILTERS.map((f) => {
+          const disabled = Boolean(f.needsViewer && !viewer);
+          const active = filter === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => setFilter(f.id)}
+              className={cn(
+                "min-h-[40px] rounded-full border px-3.5 text-xs font-medium transition-colors touch-manipulation sm:text-sm",
+                active
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:bg-emerald-50",
+                disabled && "cursor-not-allowed opacity-40 hover:border-gray-200 hover:bg-white",
+              )}
+              title={
+                disabled
+                  ? "Sign in with a profile to use this filter"
+                  : undefined
+              }
+            >
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="mt-5 rounded-xl border border-dashed border-emerald-200/80 bg-white/60 px-4 py-5 text-sm leading-relaxed text-gray-600">
+          {totalOpen === 0
+            ? (
+              <>
+                No one has shared a booking link yet. Add an{" "}
+                <span className="font-medium text-gray-800">open to meet link</span> on your
+                profile (Calendly, Google appointment schedule, etc.) to appear here.
+              </>
+            )
+            : "No matches for this filter. Try All, or clear the search."}
+        </p>
+      ) : (
+        <>
+          <ul className="mt-5 space-y-2">
+            {pageSlice.map((person) => {
+              const isSelf = currentPersonId === person.id;
+              const isConnection = connectionIds.includes(person.id);
+              return (
+                <li key={person.id}>
+                  <div
+                    className={cn(
+                      "flex flex-col gap-3 rounded-xl border bg-white/90 p-3.5 sm:flex-row sm:items-center sm:gap-4",
+                      isSelf ? "border-emerald-300 ring-1 ring-emerald-100" : "border-gray-200/90",
+                    )}
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      {onViewPerson ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewPerson(person.id)}
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                        >
+                          <PersonAvatar
+                            name={person.fullName}
+                            src={getEffectiveProfileImageUrl(person)}
+                            className="size-11 shrink-0 rounded-full ring-1 ring-gray-200/80"
+                            textClassName="text-xs"
+                          />
+                          <MemberMeta
+                            person={person}
+                            isSelf={isSelf}
+                            isConnection={isConnection && !isSelf}
+                          />
+                        </button>
+                      ) : (
+                        <>
+                          <PersonAvatar
+                            name={person.fullName}
+                            src={getEffectiveProfileImageUrl(person)}
+                            className="size-11 shrink-0 rounded-full ring-1 ring-gray-200/80"
+                            textClassName="text-xs"
+                          />
+                          <MemberMeta
+                            person={person}
+                            isSelf={isSelf}
+                            isConnection={isConnection && !isSelf}
+                          />
+                        </>
+                      )}
+                    </div>
+                    {!isSelf ? <MeetActions person={person} /> : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {pageCount > 1 ? (
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={safePage <= 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 disabled:opacity-40 touch-manipulation"
+              >
+                <ChevronLeft className="size-4" aria-hidden />
+                Prev
+              </button>
+              <p className="text-xs tabular-nums text-gray-500">
+                {safePage + 1} / {pageCount}
+              </p>
+              <button
+                type="button"
+                disabled={safePage >= pageCount - 1}
+                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 disabled:opacity-40 touch-manipulation"
+              >
+                Next
+                <ChevronRight className="size-4" aria-hidden />
+              </button>
+            </div>
+          ) : null}
+        </>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className={className}>{body}</div>;
+  }
 
   return (
     <section
@@ -37,7 +241,7 @@ export function OpenToMeetPanel({
       )}
       aria-labelledby="open-to-meet-heading"
     >
-      <div className="flex items-start gap-3">
+      <div className="mb-4 flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-emerald-200/60">
           <Users className="size-5 text-emerald-600" aria-hidden />
         </div>
@@ -45,76 +249,25 @@ export function OpenToMeetPanel({
           <h2 id="open-to-meet-heading" className="text-lg font-semibold text-gray-900">
             Open to meet
           </h2>
+          <p className="mt-0.5 text-sm text-gray-600">
+            Book a slot with members who published a Calendly or appointment link.
+          </p>
         </div>
       </div>
-
-      {members.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-dashed border-emerald-200/80 bg-white/60 px-4 py-5 text-sm leading-relaxed text-gray-600">
-          No one has shared a booking link yet. Add an{" "}
-          <span className="font-medium text-gray-800">open to meet link</span> on your profile
-          (Calendly, Google appointment schedule, etc.) to appear here.
-        </p>
-      ) : (
-        <ul className="mt-5 space-y-2">
-          {members.map((person) => {
-            const bookUrl = getOpenToMeetUrl(person)!;
-            const isSelf = currentPersonId === person.id;
-            return (
-              <li key={person.id}>
-                <div
-                  className={cn(
-                    "flex flex-col gap-3 rounded-xl border bg-white/90 p-3.5 sm:flex-row sm:items-center sm:gap-4",
-                    isSelf ? "border-emerald-300 ring-1 ring-emerald-100" : "border-gray-200/90",
-                  )}
-                >
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {onViewPerson ? (
-                      <button
-                        type="button"
-                        onClick={() => onViewPerson(person.id)}
-                        className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
-                      >
-                        <PersonAvatar
-                          name={person.fullName}
-                          src={getEffectiveProfileImageUrl(person)}
-                          className="size-11 shrink-0 rounded-full ring-1 ring-gray-200/80"
-                          textClassName="text-xs"
-                        />
-                        <MemberMeta person={person} isSelf={isSelf} />
-                      </button>
-                    ) : (
-                      <>
-                        <PersonAvatar
-                          name={person.fullName}
-                          src={getEffectiveProfileImageUrl(person)}
-                          className="size-11 shrink-0 rounded-full ring-1 ring-gray-200/80"
-                          textClassName="text-xs"
-                        />
-                        <MemberMeta person={person} isSelf={isSelf} />
-                      </>
-                    )}
-                  </div>
-                  <a
-                    href={bookUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-medium text-emerald-900 transition-colors hover:bg-emerald-100 touch-manipulation"
-                  >
-                    <Calendar className="size-4" aria-hidden />
-                    Book time
-                    <ExternalLink className="size-3.5 opacity-70" aria-hidden />
-                  </a>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {body}
     </section>
   );
 }
 
-function MemberMeta({ person, isSelf }: { person: Person; isSelf: boolean }) {
+function MemberMeta({
+  person,
+  isSelf,
+  isConnection,
+}: {
+  person: Person;
+  isSelf: boolean;
+  isConnection?: boolean;
+}) {
   return (
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -124,6 +277,12 @@ function MemberMeta({ person, isSelf }: { person: Person; isSelf: boolean }) {
             You
           </span>
         ) : null}
+        {isConnection ? (
+          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-pink-800">
+            Connection
+          </span>
+        ) : null}
+        <OpenToMeetBadge />
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-medium",

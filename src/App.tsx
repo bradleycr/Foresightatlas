@@ -242,7 +242,7 @@ export default function App() {
   // Keep SPA routing in sync with browser history
   useEffect(() => {
     const handlePop = () => setRoute(getRoutePath());
-    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/stats", "/claim", "/join", "/access", "/polls"];
+    const knownRoutes = ["/", "/berlin", "/sf", "/global", "/profile", "/connections", "/calendar", "/open-to-meet", "/stats", "/claim", "/join", "/access", "/polls"];
     const current = getRoutePath();
     // Check-in routes are dynamic (/checkin/berlin, /checkin/sf, /checkin/global)
     // so we match them with a prefix rather than an exact list entry. Bare
@@ -500,10 +500,11 @@ export default function App() {
     setIdentityState(null);
     setSelfPerson(null);
     // Signed-out users shouldn't be left stranded on an auth-gated page.
-    // Redirect from profile, calendar, and the check-in landing routes.
+    // Redirect from profile, open-to-meet, and the check-in landing routes.
     if (
       route === "/profile" ||
       route === "/calendar" ||
+      route === "/open-to-meet" ||
       route.startsWith("/checkin") ||
       route === "/polls"
     ) {
@@ -635,7 +636,8 @@ export default function App() {
   const isProgrammingRoute = route === "/berlin" || route === "/sf" || route === "/global";
   const isProfileRoute = route === "/profile";
   const isConnectionsRoute = route === "/connections";
-  const isCalendarRoute = route === "/calendar";
+  /** Open to meet (legacy /calendar still works). */
+  const isCalendarRoute = route === "/calendar" || route === "/open-to-meet";
   const isStatsRoute = route === "/stats";
   const pollsRoute = parsePollsRoute(route);
   const isPollsAdminRoute = pollsRoute?.kind === "admin";

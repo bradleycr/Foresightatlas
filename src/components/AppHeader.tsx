@@ -400,12 +400,12 @@ export function AppHeader({
                       variant="outline"
                       onClick={() => {
                         closeAccountDialog();
-                        navigate("/calendar");
+                        navigate("/open-to-meet");
                       }}
                       className="min-h-[44px] w-full"
                     >
                       <CalendarDays className="size-4" />
-                      Community calendar
+                      Open to meet
                     </Button>
                     <Button
                       type="button"
@@ -643,13 +643,13 @@ export function AppHeader({
                     <button
                       type="button"
                       onClick={() => {
-                        navigate("/calendar");
+                        navigate("/open-to-meet");
                         closeMobileMenu();
                       }}
                       className="min-h-[44px] rounded-xl border border-sky-200 bg-white px-2.5 text-sm font-medium text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors inline-flex items-center justify-center gap-1.5"
                     >
                       <CalendarDays className="size-3.5 shrink-0" aria-hidden />
-                      <span className="leading-tight text-center">Community calendar</span>
+                      <span className="leading-tight text-center">Open to meet</span>
                     </button>
                   </div>
                 </div>
