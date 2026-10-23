@@ -1,3 +1,6 @@
+/** Product name shown in chrome, titles, and mail — never “The Foresight Atlas”. */
+export const APP_NAME = "Foresight Atlas";
+
 /** Canonical Foresight Institute website — logo clicks open this in a new tab. */
 export const FORESIGHT_ORG_URL = "https://foresight.org";
 

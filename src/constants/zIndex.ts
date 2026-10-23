@@ -43,4 +43,6 @@ export const Z_INDEX_LOADING = 10003;
 export const Z_INDEX_ERROR = 10004;
 /** First-arrival letter. Sits above the loading veil so the atlas can fade behind it. */
 export const Z_INDEX_WELCOME = 10010;
+/** Phone landscape gate — asks for portrait on small devices; tops everything. */
+export const Z_INDEX_ORIENTATION_GATE = 10020;
 

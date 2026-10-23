@@ -128,7 +128,7 @@ export function PollQrCard({
 </head>
 <body>
   <div class="poster">
-    <p class="eyebrow">The Foresight Atlas · Poll</p>
+    <p class="eyebrow">Foresight Atlas · Poll</p>
     <h1 class="question">${safeQuestion}</h1>
     ${safeEvent ? `<p class="event">${safeEvent}</p>` : ""}
     <p class="hint">Scan to vote anonymously — no app, no sign-in</p>
@@ -152,7 +152,7 @@ export function PollQrCard({
         )}
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-          The Foresight Atlas
+          Foresight Atlas
         </p>
         {size === "poster" ? (
           <>

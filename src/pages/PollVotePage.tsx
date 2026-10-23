@@ -95,7 +95,7 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
             <img src={foresightIconUrl} alt="Foresight Institute" className="size-6 sm:size-8" />
           </a>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
-            The Foresight Atlas · Poll
+            Foresight Atlas · Poll
           </p>
         </div>
 

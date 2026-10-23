@@ -1,6 +1,6 @@
 # Run the whole app locally (handoff for tech)
 
-One-page guide to get The Foresight Atlas app running and served on a single machine.
+One-page guide to get Foresight Atlas app running and served on a single machine.
 
 ---
 

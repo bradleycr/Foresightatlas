@@ -1,5 +1,5 @@
 /**
- * Privacy & data — plain-language notice for The Foresight Atlas.
+ * Privacy & data — plain-language notice for Foresight Atlas.
  * Public route; linked from the account menu, claim/join, and profile.
  */
 
@@ -71,7 +71,7 @@ export function PrivacyPage({ onNavigateHome }: PrivacyPageProps) {
           </a>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-              The Foresight Atlas
+              Foresight Atlas
             </p>
             <h1 className="font-heading text-xl font-bold text-[var(--primary)]">
               Privacy &amp; data

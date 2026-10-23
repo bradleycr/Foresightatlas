@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ChevronDown, Menu, X, LogOut, User, UserCircle2, Bookmark, CalendarDays } from "lucide-react";
 import foresightLogo from "../assets/Foresight_RGB_Logo_Black.png?url";
 import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
+import { APP_NAME, FORESIGHT_ORG_URL } from "../constants/foresight";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import type { Identity } from "../services/identity";
 import type { Person } from "../types";
@@ -10,7 +11,6 @@ import { Button } from "./ui/button";
 import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
 import { getLastSignedInName } from "../services/identity";
 import { cn } from "./ui/utils";
-import { FORESIGHT_ORG_URL } from "../constants/foresight";
 
 interface AppHeaderProps {
   /** Current route path: "/", "/berlin", "/sf", "/calendar", etc. */
@@ -149,14 +149,14 @@ export function AppHeader({
               />
             </a>
             <div className="min-w-0 flex-1 border-l border-gray-200/90 pl-2.5 sm:pl-3 md:border-gray-300 md:pl-4">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <h1 className="m-0 font-heading text-sm font-semibold leading-snug tracking-tight text-gray-900 sm:text-base md:text-xl md:leading-tight">
+              <div className="flex flex-nowrap items-center gap-x-1.5 sm:gap-x-2">
+                  <h1 className="m-0 min-w-0 font-heading text-[13px] font-semibold leading-none tracking-tight text-gray-900 sm:text-base md:text-xl">
                     <button
                       type="button"
                       onClick={goHome}
-                      className="rounded-md text-left transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                      className="whitespace-nowrap rounded-md text-left transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
                     >
-                      The Foresight Atlas
+                      {APP_NAME}
                     </button>
                   </h1>
                   {betaPill}

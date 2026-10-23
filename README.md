@@ -1,4 +1,4 @@
-# The Foresight Atlas
+# Foresight Atlas
 
 **Internal community tool** — connecting grantees, fellows, nodees, alumni, and our programming. An interactive map of where the Foresight Institute community is, plus per-node programming (Berlin, San Francisco, Global), RSVPs, and check-ins.
 

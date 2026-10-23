@@ -3,7 +3,7 @@
  * Hidden on mobile so the map and forms get the full viewport (tool-app pattern).
  */
 
-import { FORESIGHT_ORG_URL } from "../constants/foresight";
+import { APP_NAME, FORESIGHT_ORG_URL } from "../constants/foresight";
 
 interface AppFooterProps {
   onNavigateHome?: () => void;
@@ -34,10 +34,10 @@ export function AppFooter({ onNavigateHome }: AppFooterProps) {
               onClick={onNavigateHome}
               className="transition-colors hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 rounded-sm"
             >
-              The Foresight Atlas
+              {APP_NAME}
             </button>
           ) : (
-            <span>The Foresight Atlas</span>
+            <span>{APP_NAME}</span>
           )}
           <span className="text-gray-300" aria-hidden>
             {" "}

@@ -79,7 +79,7 @@ function ChooseStep({
   return (
     <>
       <p className="text-sm leading-relaxed text-gray-700">
-        The Foresight Atlas is humbly in beta.
+        Foresight Atlas is humbly in beta.
       </p>
       <div className="mt-3 grid gap-1">
         <IntentChoice

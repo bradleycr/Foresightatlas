@@ -4,14 +4,14 @@
 
 ### Overview
 
-**The Foresight Atlas** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF, Global) for event calendars. **A private Google Sheet is the single source of truth** (credentials via env only — never commit sheet IDs/keys). The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime. **Repo is public (MIT)**; contributors use the mock API without production keys. **Hosting goal:** same stack on sovereign on-prem compute at a node — see `docs/SELF_HOSTING.md`. Current cloud host: Vercel.
+**Foresight Atlas** — a React + TypeScript SPA (Vite) that visualizes Foresight Institute grantees, fellows, and prize winners on an interactive Leaflet map, plus per-node **Programming** pages (Berlin, SF, Global) for event calendars. **A private Google Sheet is the single source of truth** (credentials via env only — never commit sheet IDs/keys). The app always loads data via the API from the sheet (dev and production). No static `database.json` at runtime. **Repo is public (MIT)**; contributors use the mock API without production keys. **Hosting goal:** same stack on sovereign on-prem compute at a node — see `docs/SELF_HOSTING.md`. Current cloud host: Vercel.
 
 ### Naming and copy
 
-- **App title:** “The Foresight Atlas” (with optional “(beta)” marker in the header/footer).
+- **App title:** “Foresight Atlas” (with optional “(beta)” marker in the header/footer).
 - **Subtext:** “Internal tool — Connecting Grantees, Fellows, Nodees, Alumni, and our programming”.
 - **Nav:** Desktop = “Map” + “Programming” (dropdown: Berlin, San Francisco, Global). Mobile hamburger = “Map”, “Berlin node”, “SF node”, “Global programming”.
-- **Footer:** “Foresight Institute · The Foresight Atlas · {year}”.
+- **Footer:** “Foresight Institute · Foresight Atlas · {year}”.
 
 ### Services
 

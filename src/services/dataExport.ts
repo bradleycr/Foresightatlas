@@ -33,7 +33,7 @@ export function buildMemberDataExport(
   const personId = person.id;
   return {
     exportedAt: new Date().toISOString(),
-    controller: "Foresight Institute (The Foresight Atlas)",
+    controller: "Foresight Institute (Foresight Atlas)",
     notice:
       "This file is a copy of personal data associated with your Atlas account as available to you in the app. Password hashes are never included. Request full deletion via Privacy & data if you also want the sheet row removed.",
     profile: { ...person },

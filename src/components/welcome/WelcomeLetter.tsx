@@ -119,7 +119,7 @@ export function WelcomeLetter({ fullName, onDismiss }: WelcomeLetterProps) {
                 </p>
               ) : null}
               <p>
-                We built The Foresight Atlas as an internal tool for grantees,
+                We built Foresight Atlas as an internal tool for grantees,
                 fellows, and our new nodees, so you can find one another and
                 keep a pulse on what is happening at our nodes in San Francisco
                 and Berlin.

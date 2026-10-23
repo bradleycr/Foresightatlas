@@ -50,23 +50,23 @@ export function MapRoleLegend({
     >
       <ul
         className={cn(
-          "flex flex-col gap-1.5 rounded-xl px-2.5 py-2.5 shadow-[0_8px_28px_-12px_rgba(0,0,0,0.35)] ring-1 backdrop-blur-xl",
+          "flex flex-col gap-1 rounded-lg px-2 py-1.5 shadow-[0_8px_28px_-12px_rgba(0,0,0,0.35)] ring-1 backdrop-blur-xl",
           dark
             ? "bg-white/12 text-white ring-white/25"
             : "bg-white/55 text-gray-800 ring-white/50",
         )}
       >
         {LEGEND_ROLES.map(({ role, label }) => (
-          <li key={role} className="flex items-center gap-2" role="listitem">
+          <li key={role} className="flex items-center gap-1.5" role="listitem">
             <span
               className={cn(
-                "size-3.5 shrink-0 rounded-full shadow-sm ring-1",
+                "size-2.5 shrink-0 rounded-full shadow-sm ring-1",
                 dark ? "ring-white/30" : "ring-black/10",
               )}
               style={{ background: getRoleGradient(role) }}
               aria-hidden
             />
-            <span className="text-[11px] font-medium leading-none tracking-tight">
+            <span className="text-[10px] font-medium leading-none tracking-tight">
               {label}
             </span>
           </li>

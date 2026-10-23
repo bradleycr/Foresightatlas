@@ -13,7 +13,8 @@ import { DirectoryLoginForm } from "../components/auth/DirectoryLoginForm";
 import { MapRoleLegend } from "../components/map/MapRoleLegend";
 import { useIsMobile } from "../components/ui/use-mobile";
 import type { PinLocation } from "../components/map/pinAppearance";
-import { FORESIGHT_LUMA_URL, FORESIGHT_ORG_URL } from "../constants/foresight";
+import { APP_NAME, FORESIGHT_LUMA_URL, FORESIGHT_ORG_URL } from "../constants/foresight";
+import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import { getDirectoryNames } from "../services/database";
 import { getLastSignedInName } from "../services/identity";
 import type { Person, RoleType } from "../types";
@@ -233,9 +234,9 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
       <header className="absolute inset-x-0 top-0 z-20 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
         <div className="grid grid-cols-3 items-center gap-2 sm:gap-4">
           <div className="justify-self-start">
-            <div className="flex max-w-[11rem] flex-wrap items-center gap-x-2 gap-y-1 sm:max-w-none">
-              <p className="text-[15px] font-semibold leading-tight tracking-tight text-white sm:text-lg md:text-xl">
-                The Foresight Atlas
+            <div className="flex flex-nowrap items-center gap-x-1.5 sm:gap-x-2">
+              <p className="whitespace-nowrap text-[13px] font-semibold leading-none tracking-tight text-white sm:text-lg md:text-xl">
+                {APP_NAME}
               </p>
               <span
                 className="inline-flex shrink-0 items-center rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/80 backdrop-blur-md"
@@ -288,7 +289,8 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
 
       {showLogin ? (
         <div
-          className="absolute inset-0 z-30 flex items-end justify-center bg-black/50 p-3 backdrop-blur-[2px] sm:items-center sm:p-6"
+          className="fixed inset-0 flex items-end justify-center bg-black/50 p-3 backdrop-blur-[2px] sm:items-center sm:p-6"
+          style={{ zIndex: Z_INDEX_MODAL_BACKDROP }}
           role="dialog"
           aria-modal="true"
           aria-label="Community sign-in"
@@ -296,6 +298,7 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
         >
           <div
             className="relative w-full max-w-md rounded-3xl border border-gray-200 bg-white p-5 shadow-2xl sm:p-7"
+            style={{ zIndex: Z_INDEX_MODAL_CONTENT }}
             onClick={(event) => event.stopPropagation()}
           >
             <button

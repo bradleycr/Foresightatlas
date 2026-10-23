@@ -65,7 +65,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
           <img src={foresightIconUrl} alt="" className="size-9" />
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-              The Foresight Atlas
+              Foresight Atlas
             </p>
             <p className="text-sm font-medium text-slate-700">Live poll</p>
           </div>

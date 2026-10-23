@@ -12,6 +12,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BugReportFab } from "./components/BugReportFab";
+import { PhoneLandscapeGate } from "./components/PhoneLandscapeGate";
 import { migrateLegacyLocalStorageKeys } from "./services/storageLegacyMigration";
 
 migrateLegacyLocalStorageKeys();
@@ -34,6 +35,7 @@ try {
   root.render(
     <ErrorBoundary>
       <App />
+      <PhoneLandscapeGate />
       <BugReportFab />
       {/* Pageviews once Web Analytics is enabled on the Vercel project. */}
       <Analytics />

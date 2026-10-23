@@ -129,7 +129,7 @@ export function JoinPage({
             <img src={foresightIconUrl} alt="" className="size-8 object-contain opacity-30" aria-hidden />
           </div>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900">
-            Join The Foresight Atlas
+            Join Foresight Atlas
           </h1>
           <p className="mt-1.5 text-sm leading-6 text-gray-500">
             Please do not share this link.

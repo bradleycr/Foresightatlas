@@ -35,7 +35,7 @@ export function MeetActions({ person, className, compact = false }: MeetActionsP
   const inviteUrl = inviteEmail
     ? buildGoogleCalendarTemplateUrl({
         title: `Meet: ${person.fullName}`,
-        details: `Inviting ${person.fullName} from The Foresight Atlas.`,
+        details: `Inviting ${person.fullName} from Foresight Atlas.`,
         addGuests: [inviteEmail],
       })
     : null;

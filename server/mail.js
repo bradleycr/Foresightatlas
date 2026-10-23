@@ -121,7 +121,7 @@ function renderAccessEmail(kind, link, fullName) {
       text: [
         `Hi ${name},`,
         "",
-        "Use this one-time link to set a new password for The Foresight Atlas:",
+        "Use this one-time link to set a new password for Foresight Atlas:",
         link,
         "",
         "Valid for 24 hours. If you did not request this, you can ignore it.",
@@ -129,7 +129,7 @@ function renderAccessEmail(kind, link, fullName) {
         "— Foresight Atlas",
       ].join("\n"),
       html: `<p>Hi ${escapeHtml(name)},</p>
-<p>Use this one-time link to set a new password for <strong>The Foresight Atlas</strong>:</p>
+<p>Use this one-time link to set a new password for <strong>Foresight Atlas</strong>:</p>
 <p><a href="${escapeAttr(link)}">${escapeHtml(link)}</a></p>
 <p style="color:#666;font-size:14px">Valid for 24 hours. If you did not request this, you can ignore it.</p>`,
     };
@@ -139,7 +139,7 @@ function renderAccessEmail(kind, link, fullName) {
     text: [
       `Hi ${name},`,
       "",
-      "You're on The Foresight Atlas. Use this one-time link to set your password:",
+      "You're on Foresight Atlas. Use this one-time link to set your password:",
       link,
       "",
       "If you did not request this, you can ignore it.",
@@ -147,7 +147,7 @@ function renderAccessEmail(kind, link, fullName) {
       "— Foresight Atlas",
     ].join("\n"),
     html: `<p>Hi ${escapeHtml(name)},</p>
-<p>You're on <strong>The Foresight Atlas</strong>. Use this one-time link to set your password:</p>
+<p>You're on <strong>Foresight Atlas</strong>. Use this one-time link to set your password:</p>
 <p><a href="${escapeAttr(link)}">${escapeHtml(link)}</a></p>
 <p style="color:#666;font-size:14px">If you did not request this, you can ignore it.</p>`,
   };

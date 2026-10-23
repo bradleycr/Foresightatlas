@@ -21,7 +21,7 @@ interface QRCheckInProps {
   onClose: () => void;
 }
 
-const POSTER_TITLE = "The Foresight Atlas";
+const POSTER_TITLE = "Foresight Atlas";
 const POSTER_SUBTITLE = "Check in at the node today";
 
 function PosterCopy({ nodeName, className }: { nodeName: string; className?: string }) {

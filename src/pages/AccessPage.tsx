@@ -42,7 +42,7 @@ export function AccessPage({ onNavigateHome }: AccessPageProps) {
           </a>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-              The Foresight Atlas
+              Foresight Atlas
             </p>
             <h1 className="font-heading text-xl font-bold text-[var(--primary)]">
               Forgot your password?

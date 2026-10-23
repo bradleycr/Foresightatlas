@@ -21,7 +21,7 @@ Links are **one-time**: they stop working once the person sets a password.
 ## Subject
 
 ```
-Some fun news — meet The Foresight Atlas 🗺️
+Some fun news — meet Foresight Atlas 🗺️
 ```
 
 ## Body
@@ -69,7 +69,7 @@ Foresight Institute
 ## Shorter variant (optional)
 
 ```
-Subject: Meet The Foresight Atlas — you're already on it
+Subject: Meet Foresight Atlas — you're already on it
 
 Hi {{Full name}},
 

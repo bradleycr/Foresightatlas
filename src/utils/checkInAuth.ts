@@ -13,7 +13,7 @@ function mailto(subject: string, body: string): string {
 
 export const ATLAS_ACCESS_MAILTO = mailto(
   "Foresight Atlas access",
-  "Hi,\n\nI'd like access to The Foresight Atlas.\n\nFull name on the directory:\n\nThanks",
+  "Hi,\n\nI'd like access to Foresight Atlas.\n\nFull name on the directory:\n\nThanks",
 );
 
 /** Prefill a reset request so staff can mint a one-time sign-in link. */
@@ -161,8 +161,8 @@ export function atlasProfileRemovalMailto(fullName?: string): string {
     ? `Foresight Atlas — please remove my profile — ${name}`
     : "Foresight Atlas — please remove my profile";
   const body = name
-    ? `Hi,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it):\n${name}\n\nThanks`
-    : "Hi,\n\nPlease fully remove my profile from The Foresight Atlas (not just hide it).\n\nMy full directory name:\n\nThanks";
+    ? `Hi,\n\nPlease fully remove my profile from Foresight Atlas (not just hide it):\n${name}\n\nThanks`
+    : "Hi,\n\nPlease fully remove my profile from Foresight Atlas (not just hide it).\n\nMy full directory name:\n\nThanks";
   return mailto(subject, body);
 }
 

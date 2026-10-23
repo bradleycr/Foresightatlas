@@ -19,7 +19,7 @@ this link. Rotate if the URL leaks beyond onboarding.
 ## Subject
 
 ```
-Join The Foresight Atlas
+Join Foresight Atlas
 ```
 
 ## Body
@@ -29,7 +29,7 @@ Hi,
 
 Welcome to the Foresight community.
 
-The Foresight Atlas is our internal map and directory — grantees, fellows,
+Foresight Atlas is our internal map and directory — grantees, fellows,
 nodees, and programming (Berlin, SF, Global), plus RSVPs and check-ins.
 
 Use this standing invite (keep it in this onboarding doc):

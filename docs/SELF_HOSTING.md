@@ -1,6 +1,6 @@
 # Self-hosting (on-prem / sovereign node)
 
-The Foresight Atlas is **open source**. The **roster and auth data are not**.  
+Foresight Atlas is **open source**. The **roster and auth data are not**.  
 Production data lives in a **private** Google Sheet (or any backend that implements the same `/api` contract). Credentials never ship in this repository.
 
 **Direction of travel:** run the full stack on your own **sovereign compute** at a node (Berlin / SF), not only on a public cloud. Vercel is the current hosted path; this doc is the self-host shape.
