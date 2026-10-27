@@ -90,6 +90,25 @@ export function InlineFilters({
     (filters.year !== null ? 1 : 0) +
     (filters.communityFilter !== "all" ? 1 : 0);
 
+  const hasActiveFilters =
+    activeCount > 0 ||
+    filters.search.trim().length > 0 ||
+    filters.nodes.length > 0 ||
+    filters.cities.length > 0;
+
+  const clearFilters = () => {
+    onFiltersChange({
+      ...filters,
+      search: "",
+      programs: [],
+      focusTags: [],
+      nodes: [],
+      cities: [],
+      communityFilter: "all",
+      year: null,
+    });
+  };
+
   return (
     <div className="inline-filters space-y-3">
       {/* Search — full-width row so the input has room; short placeholder keeps it feeling spacious */}
@@ -122,6 +141,16 @@ export function InlineFilters({
         </p>
         <div className="flex items-center gap-2 shrink-0">
           {filterToggleStartSlot}
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              aria-label="Clear filters"
+              className="inline-flex min-h-11 items-center rounded-lg px-2.5 text-sm font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-1 sm:min-h-9"
+            >
+              Clear
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
