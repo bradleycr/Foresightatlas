@@ -441,8 +441,6 @@ export function AppHeader({
               ) : (
                 <div className="p-6 sm:p-7">
                   <DirectoryLoginForm
-                    title="Sign in to your profile"
-                    submitLabel="Sign in"
                     initialName={getLastSignedInName()}
                     onCancel={closeAccountDialog}
                     onSubmit={async (username, password) => {

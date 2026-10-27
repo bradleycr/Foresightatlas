@@ -11,7 +11,7 @@ import {
 import { ATLAS_ACCESS_MAILTO, atlasPasswordResetMailto } from "../../utils/checkInAuth";
 
 interface DirectoryLoginFormProps {
-  title: string;
+  title?: string;
   description?: string;
   submitLabel?: string;
   onSubmit: (
@@ -31,7 +31,7 @@ interface DirectoryLoginFormProps {
 export function DirectoryLoginForm({
   title,
   description,
-  submitLabel = "Sign in",
+  submitLabel = "Enter",
   onSubmit,
   onCancel,
   initialName,
@@ -73,14 +73,18 @@ export function DirectoryLoginForm({
 
   return (
     <form onSubmit={handleSubmit} autoComplete="on" className="space-y-5">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight text-gray-900">
-          {title}
-        </h2>
-        {description ? (
-          <p className="text-sm leading-6 text-gray-600">{description}</p>
-        ) : null}
-      </div>
+      {title || description ? (
+        <div className="space-y-2">
+          {title ? (
+            <h2 className="text-xl font-semibold tracking-tight text-gray-900">
+              {title}
+            </h2>
+          ) : null}
+          {description ? (
+            <p className="text-sm leading-6 text-gray-600">{description}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         <div className="space-y-2">
@@ -96,7 +100,7 @@ export function DirectoryLoginForm({
                   inputMode="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="The email we have on file"
+                  placeholder="Email on file"
                   autoComplete="username"
                   autoCapitalize="none"
                   autoCorrect="off"
@@ -104,9 +108,6 @@ export function DirectoryLoginForm({
                   className="h-11 pl-10"
                 />
               </div>
-              <p className="text-sm leading-5 text-gray-500">
-                Your browser or password manager can save this with your password.
-              </p>
               <button
                 type="button"
                 onClick={() => {

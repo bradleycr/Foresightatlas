@@ -292,18 +292,10 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
             >
               <X className="size-5" />
             </button>
-            <div className="mb-5 flex flex-col items-center text-center pr-6">
+            <div className="mb-5 flex justify-center pr-6">
               <img src={foresightIcon} alt="" className="size-10 object-contain" />
-              <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-900">
-                Welcome back
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Members see names, profiles, and programming.
-              </p>
             </div>
             <DirectoryLoginForm
-              title="Sign in"
-              submitLabel="Enter"
               initialName={getLastSignedInName()}
               onSubmit={onSignIn}
               showAccountRecovery
