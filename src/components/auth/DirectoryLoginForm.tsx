@@ -168,9 +168,8 @@ export function DirectoryLoginForm({
                 </button>
               </PopoverTrigger>
               <PopoverContent side="top" align="start" className="max-w-[280px]">
-                First time here? Open the personal sign-in link you were sent —
-                it lets you set your password and signs you in. After that, use
-                that password here.
+                First time here? Open the personal sign-in link you were sent.
+                After that, use that password here.
               </PopoverContent>
             </Popover>
           </div>

@@ -83,7 +83,7 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
 
         <div className="rounded-3xl border border-gray-200 bg-white/90 p-6 shadow-xl backdrop-blur-sm sm:p-7">
           <DirectoryLoginForm
-            title={checkInCopy?.formTitle}
+            title={checkInCopy?.formTitle ?? "Welcome back"}
             submitLabel={checkInCopy?.submitLabel}
             initialName={getLastSignedInName()}
             onSubmit={onSignIn}
