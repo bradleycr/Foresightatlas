@@ -6,6 +6,7 @@ const path = require("path");
 const { geocodeCity } = require("./geocoding");
 const {
   DEFAULT_DIRECTORY_PASSWORD,
+  ALLOW_DEFAULT_PASSWORD,
   issueDirectorySession,
   verifyPasswordHash,
   hashPassword,
@@ -13,6 +14,13 @@ const {
   verifyRegisterToken,
   passwordVersion,
 } = require("./directory-auth");
+const {
+  identifierMatchesPerson,
+  unknownIdentifierMessage,
+  LOGIN_PASSWORD_WRONG,
+  LOGIN_NOT_SET_UP,
+  LOGIN_AMBIGUOUS_NAME,
+} = require("./login-identifier");
 const { INVITE_LOCKABLE_ROLES, personHasStaffRole } = require("./role-types");
 
 const MOCK_DIR = path.resolve(__dirname, "../mock");
@@ -468,27 +476,38 @@ function normalizePersonForCreate(input) {
   return person;
 }
 
-async function authenticateLocalMember(fullName, password) {
-  const submittedName = String(fullName || "").trim();
+async function authenticateLocalMember(identifier, password) {
+  const submitted = String(identifier || "").trim();
   const submittedPassword = String(password || "");
-  if (!submittedName) throw new Error("Full name is required.");
+  if (!submitted) throw new Error("Enter your name or the email on your profile.");
 
   const db = await getLocalDatabase();
   const auth = await getLocalAuth();
-  const person = db.people.find(
-    (entry) => normalizeName(entry.fullName) === normalizeName(submittedName),
+  const people = (db.people || []).filter((entry) =>
+    identifierMatchesPerson(entry, submitted),
   );
-  if (!person) {
-    throw new Error("We could not find a directory profile with that full name.");
+  if (people.length === 0) {
+    throw new Error(unknownIdentifierMessage(submitted));
   }
 
-  const authEntry = auth[person.id] || {};
-  const hasHash = Boolean(authEntry.passwordHash);
-  const isValid = hasHash
-    ? await verifyPasswordHash(submittedPassword, authEntry.passwordHash)
-    : submittedPassword === DEFAULT_DIRECTORY_PASSWORD;
-  if (!isValid) throw new Error("Incorrect password.");
+  const verified = [];
+  for (const person of people) {
+    const authEntry = auth[person.id] || {};
+    const hasHash = Boolean(authEntry.passwordHash);
+    const isValid = hasHash
+      ? await verifyPasswordHash(submittedPassword, authEntry.passwordHash)
+      : ALLOW_DEFAULT_PASSWORD && submittedPassword === DEFAULT_DIRECTORY_PASSWORD;
+    if (isValid) verified.push({ person, hasHash });
+  }
+  if (verified.length > 1) {
+    throw new Error(LOGIN_AMBIGUOUS_NAME);
+  }
+  if (verified.length === 0) {
+    const noneClaimed = people.every((person) => !auth[person.id]?.passwordHash);
+    throw new Error(noneClaimed && !ALLOW_DEFAULT_PASSWORD ? LOGIN_NOT_SET_UP : LOGIN_PASSWORD_WRONG);
+  }
 
+  const { person, hasHash } = verified[0];
   const session = issueDirectorySession({
     person,
     auth: { mustChangePassword: !hasHash },

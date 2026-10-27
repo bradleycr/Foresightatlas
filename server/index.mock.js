@@ -15,6 +15,7 @@ const express = require("express");
 const fs = require("fs").promises;
 const cors = require("cors");
 const { atlasScope } = require("./atlas-read");
+const { assertLoginAllowed, recordLoginFailure } = require("./login-guard");
 const { mergeSheetEventsWithLuma } = require("./luma-merge");
 const { enrichRsvpsForApi } = require("./rsvp-enrichment");
 const {
@@ -109,16 +110,11 @@ app.use(
 );
 app.use(express.json());
 
-app.get("/api/directory-names", async (req, res) => {
-  try {
-    const database = await getLocalDatabase();
-    const people = (database.people || [])
-      .filter((p) => p && p.fullName && p.isPrivate !== true)
-      .map((p) => ({ id: p.id, fullName: p.fullName }));
-    res.json({ people });
-  } catch (error) {
-    res.status(500).json({ error: error?.message || "Failed to load names" });
-  }
+app.get("/api/directory-names", async (_req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.status(410).json({
+    error: "Directory names are not available before sign-in.",
+  });
 });
 
 app.get("/api/database", async (req, res) => {
@@ -165,15 +161,27 @@ app.post("/api/database", async (_req, res) => {
 });
 
 app.post("/api/member-login", async (req, res) => {
+  const identifier = req.body?.username;
   try {
-    const result = await authenticateLocalMember(
-      req.body?.username,
-      req.body?.password,
-    );
+    assertLoginAllowed(req, identifier);
+    const result = await authenticateLocalMember(identifier, req.body?.password);
     res.json(result);
   } catch (error) {
-    res.status(401).json({
-      error: error instanceof Error ? error.message : "Sign-in failed",
+    let failure = error;
+    if (!(failure && failure.statusCode === 429)) {
+      try {
+        recordLoginFailure(req, identifier);
+      } catch (limitError) {
+        failure = limitError;
+      }
+    }
+    const status =
+      failure && typeof failure === "object" && failure.statusCode === 429 ? 429 : 401;
+    if (status === 429 && failure.retryAfterSec) {
+      res.setHeader("Retry-After", String(failure.retryAfterSec));
+    }
+    res.status(status).json({
+      error: failure instanceof Error ? failure.message : "Sign-in failed",
     });
   }
 });

@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Loader2, Search, Sparkles, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { Person } from "../types";
 import type { Identity } from "../services/identity";
-import { getDirectoryNames } from "../services/database";
 import {
   claimProfileWithInvite,
   peekInviteClaim,
@@ -170,7 +169,6 @@ function ExistingClaimForm({
     auth: { token: string; expiresAt: string; mustChangePassword: boolean },
   ) => void;
 }) {
-  const [directory, setDirectory] = useState<Person[]>([]);
   const [query, setQuery] = useState(initialName);
   const [selected, setSelected] = useState<Person | null>(null);
   const [peek, setPeek] = useState<InviteClaimPeek | null>(null);
@@ -181,43 +179,6 @@ function ExistingClaimForm({
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    getDirectoryNames()
-      .then((names) => {
-        if (!cancelled) setDirectory(names);
-      })
-      .catch(() => {
-        if (!cancelled) setDirectory([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!initialName || directory.length === 0 || selected) return;
-    const match = directory.find(
-      (person) => person.fullName.toLowerCase() === initialName.trim().toLowerCase(),
-    );
-    if (match) setSelected(match);
-  }, [directory, initialName, selected]);
-
-  const suggestions = useMemo(() => {
-    if (selected) return [];
-    const needle = query.trim().toLowerCase();
-    if (!needle) return [];
-    const seen = new Set<string>();
-    return directory
-      .filter((person) => {
-        const name = person.fullName.toLowerCase();
-        if (seen.has(name) || !name.includes(needle)) return false;
-        seen.add(name);
-        return true;
-      })
-      .slice(0, 8);
-  }, [directory, query, selected]);
 
   useEffect(() => {
     if (!selected) {
@@ -341,39 +302,11 @@ function ExistingClaimForm({
                   id="join-claim-name"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Start typing your name"
+                  placeholder="First and last name"
                   className="h-11 pl-10"
                   autoComplete="name"
                 />
               </div>
-              {suggestions.length > 0 && (
-                <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-2">
-                  {suggestions.map((person) => (
-                    <button
-                      key={person.id}
-                      type="button"
-                      onClick={() => setSelected(person)}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-white hover:text-gray-900"
-                    >
-                      <span className="truncate">{person.fullName}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {query.trim().length > 1 && suggestions.length === 0 && (
-                <p className="text-sm text-gray-600">
-                  No public match. If your profile is private, continue with the
-                  exact name, or{" "}
-                  <button
-                    type="button"
-                    className="font-medium text-sky-600 hover:text-sky-800"
-                    onClick={onCreateInstead}
-                  >
-                    set up a new profile
-                  </button>
-                  .
-                </p>
-              )}
               {query.trim().length >= 3 && !selected && (
                 <button
                   type="button"

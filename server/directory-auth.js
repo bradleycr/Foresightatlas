@@ -9,6 +9,13 @@ const {
   cloneRecord,
   upsertRealDataRecord,
 } = require("./realdata-store");
+const {
+  identifierMatchesPerson,
+  unknownIdentifierMessage,
+  LOGIN_PASSWORD_WRONG,
+  LOGIN_NOT_SET_UP,
+  LOGIN_AMBIGUOUS_NAME,
+} = require("./login-identifier");
 
 /**
  * Onboarding model.
@@ -200,41 +207,66 @@ function normalizeClaimEmail(value) {
   return email;
 }
 
-async function authenticateDirectoryLogin(fullName, password) {
-  const submittedName = String(fullName || "").trim();
+/** Paid once so a miss costs about as much as a real password check. */
+let dummyPasswordHashPromise = null;
+function dummyPasswordHash() {
+  if (!dummyPasswordHashPromise) {
+    dummyPasswordHashPromise = hashPassword("atlas-login-timing-pad");
+  }
+  return dummyPasswordHashPromise;
+}
+
+async function passwordMatchesRecord(record, submittedPassword) {
+  const passwordHash = record.auth?.passwordHash;
+  if (passwordHash) {
+    return verifyPasswordHash(submittedPassword, passwordHash);
+  }
+  // Unclaimed rows have no hash. Still pay for a verify so that case doesn't
+  // return faster than a real password check.
+  await verifyPasswordHash(submittedPassword, await dummyPasswordHash());
+  if (ALLOW_DEFAULT_PASSWORD) {
+    return submittedPassword === DEFAULT_DIRECTORY_PASSWORD;
+  }
+  return false;
+}
+
+/**
+ * Name (full, or first + last) or the roster email, plus password.
+ * Several rows can share a first and last name; only a unique password match
+ * is allowed through. Every other outcome is the same failure.
+ */
+async function authenticateDirectoryLogin(identifier, password) {
+  const submitted = String(identifier || "").trim();
   const submittedPassword = String(password || "");
-  if (!submittedName) {
-    throw new Error("Full name is required.");
+  if (!submitted) {
+    throw new Error("Enter your name or the email on your profile.");
   }
 
   const { records } = await loadRealDataRecords();
-  const matches = findRecordsByNormalizedName(records, submittedName);
-  const record = chooseCanonicalRecord(matches);
-  if (!record) {
-    throw new Error("We could not find a directory profile with that full name.");
+  const matches = records.filter((record) =>
+    identifierMatchesPerson(record.person, submitted),
+  );
+
+  if (matches.length === 0) {
+    await verifyPasswordHash(submittedPassword, await dummyPasswordHash());
+    throw new Error(unknownIdentifierMessage(submitted));
   }
 
-  const passwordHash = record.auth.passwordHash;
-  if (!passwordHash && !ALLOW_DEFAULT_PASSWORD) {
-    // No password set and the shared default is disabled: this profile can only
-    // be set up through its personal magic link.
-    const err = new Error(
-      "This profile hasn't been set up yet. Open the personal sign-in link you were sent to choose a password.",
-    );
-    err.statusCode = 403;
-    throw err;
+  const verified = [];
+  for (const candidate of matches) {
+    if (await passwordMatchesRecord(candidate, submittedPassword)) {
+      verified.push(candidate);
+    }
+  }
+  if (verified.length > 1) {
+    throw new Error(LOGIN_AMBIGUOUS_NAME);
+  }
+  if (verified.length === 0) {
+    const noneClaimed = matches.every((candidate) => !candidate.auth?.passwordHash);
+    throw new Error(noneClaimed && !ALLOW_DEFAULT_PASSWORD ? LOGIN_NOT_SET_UP : LOGIN_PASSWORD_WRONG);
   }
 
-  // With a hash we verify it; otherwise (default explicitly enabled) the
-  // first-time temporary password is accepted.
-  const isValid = passwordHash
-    ? await verifyPasswordHash(submittedPassword, passwordHash)
-    : submittedPassword === DEFAULT_DIRECTORY_PASSWORD;
-
-  if (!isValid) {
-    throw new Error("Incorrect password.");
-  }
-
+  const record = verified[0];
   const sessionRecord = cloneRecord(record);
   if (!sessionRecord.auth.passwordHash) {
     sessionRecord.auth.mustChangePassword = true;

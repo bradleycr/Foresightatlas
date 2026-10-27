@@ -15,9 +15,8 @@ import { useIsMobile } from "../components/ui/use-mobile";
 import type { PinLocation } from "../components/map/pinAppearance";
 import { APP_NAME, FORESIGHT_LUMA_URL, FORESIGHT_ORG_URL } from "../constants/foresight";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
-import { getDirectoryNames } from "../services/database";
 import { getLastSignedInName } from "../services/identity";
-import type { Person, RoleType } from "../types";
+import type { RoleType } from "../types";
 
 const GlobeMap = lazy(() =>
   import("../components/map/GlobeMap").then((mod) => ({ default: mod.GlobeMap })),
@@ -138,7 +137,6 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
   const [loadError, setLoadError] = useState(false);
   const [globeFailed, setGlobeFailed] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [nameList, setNameList] = useState<Person[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,21 +155,6 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!showLogin) return;
-    let cancelled = false;
-    getDirectoryNames()
-      .then((names) => {
-        if (!cancelled) setNameList(names);
-      })
-      .catch(() => {
-        if (!cancelled) setNameList([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showLogin]);
 
   const markers = useMemo(
     () => (preview?.pins?.length ? pinsToMarkers(preview.pins) : []),
@@ -319,7 +302,6 @@ export function PublicAtlasPage({ onSignIn, onOpenPrivacy }: PublicAtlasPageProp
               </p>
             </div>
             <DirectoryLoginForm
-              people={nameList}
               title="Sign in"
               submitLabel="Enter"
               initialName={getLastSignedInName()}

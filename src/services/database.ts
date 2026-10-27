@@ -396,27 +396,6 @@ export async function getAllPeople(): Promise<Person[]> {
   return (db.people || []).map(normalizePerson);
 }
 
-/**
- * Minimal sign-in picker: id + fullName only, from the public
- * /api/directory-names endpoint. This is the one person query that works
- * before authentication, so the login form can offer name autocomplete
- * without exposing the gated directory.
- */
-export async function getDirectoryNames(): Promise<Person[]> {
-  const url = `${getApiBase()}/directory-names`.replace(/([^:]\/)\/+/g, "$1");
-  const response = await fetchWithTimeout(url);
-  if (!response.ok) {
-    throw new Error(`Failed to load directory (${response.status}).`);
-  }
-  const raw = await response.json();
-  const people = Array.isArray(raw?.people) ? raw.people : [];
-  return people
-    .filter((p: unknown): p is { id: string; fullName: string } =>
-      Boolean(p && typeof (p as { fullName?: unknown }).fullName === "string"),
-    )
-    .map((p: { id: string; fullName: string }) => normalizePerson(p));
-}
-
 export async function getAllTravelWindows(): Promise<TravelWindow[]> {
   const db = await directorySource();
   return (db.travelWindows || []).map((tw) =>

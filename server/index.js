@@ -13,7 +13,7 @@ const express = require("express");
 const fs = require("fs").promises;
 const cors = require("cors");
 const { saveProfile, createProfile } = require("./profile-store");
-const { getDirectoryNamesFromSheet } = require("./sheet-database");
+const { assertLoginAllowed, recordLoginFailure } = require("./login-guard");
 const { atlasScope, readAtlasDatabase } = require("./atlas-read");
 const {
   authenticateDirectoryLogin,
@@ -102,17 +102,13 @@ app.post("/api/database", async (req, res) => {
 
 /**
  * GET /api/directory-names
- * Public minimal sign-in picker (id + fullName only) for the login form.
+ * Retired. A public name list let anyone enumerate the roster before sign-in.
  */
-app.get("/api/directory-names", async (req, res) => {
-  try {
-    const people = await getDirectoryNamesFromSheet();
-    res.json({ people });
-  } catch (error) {
-    res.status(503).json({
-      error: error instanceof Error ? error.message : "Failed to load directory names",
-    });
-  }
+app.get("/api/directory-names", async (_req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.status(410).json({
+    error: "Directory names are not available before sign-in.",
+  });
 });
 
 /**
@@ -120,15 +116,27 @@ app.get("/api/directory-names", async (req, res) => {
  * Server-validated member sign-in backed by RealData.
  */
 app.post("/api/member-login", async (req, res) => {
+  const identifier = req.body?.username;
   try {
-    const result = await authenticateDirectoryLogin(
-      req.body?.username,
-      req.body?.password,
-    );
+    assertLoginAllowed(req, identifier);
+    const result = await authenticateDirectoryLogin(identifier, req.body?.password);
     res.json(result);
   } catch (error) {
-    res.status(401).json({
-      error: error instanceof Error ? error.message : "Sign-in failed",
+    let failure = error;
+    if (!(failure && failure.statusCode === 429)) {
+      try {
+        recordLoginFailure(req, identifier);
+      } catch (limitError) {
+        failure = limitError;
+      }
+    }
+    const status =
+      failure && typeof failure === "object" && failure.statusCode === 429 ? 429 : 401;
+    if (status === 429 && failure.retryAfterSec) {
+      res.setHeader("Retry-After", String(failure.retryAfterSec));
+    }
+    res.status(status).json({
+      error: failure instanceof Error ? failure.message : "Sign-in failed",
     });
   }
 });

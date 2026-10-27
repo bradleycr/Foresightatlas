@@ -13,10 +13,10 @@ const buckets = new Map();
 
 /**
  * @param {string} key
- * @param {{ limit: number, windowMs: number }} opts
+ * @param {{ limit: number, windowMs: number, dryRun?: boolean }} opts
  * @returns {{ ok: true } | { ok: false, retryAfterSec: number }}
  */
-function rateLimit(key, { limit, windowMs }) {
+function rateLimit(key, { limit, windowMs, dryRun = false }) {
   const now = Date.now();
   const cutoff = now - windowMs;
   const prev = buckets.get(key) || [];
@@ -27,8 +27,10 @@ function rateLimit(key, { limit, windowMs }) {
     buckets.set(key, recent);
     return { ok: false, retryAfterSec };
   }
-  recent.push(now);
-  buckets.set(key, recent);
+  if (!dryRun) {
+    recent.push(now);
+    buckets.set(key, recent);
+  }
   return { ok: true };
 }
 

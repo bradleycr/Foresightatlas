@@ -6,7 +6,6 @@ import foresightIcon from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { APP_NAME, FORESIGHT_ORG_URL } from "../constants/foresight";
 import { Z_INDEX_SIDEBAR, Z_INDEX_HEADER_NAV, Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
 import type { Identity } from "../services/identity";
-import type { Person } from "../types";
 import { Button } from "./ui/button";
 import { DirectoryLoginForm } from "./auth/DirectoryLoginForm";
 import { getLastSignedInName } from "../services/identity";
@@ -23,7 +22,6 @@ interface AppHeaderProps {
   mobileMenuOpen: boolean;
   onMobileMenuOpenChange: (open: boolean) => void;
   suggestFormUrl?: string;
-  people: Person[];
   identity: Identity | null;
   onOpenProfile: () => void;
   onSignIn: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -37,7 +35,6 @@ export function AppHeader({
   mobileMenuOpen,
   onMobileMenuOpenChange,
   suggestFormUrl,
-  people,
   identity,
   onOpenProfile,
   onSignIn,
@@ -444,7 +441,6 @@ export function AppHeader({
               ) : (
                 <div className="p-6 sm:p-7">
                   <DirectoryLoginForm
-                    people={people}
                     title="Sign in to your profile"
                     submitLabel="Sign in"
                     initialName={getLastSignedInName()}

@@ -400,24 +400,7 @@ async function getMapDatabaseFromSheet() {
   };
 }
 
-/**
- * Minimal directory for the (unauthenticated) sign-in picker: id + fullName
- * only, filtered to the same set as the public atlas (no private profiles).
- * This is the ONLY person data served before login; the full database
- * requires a session. Private members can still sign in by typing their
- * exact name.
- */
-async function getDirectoryNamesFromSheet() {
-  const loaded = await loadRealDataRecords();
-  return (loaded.records || [])
-    .map((r) => r.person)
-    .filter((p) => p && p.fullName)
-    .filter((p) => p.isPrivate !== true)
-    .map((p) => ({ id: p.id, fullName: p.fullName }));
-}
-
 module.exports = {
   getFullDatabaseFromSheet,
   getMapDatabaseFromSheet,
-  getDirectoryNamesFromSheet,
 };

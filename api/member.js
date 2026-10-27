@@ -4,12 +4,12 @@
  * Unified member / directory auth API (Vercel Hobby plan: one function, many routes).
  *
  * Rewrites in vercel.json map legacy paths here via ?route=…
- *   login, refresh, claim, password, register, invite-claim, directory-names,
+ *   login, refresh, claim, password, register, invite-claim, directory-names (retired),
  *   access-request
  */
 
 const { createProfile } = require("../server/profile-store");
-const { getDirectoryNamesFromSheet } = require("../server/sheet-database");
+const { assertLoginAllowed, recordLoginFailure } = require("../server/login-guard");
 const {
   authenticateDirectoryLogin,
   refreshDirectorySession,
@@ -46,15 +46,27 @@ async function handleLogin(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+  const identifier = req.body?.username;
   try {
-    const result = await authenticateDirectoryLogin(
-      req.body?.username,
-      req.body?.password,
-    );
+    assertLoginAllowed(req, identifier);
+    const result = await authenticateDirectoryLogin(identifier, req.body?.password);
     return res.status(200).json(result);
   } catch (error) {
-    return res.status(401).json({
-      error: error instanceof Error ? error.message : "Sign-in failed",
+    let failure = error;
+    if (!(failure && failure.statusCode === 429)) {
+      try {
+        recordLoginFailure(req, identifier);
+      } catch (limitError) {
+        failure = limitError;
+      }
+    }
+    const status =
+      failure && typeof failure === "object" && failure.statusCode === 429 ? 429 : 401;
+    if (status === 429 && failure.retryAfterSec) {
+      res.setHeader("Retry-After", String(failure.retryAfterSec));
+    }
+    return res.status(status).json({
+      error: failure instanceof Error ? failure.message : "Sign-in failed",
     });
   }
 }
@@ -183,15 +195,12 @@ async function handleDirectoryNames(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300");
-  try {
-    const names = await getDirectoryNamesFromSheet();
-    return res.status(200).json({ people: names });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to load directory names";
-    return res.status(503).json({ error: message });
-  }
+  // Was a public id + fullName dump for the sign-in typeahead. That list is
+  // the roster. Keep the route so old clients fail closed instead of hanging.
+  res.setHeader("Cache-Control", "private, no-store");
+  return res.status(410).json({
+    error: "Directory names are not available before sign-in.",
+  });
 }
 
 async function handleAccessRequest(req, res) {

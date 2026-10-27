@@ -954,7 +954,6 @@ export default function App() {
         <AppHeader
           route={route}
           navigate={navigate}
-          people={people}
           identity={identity}
           onOpenProfile={() => navigate("/profile")}
           onSignIn={handleDirectorySignIn}

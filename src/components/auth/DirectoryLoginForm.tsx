@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, HelpCircle, Loader2, Lock, Search, UserCircle2 } from "lucide-react";
-import type { Person } from "../../types";
+import { useState } from "react";
+import { HelpCircle, Loader2, Lock, Mail, UserCircle2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -12,7 +11,6 @@ import {
 import { ATLAS_ACCESS_MAILTO, atlasPasswordResetMailto } from "../../utils/checkInAuth";
 
 interface DirectoryLoginFormProps {
-  people: Person[];
   title: string;
   description?: string;
   submitLabel?: string;
@@ -22,22 +20,15 @@ interface DirectoryLoginFormProps {
   ) => Promise<{ ok: boolean; error?: string }>;
   onCancel?: () => void;
   /**
-   * Optional full name to pre-populate the form with. Typically wired to
-   * {@link getLastSignedInName} so returning members only have to type a
-   * password — even if their previous session token was wiped by privacy
-   * heuristics or they're signing in on a friend's freshly-cleared device.
+   * Name this device last signed in with. Used only if they switch to the
+   * name field. The email box stays empty so a password manager can fill it.
    */
   initialName?: string | null;
   /** Show a visible forgot-password line. */
   showAccountRecovery?: boolean;
 }
 
-function normalizeQuery(value: string): string {
-  return value.trim().toLowerCase();
-}
-
 export function DirectoryLoginForm({
-  people,
   title,
   description,
   submitLabel = "Sign in",
@@ -46,67 +37,32 @@ export function DirectoryLoginForm({
   initialName,
   showAccountRecovery = false,
 }: DirectoryLoginFormProps) {
-  const [username, setUsername] = useState(initialName ?? "");
+  const rememberedName = (initialName ?? "").trim();
+  const rememberedIsEmail = rememberedName.includes("@");
+  const [mode, setMode] = useState<"email" | "name">("email");
+  const [email, setEmail] = useState(rememberedIsEmail ? rememberedName : "");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedMatch, setSelectedMatch] = useState<Person | null>(() => {
-    if (!initialName) return null;
-    const normalized = initialName.trim().toLowerCase();
-    return (
-      people.find((person) => person.fullName.toLowerCase() === normalized) ??
-      null
-    );
-  });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /**
-   * The remembered name is only ever auto-selected ONCE. Without this guard the
-   * effect would re-fire the moment `selectedMatch` returns to null — which is
-   * exactly what happens when the user taps "Choose someone else", trapping
-   * them on the prefilled person. The ref lets the prefill run a single time
-   * (e.g. after the directory finishes loading) and then step out of the way.
-   */
-  const didApplyInitialName = useRef(false);
-  useEffect(() => {
-    if (didApplyInitialName.current) return;
-    if (!initialName || people.length === 0) return;
-    didApplyInitialName.current = true;
-    if (selectedMatch) return;
-    const normalized = initialName.trim().toLowerCase();
-    const match = people.find(
-      (person) => person.fullName.toLowerCase() === normalized,
-    );
-    if (match) setSelectedMatch(match);
-  }, [people, initialName, selectedMatch]);
-
-  const suggestions = useMemo(() => {
-    if (selectedMatch) return [];
-    const query = normalizeQuery(username);
-    if (!query) return [];
-    const seen = new Set<string>();
-    return people
-      .filter((person) => {
-        const name = person.fullName.toLowerCase();
-        if (seen.has(name)) return false;
-        if (!name.includes(query)) return false;
-        seen.add(name);
-        return true;
-      })
-      .slice(0, 6);
-  }, [people, username, selectedMatch]);
+  const identifier = (mode === "email" ? email : name).trim();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    setIsSubmitting(true);
-    const nameToUse = selectedMatch?.fullName ?? username.trim();
-    if (!nameToUse) {
-      setError("Select your name from the list or enter it above.");
+    if (!identifier || !password) {
+      setError(
+        mode === "email"
+          ? "Enter the email we have on file, and your password."
+          : "Enter your first and last name, and your password.",
+      );
       setIsSubmitting(false);
       return;
     }
+    setIsSubmitting(true);
     try {
-      const result = await onSubmit(nameToUse, password);
+      const result = await onSubmit(identifier, password);
       if (!result.ok) {
         setError(result.error ?? "Sign-in failed.");
       }
@@ -115,17 +71,8 @@ export function DirectoryLoginForm({
     }
   };
 
-  const handleChooseSomeoneElse = () => {
-    setSelectedMatch(null);
-    setUsername("");
-    setPassword("");
-    setError(null);
-  };
-
-  const hasSelection = selectedMatch !== null;
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} autoComplete="on" className="space-y-5">
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight text-gray-900">
           {title}
@@ -136,64 +83,75 @@ export function DirectoryLoginForm({
       </div>
 
       <div className="space-y-4">
-        {hasSelection ? (
-          /* Confirmed selection: show only who they picked and the password step. */
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/80 via-white to-sky-50/70 px-4 py-3">
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-teal-700/90">
-                You've selected
+        <div className="space-y-2">
+          {mode === "email" ? (
+            <>
+              <Label htmlFor="directory-login-email">Email</Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  id="directory-login-email"
+                  name="username"
+                  type="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="The email we have on file"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="h-11 pl-10"
+                />
+              </div>
+              <p className="text-sm leading-5 text-gray-500">
+                Your browser or password manager can save this with your password.
               </p>
-              <p className="mt-1 font-medium text-gray-900">{selectedMatch!.fullName}</p>
               <button
                 type="button"
-                onClick={handleChooseSomeoneElse}
-                className="mt-2 inline-flex items-center gap-1.5 text-sm text-teal-700 transition-colors hover:text-teal-900"
+                onClick={() => {
+                  setMode("name");
+                  setError(null);
+                  if (!name && rememberedName && !rememberedIsEmail) {
+                    setName(rememberedName);
+                  }
+                }}
+                className="text-sm font-medium text-teal-700 transition-colors hover:text-teal-900"
               >
-                <ChevronLeft className="size-3.5" />
-                Choose someone else
+                Use your first and last name instead
               </button>
-            </div>
-          </div>
-        ) : (
-          /* Name search and match list */
-          <div className="space-y-2">
-            <Label htmlFor="directory-login-name">Full name</Label>
-            <div className="relative">
-              <UserCircle2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                id="directory-login-name"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="First and last name"
-                autoComplete="username"
-                className="h-11 pl-10"
-              />
-            </div>
-            {suggestions.length > 0 && (
-              <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-2">
-                <p className="px-2 pb-1 text-[11px] font-medium uppercase tracking-[0.14em] text-gray-500">
-                  Matches — tap to select
-                </p>
-                <div className="space-y-1">
-                  {suggestions.map((person) => (
-                    <button
-                      key={person.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedMatch(person);
-                        setError(null);
-                      }}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-white hover:text-gray-900"
-                    >
-                      <Search className="size-3.5 text-gray-400" />
-                      <span className="truncate">{person.fullName}</span>
-                    </button>
-                  ))}
-                </div>
+            </>
+          ) : (
+            <>
+              <Label htmlFor="directory-login-name">First and last name</Label>
+              <div className="relative">
+                <UserCircle2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  id="directory-login-name"
+                  name="username"
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="First and last name"
+                  autoComplete="username"
+                  autoCapitalize="words"
+                  spellCheck={false}
+                  className="h-11 pl-10"
+                />
               </div>
-            )}
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("email");
+                  setError(null);
+                }}
+                className="text-sm font-medium text-teal-700 transition-colors hover:text-teal-900"
+              >
+                Use your email instead
+              </button>
+            </>
+          )}
+        </div>
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -219,6 +177,7 @@ export function DirectoryLoginForm({
             <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <Input
               id="directory-login-password"
+              name="password"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -230,7 +189,7 @@ export function DirectoryLoginForm({
           {showAccountRecovery ? (
             <p className="text-sm text-gray-600">
               <a
-                href={atlasPasswordResetMailto(selectedMatch?.fullName ?? username)}
+                href={atlasPasswordResetMailto(identifier)}
                 className="font-medium text-teal-700 transition-colors hover:text-teal-900"
               >
                 Forgot your password?
@@ -246,19 +205,17 @@ export function DirectoryLoginForm({
         "Add yourself" button. People who aren't in the directory email the
         team, who can send a private join link.
       */}
-      {!hasSelection && (
-        <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-amber-50/40 via-gray-50/80 to-sky-50/40 px-4 py-3">
-          <p className="text-sm text-gray-600">
-            Can't find your name?{" "}
-            <a
-              href={ATLAS_ACCESS_MAILTO}
-              className="font-medium text-teal-700 transition-colors hover:text-teal-900"
-            >
-              Email our team for access
-            </a>
-          </p>
-        </div>
-      )}
+      <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-amber-50/40 via-gray-50/80 to-sky-50/40 px-4 py-3">
+        <p className="text-sm text-gray-600">
+          Not on the directory yet?{" "}
+          <a
+            href={ATLAS_ACCESS_MAILTO}
+            className="font-medium text-teal-700 transition-colors hover:text-teal-900"
+          >
+            Email our team for access
+          </a>
+        </p>
+      </div>
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

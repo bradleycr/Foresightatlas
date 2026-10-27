@@ -621,7 +621,6 @@ export function ProfilePage({
                 <Sparkles className="size-6" />
               </div>
               <DirectoryLoginForm
-                people={people}
                 title="Sign in to edit your directory profile"
                 submitLabel="Sign in"
                 initialName={getLastSignedInName()}

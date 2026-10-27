@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { MapPin } from "lucide-react";
-import type { Person } from "../../types";
-import { getDirectoryNames } from "../../services/database";
 import { getLastSignedInName } from "../../services/identity";
 import { setPostLoginReturnUrl } from "../../services/returnUrl";
 import {
@@ -27,34 +25,16 @@ interface AuthGateProps {
  *
  * The map, programming pages, profiles, and connections are all members-only,
  * so when there's no session this full-screen sign-in is the *only* thing that
- * renders. It loads just the name list (id + fullName) from the public
- * /api/directory-names endpoint so the picker can autocomplete without exposing
- * any of the gated directory data.
+ * renders. Sign-in is a name or email plus a password. The roster is not
+ * loaded here — a typeahead would let anyone list who is in the community.
  */
 export function AuthGate({ route, onSignIn }: AuthGateProps) {
-  const [people, setPeople] = useState<Person[]>([]);
   const checkInCopy = useMemo(() => getCheckInAuthCopy(route), [route]);
 
   useEffect(() => {
     const returnPath = checkInReturnPath(route);
     if (returnPath) setPostLoginReturnUrl(returnPath);
   }, [route]);
-
-  useEffect(() => {
-    let cancelled = false;
-    // Autocomplete is a convenience, not a requirement — if the name list
-    // fails to load, members can still type their full name and sign in.
-    getDirectoryNames()
-      .then((names) => {
-        if (!cancelled) setPeople(names);
-      })
-      .catch(() => {
-        if (!cancelled) setPeople([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <main
@@ -103,7 +83,6 @@ export function AuthGate({ route, onSignIn }: AuthGateProps) {
 
         <div className="rounded-3xl border border-gray-200 bg-white/90 p-6 shadow-xl backdrop-blur-sm sm:p-7">
           <DirectoryLoginForm
-            people={people}
             title={checkInCopy ? checkInCopy.formTitle : "Welcome back"}
             submitLabel={checkInCopy ? checkInCopy.submitLabel : "Enter"}
             initialName={getLastSignedInName()}
