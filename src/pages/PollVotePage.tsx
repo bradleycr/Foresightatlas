@@ -107,7 +107,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
       if (msg.scope === "polls" || msg.scope === "all") void load();
     });
     /* Draft phones need to notice Go live quickly; live can breathe. */
-    const ms = poll?.status === "draft" ? 3000 : 10000;
+    const ms = poll?.status === "draft" ? 8000 : 20000;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load();

@@ -53,7 +53,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load();
-    }, 4000);
+    }, 15000);
     return () => {
       unsub();
       window.clearInterval(timer);

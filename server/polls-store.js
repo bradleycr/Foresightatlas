@@ -644,22 +644,14 @@ async function ensureTab(sheets, title, headers) {
 
 async function loadSheetPollsAndVotes(sheets) {
   const spreadsheetId = sheetsId();
-  await ensureTab(sheets, SHEET_NAMES.POLLS, POLLS_HEADERS);
-  await ensureTab(sheets, SHEET_NAMES.POLL_VOTES, POLL_VOTES_HEADERS);
-
-  const [pollsRes, votesRes] = await Promise.all([
-    sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${SHEET_NAMES.POLLS}'`,
-    }),
-    sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${SHEET_NAMES.POLL_VOTES}'`,
-    }),
-  ]);
-
-  const pollValues = pollsRes.data.values || [];
-  const voteValues = votesRes.data.values || [];
+  /* One quota unit for both tabs. The tabs already exist; don't rewrite headers. */
+  const res = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId,
+    ranges: [`'${SHEET_NAMES.POLLS}'`, `'${SHEET_NAMES.POLL_VOTES}'`],
+  });
+  const ranges = res.data.valueRanges || [];
+  const pollValues = ranges[0]?.values || [];
+  const voteValues = ranges[1]?.values || [];
   const pollHeader = pollValues[0] || POLLS_HEADERS;
   const voteHeader = voteValues[0] || POLL_VOTES_HEADERS;
 
@@ -703,23 +695,45 @@ async function loadMockPollsAndVotes() {
   };
 }
 
-/** A room of phones shares one sheet read. Writes drop the cache immediately. */
+/**
+ * One sheet read serves the whole room. Votes append onto this snapshot
+ * instead of throwing it away — a fresh read on every phone was the quota.
+ * If Sheets is already limiting us, the last snapshot is still served.
+ */
 let pollCache = { at: 0, value: null };
-const POLL_CACHE_MS = 4000;
+let pollInflight = null;
+const POLL_CACHE_MS = 20000;
 
 function dropPollCache() {
   pollCache = { at: 0, value: null };
+}
+
+function rememberVote(vote) {
+  if (!pollCache.value) return;
+  pollCache.value.votes.push(vote);
 }
 
 async function loadAll() {
   if (isLocalMockMode()) return loadMockPollsAndVotes();
   const now = Date.now();
   if (pollCache.value && now - pollCache.at < POLL_CACHE_MS) return pollCache.value;
-  const sheets = await getSheetsClient();
-  if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
-  const value = await loadSheetPollsAndVotes(sheets);
-  pollCache = { at: Date.now(), value };
-  return value;
+  if (pollInflight) return pollInflight;
+  pollInflight = (async () => {
+    try {
+      const sheets = await getSheetsClient();
+      if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
+      const value = await loadSheetPollsAndVotes(sheets);
+      pollCache = { at: Date.now(), value };
+      return value;
+    } catch (err) {
+      const message = String(err?.message || err || "");
+      if (pollCache.value && /quota/i.test(message)) return pollCache.value;
+      throw err;
+    } finally {
+      pollInflight = null;
+    }
+  })();
+  return pollInflight;
 }
 
 async function persistPoll(poll) {
@@ -763,7 +777,6 @@ async function persistVote(vote) {
   const sheets = await getSheetsClient();
   if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
   const spreadsheetId = sheetsId();
-  await ensureTab(sheets, SHEET_NAMES.POLL_VOTES, POLL_VOTES_HEADERS);
   const lastCol = getSheetColumnLetter(POLL_VOTES_HEADERS.length - 1);
   await sheets.spreadsheets.values.append({
     spreadsheetId,
@@ -785,7 +798,7 @@ async function persistVote(vote) {
       ]],
     },
   });
-  dropPollCache();
+  rememberVote(vote);
   return vote;
 }
 
@@ -1015,7 +1028,8 @@ async function castVote(
   req,
 ) {
   const flood = rateLimit(`poll-vote:${clientIp(req)}`, {
-    limit: 240,
+    /* A room shares one address. The sheet still keeps one ballot per phone. */
+    limit: 4000,
     windowMs: 15 * 60 * 1000,
   });
   if (!flood.ok) {
