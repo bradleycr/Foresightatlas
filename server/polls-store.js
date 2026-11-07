@@ -118,30 +118,51 @@ function cleanPeople(raw) {
 }
 
 /**
- * A GitHub repo: github.com/org/name, or just org/name.
- * The path after the repo name is dropped so a blob link still lands on the repo.
+ * A GitHub repo only. Accepts:
+ *   https://github.com/org/project
+ *   github.com/org/project
+ *   www.github.com/org/project
+ *   org/project
+ * Extra path (/tree/…, /blob/…, .git) is trimmed to the repo root.
  */
 function cleanGithubRepo(raw) {
-  let value = String(raw || "").trim();
+  let value = String(raw || "")
+    .trim()
+    .replace(/^<|>$/g, "")
+    .replace(/\s+/g, "");
   if (!value) throw new Error("Add the GitHub repo.");
+
+  /* Paste from chat sometimes includes the @ of an @mention. */
+  value = value.replace(/^@/, "");
+
   if (!/^https?:\/\//i.test(value)) {
-    value = /^github\.com\//i.test(value) ? `https://${value}` : `https://github.com/${value.replace(/^\/+/, "")}`;
+    if (/^(www\.)?github\.com\//i.test(value)) {
+      value = `https://${value.replace(/^www\./i, "")}`;
+    } else if (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/.test(value)) {
+      value = `https://github.com/${value.replace(/^\/+/, "")}`;
+    } else {
+      throw new Error("Use github.com/org/project — or just org/project.");
+    }
   }
+
   let url;
   try {
     url = new URL(value);
   } catch {
-    throw new Error("That doesn’t look like a GitHub repo.");
+    throw new Error("Use github.com/org/project — or just org/project.");
   }
   const host = url.hostname.replace(/^www\./, "").toLowerCase();
   if (host !== "github.com") {
-    throw new Error("Use a GitHub repo, like github.com/org/project.");
+    throw new Error("Only GitHub repos work here (github.com/org/project).");
   }
   const [owner, repo] = url.pathname.split("/").filter(Boolean);
   if (!owner || !repo) {
-    throw new Error("Include the repo, like github.com/org/project.");
+    throw new Error("Needs org and repo — e.g. github.com/anthropics/claude-code");
   }
   const cleanRepo = repo.replace(/\.git$/i, "");
+  if (!/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(cleanRepo)) {
+    throw new Error("That doesn’t look like a GitHub owner/repo.");
+  }
   return `https://github.com/${owner}/${cleanRepo}`;
 }
 

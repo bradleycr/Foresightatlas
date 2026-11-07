@@ -72,7 +72,15 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
             inputMode="url"
             autoCapitalize="none"
             autoCorrect="off"
+            aria-describedby="project-url-hint"
           />
+          <p id="project-url-hint" className="mt-1.5 text-xs leading-snug text-neutral-500">
+            GitHub only — full link or short form both work:{" "}
+            <span className="font-medium text-neutral-700">github.com/org/project</span>
+            {" · "}
+            <span className="font-medium text-neutral-700">org/project</span>
+            . Needs both the org and the repo name.
+          </p>
         </div>
         <Button
           type="button"
