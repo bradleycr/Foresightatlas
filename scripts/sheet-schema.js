@@ -209,6 +209,7 @@ const POLLS_HEADERS = [
   "createdAt",
   "updatedAt",
   "closedAt",
+  "closesAt",
 ];
 
 /**

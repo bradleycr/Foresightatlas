@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { PollBallot } from "../components/polls/PollBallot";
+import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollProjectSubmit } from "../components/polls/PollProjectSubmit";
 import { themeForEvent } from "../components/polls/pollEventTheme";
@@ -150,6 +151,11 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
             <h1 className="font-heading text-[1.35rem] font-bold leading-snug text-inherit sm:text-2xl">
               {purpose === "add" ? "Add your project" : poll.question}
             </h1>
+            {purpose === "vote" && poll.status === "live" && poll.closesAt ? (
+              <div className="mt-4">
+                <PollCountdown closesAt={poll.closesAt} onElapsed={() => void load()} />
+              </div>
+            ) : null}
 
             {purpose === "add" && poll.status !== "closed" ? (
               <div className="mt-4">
@@ -186,7 +192,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
                   className="mt-6 min-h-[48px] w-full"
                   onClick={() => setEditing(true)}
                 >
-                  Update your vote
+                  Change your vote
                 </Button>
               </div>
             ) : null}
@@ -226,7 +232,6 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
 
             {purpose === "vote" && poll.status === "closed" ? (
               <div className="mt-5">
-                <p className="mb-4 text-sm text-gray-600">Voting has ended. Here’s who won.</p>
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} />
               </div>
             ) : null}

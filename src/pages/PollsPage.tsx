@@ -29,6 +29,7 @@ import {
 } from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import { isEventUpcoming } from "../utils/eventTiming";
+import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
 import { Button } from "../components/ui/button";
@@ -184,10 +185,21 @@ export function PollsPage({
         setQrPoll(next);
         toast.success("Poll is live. Share the QR with the room.");
       } else {
-        toast.success("Poll closed. It’s in the archive.");
+        toast.success("Voting ended.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not update poll.");
+    }
+  };
+
+  const handleFinalMinute = async (poll: PollAdmin) => {
+    if (!identity?.token) return;
+    try {
+      await updatePoll(identity.token, { slug: poll.slug, finalMinute: true });
+      await load();
+      toast.success("Final minute.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not start the timer.");
     }
   };
 
@@ -472,6 +484,8 @@ export function PollsPage({
           onVote={(p) => onNavigate(`/polls/${p.slug}`)}
           onAddPage={(p) => onNavigate(`/polls/${p.slug}/add`)}
           onReset={(p) => void handleReset(p)}
+          onFinalMinute={(p) => void handleFinalMinute(p)}
+          onTimerEnd={() => void load()}
           onClose={(p) => void setStatus(p, "closed")}
           onAddProject={(p) => {
             setAddProjectFor(p);
@@ -779,6 +793,8 @@ function PollSection({
   onVote,
   onAddPage,
   onGoLive,
+  onFinalMinute,
+  onTimerEnd,
   onClose,
   onEdit,
   onAddProject,
@@ -795,6 +811,8 @@ function PollSection({
   onVote?: (poll: PollAdmin) => void;
   onAddPage?: (poll: PollAdmin) => void;
   onGoLive?: (poll: PollAdmin) => void;
+  onFinalMinute?: (poll: PollAdmin) => void;
+  onTimerEnd?: () => void;
   onClose?: (poll: PollAdmin) => void;
   onEdit?: (poll: PollAdmin) => void;
   onAddProject?: (poll: PollAdmin) => void;
@@ -829,6 +847,11 @@ function PollSection({
                     {poll.options.length} project{poll.options.length === 1 ? "" : "s"}
                     {poll.totalVotes ? ` · ${poll.totalVotes} votes` : ""}
                   </p>
+                  {poll.status === "live" && poll.closesAt ? (
+                    <div className="mt-2">
+                      <PollCountdown closesAt={poll.closesAt} onElapsed={onTimerEnd} size="inline" />
+                    </div>
+                  ) : null}
                   {poll.options.length > 0 ? (
                     <ul className="mt-2 space-y-1">
                       {poll.options.map((option) => (
@@ -902,9 +925,14 @@ function PollSection({
                       Reset
                     </Button>
                   ) : null}
+                  {canManage && onFinalMinute && poll.status === "live" ? (
+                    <Button size="sm" className="min-h-[40px]" onClick={() => onFinalMinute(poll)}>
+                      Final minute
+                    </Button>
+                  ) : null}
                   {canManage && onClose ? (
                     <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => onClose(poll)}>
-                      Close
+                      End voting
                     </Button>
                   ) : null}
                 </div>

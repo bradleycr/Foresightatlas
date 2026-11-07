@@ -96,6 +96,8 @@ export async function updatePoll(
     closeOtherLive?: boolean;
     /** Drop the slate and return the poll to a draft. Old ballots no longer match. */
     reset?: boolean;
+    /** Start a 60 second clock. Voting closes when it hits zero. */
+    finalMinute?: boolean;
   },
 ): Promise<PollAdmin> {
   const res = await fetch(`${getApiBase()}/polls`, {

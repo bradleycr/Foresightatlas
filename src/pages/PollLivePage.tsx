@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Github, Loader2 } from "lucide-react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
+import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
 import { themeForEvent } from "../components/polls/pollEventTheme";
@@ -104,6 +105,11 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             <h1 className="font-heading text-2xl font-bold leading-tight text-inherit sm:text-4xl lg:text-5xl">
               {poll.question}
             </h1>
+            {poll.status === "live" && poll.closesAt ? (
+              <div className="mt-6">
+                <PollCountdown closesAt={poll.closesAt} onElapsed={() => void load()} size="stage" />
+              </div>
+            ) : null}
             {poll.status === "closed" ? (
               <div className="mt-8">
                 <p className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-neutral-500">

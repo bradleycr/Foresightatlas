@@ -23,6 +23,7 @@ const {
   SHEET_NAMES,
   POLLS_HEADERS,
   POLL_VOTES_HEADERS,
+  getSheetColumnLetter,
 } = require("../scripts/sheet-schema.js");
 const { parseRoleTypes } = require("./role-types");
 const { isLocalMockMode } = require("./local-storage");
@@ -270,6 +271,7 @@ function pollFromRow(row, headerRow, rowNumber) {
     createdAt: cell(row, headerRow, "createdAt"),
     updatedAt: cell(row, headerRow, "updatedAt"),
     closedAt: cell(row, headerRow, "closedAt"),
+    closesAt: cell(row, headerRow, "closesAt"),
     rowNumber,
   };
 }
@@ -288,6 +290,7 @@ function pollToRow(poll) {
     poll.createdAt,
     poll.updatedAt,
     poll.closedAt || "",
+    poll.closesAt || "",
   ];
 }
 
@@ -380,6 +383,7 @@ function publicPollShape(poll, votes, yours, { reveal } = {}) {
     createdAt: poll.createdAt,
     updatedAt: poll.updatedAt,
     closedAt: poll.closedAt || "",
+    closesAt: poll.status === "live" ? poll.closesAt || "" : "",
     // Hidden until the host closes, so a live room isn't pulled onto an early lead.
     results: show ? ranked.map(publicOption).map((option, index) => ({
       ...option,
@@ -562,17 +566,18 @@ async function persistPoll(poll) {
   const { polls } = await loadSheetPollsAndVotes(sheets);
   const existing = polls.find((p) => p.id === poll.id || p.slug === poll.slug);
   const row = pollToRow(poll);
+  const lastCol = getSheetColumnLetter(POLLS_HEADERS.length - 1);
   if (existing?.rowNumber) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `'${SHEET_NAMES.POLLS}'!A${existing.rowNumber}:L${existing.rowNumber}`,
+      range: `'${SHEET_NAMES.POLLS}'!A${existing.rowNumber}:${lastCol}${existing.rowNumber}`,
       valueInputOption: "RAW",
       requestBody: { values: [row] },
     });
   } else {
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `'${SHEET_NAMES.POLLS}'!A:L`,
+      range: `'${SHEET_NAMES.POLLS}'!A:${lastCol}`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: [row] },
@@ -626,6 +631,22 @@ async function lookupStaffPerson(personId) {
   return match?.person || null;
 }
 
+const FINAL_MINUTE_MS = 60 * 1000;
+
+/** A live poll with a deadline in the past becomes closed on the next read. */
+async function settleDuePolls(polls) {
+  const now = Date.now();
+  for (const poll of polls) {
+    if (poll.status !== "live" || !poll.closesAt) continue;
+    const due = Date.parse(poll.closesAt);
+    if (!Number.isFinite(due) || due > now) continue;
+    poll.status = "closed";
+    poll.closedAt = new Date(due).toISOString();
+    poll.updatedAt = new Date(now).toISOString();
+    await persistPoll(poll);
+  }
+}
+
 function findPoll(polls, slugOrId) {
   const key = String(slugOrId || "").trim().toLowerCase();
   if (!key) return null;
@@ -640,6 +661,7 @@ async function listAdminPolls(session) {
   const person = session?.personId ? await lookupStaffPerson(session.personId) : null;
   const manage = canManagePolls(person);
   const { polls, votes } = await loadAll();
+  await settleDuePolls(polls);
   const sorted = [...polls].sort((a, b) =>
     String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)),
   );
@@ -657,6 +679,7 @@ async function getPublicPoll(slug, voterKeyRaw) {
     err.statusCode = 404;
     throw err;
   }
+  await settleDuePolls([poll]);
   const voterKey = voterKeyRaw ? hashVoterKey(voterKeyRaw) : "";
   const yours = ballotFor(poll, votes, voterKey);
   return publicPollShape(poll, votes, yours, {
@@ -702,6 +725,7 @@ async function createPoll(session, body) {
     createdAt: now,
     updatedAt: now,
     closedAt: "",
+    closesAt: "",
   };
   await persistPoll(poll);
   return adminPollShape(poll, []);
@@ -727,6 +751,7 @@ async function updatePoll(session, body) {
     poll.status = "draft";
     poll.options = [];
     poll.closedAt = "";
+    poll.closesAt = "";
     poll.updatedAt = now;
     await persistPoll(poll);
     return adminPollShape(poll, votes);
@@ -774,6 +799,12 @@ async function updatePoll(session, body) {
   }
   if (body.eventId != null) poll.eventId = String(body.eventId || "").trim();
   if (body.eventTitle != null) poll.eventTitle = String(body.eventTitle || "").trim();
+  if (body.finalMinute) {
+    if (poll.status !== "live") {
+      throw new Error("Voting has to be open.");
+    }
+    poll.closesAt = new Date(Date.now() + FINAL_MINUTE_MS).toISOString();
+  }
   if (body.status) {
     const next = String(body.status).trim();
     if (!STATUSES.has(next)) throw new Error("Status must be draft, live, or closed.");
@@ -800,7 +831,11 @@ async function updatePoll(session, body) {
       }
     }
     poll.status = next;
-    if (next === "closed") poll.closedAt = now;
+    if (next === "live") poll.closesAt = "";
+    if (next === "closed") {
+      poll.closedAt = now;
+      poll.closesAt = "";
+    }
   }
   poll.updatedAt = now;
   await persistPoll(poll);
@@ -826,6 +861,7 @@ async function castVote({ slug, optionId, secondOptionId, voterKeyRaw }, req) {
     err.statusCode = 404;
     throw err;
   }
+  await settleDuePolls([poll]);
   if (poll.status !== "live") {
     const err = new Error(
       poll.status === "closed"
@@ -908,6 +944,7 @@ async function addProject(body, req) {
     err.statusCode = 404;
     throw err;
   }
+  await settleDuePolls([poll]);
   if (poll.status === "closed") {
     const err = new Error("This poll is closed.");
     err.statusCode = 400;
@@ -952,6 +989,7 @@ async function ensureEventPoll({ slug, eventTitle, question, options, status }) 
     createdAt: now,
     updatedAt: now,
     closedAt: "",
+    closesAt: "",
   };
   await persistPoll(poll);
   return { slug, created: true, status };

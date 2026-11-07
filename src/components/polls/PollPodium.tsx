@@ -38,8 +38,9 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
             )}
           >
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-              {PLACE[option.place - 1] || `${option.place}th`}
-              {leaders.filter((row) => row.place === option.place).length > 1 ? " · tied" : ""}
+              {leaders.filter((row) => row.place === option.place).length > 1
+                ? `Tied for ${PLACE[option.place - 1] || `${option.place}th`}`
+                : PLACE[option.place - 1] || `${option.place}th`}
             </p>
             <p className={cn("font-heading mt-1 font-bold leading-snug text-inherit", stage ? "text-2xl" : "text-lg")}>
               {option.label}
@@ -63,7 +64,10 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
           {rest.map((option) => (
             <li key={option.id} className="flex items-baseline justify-between gap-3 py-2.5">
               <p className="min-w-0">
-                <span className="mr-2 tabular-nums text-neutral-400">{option.place}.</span>
+                <span className="mr-2 tabular-nums text-neutral-400">
+                  {option.place}.
+                  {results.filter((row) => row.place === option.place).length > 1 ? " tied" : ""}
+                </span>
                 <span className="font-medium">{option.label}</span>
                 {option.people ? (
                   <span className="mt-0.5 block text-xs text-neutral-500 sm:ml-7 sm:mt-0 sm:inline">
@@ -77,8 +81,7 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
         </ul>
       ) : null}
       <p className="mt-4 text-xs text-neutral-500">
-        {totalBallots} ballot{totalBallots === 1 ? "" : "s"}
-        {" "}· a favourite is 2 points, a runner-up is 1
+        {totalBallots} vote{totalBallots === 1 ? "" : "s"}
       </p>
     </div>
   );

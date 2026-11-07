@@ -32,6 +32,8 @@ export interface PollPublic {
   createdAt: string;
   updatedAt: string;
   closedAt: string;
+  /** ISO time the host set for the final minute. Empty until they start it. */
+  closesAt: string;
   results: PollResultOption[];
   scoresHidden: boolean;
   totalVotes: number;

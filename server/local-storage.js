@@ -1028,6 +1028,7 @@ async function upsertLocalPoll(poll) {
     createdAt: String(poll.createdAt || new Date().toISOString()),
     updatedAt: String(poll.updatedAt || new Date().toISOString()),
     closedAt: String(poll.closedAt || ""),
+    closesAt: String(poll.closesAt || ""),
   };
   if (!next.id || !next.slug) throw new Error("Poll id and slug are required.");
   const index = db.polls.findIndex((row) => row.id === next.id || row.slug === next.slug);
