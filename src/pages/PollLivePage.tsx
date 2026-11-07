@@ -1,14 +1,14 @@
 /**
- * Projector / stage display for a live poll.
+ * The room screen. Open this on the projector and leave it.
  *
- * Large question + live bars on the left, high-contrast QR on the right so
- * the room can join without typing a URL. Polls the API every few seconds.
+ * Nothing here is a link: nobody is at the glass. Names and points are
+ * sized for the back row, and the two codes are large enough to scan
+ * from a seat.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Github, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
-import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
@@ -52,106 +52,101 @@ export function PollLivePage({ slug }: PollLivePageProps) {
   }, [load]);
 
   const theme = themeForEvent(poll?.eventTitle);
+  const rows = poll ? (poll.results.length > 0 ? poll.results : poll.options) : [];
+  const nameSize = `clamp(1.15rem, ${Math.min(3.4, 26 / Math.max(rows.length, 1))}vh, 2.4rem)`;
 
   return (
     <div
-      className="flex min-h-[100svh] flex-col px-6 py-8 sm:min-h-[100dvh] sm:px-10 sm:py-10"
+      className="flex h-full min-h-0 flex-col overflow-hidden px-8 py-6 xl:px-12 xl:py-8"
       style={{ background: theme.pageBackground }}
     >
-      <header className="flex items-start justify-between gap-3">
-        <a
-          href={FORESIGHT_ORG_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="flex min-w-0 items-center gap-3"
-        >
-          <span className="flex size-11 items-center justify-center rounded-2xl border border-white/80 bg-white/90 shadow-sm">
-            <img src={foresightIconUrl} alt="" className="size-7" />
+      <header className="flex shrink-0 items-center justify-between gap-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white/90 shadow-sm">
+            <img src={foresightIconUrl} alt="" className="size-9" />
           </span>
-          <div>
-            <p className={`text-[11px] font-semibold uppercase leading-snug tracking-[0.16em] sm:tracking-[0.22em] ${theme.kickerClass}`}>
+          <div className="min-w-0">
+            <p className={`truncate text-sm font-semibold uppercase tracking-[0.22em] ${theme.kickerClass}`}>
               {theme.kicker}
             </p>
-            <p className={`text-sm font-medium ${theme.detailClass}`}>
+            <p className={`mt-0.5 truncate text-lg font-medium ${theme.detailClass}`}>
               {theme.detail || "Live poll"}
             </p>
           </div>
-        </a>
-        {poll ? (
-          <p className={`shrink-0 text-right text-sm tabular-nums ${theme.mutedClass}`}>
-            {poll.status === "draft"
-              ? `${poll.options.length} project${poll.options.length === 1 ? "" : "s"}`
-              : `${poll.totalVotes} vote${poll.totalVotes === 1 ? "" : "s"}${poll.status === "closed" ? " · closed" : ""}`}
+        </div>
+        {poll && poll.status !== "draft" ? (
+          <p className={`shrink-0 text-right leading-none ${theme.inkClass}`}>
+            <span className="font-heading text-5xl font-bold tabular-nums xl:text-6xl">{poll.totalVotes}</span>
+            <span className={`mt-1 block text-sm font-semibold uppercase tracking-[0.18em] ${theme.mutedClass}`}>
+              {poll.totalVotes === 1 ? "vote" : "votes"}
+              {poll.status === "closed" ? " · closed" : ""}
+            </span>
           </p>
         ) : null}
       </header>
 
       {!poll && !error ? (
-        <div className="flex flex-1 items-center justify-center gap-2 text-gray-600">
-          <Loader2 className="size-5 animate-spin" />
-          Loading live poll…
+        <div className="flex flex-1 items-center justify-center gap-3 text-xl text-gray-600">
+          <Loader2 className="size-6 animate-spin" />
+          Loading
         </div>
       ) : null}
 
       {error && !poll ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="max-w-md text-center text-gray-700">{error}</p>
+          <p className="max-w-lg text-center text-2xl text-gray-800">{error}</p>
         </div>
       ) : null}
 
       {poll ? (
-        <div className="mt-8 grid flex-1 grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-10">
-          <div className={`rounded-[1.75rem] border p-6 sm:p-8 ${theme.ticketClass}`}>
-            <h1 className="font-heading text-2xl font-bold leading-tight text-inherit sm:text-4xl lg:text-5xl">
+        <div
+          className={
+            poll.status === "closed"
+              ? "mt-6 flex min-h-0 flex-1"
+              : "mt-6 grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_22rem] items-stretch gap-8 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-10"
+          }
+        >
+          <div className={`flex min-h-0 flex-col rounded-[1.75rem] border px-8 py-6 xl:px-10 xl:py-8 ${theme.ticketClass}`}>
+            <h1 className="shrink-0 font-heading text-4xl font-bold leading-tight text-inherit xl:text-5xl">
               {poll.question}
             </h1>
             {poll.status === "live" && poll.closesAt ? (
-              <div className="mt-6">
+              <div className="mt-4 shrink-0">
                 <PollCountdown closesAt={poll.closesAt} onElapsed={() => void load()} size="stage" />
               </div>
             ) : null}
             {poll.status === "closed" ? (
-              <div className="mt-8">
-                <p className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                  Winners
-                </p>
+              <div className="mt-6 min-h-0 flex-1 overflow-hidden">
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} size="stage" />
               </div>
             ) : (
-              <ol className="mt-6 space-y-3">
-                {(poll.results.length > 0 ? poll.results : poll.options).map((option, index) => {
+              <ol className="mt-4 flex min-h-0 flex-1 flex-col justify-center overflow-hidden">
+                {rows.map((option, index) => {
                   const points = "points" in option ? option.points : 0;
                   const leading = index === 0 && points > 0 && poll.status === "live";
                   return (
-                    <li key={option.id} className="flex items-center gap-3">
+                    <li key={option.id} className="flex items-center gap-6 border-b border-black/5 py-[0.35em] last:border-b-0">
                       <div className="min-w-0 flex-1">
-                        <p className="text-lg font-medium leading-snug sm:text-xl">
+                        <p className="truncate font-semibold leading-tight" style={{ fontSize: nameSize }}>
                           {option.label}
                           {leading ? (
-                            <span className="ml-2 align-middle text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9a4b2f]">
+                            <span className="ml-3 align-middle text-[0.45em] font-semibold uppercase tracking-[0.16em] text-[#9a4b2f]">
                               Leading
                             </span>
                           ) : null}
                         </p>
                         {option.people ? (
-                          <p className="text-sm text-neutral-600">{option.people}</p>
+                          <p className="mt-0.5 truncate text-neutral-600" style={{ fontSize: `calc(${nameSize} * 0.48)` }}>
+                            {option.people}
+                          </p>
                         ) : null}
                       </div>
-                      {option.url ? (
-                        <a
-                          href={option.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex size-10 shrink-0 items-center justify-center text-neutral-800"
-                          aria-label={`${option.label} on GitHub`}
-                        >
-                          <Github className="size-5" />
-                        </a>
-                      ) : null}
                       {poll.status === "live" ? (
-                        <p className="w-14 shrink-0 text-right leading-none">
-                          <span className="text-2xl font-bold tabular-nums">{points}</span>
-                          <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                        <p className="w-28 shrink-0 text-right leading-none">
+                          <span className="font-heading font-bold tabular-nums" style={{ fontSize: `calc(${nameSize} * 1.15)` }}>
+                            {points}
+                          </span>
+                          <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
                             points
                           </span>
                         </p>
@@ -162,23 +157,25 @@ export function PollLivePage({ slug }: PollLivePageProps) {
               </ol>
             )}
           </div>
-          <div className="flex flex-col gap-4 lg:sticky lg:top-8">
-            <PollQrCard
-              slug={poll.slug}
-              question={poll.question}
-              eventTitle={poll.eventTitle}
-              hint="Vote"
-              size="pair"
-            />
-            <PollQrCard
-              slug={poll.slug}
-              question="Add your project"
-              eventTitle={poll.eventTitle}
-              href={getPollAddUrl(poll.slug)}
-              hint="Add your project"
-              size="pair"
-            />
-          </div>
+          {poll.status === "closed" ? null : (
+            <div className="flex min-h-0 flex-col justify-center gap-4">
+              <PollQrCard
+                slug={poll.slug}
+                question={poll.question}
+                eventTitle={poll.eventTitle}
+                hint="Vote"
+                size="pair"
+              />
+              <PollQrCard
+                slug={poll.slug}
+                question="Add your project"
+                eventTitle={poll.eventTitle}
+                href={getPollAddUrl(poll.slug)}
+                hint="Add your project"
+                size="pair"
+              />
+            </div>
+          )}
         </div>
       ) : null}
     </div>

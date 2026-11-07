@@ -6,7 +6,7 @@
  * device mail app, with the subject and prompts already matched to that choice.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Bug, ChevronLeft, ExternalLink, Lightbulb, Mail } from "lucide-react";
 import { Z_INDEX_BUG_REPORT } from "../constants/zIndex";
 import {
@@ -16,9 +16,30 @@ import {
 } from "../utils/checkInAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
+function usePathname() {
+  const [path, setPath] = useState(() => window.location.pathname);
+  useEffect(() => {
+    const sync = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", sync);
+    const original = history.pushState.bind(history);
+    history.pushState = (...args: Parameters<History["pushState"]>) => {
+      original(...args);
+      sync();
+    };
+    return () => {
+      window.removeEventListener("popstate", sync);
+      history.pushState = original;
+    };
+  }, []);
+  return path;
+}
+
 export function BugReportFab() {
+  const path = usePathname();
   const [open, setOpen] = useState(false);
   const [intent, setIntent] = useState<AtlasNoteIntent | null>(null);
+  /* The projector has no one at the glass. A corner button just sits in the frame. */
+  if (/\/polls\/[^/]+\/live\/?$/.test(path)) return null;
 
   const close = () => {
     setOpen(false);

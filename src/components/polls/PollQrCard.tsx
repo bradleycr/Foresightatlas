@@ -43,7 +43,7 @@ export function PollQrCard({
   const [copied, setCopied] = useState(false);
   const voteUrl = href || getPollVoteUrl(slug);
   const theme = themeForEvent(eventTitle);
-  const qrSize = size === "poster" ? 280 : size === "pair" ? 148 : 196;
+  const qrSize = size === "poster" ? 280 : size === "pair" ? 232 : 196;
   const logo = Math.round(qrSize * 0.18);
 
   const handleCopy = async () => {
@@ -158,24 +158,30 @@ export function PollQrCard({
         ref={cardRef}
         className={cn(
           "w-full rounded-[1.5rem] border border-gray-200 bg-white text-center shadow-sm",
-          size === "stage" ? "px-4 py-5" : "px-6 py-7",
+          size === "poster" ? "px-6 py-7" : "px-4 py-4",
         )}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-          {theme.kicker}
-        </p>
-        {theme.detail && size === "poster" ? (
-          <p className="mt-1 text-[11px] text-slate-500">{theme.detail}</p>
-        ) : null}
-        {size === "poster" ? (
-          <>
-            <h2 className="font-heading mt-3 text-xl font-bold leading-snug text-gray-900 sm:text-2xl">
-              {question}
-            </h2>
-            <p className="mt-3 text-xs text-gray-500">{hint}</p>
-          </>
+        {size === "pair" ? (
+          <p className="font-heading text-2xl font-bold tracking-tight text-gray-900">{hint}</p>
         ) : (
-          <p className="mt-2 text-xs font-medium text-gray-600">{hint}</p>
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+              {theme.kicker}
+            </p>
+            {theme.detail && size === "poster" ? (
+              <p className="mt-1 text-[11px] text-slate-500">{theme.detail}</p>
+            ) : null}
+            {size === "poster" ? (
+              <>
+                <h2 className="font-heading mt-3 text-xl font-bold leading-snug text-gray-900 sm:text-2xl">
+                  {question}
+                </h2>
+                <p className="mt-3 text-xs text-gray-500">{hint}</p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs font-medium text-gray-600">{hint}</p>
+            )}
+          </>
         )}
         <div
           data-poll-qr
@@ -200,9 +206,11 @@ export function PollQrCard({
             }}
           />
         </div>
-        <p className="mt-3 break-all text-[11px] leading-relaxed text-gray-400">
-          {voteUrl.replace(/^https?:\/\//, "")}
-        </p>
+        {size === "pair" ? null : (
+          <p className="mt-3 break-all text-[11px] leading-relaxed text-gray-400">
+            {voteUrl.replace(/^https?:\/\//, "")}
+          </p>
+        )}
       </div>
       {showActions ? (
         <div className="mt-4 flex w-full gap-2">

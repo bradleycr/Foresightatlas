@@ -37,18 +37,18 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
               stage && option.place === 1 && "sm:order-none",
             )}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            <p className={cn("font-semibold uppercase tracking-[0.18em] text-neutral-500", stage ? "text-sm" : "text-[11px]")}>
               {leaders.filter((row) => row.place === option.place).length > 1
                 ? `Tied for ${PLACE[option.place - 1] || `${option.place}th`}`
                 : PLACE[option.place - 1] || `${option.place}th`}
             </p>
-            <p className={cn("font-heading mt-1 font-bold leading-snug text-inherit", stage ? "text-2xl" : "text-lg")}>
+            <p className={cn("font-heading mt-1 font-bold leading-snug text-inherit", stage ? "text-4xl" : "text-lg")}>
               {option.label}
             </p>
             {option.people ? (
-              <p className="mt-1 text-sm text-neutral-600">{option.people}</p>
+              <p className={cn("mt-1 text-neutral-600", stage ? "text-lg" : "text-sm")}>{option.people}</p>
             ) : null}
-            <p className="mt-3 text-sm tabular-nums text-neutral-700">
+            <p className={cn("mt-3 tabular-nums text-neutral-700", stage ? "text-2xl" : "text-sm")}>
               <span className="font-semibold">{option.points}</span>
               {" "}
               {option.points === 1 ? "point" : "points"}
@@ -68,21 +68,23 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
                   {option.place}.
                   {results.filter((row) => row.place === option.place).length > 1 ? " tied" : ""}
                 </span>
-                <span className="font-medium">{option.label}</span>
+                <span className={cn("font-medium", stage && "text-xl")}>{option.label}</span>
                 {option.people ? (
                   <span className="mt-0.5 block text-xs text-neutral-500 sm:ml-7 sm:mt-0 sm:inline">
                     {option.people}
                   </span>
                 ) : null}
               </p>
-              <p className="shrink-0 text-sm tabular-nums text-neutral-500">{option.points}</p>
+              <p className={cn("shrink-0 tabular-nums text-neutral-500", stage ? "text-2xl font-semibold" : "text-sm")}>{option.points}</p>
             </li>
           ))}
         </ul>
       ) : null}
-      <p className="mt-4 text-xs text-neutral-500">
-        {totalBallots} vote{totalBallots === 1 ? "" : "s"}
-      </p>
+      {stage ? null : (
+        <p className="mt-4 text-xs text-neutral-500">
+          {totalBallots} vote{totalBallots === 1 ? "" : "s"}
+        </p>
+      )}
     </div>
   );
 }
