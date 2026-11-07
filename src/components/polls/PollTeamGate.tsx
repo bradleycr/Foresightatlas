@@ -12,9 +12,8 @@ interface PollTeamGateProps {
 
 export function PollTeamGate({ options, onSelect }: PollTeamGateProps) {
   return (
-    <div className="mt-5">
-      <p className="font-heading text-2xl font-bold leading-tight">Select your team</p>
-      <p className="mt-2 text-sm leading-snug text-neutral-600">
+    <div className="mt-3">
+      <p className="text-sm leading-snug text-neutral-600">
         This is trust-based. You can’t vote for your own team.
       </p>
       <ul className="mt-5 space-y-2">

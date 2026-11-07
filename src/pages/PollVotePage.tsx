@@ -142,6 +142,14 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const submitted = Boolean(
     poll?.yourFirstId && poll?.yourSecondId && poll?.yourThirdId && poll?.yourTeamId && !dirty,
   );
+  const selectingTeam = Boolean(
+    poll &&
+      purpose === "vote" &&
+      poll.status === "live" &&
+      poll.options.length >= 4 &&
+      (!submitted || editing || pickingTeam) &&
+      (!knownTeam || pickingTeam),
+  );
 
   return (
     <div
@@ -185,7 +193,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
         {poll ? (
           <div className={`rounded-[1.5rem] border p-4 shadow-xl sm:rounded-[1.75rem] sm:p-7 ${theme.ticketClass}`}>
             <h1 className="font-heading text-[1.35rem] font-bold leading-snug text-inherit sm:text-2xl">
-              {purpose === "add" ? "Add your project" : poll.question}
+              {purpose === "add" ? "Add your project" : selectingTeam ? "Select your team" : poll.question}
             </h1>
             {purpose === "vote" && poll.status === "live" && poll.closesAt ? (
               <div className="mt-4">
