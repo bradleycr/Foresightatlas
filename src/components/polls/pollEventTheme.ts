@@ -20,7 +20,7 @@ export interface PollEventTheme {
 
 const ATLAS: PollEventTheme = {
   id: "atlas",
-  kicker: "Foresight",
+  kicker: "Foresight voting poll",
   detail: "",
   pageBackground: "linear-gradient(180deg, #f7f6f3 0%, #ffffff 46%, #efece6 100%)",
   ticketClass: "border-white/80 bg-white/95 text-gray-900",
@@ -36,7 +36,7 @@ const ATLAS: PollEventTheme = {
  */
 const VISION_WEEKEND: PollEventTheme = {
   id: "vision-weekend",
-  kicker: "Vision Weekend USA",
+  kicker: "Vision Weekend USA voting poll",
   detail: "Nov 13–15 · San Francisco · 40 years",
   pageBackground:
     "radial-gradient(120% 80% at 10% 0%, #3a2a14 0%, transparent 46%), linear-gradient(165deg, #14110d 0%, #0c0b09 55%, #1a120c 100%)",
@@ -53,7 +53,7 @@ const VISION_WEEKEND: PollEventTheme = {
  */
 const IMPACT_LAB: PollEventTheme = {
   id: "impact-lab",
-  kicker: "Claude Impact Lab",
+  kicker: "Claude Impact Lab voting poll",
   detail: "CIC Berlin · 7 Nov",
   pageBackground:
     "linear-gradient(165deg, #f4efe6 0%, #fffdf8 42%, #efe4d4 100%)",
@@ -69,5 +69,5 @@ export function themeForEvent(eventTitle: string | null | undefined): PollEventT
   if (!title) return ATLAS;
   if (/vision\s*weekend/.test(title)) return VISION_WEEKEND;
   if (/impact\s*lab/.test(title) || /\bclaude\b/.test(title)) return IMPACT_LAB;
-  return { ...ATLAS, kicker: eventTitle!.trim() };
+  return { ...ATLAS, kicker: `${eventTitle!.trim()} voting poll` };
 }

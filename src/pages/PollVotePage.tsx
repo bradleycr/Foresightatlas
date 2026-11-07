@@ -181,7 +181,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
             <img src={foresightIconUrl} alt="Foresight Institute" className="size-6 sm:size-8" />
           </a>
           <div className="min-w-0 sm:text-center">
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${theme.kickerClass}`}>
+            <p className={`text-sm font-semibold leading-snug sm:text-base ${theme.kickerClass}`}>
               {theme.kicker}
             </p>
             {theme.detail ? (

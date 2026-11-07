@@ -65,7 +65,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             <img src={foresightIconUrl} alt="" className="size-6 sm:size-9" />
           </span>
           <div className="min-w-0">
-            <p className={`truncate text-[10px] font-semibold uppercase tracking-[0.22em] sm:text-sm ${theme.kickerClass}`}>
+            <p className={`text-sm font-semibold leading-snug sm:text-lg ${theme.kickerClass}`}>
               {theme.kicker}
             </p>
             <p className={`mt-0.5 truncate text-sm font-medium sm:text-lg ${theme.detailClass}`}>
