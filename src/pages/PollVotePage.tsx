@@ -20,7 +20,9 @@ import {
   addProjectToPoll,
   clearStoredTeam,
   fetchPublicPoll,
+  getStoredJudgeToken,
   getStoredTeam,
+  setStoredJudgeToken,
   setStoredTeam,
   voteOnPoll,
 } from "../services/polls";
@@ -32,7 +34,7 @@ import { Button } from "../components/ui/button";
 interface PollVotePageProps {
   slug: string;
   identity: Identity | null;
-  purpose: "add" | "vote";
+  purpose: "add" | "vote" | "judge";
   onNavigate: (path: string) => void;
 }
 
@@ -49,10 +51,33 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
   const [editing, setEditing] = useState(false);
   /** True after this phone just pitched — drives the “Go to voting” link. */
   const [justAdded, setJustAdded] = useState(false);
+  const [judgeToken, setJudgeToken] = useState<string | null>(() =>
+    purpose === "judge" ? getStoredJudgeToken(slug) : null,
+  );
+
+  useEffect(() => {
+    if (purpose !== "judge") return;
+    try {
+      const fromUrl = new URLSearchParams(window.location.search).get("t");
+      if (fromUrl && fromUrl.length >= 8) {
+        setStoredJudgeToken(slug, fromUrl);
+        setJudgeToken(fromUrl);
+        /* Drop the token from the address bar so it isn’t casually screenshotted. */
+        const clean = `${window.location.pathname}${window.location.hash || ""}`;
+        window.history.replaceState({}, "", clean);
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+    setJudgeToken(getStoredJudgeToken(slug));
+  }, [purpose, slug]);
 
   const load = useCallback(async () => {
     try {
-      const next = await fetchPublicPoll(slug, identity?.token);
+      const next = await fetchPublicPoll(slug, identity?.token, {
+        judgeToken: purpose === "judge" ? judgeToken : null,
+      });
       setPoll(next);
       setError(null);
     } catch (err) {
@@ -61,7 +86,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
     } finally {
       setLoading(false);
     }
-  }, [slug, identity?.token]);
+  }, [slug, identity?.token, purpose, judgeToken]);
 
   useEffect(() => {
     setLoading(true);
@@ -86,6 +111,15 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
 
   useEffect(() => {
     if (!poll) return;
+    if (purpose === "judge") {
+      if (dirty) return;
+      if (poll.yourFirstId) {
+        setFirstId(poll.yourFirstId);
+        setSecondId(poll.yourSecondId);
+        setThirdId(poll.yourThirdId);
+      }
+      return;
+    }
     const stored = getStoredTeam(slug, poll.id);
     const fromBallot =
       poll.yourTeamId && poll.options.some((option) => option.id === poll.yourTeamId)
@@ -107,7 +141,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
     setFirstId(poll.yourFirstId);
     setSecondId(poll.yourSecondId);
     setThirdId(poll.yourThirdId);
-  }, [poll, dirty, slug]);
+  }, [poll, dirty, slug, purpose]);
 
   const handleAdd = async (project: { label: string; people: string; url: string }) => {
     setSaving(true);
@@ -134,10 +168,23 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
   };
 
   const handleVote = async () => {
-    if (!poll || !teamId || !firstId || !secondId || !thirdId || saving) return;
+    if (!poll || !firstId || !secondId || !thirdId || saving) return;
+    if (purpose === "judge") {
+      if (!judgeToken) return;
+    } else if (!teamId) {
+      return;
+    }
     setSaving(true);
     try {
-      const next = await voteOnPoll(slug, firstId, secondId, thirdId, teamId, identity?.token);
+      const next = await voteOnPoll(
+        slug,
+        firstId,
+        secondId,
+        thirdId,
+        teamId || "",
+        identity?.token,
+        { judgeToken: purpose === "judge" ? judgeToken : null },
+      );
       setPoll(next);
       setDirty(false);
       setEditing(false);
@@ -174,6 +221,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
   };
 
   const theme = themeForEvent(poll?.eventTitle);
+  const isJudge = purpose === "judge";
   const knownTeam = Boolean(teamId && poll?.options.some((option) => option.id === teamId));
   const myProject =
     knownTeam && poll ? poll.options.find((option) => option.id === teamId) || null : null;
@@ -181,7 +229,9 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
     purpose === "add" && poll && poll.status !== "closed" && (justAdded || myProject),
   );
   const submitted = Boolean(
-    poll?.yourFirstId && poll?.yourSecondId && poll?.yourThirdId && poll?.yourTeamId && !dirty,
+    isJudge
+      ? poll?.yourFirstId && poll?.yourSecondId && poll?.yourThirdId && !dirty
+      : poll?.yourFirstId && poll?.yourSecondId && poll?.yourThirdId && poll?.yourTeamId && !dirty,
   );
   const selectingTeam = Boolean(
     poll &&
@@ -190,6 +240,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
       poll.options.length >= 4 &&
       !knownTeam,
   );
+  const votingOpen = purpose === "vote" || purpose === "judge";
 
   return (
     <div
@@ -237,11 +288,18 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
                 ? "Add your project"
                 : poll.status === "closed"
                   ? "Results"
-                  : selectingTeam
-                    ? "Select your team"
-                    : poll.question}
+                  : isJudge
+                    ? "Judge ballot"
+                    : selectingTeam
+                      ? "Select your team"
+                      : poll.question}
             </h1>
-            {purpose === "vote" && poll.status === "live" && poll.closesAt ? (
+            {isJudge ? (
+              <p className="mt-2 text-sm text-neutral-600">
+                Your picks are half the final score. Room votes make up the other half.
+              </p>
+            ) : null}
+            {votingOpen && poll.status === "live" && poll.closesAt ? (
               <div className="mt-4">
                 <PollCountdown closesAt={poll.closesAt} onElapsed={() => void load()} />
               </div>
@@ -275,29 +333,42 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
               <p className="mt-4 text-sm text-gray-600">This poll is closed.</p>
             ) : null}
 
-            {purpose === "vote" && poll.status === "draft" ? (
+            {votingOpen && poll.status === "draft" ? (
               <div className="mt-6 text-center">
                 <p className="font-heading text-xl font-bold text-inherit">
                   Voting hasn’t started yet
                 </p>
                 <p className="mt-2 text-sm text-neutral-600">
-                  {knownTeam
-                    ? "Your team is saved on this phone. Come back when the host opens voting."
-                    : "The host will open voting from the admin page."}
+                  {isJudge
+                    ? "Keep this link. Come back when the host opens voting."
+                    : knownTeam
+                      ? "Your team is saved on this phone. Come back when the host opens voting."
+                      : "The host will open voting from the admin page."}
                 </p>
               </div>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" && submitted && !editing ? (
+            {isJudge && !judgeToken ? (
+              <div className="mt-6 text-center">
+                <p className="font-heading text-xl font-bold text-inherit">Judge link required</p>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Open the private judge URL the host sent you.
+                </p>
+              </div>
+            ) : null}
+
+            {votingOpen && poll.status === "live" && submitted && !editing ? (
               <div className="mt-8 text-center">
-                <p className="font-heading text-3xl font-bold">Your vote is cast</p>
+                <p className="font-heading text-3xl font-bold">
+                  {isJudge ? "Judge vote cast" : "Your vote is cast"}
+                </p>
                 <ul className="mt-6 space-y-2 text-left">
                   {[
                     ["3 points", poll.yourFirstId],
                     ["2 points", poll.yourSecondId],
                     ["1 point", poll.yourThirdId],
                   ].map(([label, id]) => (
-                    <li key={label} className="rounded-2xl bg-[#fbf6ea] px-4 py-3">
+                    <li key={String(label)} className="rounded-2xl bg-[#fbf6ea] px-4 py-3">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
                         {label}
                       </p>
@@ -318,10 +389,38 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
               </div>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" && (!submitted || editing) ? (
+            {votingOpen && poll.status === "live" && (!submitted || editing) ? (
               <div className="mt-4">
                 {poll.options.length < 4 ? (
                   <p className="mt-4 text-sm text-gray-600">Need at least four teams.</p>
+                ) : isJudge && judgeToken ? (
+                  <>
+                    <div className="mt-3">
+                      <PollBallot
+                        options={poll.options}
+                        teamId=""
+                        firstId={firstId}
+                        secondId={secondId}
+                        thirdId={thirdId}
+                        disabled={saving}
+                        onChange={(next) => {
+                          setDirty(true);
+                          setFirstId(next.firstId);
+                          setSecondId(next.secondId);
+                          setThirdId(next.thirdId);
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={saving || !firstId || !secondId || !thirdId}
+                      onClick={() => void handleVote()}
+                      className="mt-4 min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
+                    >
+                      {saving ? <Loader2 className="size-4 animate-spin" /> : null}
+                      Submit judge vote
+                    </Button>
+                  </>
                 ) : !knownTeam ? (
                   <PollTeamGate options={poll.options} onConfirm={chooseTeam} />
                 ) : (
@@ -371,7 +470,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
               </div>
             ) : null}
 
-            {purpose === "vote" && poll.status === "closed" ? (
+            {votingOpen && poll.status === "closed" ? (
               <div className="mt-5">
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} />
               </div>

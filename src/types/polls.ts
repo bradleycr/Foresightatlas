@@ -14,6 +14,10 @@ export interface PollOption {
 
 export interface PollResultOption extends PollOption {
   points: number;
+  /** Raw room points before the 50/50 blend. */
+  audiencePoints?: number;
+  /** Raw judge points before the 50/50 blend. */
+  judgePoints?: number;
   firsts: number;
   seconds: number;
   thirds: number;
@@ -38,6 +42,10 @@ export interface PollPublic {
   results: PollResultOption[];
   scoresHidden: boolean;
   totalVotes: number;
+  audienceVotes?: number;
+  judgeVotes?: number;
+  /** True once both room and judges have cast at least one ballot. */
+  weighted?: boolean;
   yourOptionId: string | null;
   yourFirstId: string | null;
   yourSecondId: string | null;

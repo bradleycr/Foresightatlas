@@ -783,6 +783,13 @@ export default function App() {
       purpose="add"
       onNavigate={navigate}
     />
+  ) : pollsRoute?.kind === "judge" ? (
+    <PollVotePage
+      slug={pollsRoute.slug}
+      identity={identity}
+      purpose="judge"
+      onNavigate={navigate}
+    />
   ) : pollsRoute?.kind === "vote" ? (
     <PollVotePage
       slug={pollsRoute.slug}

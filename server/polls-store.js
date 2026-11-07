@@ -42,9 +42,68 @@ const MAX_URL = 400;
 const FIRST_POINTS = 3;
 const SECOND_POINTS = 2;
 const THIRD_POINTS = 1;
+/** Marker on PollVotes.fullName — room ballots leave this blank. */
+const JUDGE_MARKER = "__judge__";
+const JUDGE_SEATS = 2;
 
 function sheetsId() {
   return getSpreadsheetId();
+}
+
+function judgeSigningSecret() {
+  return (
+    process.env.DIRECTORY_SESSION_SECRET ||
+    process.env.SESSION_SECRET ||
+    process.env.POLL_JUDGE_SECRET ||
+    ""
+  );
+}
+
+/** Stable per-poll tokens for the two judge seats. */
+function judgeTokenForSeat(slug, seat) {
+  const secret = judgeSigningSecret();
+  if (!secret) return "";
+  return crypto
+    .createHmac("sha256", secret)
+    .update(`poll-judge:v1:${String(slug || "").trim().toLowerCase()}:${seat}`)
+    .digest("base64url")
+    .slice(0, 28);
+}
+
+function verifyJudgeToken(slug, tokenRaw) {
+  const token = String(tokenRaw || "").trim();
+  if (!token || !judgeSigningSecret()) return null;
+  for (let seat = 1; seat <= JUDGE_SEATS; seat += 1) {
+    const expected = judgeTokenForSeat(slug, seat);
+    if (!expected) continue;
+    const a = Buffer.from(expected);
+    const b = Buffer.from(token);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+      return { seat, token: expected };
+    }
+  }
+  return null;
+}
+
+function listJudgeLinks(slug, origin) {
+  const base = String(origin || "").replace(/\/$/, "") || "https://atlas.foresight.org";
+  const links = [];
+  for (let seat = 1; seat <= JUDGE_SEATS; seat += 1) {
+    const token = judgeTokenForSeat(slug, seat);
+    if (!token) continue;
+    links.push({
+      seat,
+      url: `${base}/polls/${encodeURIComponent(slug)}/judge?t=${encodeURIComponent(token)}`,
+    });
+  }
+  return links;
+}
+
+function isJudgeVote(vote) {
+  return (
+    String(vote?.fullName || "") === JUDGE_MARKER ||
+    /^judge:\d+$/i.test(String(vote?.personId || ""))
+  );
 }
 
 function hashVoterKey(raw) {
@@ -337,14 +396,14 @@ function latestBallots(poll, votes) {
 }
 
 /**
- * Truncated Borda: 3, then 2, then 1. A phone cannot award its own team.
- * Ties break on more 3-point picks, then 2-point, then 1-point. One phone
- * is one ballot — the latest row for that device replaces the earlier one.
+ * Truncated Borda: 3, then 2, then 1. Room phones cannot award their own team.
+ * Judges have no team — every project is fair game. One key = one ballot.
  */
 function awardedIds(vote, score) {
+  const judge = isJudgeVote(vote);
   const team = String(vote.teamOptionId || "");
-  if (!team || !score[team]) return null;
-  const seen = new Set([team]);
+  if (!judge && (!team || !score[team])) return null;
+  const seen = new Set(judge ? [] : [team]);
   const picks = [];
   for (const id of [vote.optionId, vote.secondOptionId, vote.thirdOptionId]) {
     const key = String(id || "");
@@ -355,13 +414,18 @@ function awardedIds(vote, score) {
   return picks;
 }
 
-function tallyVotes(poll, votes) {
+function emptyScore(poll) {
   const score = {};
   for (const option of poll.options) {
     score[option.id] = { points: 0, firsts: 0, seconds: 0, thirds: 0 };
   }
+  return score;
+}
+
+function applyBallots(poll, ballots) {
+  const score = emptyScore(poll);
   let totalBallots = 0;
-  for (const vote of latestBallots(poll, votes)) {
+  for (const vote of ballots) {
     const picks = awardedIds(vote, score);
     if (!picks) continue;
     const [first, second, third] = picks;
@@ -373,19 +437,55 @@ function tallyVotes(poll, votes) {
     score[third].points += THIRD_POINTS;
     score[third].thirds += 1;
   }
-  const ranked = poll.options.map((option) => ({
-    ...option,
-    points: score[option.id].points,
-    firsts: score[option.id].firsts,
-    seconds: score[option.id].seconds,
-    thirds: score[option.id].thirds,
-    votes: score[option.id].points,
-  }));
+  return { score, totalBallots };
+}
+
+/**
+ * Final standing: room 50% + judges 50%, each side normalized to its own
+ * point pool. If only one side has ballots yet, that side carries 100%.
+ */
+function tallyVotes(poll, votes) {
+  const ballots = latestBallots(poll, votes);
+  const audienceBallots = ballots.filter((vote) => !isJudgeVote(vote));
+  const judgeBallots = ballots.filter((vote) => isJudgeVote(vote));
+  const audience = applyBallots(poll, audienceBallots);
+  const judges = applyBallots(poll, judgeBallots);
+
+  let audienceSum = 0;
+  let judgeSum = 0;
+  for (const option of poll.options) {
+    audienceSum += audience.score[option.id].points;
+    judgeSum += judges.score[option.id].points;
+  }
+
+  const ranked = poll.options.map((option) => {
+    const a = audience.score[option.id];
+    const j = judges.score[option.id];
+    let points = 0;
+    if (audienceSum > 0 && judgeSum > 0) {
+      points = (a.points / audienceSum) * 50 + (j.points / judgeSum) * 50;
+    } else if (audienceSum > 0) {
+      points = a.points;
+    } else if (judgeSum > 0) {
+      points = j.points;
+    }
+    const blended = audienceSum > 0 && judgeSum > 0;
+    return {
+      ...option,
+      points: blended ? Math.round(points * 10) / 10 : points,
+      audiencePoints: a.points,
+      judgePoints: j.points,
+      firsts: a.firsts + j.firsts,
+      seconds: a.seconds + j.seconds,
+      thirds: a.thirds + j.thirds,
+      votes: blended ? Math.round(points * 10) / 10 : points,
+    };
+  });
   ranked.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
+    if (b.judgePoints !== a.judgePoints) return b.judgePoints - a.judgePoints;
+    if (b.audiencePoints !== a.audiencePoints) return b.audiencePoints - a.audiencePoints;
     if (b.firsts !== a.firsts) return b.firsts - a.firsts;
-    if (b.seconds !== a.seconds) return b.seconds - a.seconds;
-    if (b.thirds !== a.thirds) return b.thirds - a.thirds;
     return a.label.localeCompare(b.label);
   });
   ranked.forEach((row, index) => {
@@ -393,12 +493,17 @@ function tallyVotes(poll, votes) {
     const tied =
       prev &&
       prev.points === row.points &&
-      prev.firsts === row.firsts &&
-      prev.seconds === row.seconds &&
-      prev.thirds === row.thirds;
+      prev.judgePoints === row.judgePoints &&
+      prev.audiencePoints === row.audiencePoints;
     row.place = tied ? prev.place : index + 1;
   });
-  return { ranked, totalBallots };
+  return {
+    ranked,
+    totalBallots: audience.totalBallots + judges.totalBallots,
+    audienceBallots: audience.totalBallots,
+    judgeBallots: judges.totalBallots,
+    weighted: audienceSum > 0 && judgeSum > 0,
+  };
 }
 
 function publicOption(option) {
@@ -412,7 +517,10 @@ function publicOption(option) {
 
 function publicPollShape(poll, votes, yours, { reveal } = {}) {
   const show = Boolean(reveal);
-  const { ranked, totalBallots } = tallyVotes(poll, votes);
+  const { ranked, totalBallots, audienceBallots, judgeBallots, weighted } = tallyVotes(
+    poll,
+    votes,
+  );
   const firstId = yours?.firstId || null;
   const secondId = yours?.secondId || null;
   const thirdId = yours?.thirdId || null;
@@ -430,17 +538,24 @@ function publicPollShape(poll, votes, yours, { reveal } = {}) {
     closedAt: poll.closedAt || "",
     closesAt: poll.status === "live" ? poll.closesAt || "" : "",
     // Hidden until the host closes, so a live room isn't pulled onto an early lead.
-    results: show ? ranked.map(publicOption).map((option, index) => ({
-      ...option,
-      points: ranked[index].points,
-      firsts: ranked[index].firsts,
-      seconds: ranked[index].seconds,
-      thirds: ranked[index].thirds,
-      votes: ranked[index].points,
-      place: ranked[index].place,
-    })) : [],
+    results: show
+      ? ranked.map(publicOption).map((option, index) => ({
+          ...option,
+          points: ranked[index].points,
+          audiencePoints: ranked[index].audiencePoints,
+          judgePoints: ranked[index].judgePoints,
+          firsts: ranked[index].firsts,
+          seconds: ranked[index].seconds,
+          thirds: ranked[index].thirds,
+          votes: ranked[index].points,
+          place: ranked[index].place,
+        }))
+      : [],
     scoresHidden: !show,
     totalVotes: totalBallots,
+    audienceVotes: audienceBallots,
+    judgeVotes: judgeBallots,
+    weighted: Boolean(weighted),
     yourOptionId: firstId,
     yourFirstId: firstId,
     yourSecondId: secondId,
@@ -892,7 +1007,10 @@ async function updatePoll(session, body) {
   return adminPollShape(poll, freshVotes);
 }
 
-async function castVote({ slug, optionId, secondOptionId, thirdOptionId, teamOptionId, voterKeyRaw }, req) {
+async function castVote(
+  { slug, optionId, secondOptionId, thirdOptionId, teamOptionId, voterKeyRaw, judgeToken },
+  req,
+) {
   const flood = rateLimit(`poll-vote:${clientIp(req)}`, {
     limit: 240,
     windowMs: 15 * 60 * 1000,
@@ -920,21 +1038,38 @@ async function castVote({ slug, optionId, secondOptionId, thirdOptionId, teamOpt
     err.statusCode = 400;
     throw err;
   }
-  const team = poll.options.find((option) => option.id === String(teamOptionId || "").trim());
-  if (!team) throw new Error("Select your team.");
+
+  const judge = verifyJudgeToken(poll.slug, judgeToken);
   const first = poll.options.find((option) => option.id === String(optionId || "").trim());
   const second = poll.options.find((option) => option.id === String(secondOptionId || "").trim());
   const third = poll.options.find((option) => option.id === String(thirdOptionId || "").trim());
-  if (!first || !second || !third) throw new Error("Give 3, 2, and 1 points to three other teams.");
+  if (!first || !second || !third) {
+    throw new Error(
+      judge
+        ? "Give 3, 2, and 1 points to three projects."
+        : "Give 3, 2, and 1 points to three other teams.",
+    );
+  }
   const picks = new Set([first.id, second.id, third.id]);
-  if (picks.size !== 3 || picks.has(team.id)) {
-    throw new Error("You can't vote for your own team.");
+  if (picks.size !== 3) throw new Error("Pick three different projects.");
+
+  let team = null;
+  let rawKey = "";
+  let personId = "";
+  let fullName = "";
+  if (judge) {
+    /* One seat = one ballot. Token is the voter key so a judge can revise. */
+    rawKey = `judge-seat:${judge.token}`;
+    personId = `judge:${judge.seat}`;
+    fullName = JUDGE_MARKER;
+  } else {
+    team = poll.options.find((option) => option.id === String(teamOptionId || "").trim());
+    if (!team) throw new Error("Select your team.");
+    if (picks.has(team.id)) throw new Error("You can't vote for your own team.");
+    rawKey = String(voterKeyRaw || "").trim();
+    if (!rawKey || rawKey.length < 8) throw new Error("A voter key is required.");
   }
 
-  const rawKey = String(voterKeyRaw || "").trim();
-  if (!rawKey || rawKey.length < 8) {
-    throw new Error("A voter key is required.");
-  }
   const voterKey = hashVoterKey(rawKey);
   const now = new Date().toISOString();
   const previous = [...votes].reverse().find(
@@ -943,12 +1078,12 @@ async function castVote({ slug, optionId, secondOptionId, thirdOptionId, teamOpt
   const vote = {
     pollId: poll.id,
     voterKey,
-    personId: "",
-    fullName: "",
+    personId,
+    fullName,
     optionId: first.id,
     secondOptionId: second.id,
     thirdOptionId: third.id,
-    teamOptionId: team.id,
+    teamOptionId: team ? team.id : "",
     createdAt: previous?.createdAt || now,
     updatedAt: now,
   };
@@ -957,7 +1092,12 @@ async function castVote({ slug, optionId, secondOptionId, thirdOptionId, teamOpt
   return publicPollShape(
     poll,
     nextVotes,
-    { firstId: first.id, secondId: second.id, thirdId: third.id, teamId: team.id },
+    {
+      firstId: first.id,
+      secondId: second.id,
+      thirdId: third.id,
+      teamId: team ? team.id : null,
+    },
     { reveal: false },
   );
 }
@@ -1159,4 +1299,7 @@ module.exports = {
   refreshBestProjectDraft,
   installPreviewSlate,
   resetPollBySlug,
+  listJudgeLinks,
+  verifyJudgeToken,
+  JUDGE_SEATS,
 };

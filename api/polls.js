@@ -80,6 +80,7 @@ module.exports = async function handler(req, res) {
           thirdOptionId: body.thirdOptionId,
           teamOptionId: body.teamOptionId,
           voterKeyRaw: body.voterKey,
+          judgeToken: body.judgeToken,
         }, req);
         return res.status(200).json({ poll });
       }

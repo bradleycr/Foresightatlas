@@ -99,11 +99,41 @@ export async function fetchAdminPolls(token: string): Promise<PollsAdminPayload>
   return res.json() as Promise<PollsAdminPayload>;
 }
 
+function judgeTokenStorageKey(slug: string) {
+  return `foresightatlas_poll_judge_${slug}`;
+}
+
+export function getStoredJudgeToken(slug: string): string | null {
+  try {
+    const value = sessionStorage.getItem(judgeTokenStorageKey(slug));
+    return value && value.length >= 8 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredJudgeToken(slug: string, token: string) {
+  try {
+    sessionStorage.setItem(judgeTokenStorageKey(slug), token);
+  } catch {
+    /* private mode still votes for this page load */
+  }
+}
+
+/** Judge seats hash their invite token as the voter key so one seat = one ballot. */
+export function judgeVoterKey(token: string): string {
+  return `judge-seat:${String(token || "").trim()}`;
+}
+
 export async function fetchPublicPoll(
   slug: string,
   token?: string | null,
+  opts?: { judgeToken?: string | null },
 ): Promise<PollPublic> {
-  const voterKey = encodeURIComponent(getPollVoterKey());
+  const judgeToken = opts?.judgeToken || null;
+  const voterKey = encodeURIComponent(
+    judgeToken ? judgeVoterKey(judgeToken) : getPollVoterKey(),
+  );
   const res = await fetch(`${getApiBase()}/polls?slug=${encodeURIComponent(slug)}&voterKey=${voterKey}`, {
     headers: authHeaders(token),
   });
@@ -171,7 +201,9 @@ export async function voteOnPoll(
   thirdOptionId: string,
   teamOptionId: string,
   token?: string | null,
+  opts?: { judgeToken?: string | null },
 ): Promise<PollPublic> {
+  const judgeToken = opts?.judgeToken || null;
   const res = await fetch(`${getApiBase()}/polls`, {
     method: "POST",
     headers: authHeaders(token),
@@ -181,8 +213,9 @@ export async function voteOnPoll(
       optionId,
       secondOptionId,
       thirdOptionId,
-      teamOptionId,
-      voterKey: getPollVoterKey(),
+      teamOptionId: judgeToken ? "" : teamOptionId,
+      voterKey: judgeToken ? judgeVoterKey(judgeToken) : getPollVoterKey(),
+      judgeToken: judgeToken || undefined,
     }),
   });
   if (!res.ok) throw new Error(await readError(res, "Could not record your vote."));
