@@ -3,7 +3,7 @@
  *
  * GET  /api/polls?admin=1          staff/member list (session)
  * GET  /api/polls?slug=k7m2xq      public vote/live payload
- * POST /api/polls                  { action: "create" | "update" | "vote", ... }
+ * POST /api/polls                  { action: "create" | "update" | "vote" | "addProject", ... }
  *
  * Vote is public and anonymous (QR from a room). Create/update require a
  * directory session and the Foresight Team role.
@@ -26,6 +26,7 @@ const {
   createPoll,
   updatePoll,
   castVote,
+  addProject,
 } = require("../server/polls-store");
 
 function requireSession(req) {
@@ -75,8 +76,13 @@ module.exports = async function handler(req, res) {
         const poll = await castVote({
           slug: body.slug || body.id,
           optionId: body.optionId,
+          secondOptionId: body.secondOptionId,
           voterKeyRaw: body.voterKey,
-        });
+        }, req);
+        return res.status(200).json({ poll });
+      }
+      if (action === "addProject") {
+        const poll = await addProject(body, req);
         return res.status(200).json({ poll });
       }
       const session = requireSession(req);
@@ -88,7 +94,7 @@ module.exports = async function handler(req, res) {
         const poll = await updatePoll(session, body);
         return res.status(200).json({ poll });
       }
-      return res.status(400).json({ error: "Unknown action. Use create, update, or vote." });
+      return res.status(400).json({ error: "Unknown action. Use create, update, vote, or addProject." });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
@@ -96,7 +102,12 @@ module.exports = async function handler(req, res) {
     if (error && error.statusCode === 401) {
       return res.status(401).json({ error: "Sign in to manage polls." });
     }
-    console.error("api/polls:", error?.message || error);
+    const message = String(error?.message || error || "");
+    if (message.includes("Quota exceeded")) {
+      console.error("api/polls: sheet quota");
+      return res.status(503).json({ error: "The poll is busy. Wait a few seconds and try again." });
+    }
+    console.error("api/polls:", message);
     return sendError(res, error, "Poll request failed.");
   }
 };

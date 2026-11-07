@@ -224,6 +224,8 @@ const POLL_VOTES_HEADERS = [
   "optionId",
   "createdAt",
   "updatedAt",
+  // Appended. optionId is the favorite (2 points); this is the runner-up (1).
+  "secondOptionId",
 ];
 
 /**

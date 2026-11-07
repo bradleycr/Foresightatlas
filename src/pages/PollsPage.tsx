@@ -29,8 +29,8 @@ import {
 } from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import { isEventUpcoming } from "../utils/eventTiming";
+import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
-import { PollResultsBars } from "../components/polls/PollResultsBars";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -45,7 +45,13 @@ interface PollsPageProps {
 
 const EMPTY_PROJECTS = ["", ""];
 const MAX_POLL_OPTIONS = 48;
-const DEFAULT_QUESTION = "Which project did you like most?";
+const DEFAULT_QUESTION = "Which project should win?";
+
+/** Titles the vote page recognises. Anything else stays on the plain Atlas look. */
+const EVENT_LOOKS = [
+  { label: "Vision Weekend USA", title: "Vision Weekend USA" },
+  { label: "Impact Lab with Claude", title: "Impact Lab with Claude" },
+] as const;
 
 /** Soft paper + ink — matches Atlas chrome, not generic sky/indigo SaaS. */
 const PAGE_BG =
@@ -66,6 +72,7 @@ export function PollsPage({
   const [pasteOpen, setPasteOpen] = useState(true);
   const [pasteText, setPasteText] = useState("");
   const [eventId, setEventId] = useState("");
+  const [eventLabel, setEventLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [qrPoll, setQrPoll] = useState<PollAdmin | null>(null);
   const [editing, setEditing] = useState<PollAdmin | null>(null);
@@ -138,11 +145,12 @@ export function PollsPage({
     if (!identity?.token) return;
     setSaving(true);
     try {
+      const names = projects.map((project) => project.trim()).filter(Boolean);
       const poll = await createPoll(identity.token, {
         question,
-        options: projects,
+        options: names,
         eventId: eventId || undefined,
-        eventTitle: selectedEvent?.title,
+        eventTitle: eventLabel.trim() || selectedEvent?.title,
       });
       setPolls((prev) => [poll, ...prev.filter((p) => p.id !== poll.id)]);
       setQuestion(DEFAULT_QUESTION);
@@ -150,6 +158,7 @@ export function PollsPage({
       setPasteText("");
       setPasteOpen(true);
       setEventId("");
+      setEventLabel("");
       toast.success("Draft saved. Go live when the room is ready.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create poll.");
@@ -183,6 +192,10 @@ export function PollsPage({
   };
 
   const handleGoLive = async (poll: PollAdmin) => {
+    if (poll.options.length < 2) {
+      toast.error("Add at least two projects before voting opens.");
+      return;
+    }
     const others = live.filter((p) => p.id !== poll.id);
     if (others.length === 0) {
       await setStatus(poll, "live");
@@ -217,6 +230,19 @@ export function PollsPage({
       toast.error(err instanceof Error ? err.message : "Could not save draft.");
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const handleRemove = async (poll: PollAdmin, optionId: string) => {
+    if (!identity?.token) return;
+    try {
+      const next = await updatePoll(identity.token, {
+        slug: poll.slug,
+        removeOptionId: optionId,
+      });
+      setPolls((prev) => prev.map((row) => (row.id === next.id ? next : row)));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove that project.");
     }
   };
 
@@ -265,9 +291,10 @@ export function PollsPage({
               Polls
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-600">
-              Favourite-project voting for the room. Paste the project names,
-              go live, project the QR. Guests scan and vote anonymously — usually
-              one poll at a time. Reach this page at{" "}
+              Best-project prize. People add their own project from the public
+              page, then you go live and put the QR on the screen. Each phone
+              picks a favorite (2 points) and a runner-up (1). Scores stay
+              hidden until you close it. This page is at{" "}
               <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-800">
                 /polls
               </code>
@@ -312,8 +339,8 @@ export function PollsPage({
               New project poll
             </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              Paste the projects (one per line), tweak the question if you want,
-              save as draft — then go live when the room is ready.
+              Save a draft, share its page so people can add a project, then go
+              live when the pitches are done. Paste names only if you already have the list.
             </p>
             <div className="mt-5 space-y-4">
               <div>
@@ -345,10 +372,35 @@ export function PollsPage({
               </div>
               <div>
                 <Label htmlFor="poll-event">Event (optional)</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {EVENT_LOOKS.map((look) => {
+                    const on = eventLabel === look.title && !eventId;
+                    return (
+                      <button
+                        key={look.title}
+                        type="button"
+                        onClick={() => {
+                          setEventLabel(look.title);
+                          setEventId("");
+                        }}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                          on
+                            ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                            : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-400 hover:bg-white"
+                        }`}
+                      >
+                        {look.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <select
                   id="poll-event"
                   value={eventId}
-                  onChange={(e) => setEventId(e.target.value)}
+                  onChange={(e) => {
+                    setEventId(e.target.value);
+                    if (e.target.value) setEventLabel("");
+                  }}
                   className="mt-1.5 min-h-[44px] w-full rounded-md border border-neutral-300 bg-white px-3 text-sm shadow-sm"
                 >
                   <option value="">Standalone — not tied to a calendar event</option>
@@ -418,8 +470,11 @@ export function PollsPage({
           empty="No drafts."
           polls={drafts}
           canManage={canManage}
+          onVote={(p) => onNavigate(`/polls/${p.slug}`)}
+          onLiveDisplay={(p) => onNavigate(`/polls/${p.slug}/live`)}
           onGoLive={(p) => void handleGoLive(p)}
           onEdit={openEdit}
+          onRemove={(poll, optionId) => void handleRemove(poll, optionId)}
         />
         <PollSection
           title="Archive"
@@ -711,6 +766,7 @@ function PollSection({
   onClose,
   onEdit,
   onAddProject,
+  onRemove,
 }: {
   title: string;
   empty: string;
@@ -724,6 +780,7 @@ function PollSection({
   onClose?: (poll: PollAdmin) => void;
   onEdit?: (poll: PollAdmin) => void;
   onAddProject?: (poll: PollAdmin) => void;
+  onRemove?: (poll: PollAdmin, optionId: string) => void;
 }) {
   return (
     <section className="mt-10">
@@ -753,16 +810,34 @@ function PollSection({
                     {poll.options.length} project{poll.options.length === 1 ? "" : "s"}
                     {poll.totalVotes ? ` · ${poll.totalVotes} votes` : ""}
                   </p>
-                  {poll.status === "live" || poll.status === "draft" ? (
-                    <p className="mt-2 line-clamp-2 text-xs text-neutral-500">
-                      {poll.options.map((o) => o.label).join(" · ")}
+                  {poll.options.length > 0 ? (
+                    <ul className="mt-2 space-y-1">
+                      {poll.options.map((option) => (
+                        <li key={option.id} className="text-xs text-neutral-600">
+                          <span className="font-medium text-neutral-800">{option.label}</span>
+                          {option.people ? ` — ${option.people}` : ""}
+                          {canManage && poll.status === "draft" && onRemove ? (
+                            <button
+                              type="button"
+                              className="ml-2 text-neutral-400 underline-offset-2 hover:text-neutral-700 hover:underline"
+                              onClick={() => onRemove(poll, option.id)}
+                            >
+                              Remove
+                            </button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : poll.status === "draft" ? (
+                    <p className="mt-2 text-xs text-neutral-500">
+                      No projects yet. The public page is where people add them.
                     </p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {onVote ? (
                     <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => onVote(poll)}>
-                      Vote view
+                      {poll.status === "draft" ? "Preview" : "Vote view"}
                     </Button>
                   ) : null}
                   {onQr ? (
@@ -807,7 +882,7 @@ function PollSection({
               </div>
               {showResults && poll.totalVotes > 0 ? (
                 <div className="mt-4 border-t border-neutral-100 pt-4">
-                  <PollResultsBars results={poll.results} totalVotes={poll.totalVotes} />
+                  <PollPodium results={poll.results} totalBallots={poll.totalVotes} />
                 </div>
               ) : null}
             </li>

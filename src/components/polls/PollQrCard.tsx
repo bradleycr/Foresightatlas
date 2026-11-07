@@ -10,6 +10,7 @@ import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Printer } from "lucide-react";
 import foresightIconUrl from "../../assets/Foresight_RGB_Icon_Black.png?url";
+import { themeForEvent } from "./pollEventTheme";
 import { getPollVoteUrl } from "../../utils/pollUrls";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
@@ -18,6 +19,8 @@ interface PollQrCardProps {
   slug: string;
   question: string;
   eventTitle?: string;
+  /** Line under the question. Draft rooms add a project; live rooms vote. */
+  hint?: string;
   /** Compact card for the projector corner; full for admin / print preview. */
   size?: "poster" | "stage";
   className?: string;
@@ -28,6 +31,7 @@ export function PollQrCard({
   slug,
   question,
   eventTitle,
+  hint = "Scan to vote anonymously — no app, no sign-in",
   size = "poster",
   className,
   showActions = false,
@@ -35,6 +39,7 @@ export function PollQrCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const voteUrl = getPollVoteUrl(slug);
+  const theme = themeForEvent(eventTitle);
   const qrSize = size === "stage" ? 196 : 280;
   const logo = Math.round(qrSize * 0.18);
 
@@ -55,7 +60,9 @@ export function PollQrCard({
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     const safeQuestion = escapeHtml(question);
-    const safeEvent = eventTitle ? escapeHtml(eventTitle) : "";
+    const safeKicker = escapeHtml(theme.kicker);
+    const safeDetail = theme.detail ? escapeHtml(theme.detail) : "";
+    const safeHint = escapeHtml(hint);
     const safeUrl = escapeHtml(voteUrl);
 
     printWindow.document.write(`<!DOCTYPE html>
@@ -128,10 +135,10 @@ export function PollQrCard({
 </head>
 <body>
   <div class="poster">
-    <p class="eyebrow">Foresight Atlas · Poll</p>
+    <p class="eyebrow">${safeKicker}</p>
     <h1 class="question">${safeQuestion}</h1>
-    ${safeEvent ? `<p class="event">${safeEvent}</p>` : ""}
-    <p class="hint">Scan to vote anonymously — no app, no sign-in</p>
+    ${safeDetail ? `<p class="event">${safeDetail}</p>` : ""}
+    <p class="hint">${safeHint}</p>
     <div class="qr-wrap">${qrSvg}</div>
     <p class="url">${safeUrl}</p>
   </div>
@@ -152,20 +159,20 @@ export function PollQrCard({
         )}
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-          Foresight Atlas
+          {theme.kicker}
         </p>
+        {theme.detail && size === "poster" ? (
+          <p className="mt-1 text-[11px] text-slate-500">{theme.detail}</p>
+        ) : null}
         {size === "poster" ? (
           <>
             <h2 className="font-heading mt-3 text-xl font-bold leading-snug text-gray-900 sm:text-2xl">
               {question}
             </h2>
-            {eventTitle ? (
-              <p className="mt-2 text-sm font-medium text-gray-600">{eventTitle}</p>
-            ) : null}
-            <p className="mt-3 text-xs text-gray-500">Scan to vote anonymously — no app, no sign-in</p>
+            <p className="mt-3 text-xs text-gray-500">{hint}</p>
           </>
         ) : (
-          <p className="mt-2 text-xs font-medium text-gray-600">Scan to vote</p>
+          <p className="mt-2 text-xs font-medium text-gray-600">{hint}</p>
         )}
         <div
           data-poll-qr

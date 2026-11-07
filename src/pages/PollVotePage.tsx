@@ -1,8 +1,9 @@
 /**
- * Public vote screen — what a phone sees after scanning the poll QR.
+ * The phone that scans the QR.
  *
- * Votes are anonymous. Built for thumbs: compact rows, search when the list
- * is long (favourite-project polls), sticky confirmation of the current pick.
+ * While the poll is a draft, this page is how pitchers add a project.
+ * Once the host goes live, the same URL becomes the ballot: one favorite
+ * (2 points) and one runner-up (1). Scores stay hidden until it closes.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -10,14 +11,15 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
-import { PollOptionPicker } from "../components/polls/PollOptionPicker";
-import { PollResultsBars } from "../components/polls/PollResultsBars";
-import { fetchPublicPoll, voteOnPoll } from "../services/polls";
+import { PollBallot } from "../components/polls/PollBallot";
+import { PollPodium } from "../components/polls/PollPodium";
+import { PollProjectSubmit } from "../components/polls/PollProjectSubmit";
+import { themeForEvent } from "../components/polls/pollEventTheme";
+import { addProjectToPoll, fetchPublicPoll, voteOnPoll } from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import type { Identity } from "../services/identity";
 import type { PollPublic } from "../types/polls";
-
-const GRADIENT = "linear-gradient(165deg, #f7f6f3 0%, #ffffff 48%, #efece6 100%)";
+import { Button } from "../components/ui/button";
 
 interface PollVotePageProps {
   slug: string;
@@ -29,7 +31,9 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showAllResults, setShowAllResults] = useState(false);
+  const [firstId, setFirstId] = useState<string | null>(null);
+  const [secondId, setSecondId] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -56,19 +60,41 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load();
-    }, 4000);
+    }, 10000);
     return () => {
       unsub();
       window.clearInterval(timer);
     };
   }, [load]);
 
-  const handleVote = async (optionId: string) => {
-    if (!poll || poll.status !== "live" || saving) return;
+  useEffect(() => {
+    if (!poll || dirty) return;
+    setFirstId(poll.yourFirstId);
+    setSecondId(poll.yourSecondId);
+  }, [poll, dirty]);
+
+  const handleAdd = async (project: { label: string; people: string; url: string }) => {
     setSaving(true);
     try {
-      const next = await voteOnPoll(slug, optionId, identity?.token);
+      const next = await addProjectToPoll(slug, project);
       setPoll(next);
+      toast.success("You’re on the slate.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not add that project.");
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVote = async () => {
+    if (!poll || !firstId || !secondId || saving) return;
+    setSaving(true);
+    try {
+      const next = await voteOnPoll(slug, firstId, secondId, identity?.token);
+      setPoll(next);
+      setDirty(false);
+      toast.success("Ballot in. You can change it until voting closes.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not record your vote.");
     } finally {
@@ -76,13 +102,13 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
     }
   };
 
-  const longList = (poll?.options.length ?? 0) >= 8;
-  const resultLimit = showAllResults || !longList ? 0 : 5;
+  const theme = themeForEvent(poll?.eventTitle);
+  const submitted = Boolean(poll?.yourFirstId && poll?.yourSecondId && !dirty);
 
   return (
     <div
       className="flex min-h-[100svh] flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 sm:min-h-[100dvh] sm:items-center sm:px-5 sm:py-10"
-      style={{ background: GRADIENT }}
+      style={{ background: theme.pageBackground }}
     >
       <div className="mx-auto w-full max-w-md">
         <div className="mb-5 flex items-center gap-3 sm:mb-8 sm:flex-col sm:text-center">
@@ -94,9 +120,14 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
           >
             <img src={foresightIconUrl} alt="Foresight Institute" className="size-6 sm:size-8" />
           </a>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
-            Foresight Atlas · Poll
-          </p>
+          <div className="min-w-0 sm:text-center">
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${theme.kickerClass}`}>
+              {theme.kicker}
+            </p>
+            {theme.detail ? (
+              <p className={`mt-1 text-xs ${theme.detailClass}`}>{theme.detail}</p>
+            ) : null}
+          </div>
         </div>
 
         {loading && !poll ? (
@@ -114,58 +145,65 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
         ) : null}
 
         {poll ? (
-          <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-4 shadow-xl backdrop-blur-md sm:rounded-[1.75rem] sm:p-7">
-            {poll.eventTitle ? (
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                {poll.eventTitle}
-              </p>
-            ) : null}
-            <h1 className="font-heading mt-1 text-[1.35rem] font-bold leading-snug text-[var(--primary)] sm:text-2xl">
+          <div className={`rounded-[1.5rem] border p-4 shadow-xl sm:rounded-[1.75rem] sm:p-7 ${theme.ticketClass}`}>
+            <h1 className="font-heading text-[1.35rem] font-bold leading-snug text-inherit sm:text-2xl">
               {poll.question}
             </h1>
 
-            {poll.status === "closed" ? (
-              <p className="mt-2 text-sm text-gray-600">Voting is closed. Here’s how the room landed.</p>
-            ) : (
-              <p className="mt-2 text-sm text-gray-600">
-                {longList
-                  ? "Search or scroll, then tap one. You can change it until the host closes."
-                  : "Tap one answer. You can change it until the host closes the poll."}
-              </p>
-            )}
-
-            {poll.status === "live" ? (
+            {poll.status === "draft" ? (
               <div className="mt-4">
-                <PollOptionPicker
-                  options={poll.options}
-                  selectedId={poll.yourOptionId}
-                  disabled={saving}
-                  onSelect={(id) => void handleVote(id)}
-                />
+                <p className="mb-4 text-sm text-gray-600">
+                  Add your project before the pitches. Voting opens when the host starts it — same page, same QR.
+                </p>
+                <PollProjectSubmit options={poll.options} saving={saving} onSubmit={handleAdd} />
               </div>
             ) : null}
 
-            {poll.status === "closed" || poll.yourOptionId || poll.totalVotes > 0 ? (
-              <div className={poll.status === "live" ? "mt-6 border-t border-gray-100 pt-5" : "mt-5"}>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {poll.totalVotes} vote{poll.totalVotes === 1 ? "" : "s"}
-                  {longList && !showAllResults ? " · top 5" : ""}
+            {poll.status === "live" ? (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600">
+                  Your favorite gets 2 points, your runner-up gets 1. One ballot on this phone. Scores stay hidden until voting closes.
                 </p>
-                <PollResultsBars
-                  results={poll.results}
-                  totalVotes={poll.totalVotes}
-                  highlightId={poll.yourOptionId}
-                  limit={poll.status === "closed" ? 0 : resultLimit}
-                />
-                {longList && poll.status !== "closed" && poll.results.length > 5 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllResults((v) => !v)}
-                    className="mt-3 min-h-[40px] text-sm font-medium text-[var(--primary)]"
-                  >
-                    {showAllResults ? "Show top 5" : `See all ${poll.results.length} results`}
-                  </button>
-                ) : null}
+                {poll.options.length < 2 ? (
+                  <p className="mt-4 text-sm text-gray-600">The slate needs at least two projects.</p>
+                ) : (
+                  <>
+                    <div className="mt-4">
+                      <PollBallot
+                        options={poll.options}
+                        firstId={firstId}
+                        secondId={secondId}
+                        disabled={saving}
+                        onChange={(next) => {
+                          setDirty(true);
+                          setFirstId(next.firstId);
+                          setSecondId(next.secondId);
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={saving || !firstId || !secondId}
+                      onClick={() => void handleVote()}
+                      className="mt-4 min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
+                    >
+                      {saving ? <Loader2 className="size-4 animate-spin" /> : null}
+                      {submitted ? "Update ballot" : "Cast ballot"}
+                    </Button>
+                    {submitted ? (
+                      <p className="mt-3 text-center text-xs text-neutral-500">
+                        You’re in. {poll.totalVotes} ballot{poll.totalVotes === 1 ? "" : "s"} so far.
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            {poll.status === "closed" ? (
+              <div className="mt-5">
+                <p className="mb-4 text-sm text-gray-600">Voting is closed.</p>
+                <PollPodium results={poll.results} totalBallots={poll.totalVotes} />
               </div>
             ) : null}
           </div>

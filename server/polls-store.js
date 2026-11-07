@@ -27,13 +27,19 @@ const {
 const { parseRoleTypes } = require("./role-types");
 const { isLocalMockMode } = require("./local-storage");
 
+const { rateLimit } = require("./rate-limit");
+
 const TEAM_ROLE = "Foresight Team";
 const STATUSES = new Set(["draft", "live", "closed"]);
 const SLUG_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 const MAX_OPTIONS = 48;
-const MIN_OPTIONS = 2;
+const MIN_LIVE_OPTIONS = 2;
 const MAX_QUESTION = 200;
 const MAX_OPTION = 120;
+const MAX_PEOPLE = 160;
+const MAX_URL = 400;
+const FIRST_POINTS = 2;
+const SECOND_POINTS = 1;
 
 function sheetsId() {
   return getSpreadsheetId();
@@ -80,10 +86,16 @@ function parseOptions(raw) {
         if (item && typeof item === "object") {
           const id = String(item.id || "").trim() || optionIdFromIndex(index);
           const label = String(item.label || "").trim();
-          return label ? { id, label } : null;
+          if (!label) return null;
+          return {
+            id,
+            label,
+            people: String(item.people || "").trim(),
+            url: String(item.url || "").trim(),
+          };
         }
         const label = String(item || "").trim();
-        return label ? { id: optionIdFromIndex(index), label } : null;
+        return label ? { id: optionIdFromIndex(index), label, people: "", url: "" } : null;
       })
       .filter(Boolean);
   } catch {
@@ -95,45 +107,94 @@ function optionIdFromIndex(index) {
   return String(index + 1);
 }
 
-function normalizeOptions(input) {
+function cleanPeople(raw) {
+  const people = String(raw || "").replace(/\s+/g, " ").trim();
+  if (people.length > MAX_PEOPLE) {
+    throw new Error(`Keep the names under ${MAX_PEOPLE} characters.`);
+  }
+  return people;
+}
+
+/** http(s) only. A bare domain gets https:// so a pitch link still opens. */
+function cleanUrl(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  const withProto = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  let url;
+  try {
+    url = new URL(withProto);
+  } catch {
+    throw new Error("That link doesn’t look right.");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("The link needs to be a normal web address.");
+  }
+  if (url.href.length > MAX_URL) {
+    throw new Error("That link is too long.");
+  }
+  return url.href;
+}
+
+function projectFromInput(item, previous = []) {
+  const label =
+    typeof item === "string"
+      ? item.trim()
+      : String(item?.label || "").trim();
+  if (!label) return null;
+  if (label.length < 2) throw new Error("Project name needs at least 2 characters.");
+  if (label.length > MAX_OPTION) {
+    throw new Error(`Each project name must be ${MAX_OPTION} characters or fewer.`);
+  }
+  const prev = previous.find(
+    (option) => String(option.label || "").trim().toLowerCase() === label.toLowerCase(),
+  );
+  const people =
+    item && typeof item === "object" && item.people != null
+      ? cleanPeople(item.people)
+      : cleanPeople(prev?.people || "");
+  const url =
+    item && typeof item === "object" && item.url != null
+      ? cleanUrl(item.url)
+      : String(prev?.url || "");
+  return { label, people, url };
+}
+
+function normalizeOptions(input, previous = []) {
   const list = Array.isArray(input) ? input : [];
   const options = [];
+  const seen = new Set();
   for (const item of list) {
-    const label =
-      typeof item === "string"
-        ? item.trim()
-        : String(item?.label || "").trim();
-    if (!label) continue;
-    if (label.length > MAX_OPTION) {
-      throw new Error(`Each option must be ${MAX_OPTION} characters or fewer.`);
-    }
-    options.push({ id: optionIdFromIndex(options.length), label });
+    const project = projectFromInput(item, previous);
+    if (!project) continue;
+    const key = project.label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    options.push({ id: optionIdFromIndex(options.length), ...project });
   }
   if (options.length > MAX_OPTIONS) {
-    throw new Error(`Keep it to ${MAX_OPTIONS} options or fewer.`);
-  }
-  if (options.length < MIN_OPTIONS) {
-    throw new Error(`Add at least ${MIN_OPTIONS} options.`);
+    throw new Error(`Keep it to ${MAX_OPTIONS} projects or fewer.`);
   }
   return options;
 }
 
 /**
- * Append one option without renumbering existing ids — safe while a poll is
- * live (votes already point at option ids). Used for "add a project on the fly".
+ * Append one project without renumbering existing ids — votes already point
+ * at those ids. Draft submissions and a host's late add both come through here.
  */
-function appendOptionLabel(existing, labelRaw) {
-  const label = String(labelRaw || "").trim();
-  if (!label) throw new Error("Project name is required.");
+function appendProject(existing, project) {
+  const label = String(project?.label || "").trim();
+  const people = cleanPeople(project?.people);
+  const url = cleanUrl(project?.url);
+  if (label.length < 2) throw new Error("Project name needs at least 2 characters.");
   if (label.length > MAX_OPTION) {
-    throw new Error(`Each option must be ${MAX_OPTION} characters or fewer.`);
+    throw new Error(`Each project name must be ${MAX_OPTION} characters or fewer.`);
   }
   const options = Array.isArray(existing) ? [...existing] : [];
   if (options.length >= MAX_OPTIONS) {
-    throw new Error(`Keep it to ${MAX_OPTIONS} options or fewer.`);
+    throw new Error(`Keep it to ${MAX_OPTIONS} projects or fewer.`);
   }
   const dup = options.some(
-    (o) => String(o.label || "").trim().toLowerCase() === label.toLowerCase(),
+    (option) => String(option.label || "").trim().toLowerCase() === label.toLowerCase(),
   );
   if (dup) throw new Error("That project is already on this poll.");
 
@@ -142,8 +203,15 @@ function appendOptionLabel(existing, labelRaw) {
     const n = Number.parseInt(String(option.id), 10);
     if (Number.isFinite(n) && n > maxId) maxId = n;
   }
-  options.push({ id: String(maxId + 1), label });
+  options.push({ id: String(maxId + 1), label, people, url });
   return options;
+}
+
+function clientIp(req) {
+  const forwarded = String(req?.headers?.["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  return String(forwarded || req?.socket?.remoteAddress || "unknown").slice(0, 80);
 }
 
 function normalizeQuestion(value) {
@@ -195,47 +263,114 @@ function pollToRow(poll) {
   ];
 }
 
-function tallyVotes(poll, votes) {
-  const counts = {};
-  for (const option of poll.options) counts[option.id] = 0;
+function latestBallots(poll, votes) {
   const latest = new Map();
   for (const vote of votes) {
     if (vote.pollId !== poll.id) continue;
     latest.set(vote.voterKey, vote);
   }
-  for (const vote of latest.values()) {
-    if (counts[vote.optionId] == null) continue;
-    counts[vote.optionId] += 1;
-  }
-  const total = [...latest.values()].filter((v) => counts[v.optionId] != null).length;
-  return { counts, total };
+  return [...latest.values()];
 }
 
-function publicPollShape(poll, votes, yourOptionId) {
-  const { counts, total } = tallyVotes(poll, votes);
+/**
+ * Truncated Borda: favorite 2, runner-up 1. Ties break on more first-place
+ * picks, then more runner-up picks. One phone is one ballot — the latest
+ * row for that device replaces the earlier one.
+ */
+function tallyVotes(poll, votes) {
+  const score = {};
+  for (const option of poll.options) {
+    score[option.id] = { points: 0, firsts: 0, seconds: 0 };
+  }
+  let totalBallots = 0;
+  for (const vote of latestBallots(poll, votes)) {
+    const first = score[vote.optionId] ? vote.optionId : "";
+    const second =
+      vote.secondOptionId &&
+      vote.secondOptionId !== first &&
+      score[vote.secondOptionId]
+        ? vote.secondOptionId
+        : "";
+    if (!first && !second) continue;
+    totalBallots += 1;
+    if (first) {
+      score[first].points += FIRST_POINTS;
+      score[first].firsts += 1;
+    }
+    if (second) {
+      score[second].points += SECOND_POINTS;
+      score[second].seconds += 1;
+    }
+  }
+  const ranked = poll.options.map((option) => ({
+    ...option,
+    points: score[option.id].points,
+    firsts: score[option.id].firsts,
+    seconds: score[option.id].seconds,
+    votes: score[option.id].points,
+  }));
+  ranked.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.firsts !== a.firsts) return b.firsts - a.firsts;
+    if (b.seconds !== a.seconds) return b.seconds - a.seconds;
+    return a.label.localeCompare(b.label);
+  });
+  ranked.forEach((row, index) => {
+    const prev = ranked[index - 1];
+    const tied =
+      prev &&
+      prev.points === row.points &&
+      prev.firsts === row.firsts &&
+      prev.seconds === row.seconds;
+    row.place = tied ? prev.place : index + 1;
+  });
+  return { ranked, totalBallots };
+}
+
+function publicOption(option) {
+  return {
+    id: option.id,
+    label: option.label,
+    people: option.people || "",
+    url: option.url || "",
+  };
+}
+
+function publicPollShape(poll, votes, yours, { reveal } = {}) {
+  const show = Boolean(reveal);
+  const { ranked, totalBallots } = tallyVotes(poll, votes);
+  const firstId = yours?.firstId || null;
+  const secondId = yours?.secondId || null;
   return {
     id: poll.id,
     slug: poll.slug,
     question: poll.question,
-    options: poll.options,
+    options: poll.options.map(publicOption),
     status: poll.status,
     eventId: poll.eventId || "",
     eventTitle: poll.eventTitle || "",
     createdAt: poll.createdAt,
     updatedAt: poll.updatedAt,
     closedAt: poll.closedAt || "",
-    results: poll.options.map((option) => ({
-      id: option.id,
-      label: option.label,
-      votes: counts[option.id] || 0,
-    })),
-    totalVotes: total,
-    yourOptionId: yourOptionId || null,
+    // Hidden until the host closes, so a live room isn't pulled onto an early lead.
+    results: show ? ranked.map(publicOption).map((option, index) => ({
+      ...option,
+      points: ranked[index].points,
+      firsts: ranked[index].firsts,
+      seconds: ranked[index].seconds,
+      votes: ranked[index].points,
+      place: ranked[index].place,
+    })) : [],
+    scoresHidden: !show,
+    totalVotes: totalBallots,
+    yourOptionId: firstId,
+    yourFirstId: firstId,
+    yourSecondId: secondId,
   };
 }
 
 function adminPollShape(poll, votes) {
-  const publicShape = publicPollShape(poll, votes, null);
+  const publicShape = publicPollShape(poll, votes, null, { reveal: true });
   return {
     ...publicShape,
     createdByPersonId: poll.createdByPersonId,
@@ -349,8 +484,10 @@ async function loadSheetPollsAndVotes(sheets) {
       personId: cell(row, voteHeader, "personId"),
       fullName: cell(row, voteHeader, "fullName"),
       optionId,
+      secondOptionId: cell(row, voteHeader, "secondOptionId"),
       createdAt: cell(row, voteHeader, "createdAt"),
       updatedAt: cell(row, voteHeader, "updatedAt"),
+      rowNumber: i + 1,
     });
   }
 
@@ -366,11 +503,23 @@ async function loadMockPollsAndVotes() {
   };
 }
 
+/** A room of phones shares one sheet read. Writes drop the cache immediately. */
+let pollCache = { at: 0, value: null };
+const POLL_CACHE_MS = 8000;
+
+function dropPollCache() {
+  pollCache = { at: 0, value: null };
+}
+
 async function loadAll() {
   if (isLocalMockMode()) return loadMockPollsAndVotes();
+  const now = Date.now();
+  if (pollCache.value && now - pollCache.at < POLL_CACHE_MS) return pollCache.value;
   const sheets = await getSheetsClient();
   if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
-  return loadSheetPollsAndVotes(sheets);
+  const value = await loadSheetPollsAndVotes(sheets);
+  pollCache = { at: Date.now(), value };
+  return value;
 }
 
 async function persistPoll(poll) {
@@ -401,6 +550,7 @@ async function persistPoll(poll) {
       requestBody: { values: [row] },
     });
   }
+  dropPollCache();
   return poll;
 }
 
@@ -413,9 +563,10 @@ async function persistVote(vote) {
   if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
   const spreadsheetId = sheetsId();
   await ensureTab(sheets, SHEET_NAMES.POLL_VOTES, POLL_VOTES_HEADERS);
+  const lastCol = String.fromCharCode(64 + POLL_VOTES_HEADERS.length);
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `'${SHEET_NAMES.POLL_VOTES}'!A:G`,
+    range: `'${SHEET_NAMES.POLL_VOTES}'!A:${lastCol}`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
@@ -427,9 +578,11 @@ async function persistVote(vote) {
         vote.optionId,
         vote.createdAt,
         vote.updatedAt,
+        vote.secondOptionId || "",
       ]],
     },
   });
+  dropPollCache();
   return vote;
 }
 
@@ -471,20 +624,26 @@ async function listAdminPolls(session) {
 async function getPublicPoll(slug, voterKeyRaw) {
   const { polls, votes } = await loadAll();
   const poll = findPoll(polls, slug);
-  if (!poll || poll.status === "draft") {
+  if (!poll) {
     const err = new Error("This poll is not available.");
     err.statusCode = 404;
     throw err;
   }
   const voterKey = voterKeyRaw ? hashVoterKey(voterKeyRaw) : "";
-  let yourOptionId = null;
-  if (voterKey) {
-    const latest = [...votes].reverse().find(
-      (v) => v.pollId === poll.id && v.voterKey === voterKey,
-    );
-    yourOptionId = latest?.optionId || null;
-  }
-  return publicPollShape(poll, votes, yourOptionId);
+  const yours = ballotFor(poll, votes, voterKey);
+  return publicPollShape(poll, votes, yours, { reveal: poll.status === "closed" });
+}
+
+function ballotFor(poll, votes, voterKey) {
+  if (!voterKey) return null;
+  const latest = [...votes].reverse().find(
+    (vote) => vote.pollId === poll.id && vote.voterKey === voterKey,
+  );
+  if (!latest) return null;
+  return {
+    firstId: latest.optionId || null,
+    secondId: latest.secondOptionId || null,
+  };
 }
 
 async function createPoll(session, body) {
@@ -544,11 +703,24 @@ async function updatePoll(session, body) {
       : body.appendOption != null
         ? body.appendOption
         : null;
+  if (body.removeOptionId) {
+    if (poll.status !== "draft") {
+      throw new Error("You can only remove a project before voting opens.");
+    }
+    const removeId = String(body.removeOptionId).trim();
+    const nextOptions = poll.options.filter((option) => option.id !== removeId);
+    if (nextOptions.length === poll.options.length) {
+      throw new Error("That project is not on this poll.");
+    }
+    poll.options = nextOptions;
+  }
+
   if (addOption != null) {
     if (poll.status === "closed") {
       throw new Error("Closed polls can’t gain new projects. Open a new poll.");
     }
-    poll.options = appendOptionLabel(poll.options, addOption);
+    const project = typeof addOption === "string" ? { label: addOption } : addOption;
+    poll.options = appendProject(poll.options, project);
   }
 
   if (body.question != null || body.options != null) {
@@ -559,7 +731,7 @@ async function updatePoll(session, body) {
       );
     }
     if (body.question != null) poll.question = normalizeQuestion(body.question);
-    if (body.options != null) poll.options = normalizeOptions(body.options);
+    if (body.options != null) poll.options = normalizeOptions(body.options, poll.options);
   }
   if (body.eventId != null) poll.eventId = String(body.eventId || "").trim();
   if (body.eventTitle != null) poll.eventTitle = String(body.eventTitle || "").trim();
@@ -576,6 +748,9 @@ async function updatePoll(session, body) {
      * Soft single-live: when going live, optionally close every other live
      * poll so the room isn’t split across two QR codes by accident.
      */
+    if (next === "live" && poll.options.length < MIN_LIVE_OPTIONS) {
+      throw new Error("Add at least two projects before voting opens.");
+    }
     if (next === "live" && body.closeOtherLive) {
       for (const other of polls) {
         if (other.id === poll.id || other.status !== "live") continue;
@@ -594,7 +769,17 @@ async function updatePoll(session, body) {
   return adminPollShape(poll, freshVotes);
 }
 
-async function castVote({ slug, optionId, voterKeyRaw }) {
+async function castVote({ slug, optionId, secondOptionId, voterKeyRaw }, req) {
+  const flood = rateLimit(`poll-vote:${clientIp(req)}`, {
+    limit: 240,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!flood.ok) {
+    const err = new Error("Too many ballots from this network. Wait a minute and try again.");
+    err.statusCode = 429;
+    throw err;
+  }
+
   const { polls, votes } = await loadAll();
   const poll = findPoll(polls, slug);
   if (!poll) {
@@ -606,13 +791,18 @@ async function castVote({ slug, optionId, voterKeyRaw }) {
     const err = new Error(
       poll.status === "closed"
         ? "This poll has closed."
-        : "This poll is not live yet.",
+        : "Voting isn’t open yet. You can still add a project.",
     );
     err.statusCode = 400;
     throw err;
   }
-  const option = poll.options.find((o) => o.id === String(optionId || "").trim());
-  if (!option) throw new Error("That option is not on this poll.");
+  const first = poll.options.find((option) => option.id === String(optionId || "").trim());
+  if (!first) throw new Error("Pick a favorite from the list.");
+  const second = poll.options.find(
+    (option) => option.id === String(secondOptionId || "").trim(),
+  );
+  if (!second) throw new Error("Pick a runner-up as well. That one gets 1 point.");
+  if (second.id === first.id) throw new Error("Favorite and runner-up need to be different projects.");
 
   const rawKey = String(voterKeyRaw || "").trim();
   if (!rawKey || rawKey.length < 8) {
@@ -621,20 +811,133 @@ async function castVote({ slug, optionId, voterKeyRaw }) {
   const voterKey = hashVoterKey(rawKey);
   const now = new Date().toISOString();
   const previous = [...votes].reverse().find(
-    (v) => v.pollId === poll.id && v.voterKey === voterKey,
+    (vote) => vote.pollId === poll.id && vote.voterKey === voterKey,
   );
   const vote = {
     pollId: poll.id,
     voterKey,
     personId: "",
     fullName: "",
-    optionId: option.id,
+    optionId: first.id,
+    secondOptionId: second.id,
     createdAt: previous?.createdAt || now,
     updatedAt: now,
   };
   await persistVote(vote);
   const nextVotes = [...votes, vote];
-  return publicPollShape(poll, nextVotes, option.id);
+  return publicPollShape(
+    poll,
+    nextVotes,
+    { firstId: first.id, secondId: second.id },
+    { reveal: false },
+  );
+}
+
+/**
+ * A pitcher adds their own project while the poll is still a draft.
+ * One phone can submit a few (a team, a typo). The room shares Wi-Fi,
+ * so the address cap stays high enough for a full lab.
+ */
+async function addProject(body, req) {
+  const ip = clientIp(req);
+  const ipLimit = rateLimit(`poll-add:ip:${ip}`, {
+    limit: 80,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!ipLimit.ok) {
+    const err = new Error("Too many projects from this network. Ask the host to add it.");
+    err.statusCode = 429;
+    throw err;
+  }
+  const rawKey = String(body.voterKey || "").trim();
+  if (rawKey.length >= 8) {
+    const deviceLimit = rateLimit(`poll-add:device:${hashVoterKey(rawKey)}`, {
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!deviceLimit.ok) {
+      const err = new Error("This phone has added enough projects. Ask the host if one is missing.");
+      err.statusCode = 429;
+      throw err;
+    }
+  }
+
+  const { polls, votes } = await loadAll();
+  const poll = findPoll(polls, body.slug || body.id);
+  if (!poll) {
+    const err = new Error("Poll not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (poll.status !== "draft") {
+    const err = new Error(
+      poll.status === "live"
+        ? "Voting has started, so the list is locked. Ask the host if a project is missing."
+        : "This poll is closed.",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+  const people = cleanPeople(body.people);
+  if (people.length < 2) {
+    throw new Error("Add the names of the people on the project.");
+  }
+  poll.options = appendProject(poll.options, {
+    label: body.label || body.name,
+    people,
+    url: body.url,
+  });
+  poll.updatedAt = new Date().toISOString();
+  await persistPoll(poll);
+  const voterKey = rawKey.length >= 8 ? hashVoterKey(rawKey) : "";
+  return publicPollShape(poll, votes, ballotFor(poll, votes, voterKey), { reveal: false });
+}
+
+/**
+ * Idempotent room polls for a known event. A second run leaves the row alone
+ * so a host's later edits are not overwritten.
+ */
+async function ensureEventPoll({ slug, eventTitle, question, options, status }) {
+  const { polls } = await loadAll();
+  if (findPoll(polls, slug)) return { slug, created: false };
+  const now = new Date().toISOString();
+  const poll = {
+    id: `poll-${slug}`,
+    slug,
+    eventId: "",
+    eventTitle,
+    question,
+    options: options.map((label, index) => ({
+      id: String(index + 1),
+      label,
+    })),
+    status,
+    createdByPersonId: "",
+    createdByName: "Foresight",
+    createdAt: now,
+    updatedAt: now,
+    closedAt: "",
+  };
+  await persistPoll(poll);
+  return { slug, created: true, status };
+}
+
+/**
+ * Point an existing untouched draft at a best-project ballot.
+ * Leaves the row alone once anyone has voted, or once it is live.
+ */
+async function refreshBestProjectDraft({ slug, question }) {
+  const { polls, votes } = await loadAll();
+  const poll = findPoll(polls, slug);
+  if (!poll) return { slug, updated: false, reason: "missing" };
+  if (poll.status !== "draft") return { slug, updated: false, reason: poll.status };
+  const ballots = votes.filter((vote) => vote.pollId === poll.id);
+  if (ballots.length) return { slug, updated: false, reason: "has-votes" };
+  poll.question = normalizeQuestion(question);
+  poll.options = [];
+  poll.updatedAt = new Date().toISOString();
+  await persistPoll(poll);
+  return { slug, updated: true };
 }
 
 module.exports = {
@@ -644,5 +947,8 @@ module.exports = {
   createPoll,
   updatePoll,
   castVote,
+  addProject,
   hashVoterKey,
+  ensureEventPoll,
+  refreshBestProjectDraft,
 };

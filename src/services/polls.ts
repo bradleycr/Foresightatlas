@@ -86,7 +86,9 @@ export async function updatePoll(
     question?: string;
     options?: string[];
     /** Append one project while draft or live (stable option ids). */
-    addOption?: string;
+    addOption?: string | { label: string; people?: string; url?: string };
+    /** Drop one project while the poll is still a draft. */
+    removeOptionId?: string;
     eventId?: string;
     eventTitle?: string;
     status?: "draft" | "live" | "closed";
@@ -108,6 +110,7 @@ export async function updatePoll(
 export async function voteOnPoll(
   slug: string,
   optionId: string,
+  secondOptionId: string,
   token?: string | null,
 ): Promise<PollPublic> {
   const res = await fetch(`${getApiBase()}/polls`, {
@@ -117,10 +120,32 @@ export async function voteOnPoll(
       action: "vote",
       slug,
       optionId,
+      secondOptionId,
       voterKey: getPollVoterKey(),
     }),
   });
   if (!res.ok) throw new Error(await readError(res, "Could not record your vote."));
+  const body = (await res.json()) as { poll: PollPublic };
+  publishDataChanged("polls");
+  return body.poll;
+}
+
+/** A pitcher adds their own project while submissions are open. */
+export async function addProjectToPoll(
+  slug: string,
+  input: { label: string; people: string; url?: string },
+): Promise<PollPublic> {
+  const res = await fetch(`${getApiBase()}/polls`, {
+    method: "POST",
+    headers: authHeaders(null),
+    body: JSON.stringify({
+      action: "addProject",
+      slug,
+      ...input,
+      voterKey: getPollVoterKey(),
+    }),
+  });
+  if (!res.ok) throw new Error(await readError(res, "Could not add that project."));
   const body = (await res.json()) as { poll: PollPublic };
   publishDataChanged("polls");
   return body.poll;
