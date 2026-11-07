@@ -26,9 +26,10 @@ interface PollVotePageProps {
   slug: string;
   identity: Identity | null;
   purpose: "add" | "vote";
+  onNavigate: (path: string) => void;
 }
 
-export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
+export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePageProps) {
   const [poll, setPoll] = useState<PollPublic | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,8 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const [thirdId, setThirdId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [editing, setEditing] = useState(false);
+  /** True after this phone just pitched — drives the “Go to voting” link. */
+  const [justAdded, setJustAdded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +98,16 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
     try {
       const next = await addProjectToPoll(slug, project);
       setPoll(next);
+      const labelKey = project.label.trim().toLowerCase();
+      const mine =
+        [...next.options]
+          .reverse()
+          .find((option) => option.label.trim().toLowerCase() === labelKey) || null;
+      if (mine) {
+        setStoredTeam(slug, mine.id);
+        setTeamId(mine.id);
+        setJustAdded(true);
+      }
       toast.success("You’re on the slate.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not add that project.");
@@ -136,6 +149,11 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
 
   const theme = themeForEvent(poll?.eventTitle);
   const knownTeam = Boolean(teamId && poll?.options.some((option) => option.id === teamId));
+  const myProject =
+    knownTeam && poll ? poll.options.find((option) => option.id === teamId) || null : null;
+  const showGoVote = Boolean(
+    purpose === "add" && poll && poll.status !== "closed" && (justAdded || myProject),
+  );
   const submitted = Boolean(
     poll?.yourFirstId && poll?.yourSecondId && poll?.yourThirdId && poll?.yourTeamId && !dirty,
   );
@@ -206,6 +224,24 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
             {purpose === "add" && poll.status !== "closed" ? (
               <div className="mt-4">
                 <PollProjectSubmit options={poll.options} saving={saving} onSubmit={handleAdd} />
+                {showGoVote ? (
+                  <div className="mt-8 border-t border-black/10 pt-6 text-center">
+                    {myProject ? (
+                      <p className="text-sm text-neutral-600">
+                        You’re down as{" "}
+                        <span className="font-medium text-neutral-900">{myProject.label}</span>.
+                      </p>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-4 min-h-[48px] w-full"
+                      onClick={() => onNavigate(`/polls/${slug}`)}
+                    >
+                      Go to voting
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
@@ -214,9 +250,16 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
             ) : null}
 
             {purpose === "vote" && poll.status === "draft" ? (
-              <p className="mt-4 text-sm text-gray-600">
-                Voting opens when the host starts it.
-              </p>
+              <div className="mt-6 text-center">
+                <p className="font-heading text-xl font-bold text-inherit">
+                  Voting hasn’t started yet
+                </p>
+                <p className="mt-2 text-sm text-neutral-600">
+                  {knownTeam
+                    ? "Your team is saved on this phone. Come back when the host opens voting."
+                    : "The host will open voting from the admin page."}
+                </p>
+              </div>
             ) : null}
 
             {purpose === "vote" && poll.status === "live" && submitted && !editing ? (

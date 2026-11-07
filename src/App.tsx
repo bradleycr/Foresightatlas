@@ -777,9 +777,19 @@ export default function App() {
       onNavigate={navigate}
     />
   ) : pollsRoute?.kind === "add" ? (
-    <PollVotePage slug={pollsRoute.slug} identity={identity} purpose="add" />
+    <PollVotePage
+      slug={pollsRoute.slug}
+      identity={identity}
+      purpose="add"
+      onNavigate={navigate}
+    />
   ) : pollsRoute?.kind === "vote" ? (
-    <PollVotePage slug={pollsRoute.slug} identity={identity} purpose="vote" />
+    <PollVotePage
+      slug={pollsRoute.slug}
+      identity={identity}
+      purpose="vote"
+      onNavigate={navigate}
+    />
   ) : pollsRoute?.kind === "live" ? (
     <PollLivePage slug={pollsRoute.slug} />
   ) : isCalendarRoute ? (
