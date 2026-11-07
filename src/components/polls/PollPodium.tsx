@@ -1,6 +1,6 @@
 /**
  * The prize board. First, second, and third sit up front; the rest of the
- * field stays readable underneath. Points are favorite × 2 plus runner-up × 1.
+ * field stays readable underneath. A place is the point total.
  */
 
 import type { PollResultOption } from "../../types/polls";
@@ -52,9 +52,6 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
               <span className="font-semibold">{option.points}</span>
               {" "}
               {option.points === 1 ? "point" : "points"}
-              <span className="text-neutral-500">
-                {" "}· {option.firsts} favourite{option.firsts === 1 ? "" : "s"}
-              </span>
             </p>
           </li>
         ))}

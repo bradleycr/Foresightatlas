@@ -34,7 +34,6 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(() => getStoredTeam(slug));
-  const [pickingTeam, setPickingTeam] = useState(false);
   const [firstId, setFirstId] = useState<string | null>(null);
   const [secondId, setSecondId] = useState<string | null>(null);
   const [thirdId, setThirdId] = useState<string | null>(null);
@@ -113,7 +112,6 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
       setPoll(next);
       setDirty(false);
       setEditing(false);
-      setPickingTeam(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not record your vote.");
     } finally {
@@ -124,7 +122,6 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const chooseTeam = (id: string) => {
     setStoredTeam(slug, id);
     setTeamId(id);
-    setPickingTeam(false);
     setDirty(true);
     if (!poll?.yourTeamId) {
       setFirstId(null);
@@ -147,8 +144,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
       purpose === "vote" &&
       poll.status === "live" &&
       poll.options.length >= 4 &&
-      (!submitted || editing || pickingTeam) &&
-      (!knownTeam || pickingTeam),
+      !knownTeam,
   );
 
   return (
@@ -193,7 +189,13 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
         {poll ? (
           <div className={`rounded-[1.5rem] border p-4 shadow-xl sm:rounded-[1.75rem] sm:p-7 ${theme.ticketClass}`}>
             <h1 className="font-heading text-[1.35rem] font-bold leading-snug text-inherit sm:text-2xl">
-              {purpose === "add" ? "Add your project" : selectingTeam ? "Select your team" : poll.question}
+              {purpose === "add"
+                ? "Add your project"
+                : poll.status === "closed"
+                  ? "Results"
+                  : selectingTeam
+                    ? "Select your team"
+                    : poll.question}
             </h1>
             {purpose === "vote" && poll.status === "live" && poll.closesAt ? (
               <div className="mt-4">
@@ -217,7 +219,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
               </p>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" && submitted && !editing && !pickingTeam ? (
+            {purpose === "vote" && poll.status === "live" && submitted && !editing ? (
               <div className="mt-8 text-center">
                 <p className="font-heading text-3xl font-bold">Your vote is cast</p>
                 <ul className="mt-6 space-y-2 text-left">
@@ -243,27 +245,18 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
               </div>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" && (!submitted || editing || pickingTeam) ? (
+            {purpose === "vote" && poll.status === "live" && (!submitted || editing) ? (
               <div className="mt-4">
                 {poll.options.length < 4 ? (
                   <p className="mt-4 text-sm text-gray-600">Need at least four teams.</p>
-                ) : !knownTeam || pickingTeam ? (
-                  <PollTeamGate options={poll.options} onSelect={chooseTeam} />
+                ) : !knownTeam ? (
+                  <PollTeamGate options={poll.options} onConfirm={chooseTeam} />
                 ) : (
                   <>
-                    <div className="mt-3 flex items-baseline justify-between gap-3">
-                      <p className="min-w-0 truncate text-sm">
-                        <span className="text-neutral-500">Your team </span>
-                        <span className="font-medium">{poll.options.find((option) => option.id === teamId)?.label}</span>
-                      </p>
-                      <button
-                        type="button"
-                        className="shrink-0 text-sm font-medium text-neutral-700 underline-offset-2 hover:underline"
-                        onClick={() => setPickingTeam(true)}
-                      >
-                        Change
-                      </button>
-                    </div>
+                    <p className="mt-3 truncate text-sm">
+                      <span className="text-neutral-500">Your team </span>
+                      <span className="font-medium">{poll.options.find((option) => option.id === teamId)?.label}</span>
+                    </p>
                     <div className="mt-3">
                       <PollBallot
                         options={poll.options}

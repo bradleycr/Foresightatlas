@@ -108,7 +108,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
         >
           <div className={`flex min-h-0 flex-col rounded-[1.75rem] border px-8 py-6 xl:px-10 xl:py-8 ${theme.ticketClass}`}>
             <h1 className="shrink-0 font-heading text-4xl font-bold leading-tight text-inherit xl:text-5xl">
-              {poll.question}
+              {poll.status === "closed" ? "Results" : poll.question}
             </h1>
             {poll.status === "live" && poll.closesAt ? (
               <div className="mt-4 shrink-0">
