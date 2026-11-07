@@ -52,12 +52,13 @@ export function PollLivePage({ slug }: PollLivePageProps) {
 
   const theme = themeForEvent(poll?.eventTitle);
   const rows = poll ? (poll.results.length > 0 ? poll.results : poll.options) : [];
-  const nameSize = `clamp(1rem, ${Math.min(3.4, 26 / Math.max(rows.length, 1))}vh, 2.4rem)`;
+  /* Projector: every row must fit — size scales with how many projects are on the slate. */
+  const nameSize = `clamp(0.8rem, ${Math.min(3.2, 38 / Math.max(rows.length, 1))}vh, 2.2rem)`;
   const waiting = poll?.status === "draft";
 
   return (
     <div
-      className="flex min-h-[100svh] flex-col px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:h-full lg:min-h-0 lg:overflow-hidden xl:px-12 xl:py-8"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-8 sm:py-5 xl:px-12 xl:py-6"
       style={{ background: theme.pageBackground }}
     >
       <header className="flex shrink-0 items-center justify-between gap-3 sm:gap-6">
@@ -111,51 +112,52 @@ export function PollLivePage({ slug }: PollLivePageProps) {
       ) : null}
 
       {poll && waiting ? (
-        <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch lg:gap-8 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-10">
+        <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-stretch lg:gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
           <div
-            className={`flex min-h-0 flex-col rounded-[1.35rem] border px-4 py-5 sm:rounded-[1.75rem] sm:px-8 sm:py-7 xl:px-10 xl:py-9 ${theme.ticketClass}`}
+            className={`flex min-h-0 flex-col overflow-hidden rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-7 sm:py-5 xl:px-9 xl:py-6 ${theme.ticketClass}`}
           >
-            <div className="shrink-0 text-center sm:text-left">
-              <p className="inline-flex items-center gap-2 rounded-full border border-[#e7d3bc] bg-[#fbf6ea] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a4b2f]">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#9a4b2f]/40" />
-                  <span className="relative inline-flex size-2 rounded-full bg-[#9a4b2f]" />
-                </span>
-                Waiting room
-              </p>
-              <h1 className="font-heading mt-4 text-3xl font-bold leading-tight text-inherit sm:text-5xl xl:text-6xl">
+            <div className="shrink-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="inline-flex items-center gap-2 rounded-full border border-[#e7d3bc] bg-[#fbf6ea] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a4b2f]">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#9a4b2f]/40" />
+                    <span className="relative inline-flex size-2 rounded-full bg-[#9a4b2f]" />
+                  </span>
+                  Waiting room
+                </p>
+                <p className={`text-sm font-medium ${theme.mutedClass}`}>
+                  Scan Add project if yours isn’t here · voting opens when the host says go
+                </p>
+              </div>
+              <h1 className="font-heading mt-3 text-2xl font-bold leading-tight text-inherit sm:text-4xl xl:text-5xl">
                 Voting hasn’t started yet
               </h1>
-              <p className={`mt-3 max-w-2xl text-base leading-relaxed sm:text-xl ${theme.mutedClass}`}>
-                Projects are still joining the slate. Scan <span className="font-semibold">Add project</span>{" "}
-                if yours isn’t here. Voting opens when the host says go — stay on this screen.
-              </p>
             </div>
             {rows.length === 0 ? (
-              <p className={`mt-10 text-center text-lg sm:text-2xl ${theme.mutedClass}`}>
+              <p className={`mt-8 flex flex-1 items-center justify-center text-lg sm:text-2xl ${theme.mutedClass}`}>
                 First projects will appear here as teams add them.
               </p>
             ) : (
-              <ol className="mt-6 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto sm:mt-8 lg:justify-center lg:overflow-hidden">
+              <ol className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden">
                 {rows.map((option, index) => (
                   <li
                     key={option.id}
-                    className="flex items-baseline gap-3 border-b border-black/5 py-[0.55em] last:border-b-0 sm:gap-5"
+                    className="flex min-h-0 shrink items-center gap-3 border-b border-black/5 last:border-b-0 sm:gap-4"
                   >
                     <span
-                      className="w-8 shrink-0 tabular-nums text-neutral-400 sm:w-10"
+                      className="w-7 shrink-0 tabular-nums text-neutral-400 sm:w-9"
                       style={{ fontSize: `calc(${nameSize} * 0.55)` }}
                     >
                       {index + 1}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold leading-tight" style={{ fontSize: nameSize }}>
+                    <div className="min-w-0 flex-1 py-[0.15em]">
+                      <p className="truncate font-semibold leading-tight" style={{ fontSize: nameSize }}>
                         {option.label}
                       </p>
                       {option.people ? (
                         <p
-                          className="mt-0.5 text-neutral-600"
-                          style={{ fontSize: `calc(${nameSize} * 0.48)` }}
+                          className="truncate text-neutral-600"
+                          style={{ fontSize: `calc(${nameSize} * 0.45)` }}
                         >
                           {option.people}
                         </p>
@@ -166,32 +168,19 @@ export function PollLivePage({ slug }: PollLivePageProps) {
               </ol>
             )}
           </div>
-          <div className="mt-1 flex shrink-0 flex-col items-center justify-center gap-3 border-t border-black/5 pt-3 lg:mt-0 lg:border-t-0 lg:pt-0">
-            <p className={`text-center text-xs font-semibold uppercase tracking-[0.16em] lg:mb-1 ${theme.mutedClass}`}>
-              Add your project
-            </p>
-            <div className="lg:hidden">
-              <PollQrCard
-                slug={poll.slug}
-                question="Add your project"
-                eventTitle={poll.eventTitle}
-                href={getPollAddUrl(poll.slug)}
-                hint="Add"
-                size="thumb"
-              />
-            </div>
-            <div className="hidden w-full lg:block">
-              <PollQrCard
-                slug={poll.slug}
-                question="Add your project"
-                eventTitle={poll.eventTitle}
-                href={getPollAddUrl(poll.slug)}
-                hint="Add project"
-                size="pair"
-              />
-            </div>
-            <p className={`max-w-[16rem] text-center text-sm leading-snug ${theme.mutedClass}`}>
-              Vote QR appears when voting opens.
+          {/* Always on stage — projector column, never pushed below the fold. */}
+          <div className="flex min-h-0 shrink-0 flex-col items-center justify-center gap-2 lg:gap-3">
+            <PollQrCard
+              slug={poll.slug}
+              question="Add your project"
+              eventTitle={poll.eventTitle}
+              href={getPollAddUrl(poll.slug)}
+              hint="Add project"
+              size="pair"
+              className="w-full max-w-[14rem] lg:max-w-none"
+            />
+            <p className={`text-center text-xs font-medium sm:text-sm ${theme.mutedClass}`}>
+              Vote QR appears when voting opens
             </p>
           </div>
         </div>
@@ -217,21 +206,21 @@ export function PollLivePage({ slug }: PollLivePageProps) {
               </div>
             ) : null}
             {poll.status === "closed" ? (
-              <div className="mt-4 min-h-0 flex-1 overflow-y-auto sm:mt-6 lg:overflow-hidden">
+              <div className="mt-4 min-h-0 flex-1 overflow-hidden sm:mt-5">
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} size="stage" />
               </div>
             ) : (
-              <ol className="mt-3 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto sm:mt-4 lg:justify-center lg:overflow-hidden">
+              <ol className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden">
                 {rows.map((option, index) => {
                   const points = "points" in option ? option.points : 0;
                   const leading = index === 0 && points > 0 && poll.status === "live";
                   return (
                     <li
                       key={option.id}
-                      className="flex items-center gap-3 border-b border-black/5 py-[0.45em] last:border-b-0 sm:gap-6 sm:py-[0.35em]"
+                      className="flex min-h-0 shrink items-center gap-3 border-b border-black/5 last:border-b-0 sm:gap-6"
                     >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold leading-tight sm:truncate" style={{ fontSize: nameSize }}>
+                      <div className="min-w-0 flex-1 py-[0.12em]">
+                        <p className="truncate font-semibold leading-tight" style={{ fontSize: nameSize }}>
                           {option.label}
                           {leading ? (
                             <span className="ml-2 align-middle text-[0.45em] font-semibold uppercase tracking-[0.16em] text-[#9a4b2f] sm:ml-3">
@@ -241,8 +230,8 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                         </p>
                         {option.people ? (
                           <p
-                            className="mt-0.5 text-neutral-600 sm:truncate"
-                            style={{ fontSize: `calc(${nameSize} * 0.48)` }}
+                            className="truncate text-neutral-600"
+                            style={{ fontSize: `calc(${nameSize} * 0.45)` }}
                           >
                             {option.people}
                           </p>
@@ -252,11 +241,11 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                         <p className="w-14 shrink-0 text-right leading-none sm:w-28">
                           <span
                             className="font-heading font-bold tabular-nums"
-                            style={{ fontSize: `calc(${nameSize} * 1.15)` }}
+                            style={{ fontSize: `calc(${nameSize} * 1.1)` }}
                           >
                             {points}
                           </span>
-                          <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-500 sm:mt-1 sm:text-xs">
+                          <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
                             pts
                           </span>
                         </p>

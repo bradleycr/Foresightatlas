@@ -936,16 +936,23 @@ export default function App() {
   }
 
   if (isTokenOnboardingRoute || isPollsPublicExperience || isPrivacyRoute) {
+    const isPollsLiveBoard = pollsRoute?.kind === "live";
     return (
       <>
         <div
-          className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-50 w-full"
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-50 w-full ${isPollsLiveBoard ? "h-dvh" : ""}`}
           style={{
             paddingLeft: "env(safe-area-inset-left, 0px)",
             paddingRight: "env(safe-area-inset-right, 0px)",
           }}
         >
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+          <main
+            className={
+              isPollsLiveBoard
+                ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain"
+            }
+          >
             {mainContent}
           </main>
         </div>
