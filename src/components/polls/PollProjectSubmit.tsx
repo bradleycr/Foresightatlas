@@ -5,8 +5,7 @@
  */
 
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Loader2 } from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import type { PollOption } from "../../types/polls";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -50,24 +49,24 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
           />
         </div>
         <div>
-          <Label htmlFor="project-people">People</Label>
+          <Label htmlFor="project-people">Names, separated by commas</Label>
           <Input
             id="project-people"
             value={people}
             onChange={(event) => setPeople(event.target.value)}
-            placeholder="Who’s on it"
+            placeholder="Ada Lovelace, Grace Hopper"
             className="mt-1.5 min-h-[44px]"
             maxLength={160}
             autoComplete="off"
           />
         </div>
         <div>
-          <Label htmlFor="project-url">Link, if there’s something to open</Label>
+          <Label htmlFor="project-url">GitHub repo</Label>
           <Input
             id="project-url"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://"
+            placeholder="github.com/org/project"
             className="mt-1.5 min-h-[44px]"
             maxLength={400}
             inputMode="url"
@@ -77,7 +76,7 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
         </div>
         <Button
           type="button"
-          disabled={saving || label.trim().length < 2 || people.trim().length < 2}
+          disabled={saving || label.trim().length < 2 || people.trim().length < 2 || url.trim().length < 3}
           onClick={() => void handleSubmit()}
           className="min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
         >
@@ -100,26 +99,16 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
                 {option.people ? (
                   <p className="mt-0.5 text-sm text-neutral-600">{option.people}</p>
                 ) : null}
-                {option.url ? (
-                  <a
-                    href={option.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 block truncate text-xs text-neutral-500 underline-offset-2 hover:underline"
-                  >
-                    {option.url.replace(/^https?:\/\//, "")}
-                  </a>
-                ) : null}
               </div>
               {option.url ? (
                 <a
                   href={option.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 rounded-xl border border-black/10 bg-white p-1.5"
-                  aria-label={`Open ${option.label}`}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full text-neutral-900"
+                  aria-label={`${option.label} on GitHub`}
                 >
-                  <QRCodeSVG value={option.url} size={72} level="M" bgColor="#ffffff" fgColor="#0f172a" />
+                  <Github className="size-6" />
                 </a>
               ) : null}
             </li>

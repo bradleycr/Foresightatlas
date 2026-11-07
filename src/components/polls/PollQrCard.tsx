@@ -21,8 +21,10 @@ interface PollQrCardProps {
   eventTitle?: string;
   /** Line under the question. Draft rooms add a project; live rooms vote. */
   hint?: string;
+  /** Override the encoded link. Defaults to the vote page. */
+  href?: string;
   /** Compact card for the projector corner; full for admin / print preview. */
-  size?: "poster" | "stage";
+  size?: "poster" | "stage" | "pair";
   className?: string;
   showActions?: boolean;
 }
@@ -31,16 +33,17 @@ export function PollQrCard({
   slug,
   question,
   eventTitle,
-  hint = "Scan to vote anonymously — no app, no sign-in",
+  hint = "Vote",
+  href,
   size = "poster",
   className,
   showActions = false,
 }: PollQrCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const voteUrl = getPollVoteUrl(slug);
+  const voteUrl = href || getPollVoteUrl(slug);
   const theme = themeForEvent(eventTitle);
-  const qrSize = size === "stage" ? 196 : 280;
+  const qrSize = size === "poster" ? 280 : size === "pair" ? 148 : 196;
   const logo = Math.round(qrSize * 0.18);
 
   const handleCopy = async () => {

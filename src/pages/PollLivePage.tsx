@@ -6,13 +6,14 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
 import { themeForEvent } from "../components/polls/pollEventTheme";
 import { fetchPublicPoll } from "../services/polls";
+import { getPollAddUrl } from "../utils/pollUrls";
 import { subscribeToDataChanges } from "../services/sync";
 import type { PollPublic } from "../types/polls";
 
@@ -42,7 +43,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load();
-    }, 8000);
+    }, 4000);
     return () => {
       unsub();
       window.clearInterval(timer);
@@ -79,7 +80,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
           <p className={`shrink-0 text-right text-sm tabular-nums ${theme.mutedClass}`}>
             {poll.status === "draft"
               ? `${poll.options.length} project${poll.options.length === 1 ? "" : "s"}`
-              : `${poll.totalVotes} ballot${poll.totalVotes === 1 ? "" : "s"}${poll.status === "closed" ? " · closed" : ""}`}
+              : `${poll.totalVotes} vote${poll.totalVotes === 1 ? "" : "s"}${poll.status === "closed" ? " · closed" : ""}`}
           </p>
         ) : null}
       </header>
@@ -98,7 +99,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
       ) : null}
 
       {poll ? (
-        <div className="mt-8 grid flex-1 grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-12">
+        <div className="mt-8 grid flex-1 grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-10">
           <div className={`rounded-[1.75rem] border p-6 sm:p-8 ${theme.ticketClass}`}>
             <h1 className="font-heading text-2xl font-bold leading-tight text-inherit sm:text-4xl lg:text-5xl">
               {poll.question}
@@ -111,35 +112,67 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} size="stage" />
               </div>
             ) : (
-              <div className="mt-6">
-                <p className="text-sm text-neutral-600 sm:text-base">
-                  {poll.status === "draft"
-                    ? "Add your project from the QR. Voting opens when the host starts it."
-                    : "Scores stay hidden until voting closes. A favourite is 2 points, a runner-up is 1."}
-                </p>
-                {poll.status === "draft" && poll.options.length > 0 ? (
-                  <ul className="mt-6 divide-y divide-black/5">
-                    {poll.options.map((option) => (
-                      <li key={option.id} className="py-3">
-                        <p className="text-lg font-medium">{option.label}</p>
+              <ol className="mt-6 space-y-3">
+                {(poll.results.length > 0 ? poll.results : poll.options).map((option, index) => {
+                  const points = "points" in option ? option.points : 0;
+                  const leading = index === 0 && points > 0 && poll.status === "live";
+                  return (
+                    <li key={option.id} className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-lg font-medium leading-snug sm:text-xl">
+                          {option.label}
+                          {leading ? (
+                            <span className="ml-2 align-middle text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9a4b2f]">
+                              Leading
+                            </span>
+                          ) : null}
+                        </p>
                         {option.people ? (
                           <p className="text-sm text-neutral-600">{option.people}</p>
                         ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
+                      </div>
+                      {option.url ? (
+                        <a
+                          href={option.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex size-10 shrink-0 items-center justify-center text-neutral-800"
+                          aria-label={`${option.label} on GitHub`}
+                        >
+                          <Github className="size-5" />
+                        </a>
+                      ) : null}
+                      {poll.status === "live" ? (
+                        <p className="w-14 shrink-0 text-right leading-none">
+                          <span className="text-2xl font-bold tabular-nums">{points}</span>
+                          <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                            points
+                          </span>
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
             )}
           </div>
-          <PollQrCard
-            slug={poll.slug}
-            question={poll.question}
-            eventTitle={poll.eventTitle}
-            hint={poll.status === "draft" ? "Scan to add your project" : "Scan to vote"}
-            size="stage"
-            className="lg:sticky lg:top-8"
-          />
+          <div className="flex flex-col gap-4 lg:sticky lg:top-8">
+            <PollQrCard
+              slug={poll.slug}
+              question={poll.question}
+              eventTitle={poll.eventTitle}
+              hint="Vote"
+              size="pair"
+            />
+            <PollQrCard
+              slug={poll.slug}
+              question="Add your project"
+              eventTitle={poll.eventTitle}
+              href={getPollAddUrl(poll.slug)}
+              hint="Add your project"
+              size="pair"
+            />
+          </div>
         </div>
       ) : null}
     </div>

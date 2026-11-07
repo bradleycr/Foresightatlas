@@ -6,6 +6,7 @@
  * rows never show a number on its own.
  */
 
+import { Github } from "lucide-react";
 import type { PollOption } from "../../types/polls";
 import { cn } from "../ui/utils";
 
@@ -102,9 +103,10 @@ export function PollBallot({
                     target="_blank"
                     rel="noreferrer"
                     onClick={(event) => event.stopPropagation()}
-                    className="shrink-0 rounded-full border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-600"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-800"
+                    aria-label={`${option.label} on GitHub`}
                   >
-                    Demo
+                    <Github className="size-5" />
                   </a>
                 ) : null}
                 {award > 0 ? (

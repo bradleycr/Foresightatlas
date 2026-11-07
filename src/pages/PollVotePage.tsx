@@ -34,6 +34,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const [firstId, setFirstId] = useState<string | null>(null);
   const [secondId, setSecondId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -94,7 +95,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
       const next = await voteOnPoll(slug, firstId, secondId, identity?.token);
       setPoll(next);
       setDirty(false);
-      toast.success("Ballot in. You can change it until voting closes.");
+      setEditing(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not record your vote.");
     } finally {
@@ -152,9 +153,6 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
 
             {purpose === "add" && poll.status !== "closed" ? (
               <div className="mt-4">
-                <p className="mb-4 text-sm text-gray-600">
-                  Name it, add the people on it, and a link if there’s a demo to open.
-                </p>
                 <PollProjectSubmit options={poll.options} saving={saving} onSubmit={handleAdd} />
               </div>
             ) : null}
@@ -169,11 +167,32 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
               </p>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" ? (
+            {purpose === "vote" && poll.status === "live" && submitted && !editing ? (
+              <div className="mt-8 text-center">
+                <p className="font-heading text-3xl font-bold">Your vote is cast</p>
+                <ul className="mt-6 space-y-2 text-left">
+                  <li className="rounded-2xl bg-[#fbf6ea] px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">2 points</p>
+                    <p className="mt-1 font-medium">{poll.options.find((option) => option.id === poll.yourFirstId)?.label}</p>
+                  </li>
+                  <li className="rounded-2xl bg-neutral-50 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">1 point</p>
+                    <p className="mt-1 font-medium">{poll.options.find((option) => option.id === poll.yourSecondId)?.label}</p>
+                  </li>
+                </ul>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-6 min-h-[48px] w-full"
+                  onClick={() => setEditing(true)}
+                >
+                  Update your vote
+                </Button>
+              </div>
+            ) : null}
+
+            {purpose === "vote" && poll.status === "live" && (!submitted || editing) ? (
               <div className="mt-4">
-                <p className="text-sm text-gray-600">
-                  Give 2 points to your favourite and 1 point to a runner-up. One ballot on this phone.
-                </p>
                 {poll.options.length < 2 ? (
                   <p className="mt-4 text-sm text-gray-600">The slate needs at least two projects.</p>
                 ) : (
@@ -198,13 +217,8 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
                       className="mt-4 min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
                     >
                       {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-                      {submitted ? "Update your points" : "Submit your points"}
+                      Submit
                     </Button>
-                    {submitted ? (
-                      <p className="mt-3 text-center text-sm text-neutral-600">
-                        One ballot on this phone. Change the points and submit again until the organiser ends voting — that replaces this ballot, it does not add another.
-                      </p>
-                    ) : null}
                   </>
                 )}
               </div>

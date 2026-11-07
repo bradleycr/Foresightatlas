@@ -115,6 +115,34 @@ function cleanPeople(raw) {
   return people;
 }
 
+/**
+ * A GitHub repo: github.com/org/name, or just org/name.
+ * The path after the repo name is dropped so a blob link still lands on the repo.
+ */
+function cleanGithubRepo(raw) {
+  let value = String(raw || "").trim();
+  if (!value) throw new Error("Add the GitHub repo.");
+  if (!/^https?:\/\//i.test(value)) {
+    value = /^github\.com\//i.test(value) ? `https://${value}` : `https://github.com/${value.replace(/^\/+/, "")}`;
+  }
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("That doesn’t look like a GitHub repo.");
+  }
+  const host = url.hostname.replace(/^www\./, "").toLowerCase();
+  if (host !== "github.com") {
+    throw new Error("Use a GitHub repo, like github.com/org/project.");
+  }
+  const [owner, repo] = url.pathname.split("/").filter(Boolean);
+  if (!owner || !repo) {
+    throw new Error("Include the repo, like github.com/org/project.");
+  }
+  const cleanRepo = repo.replace(/\.git$/i, "");
+  return `https://github.com/${owner}/${cleanRepo}`;
+}
+
 /** http(s) only. A bare domain gets https:// so a pitch link still opens. */
 function cleanUrl(raw) {
   const value = String(raw || "").trim();
@@ -505,7 +533,7 @@ async function loadMockPollsAndVotes() {
 
 /** A room of phones shares one sheet read. Writes drop the cache immediately. */
 let pollCache = { at: 0, value: null };
-const POLL_CACHE_MS = 8000;
+const POLL_CACHE_MS = 4000;
 
 function dropPollCache() {
   pollCache = { at: 0, value: null };
@@ -631,7 +659,9 @@ async function getPublicPoll(slug, voterKeyRaw) {
   }
   const voterKey = voterKeyRaw ? hashVoterKey(voterKeyRaw) : "";
   const yours = ballotFor(poll, votes, voterKey);
-  return publicPollShape(poll, votes, yours, { reveal: poll.status === "closed" });
+  return publicPollShape(poll, votes, yours, {
+    reveal: poll.status === "live" || poll.status === "closed",
+  });
 }
 
 function ballotFor(poll, votes, voterKey) {
@@ -885,12 +915,12 @@ async function addProject(body, req) {
   }
   const people = cleanPeople(body.people);
   if (people.length < 2) {
-    throw new Error("Add the names of the people on the project.");
+    throw new Error("Add the names, separated by commas.");
   }
   poll.options = appendProject(poll.options, {
     label: body.label || body.name,
     people,
-    url: body.url,
+    url: cleanGithubRepo(body.url),
   });
   poll.updatedAt = new Date().toISOString();
   await persistPoll(poll);
