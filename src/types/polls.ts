@@ -1,6 +1,6 @@
 /**
- * Best-project polls. One ballot per phone: a favorite (2 points) and a
- * runner-up (1). Scores stay hidden until the host closes the poll.
+ * Best-project polls. One ballot per phone: 3, 2, and 1 points, never
+ * to the team that phone belongs to.
  */
 
 export type PollStatus = "draft" | "live" | "closed";
@@ -16,6 +16,7 @@ export interface PollResultOption extends PollOption {
   points: number;
   firsts: number;
   seconds: number;
+  thirds: number;
   place: number;
   /** Points, under the old field name so result bars still have a number. */
   votes: number;
@@ -40,6 +41,9 @@ export interface PollPublic {
   yourOptionId: string | null;
   yourFirstId: string | null;
   yourSecondId: string | null;
+  yourThirdId: string | null;
+  /** The project this phone said it is on. */
+  yourTeamId: string | null;
 }
 
 export interface PollAdmin extends PollPublic {

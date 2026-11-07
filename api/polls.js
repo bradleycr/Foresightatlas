@@ -77,6 +77,8 @@ module.exports = async function handler(req, res) {
           slug: body.slug || body.id,
           optionId: body.optionId,
           secondOptionId: body.secondOptionId,
+          thirdOptionId: body.thirdOptionId,
+          teamOptionId: body.teamOptionId,
           voterKeyRaw: body.voterKey,
         }, req);
         return res.status(200).json({ poll });

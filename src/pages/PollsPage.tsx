@@ -219,8 +219,8 @@ export function PollsPage({
   };
 
   const handleGoLive = async (poll: PollAdmin) => {
-    if (poll.options.length < 2) {
-      toast.error("Add at least two projects before voting opens.");
+    if (poll.options.length < 4) {
+      toast.error("Add at least four projects before voting opens.");
       return;
     }
     const others = live.filter((p) => p.id !== poll.id);

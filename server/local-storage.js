@@ -1047,6 +1047,8 @@ async function appendLocalPollVote(vote) {
     fullName: String(vote.fullName || "").trim(),
     optionId: String(vote.optionId || "").trim(),
     secondOptionId: String(vote.secondOptionId || "").trim(),
+    thirdOptionId: String(vote.thirdOptionId || "").trim(),
+    teamOptionId: String(vote.teamOptionId || "").trim(),
     createdAt: String(vote.createdAt || new Date().toISOString()),
     updatedAt: String(vote.updatedAt || new Date().toISOString()),
   };

@@ -12,6 +12,27 @@ import type { PollAdmin, PollPublic, PollsAdminPayload } from "../types/polls";
 
 const VOTER_STORAGE_KEY = "foresightatlas_poll_voter";
 
+function teamStorageKey(slug: string) {
+  return `foresightatlas_poll_team_${slug}`;
+}
+
+export function getStoredTeam(slug: string): string | null {
+  try {
+    const value = localStorage.getItem(teamStorageKey(slug));
+    return value && value.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredTeam(slug: string, optionId: string) {
+  try {
+    localStorage.setItem(teamStorageKey(slug), optionId);
+  } catch {
+    /* private mode still votes for this page load */
+  }
+}
+
 export function getPollVoterKey(): string {
   try {
     const existing = localStorage.getItem(VOTER_STORAGE_KEY);
@@ -115,6 +136,8 @@ export async function voteOnPoll(
   slug: string,
   optionId: string,
   secondOptionId: string,
+  thirdOptionId: string,
+  teamOptionId: string,
   token?: string | null,
 ): Promise<PollPublic> {
   const res = await fetch(`${getApiBase()}/polls`, {
@@ -125,6 +148,8 @@ export async function voteOnPoll(
       slug,
       optionId,
       secondOptionId,
+      thirdOptionId,
+      teamOptionId,
       voterKey: getPollVoterKey(),
     }),
   });

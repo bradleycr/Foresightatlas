@@ -225,8 +225,12 @@ const POLL_VOTES_HEADERS = [
   "optionId",
   "createdAt",
   "updatedAt",
-  // Appended. optionId is the favorite (2 points); this is the runner-up (1).
+  // Appended. optionId is 3 points, this is 2 points.
   "secondOptionId",
+  // Appended. 1 point.
+  "thirdOptionId",
+  // Appended. The team this phone is on. That project cannot receive points.
+  "teamOptionId",
 ];
 
 /**

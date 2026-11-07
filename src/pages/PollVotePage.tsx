@@ -2,7 +2,7 @@
  * Two public phones for one poll.
  *
  * `/polls/:slug/add` is where a pitcher adds a project.
- * `/polls/:slug` is the ballot: favorite gets 2 points, runner-up gets 1.
+ * `/polls/:slug` names a team first, then gives 3, 2, and 1 points to other teams.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -11,11 +11,12 @@ import { toast } from "sonner";
 import foresightIconUrl from "../assets/Foresight_RGB_Icon_Black.png?url";
 import { FORESIGHT_ORG_URL } from "../constants/foresight";
 import { PollBallot } from "../components/polls/PollBallot";
+import { PollTeamGate } from "../components/polls/PollTeamGate";
 import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollProjectSubmit } from "../components/polls/PollProjectSubmit";
 import { themeForEvent } from "../components/polls/pollEventTheme";
-import { addProjectToPoll, fetchPublicPoll, voteOnPoll } from "../services/polls";
+import { addProjectToPoll, fetchPublicPoll, getStoredTeam, setStoredTeam, voteOnPoll } from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import type { Identity } from "../services/identity";
 import type { PollPublic } from "../types/polls";
@@ -32,8 +33,11 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [teamId, setTeamId] = useState<string | null>(() => getStoredTeam(slug));
+  const [pickingTeam, setPickingTeam] = useState(false);
   const [firstId, setFirstId] = useState<string | null>(null);
   const [secondId, setSecondId] = useState<string | null>(null);
+  const [thirdId, setThirdId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -71,9 +75,21 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
 
   useEffect(() => {
     if (!poll || dirty) return;
+    const teamKnown = Boolean(
+      poll.yourTeamId && poll.options.some((option) => option.id === poll.yourTeamId),
+    );
+    if (!teamKnown) {
+      setFirstId(null);
+      setSecondId(null);
+      setThirdId(null);
+      return;
+    }
+    setTeamId(poll.yourTeamId);
+    setStoredTeam(slug, poll.yourTeamId || "");
     setFirstId(poll.yourFirstId);
     setSecondId(poll.yourSecondId);
-  }, [poll, dirty]);
+    setThirdId(poll.yourThirdId);
+  }, [poll, dirty, slug]);
 
   const handleAdd = async (project: { label: string; people: string; url: string }) => {
     setSaving(true);
@@ -90,13 +106,14 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   };
 
   const handleVote = async () => {
-    if (!poll || !firstId || !secondId || saving) return;
+    if (!poll || !teamId || !firstId || !secondId || !thirdId || saving) return;
     setSaving(true);
     try {
-      const next = await voteOnPoll(slug, firstId, secondId, identity?.token);
+      const next = await voteOnPoll(slug, firstId, secondId, thirdId, teamId, identity?.token);
       setPoll(next);
       setDirty(false);
       setEditing(false);
+      setPickingTeam(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not record your vote.");
     } finally {
@@ -104,8 +121,27 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
     }
   };
 
+  const chooseTeam = (id: string) => {
+    setStoredTeam(slug, id);
+    setTeamId(id);
+    setPickingTeam(false);
+    setDirty(true);
+    if (!poll?.yourTeamId) {
+      setFirstId(null);
+      setSecondId(null);
+      setThirdId(null);
+      return;
+    }
+    if (firstId === id) setFirstId(null);
+    if (secondId === id) setSecondId(null);
+    if (thirdId === id) setThirdId(null);
+  };
+
   const theme = themeForEvent(poll?.eventTitle);
-  const submitted = Boolean(poll?.yourFirstId && poll?.yourSecondId && !dirty);
+  const knownTeam = Boolean(teamId && poll?.options.some((option) => option.id === teamId));
+  const submitted = Boolean(
+    poll?.yourFirstId && poll?.yourSecondId && poll?.yourThirdId && poll?.yourTeamId && !dirty,
+  );
 
   return (
     <div
@@ -173,18 +209,20 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
               </p>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" && submitted && !editing ? (
+            {purpose === "vote" && poll.status === "live" && submitted && !editing && !pickingTeam ? (
               <div className="mt-8 text-center">
                 <p className="font-heading text-3xl font-bold">Your vote is cast</p>
                 <ul className="mt-6 space-y-2 text-left">
-                  <li className="rounded-2xl bg-[#fbf6ea] px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">2 points</p>
-                    <p className="mt-1 font-medium">{poll.options.find((option) => option.id === poll.yourFirstId)?.label}</p>
-                  </li>
-                  <li className="rounded-2xl bg-neutral-50 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">1 point</p>
-                    <p className="mt-1 font-medium">{poll.options.find((option) => option.id === poll.yourSecondId)?.label}</p>
-                  </li>
+                  {[
+                    ["3 points", poll.yourFirstId],
+                    ["2 points", poll.yourSecondId],
+                    ["1 point", poll.yourThirdId],
+                  ].map(([label, id]) => (
+                    <li key={label} className="rounded-2xl bg-[#fbf6ea] px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
+                      <p className="mt-1 font-medium">{poll.options.find((option) => option.id === id)?.label}</p>
+                    </li>
+                  ))}
                 </ul>
                 <Button
                   type="button"
@@ -197,28 +235,46 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
               </div>
             ) : null}
 
-            {purpose === "vote" && poll.status === "live" && (!submitted || editing) ? (
+            {purpose === "vote" && poll.status === "live" && (!submitted || editing || pickingTeam) ? (
               <div className="mt-4">
-                {poll.options.length < 2 ? (
-                  <p className="mt-4 text-sm text-gray-600">The slate needs at least two projects.</p>
+                {poll.options.length < 4 ? (
+                  <p className="mt-4 text-sm text-gray-600">Need at least four teams.</p>
+                ) : !knownTeam || pickingTeam ? (
+                  <PollTeamGate options={poll.options} onSelect={chooseTeam} />
                 ) : (
                   <>
-                    <div className="mt-4">
+                    <div className="mt-3 flex items-baseline justify-between gap-3">
+                      <p className="min-w-0 truncate text-sm">
+                        <span className="text-neutral-500">Your team </span>
+                        <span className="font-medium">{poll.options.find((option) => option.id === teamId)?.label}</span>
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 text-sm font-medium text-neutral-700 underline-offset-2 hover:underline"
+                        onClick={() => setPickingTeam(true)}
+                      >
+                        Change
+                      </button>
+                    </div>
+                    <div className="mt-3">
                       <PollBallot
                         options={poll.options}
+                        teamId={teamId || ""}
                         firstId={firstId}
                         secondId={secondId}
+                        thirdId={thirdId}
                         disabled={saving}
                         onChange={(next) => {
                           setDirty(true);
                           setFirstId(next.firstId);
                           setSecondId(next.secondId);
+                          setThirdId(next.thirdId);
                         }}
                       />
                     </div>
                     <Button
                       type="button"
-                      disabled={saving || !firstId || !secondId}
+                      disabled={saving || !firstId || !secondId || !thirdId}
                       onClick={() => void handleVote()}
                       className="mt-4 min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
                     >

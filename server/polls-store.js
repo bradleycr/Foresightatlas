@@ -34,13 +34,14 @@ const TEAM_ROLE = "Foresight Team";
 const STATUSES = new Set(["draft", "live", "closed"]);
 const SLUG_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 const MAX_OPTIONS = 48;
-const MIN_LIVE_OPTIONS = 2;
+const MIN_LIVE_OPTIONS = 4;
 const MAX_QUESTION = 200;
 const MAX_OPTION = 120;
 const MAX_PEOPLE = 160;
 const MAX_URL = 400;
-const FIRST_POINTS = 2;
-const SECOND_POINTS = 1;
+const FIRST_POINTS = 3;
+const SECOND_POINTS = 2;
+const THIRD_POINTS = 1;
 
 function sheetsId() {
   return getSpreadsheetId();
@@ -304,46 +305,55 @@ function latestBallots(poll, votes) {
 }
 
 /**
- * Truncated Borda: favorite 2, runner-up 1. Ties break on more first-place
- * picks, then more runner-up picks. One phone is one ballot — the latest
- * row for that device replaces the earlier one.
+ * Truncated Borda: 3, then 2, then 1. A phone cannot award its own team.
+ * Ties break on more 3-point picks, then 2-point, then 1-point. One phone
+ * is one ballot — the latest row for that device replaces the earlier one.
  */
+function awardedIds(vote, score) {
+  const team = String(vote.teamOptionId || "");
+  if (!team || !score[team]) return null;
+  const seen = new Set([team]);
+  const picks = [];
+  for (const id of [vote.optionId, vote.secondOptionId, vote.thirdOptionId]) {
+    const key = String(id || "");
+    if (!key || seen.has(key) || !score[key]) return null;
+    seen.add(key);
+    picks.push(key);
+  }
+  return picks;
+}
+
 function tallyVotes(poll, votes) {
   const score = {};
   for (const option of poll.options) {
-    score[option.id] = { points: 0, firsts: 0, seconds: 0 };
+    score[option.id] = { points: 0, firsts: 0, seconds: 0, thirds: 0 };
   }
   let totalBallots = 0;
   for (const vote of latestBallots(poll, votes)) {
-    const first = score[vote.optionId] ? vote.optionId : "";
-    const second =
-      vote.secondOptionId &&
-      vote.secondOptionId !== first &&
-      score[vote.secondOptionId]
-        ? vote.secondOptionId
-        : "";
-    if (!first && !second) continue;
+    const picks = awardedIds(vote, score);
+    if (!picks) continue;
+    const [first, second, third] = picks;
     totalBallots += 1;
-    if (first) {
-      score[first].points += FIRST_POINTS;
-      score[first].firsts += 1;
-    }
-    if (second) {
-      score[second].points += SECOND_POINTS;
-      score[second].seconds += 1;
-    }
+    score[first].points += FIRST_POINTS;
+    score[first].firsts += 1;
+    score[second].points += SECOND_POINTS;
+    score[second].seconds += 1;
+    score[third].points += THIRD_POINTS;
+    score[third].thirds += 1;
   }
   const ranked = poll.options.map((option) => ({
     ...option,
     points: score[option.id].points,
     firsts: score[option.id].firsts,
     seconds: score[option.id].seconds,
+    thirds: score[option.id].thirds,
     votes: score[option.id].points,
   }));
   ranked.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.firsts !== a.firsts) return b.firsts - a.firsts;
     if (b.seconds !== a.seconds) return b.seconds - a.seconds;
+    if (b.thirds !== a.thirds) return b.thirds - a.thirds;
     return a.label.localeCompare(b.label);
   });
   ranked.forEach((row, index) => {
@@ -352,7 +362,8 @@ function tallyVotes(poll, votes) {
       prev &&
       prev.points === row.points &&
       prev.firsts === row.firsts &&
-      prev.seconds === row.seconds;
+      prev.seconds === row.seconds &&
+      prev.thirds === row.thirds;
     row.place = tied ? prev.place : index + 1;
   });
   return { ranked, totalBallots };
@@ -372,6 +383,8 @@ function publicPollShape(poll, votes, yours, { reveal } = {}) {
   const { ranked, totalBallots } = tallyVotes(poll, votes);
   const firstId = yours?.firstId || null;
   const secondId = yours?.secondId || null;
+  const thirdId = yours?.thirdId || null;
+  const teamId = yours?.teamId || null;
   return {
     id: poll.id,
     slug: poll.slug,
@@ -390,6 +403,7 @@ function publicPollShape(poll, votes, yours, { reveal } = {}) {
       points: ranked[index].points,
       firsts: ranked[index].firsts,
       seconds: ranked[index].seconds,
+      thirds: ranked[index].thirds,
       votes: ranked[index].points,
       place: ranked[index].place,
     })) : [],
@@ -398,6 +412,8 @@ function publicPollShape(poll, votes, yours, { reveal } = {}) {
     yourOptionId: firstId,
     yourFirstId: firstId,
     yourSecondId: secondId,
+    yourThirdId: thirdId,
+    yourTeamId: teamId,
   };
 }
 
@@ -517,6 +533,8 @@ async function loadSheetPollsAndVotes(sheets) {
       fullName: cell(row, voteHeader, "fullName"),
       optionId,
       secondOptionId: cell(row, voteHeader, "secondOptionId"),
+      thirdOptionId: cell(row, voteHeader, "thirdOptionId"),
+      teamOptionId: cell(row, voteHeader, "teamOptionId"),
       createdAt: cell(row, voteHeader, "createdAt"),
       updatedAt: cell(row, voteHeader, "updatedAt"),
       rowNumber: i + 1,
@@ -596,7 +614,7 @@ async function persistVote(vote) {
   if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
   const spreadsheetId = sheetsId();
   await ensureTab(sheets, SHEET_NAMES.POLL_VOTES, POLL_VOTES_HEADERS);
-  const lastCol = String.fromCharCode(64 + POLL_VOTES_HEADERS.length);
+  const lastCol = getSheetColumnLetter(POLL_VOTES_HEADERS.length - 1);
   await sheets.spreadsheets.values.append({
     spreadsheetId,
     range: `'${SHEET_NAMES.POLL_VOTES}'!A:${lastCol}`,
@@ -612,6 +630,8 @@ async function persistVote(vote) {
         vote.createdAt,
         vote.updatedAt,
         vote.secondOptionId || "",
+        vote.thirdOptionId || "",
+        vote.teamOptionId || "",
       ]],
     },
   });
@@ -696,6 +716,8 @@ function ballotFor(poll, votes, voterKey) {
   return {
     firstId: latest.optionId || null,
     secondId: latest.secondOptionId || null,
+    thirdId: latest.thirdOptionId || null,
+    teamId: latest.teamOptionId || null,
   };
 }
 
@@ -819,7 +841,7 @@ async function updatePoll(session, body) {
      * poll so the room isn’t split across two QR codes by accident.
      */
     if (next === "live" && poll.options.length < MIN_LIVE_OPTIONS) {
-      throw new Error("Add at least two projects before voting opens.");
+      throw new Error("Add at least four projects before voting opens.");
     }
     if (next === "live" && body.closeOtherLive) {
       for (const other of polls) {
@@ -843,7 +865,7 @@ async function updatePoll(session, body) {
   return adminPollShape(poll, freshVotes);
 }
 
-async function castVote({ slug, optionId, secondOptionId, voterKeyRaw }, req) {
+async function castVote({ slug, optionId, secondOptionId, thirdOptionId, teamOptionId, voterKeyRaw }, req) {
   const flood = rateLimit(`poll-vote:${clientIp(req)}`, {
     limit: 240,
     windowMs: 15 * 60 * 1000,
@@ -871,13 +893,16 @@ async function castVote({ slug, optionId, secondOptionId, voterKeyRaw }, req) {
     err.statusCode = 400;
     throw err;
   }
+  const team = poll.options.find((option) => option.id === String(teamOptionId || "").trim());
+  if (!team) throw new Error("Select your team.");
   const first = poll.options.find((option) => option.id === String(optionId || "").trim());
-  if (!first) throw new Error("Pick a favorite from the list.");
-  const second = poll.options.find(
-    (option) => option.id === String(secondOptionId || "").trim(),
-  );
-  if (!second) throw new Error("Pick a runner-up as well. That one gets 1 point.");
-  if (second.id === first.id) throw new Error("Favorite and runner-up need to be different projects.");
+  const second = poll.options.find((option) => option.id === String(secondOptionId || "").trim());
+  const third = poll.options.find((option) => option.id === String(thirdOptionId || "").trim());
+  if (!first || !second || !third) throw new Error("Give 3, 2, and 1 points to three other teams.");
+  const picks = new Set([first.id, second.id, third.id]);
+  if (picks.size !== 3 || picks.has(team.id)) {
+    throw new Error("You can't vote for your own team.");
+  }
 
   const rawKey = String(voterKeyRaw || "").trim();
   if (!rawKey || rawKey.length < 8) {
@@ -895,6 +920,8 @@ async function castVote({ slug, optionId, secondOptionId, voterKeyRaw }, req) {
     fullName: "",
     optionId: first.id,
     secondOptionId: second.id,
+    thirdOptionId: third.id,
+    teamOptionId: team.id,
     createdAt: previous?.createdAt || now,
     updatedAt: now,
   };
@@ -903,7 +930,7 @@ async function castVote({ slug, optionId, secondOptionId, voterKeyRaw }, req) {
   return publicPollShape(
     poll,
     nextVotes,
-    { firstId: first.id, secondId: second.id },
+    { firstId: first.id, secondId: second.id, thirdId: third.id, teamId: team.id },
     { reveal: false },
   );
 }
