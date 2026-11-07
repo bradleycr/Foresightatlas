@@ -206,13 +206,15 @@ export function PollsPage({
   const handleReset = async (poll: PollAdmin) => {
     if (!identity?.token) return;
     const ok = window.confirm(
-      "Clear every project and stop voting? The add link stays. Go live again when the real slate is in.",
+      poll.status === "closed"
+        ? "Pull this out of the archive? Projects and votes clear. The add link stays the same — go live again when the real slate is in."
+        : "Clear every project and stop voting? The add link stays. Go live again when the real slate is in.",
     );
     if (!ok) return;
     try {
       await updatePoll(identity.token, { slug: poll.slug, reset: true });
       await load();
-      toast.success("Slate cleared.");
+      toast.success("Back as a draft — slate cleared.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not reset this poll.");
     }
@@ -509,8 +511,12 @@ export function PollsPage({
           title="Archive"
           empty="Closed polls from past events will collect here."
           polls={closed}
-          canManage={false}
+          canManage={canManage}
           showResults
+          onAddPage={(p) => onNavigate(`/polls/${p.slug}/add`)}
+          onVote={(p) => onNavigate(`/polls/${p.slug}`)}
+          onLiveDisplay={(p) => onNavigate(`/polls/${p.slug}/live`)}
+          onReset={(p) => void handleReset(p)}
         />
       </div>
 
@@ -920,9 +926,9 @@ function PollSection({
                       Go live
                     </Button>
                   ) : null}
-                  {canManage && onReset && poll.status !== "closed" ? (
+                  {canManage && onReset ? (
                     <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => onReset(poll)}>
-                      Reset
+                      {poll.status === "closed" ? "Reset to draft" : "Reset"}
                     </Button>
                   ) : null}
                   {canManage && onFinalMinute && poll.status === "live" ? (

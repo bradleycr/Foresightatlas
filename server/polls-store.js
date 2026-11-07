@@ -770,12 +770,7 @@ async function updatePoll(session, body) {
   const now = new Date().toISOString();
 
   if (body.reset) {
-    poll.status = "draft";
-    poll.options = [];
-    poll.closedAt = "";
-    poll.closesAt = "";
-    poll.updatedAt = now;
-    await persistPoll(poll);
+    await applyPollReset(poll, now);
     return adminPollShape(poll, votes);
   }
 
@@ -993,6 +988,34 @@ async function addProject(body, req) {
 }
 
 /**
+ * Reopen as a blank draft. Slug (add/vote/QR URLs) stays. poll.id rotates so
+ * earlier ballots — keyed by the old id — do not tally on the next slate.
+ */
+async function applyPollReset(poll, now = new Date().toISOString()) {
+  poll.id = `poll-${poll.slug}-${Date.now().toString(36)}`;
+  poll.status = "draft";
+  poll.options = [];
+  poll.closedAt = "";
+  poll.closesAt = "";
+  poll.updatedAt = now;
+  await persistPoll(poll);
+  return poll;
+}
+
+/** Script / ops helper — same wipe as the admin Reset button, no session. */
+async function resetPollBySlug(slug) {
+  const { polls } = await loadAll();
+  const poll = findPoll(polls, slug);
+  if (!poll) {
+    const err = new Error(`No poll named ${slug}.`);
+    err.statusCode = 404;
+    throw err;
+  }
+  await applyPollReset(poll);
+  return { slug: poll.slug, id: poll.id, status: poll.status };
+}
+
+/**
  * Idempotent room polls for a known event. A second run leaves the row alone
  * so a host's later edits are not overwritten.
  */
@@ -1080,4 +1103,5 @@ module.exports = {
   ensureEventPoll,
   refreshBestProjectDraft,
   installPreviewSlate,
+  resetPollBySlug,
 };
