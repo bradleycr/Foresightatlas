@@ -16,7 +16,14 @@ import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollProjectSubmit } from "../components/polls/PollProjectSubmit";
 import { themeForEvent } from "../components/polls/pollEventTheme";
-import { addProjectToPoll, fetchPublicPoll, getStoredTeam, setStoredTeam, voteOnPoll } from "../services/polls";
+import {
+  addProjectToPoll,
+  clearStoredTeam,
+  fetchPublicPoll,
+  getStoredTeam,
+  setStoredTeam,
+  voteOnPoll,
+} from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import type { Identity } from "../services/identity";
 import type { PollPublic } from "../types/polls";
@@ -34,7 +41,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [teamId, setTeamId] = useState<string | null>(() => getStoredTeam(slug));
+  const [teamId, setTeamId] = useState<string | null>(null);
   const [firstId, setFirstId] = useState<string | null>(null);
   const [secondId, setSecondId] = useState<string | null>(null);
   const [thirdId, setThirdId] = useState<string | null>(null);
@@ -65,29 +72,38 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
     const unsub = subscribeToDataChanges((msg) => {
       if (msg.scope === "polls" || msg.scope === "all") void load();
     });
+    /* Draft phones need to notice Go live quickly; live can breathe. */
+    const ms = poll?.status === "draft" ? 3000 : 10000;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load();
-    }, 10000);
+    }, ms);
     return () => {
       unsub();
       window.clearInterval(timer);
     };
-  }, [load]);
+  }, [load, poll?.status]);
 
   useEffect(() => {
-    if (!poll || dirty) return;
-    const teamKnown = Boolean(
-      poll.yourTeamId && poll.options.some((option) => option.id === poll.yourTeamId),
-    );
-    if (!teamKnown) {
-      setFirstId(null);
-      setSecondId(null);
-      setThirdId(null);
-      return;
-    }
-    setTeamId(poll.yourTeamId);
-    setStoredTeam(slug, poll.yourTeamId || "");
+    if (!poll) return;
+    const stored = getStoredTeam(slug, poll.id);
+    const fromBallot =
+      poll.yourTeamId && poll.options.some((option) => option.id === poll.yourTeamId)
+        ? poll.yourTeamId
+        : null;
+    const resolved =
+      fromBallot ||
+      (stored && poll.options.some((option) => option.id === stored) ? stored : null);
+
+    setTeamId((prev) => {
+      if (resolved) return resolved;
+      if (prev && poll.options.some((option) => option.id === prev)) return prev;
+      return null;
+    });
+    if (resolved) setStoredTeam(slug, resolved, poll.id);
+    else if (stored) clearStoredTeam(slug);
+
+    if (dirty || !fromBallot) return;
     setFirstId(poll.yourFirstId);
     setSecondId(poll.yourSecondId);
     setThirdId(poll.yourThirdId);
@@ -104,7 +120,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
           .reverse()
           .find((option) => option.label.trim().toLowerCase() === labelKey) || null;
       if (mine) {
-        setStoredTeam(slug, mine.id);
+        setStoredTeam(slug, mine.id, next.id);
         setTeamId(mine.id);
         setJustAdded(true);
       }
@@ -133,18 +149,28 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
   };
 
   const chooseTeam = (id: string) => {
-    setStoredTeam(slug, id);
+    setStoredTeam(slug, id, poll?.id);
     setTeamId(id);
     setDirty(true);
+    setEditing(false);
+    setFirstId((prev) => (prev === id ? null : prev));
+    setSecondId((prev) => (prev === id ? null : prev));
+    setThirdId((prev) => (prev === id ? null : prev));
     if (!poll?.yourTeamId) {
       setFirstId(null);
       setSecondId(null);
       setThirdId(null);
-      return;
     }
-    if (firstId === id) setFirstId(null);
-    if (secondId === id) setSecondId(null);
-    if (thirdId === id) setThirdId(null);
+  };
+
+  const changeTeam = () => {
+    clearStoredTeam(slug);
+    setTeamId(null);
+    setFirstId(null);
+    setSecondId(null);
+    setThirdId(null);
+    setDirty(true);
+    setEditing(false);
   };
 
   const theme = themeForEvent(poll?.eventTitle);
@@ -181,7 +207,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
             <img src={foresightIconUrl} alt="Foresight Institute" className="size-6 sm:size-8" />
           </a>
           <div className="min-w-0 sm:text-center">
-            <p className={`text-sm font-semibold leading-snug sm:text-base ${theme.kickerClass}`}>
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${theme.kickerClass}`}>
               {theme.kicker}
             </p>
             {theme.detail ? (
@@ -272,8 +298,12 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
                     ["1 point", poll.yourThirdId],
                   ].map(([label, id]) => (
                     <li key={label} className="rounded-2xl bg-[#fbf6ea] px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
-                      <p className="mt-1 font-medium">{poll.options.find((option) => option.id === id)?.label}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                        {label}
+                      </p>
+                      <p className="mt-1 font-medium">
+                        {poll.options.find((option) => option.id === id)?.label}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -296,10 +326,21 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
                   <PollTeamGate options={poll.options} onConfirm={chooseTeam} />
                 ) : (
                   <>
-                    <p className="mt-3 truncate text-sm">
-                      <span className="text-neutral-500">Your team </span>
-                      <span className="font-medium">{poll.options.find((option) => option.id === teamId)?.label}</span>
-                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <p className="min-w-0 truncate text-sm">
+                        <span className="text-neutral-500">Your team </span>
+                        <span className="font-medium">
+                          {poll.options.find((option) => option.id === teamId)?.label}
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 text-xs font-medium text-neutral-500 underline-offset-2 hover:text-neutral-800 hover:underline"
+                        onClick={changeTeam}
+                      >
+                        Change
+                      </button>
+                    </div>
                     <div className="mt-3">
                       <PollBallot
                         options={poll.options}

@@ -33,9 +33,18 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
     setUrl("");
   };
 
+  const canSubmit =
+    !saving && label.trim().length >= 2 && people.trim().length >= 2 && url.trim().length >= 3;
+
   return (
     <div>
-      <div className="space-y-3">
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (canSubmit) void handleSubmit();
+        }}
+      >
         <div>
           <Label htmlFor="project-name">Project</Label>
           <Input
@@ -59,6 +68,7 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
             maxLength={160}
             autoComplete="off"
           />
+          <p className="mt-1.5 text-xs text-neutral-500">At least two names, comma-separated.</p>
         </div>
         <div>
           <Label htmlFor="project-url">GitHub repo</Label>
@@ -83,15 +93,14 @@ export function PollProjectSubmit({ options, saving, onSubmit }: PollProjectSubm
           </p>
         </div>
         <Button
-          type="button"
-          disabled={saving || label.trim().length < 2 || people.trim().length < 2 || url.trim().length < 3}
-          onClick={() => void handleSubmit()}
+          type="submit"
+          disabled={!canSubmit}
           className="min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
         >
           {saving ? <Loader2 className="size-4 animate-spin" /> : null}
           Add project
         </Button>
-      </div>
+      </form>
 
       <ul className="mt-6 space-y-3">
         {options.length === 0 ? (

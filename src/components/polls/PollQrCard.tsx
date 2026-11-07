@@ -13,7 +13,6 @@ import foresightIconUrl from "../../assets/Foresight_RGB_Icon_Black.png?url";
 import { themeForEvent } from "./pollEventTheme";
 import { getPollVoteUrl } from "../../utils/pollUrls";
 import { Button } from "../ui/button";
-import { useIsMobile } from "../ui/use-mobile";
 import { cn } from "../ui/utils";
 
 interface PollQrCardProps {
@@ -24,8 +23,13 @@ interface PollQrCardProps {
   hint?: string;
   /** Override the encoded link. Defaults to the vote page. */
   href?: string;
-  /** Compact card for the projector corner; full for admin / print preview. */
-  size?: "poster" | "stage" | "pair";
+  /**
+   * poster — print / admin preview
+   * stage — single projector corner
+   * pair — tall projector side banners
+   * thumb — quiet mobile footer (live page only)
+   */
+  size?: "poster" | "stage" | "pair" | "thumb";
   className?: string;
   showActions?: boolean;
 }
@@ -42,13 +46,11 @@ export function PollQrCard({
 }: PollQrCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const isMobile = useIsMobile();
   const voteUrl = href || getPollVoteUrl(slug);
   const theme = themeForEvent(eventTitle);
-  /* Pair codes sit two-across on a phone; keep them scannable but not huge. */
   const qrSize =
-    size === "poster" ? 280 : size === "pair" ? (isMobile ? 128 : 232) : 196;
-  const logo = Math.round(qrSize * 0.18);
+    size === "poster" ? 280 : size === "pair" ? 232 : size === "thumb" ? 72 : 196;
+  const logo = size === "thumb" ? 0 : Math.round(qrSize * 0.18);
 
   const handleCopy = async () => {
     try {
@@ -156,6 +158,30 @@ export function PollQrCard({
     printWindow.print();
   };
 
+  if (size === "thumb") {
+    return (
+      <div className={cn("flex flex-col items-center gap-1.5", className)}>
+        <div
+          data-poll-qr
+          className="rounded-lg border border-black/10 bg-white p-1.5 shadow-sm"
+        >
+          <QRCodeSVG
+            value={voteUrl}
+            size={qrSize}
+            level="M"
+            includeMargin={false}
+            bgColor="#ffffff"
+            fgColor="#0f172a"
+            className="block"
+          />
+        </div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+          {hint}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex flex-col items-center", className)}>
       <div
@@ -166,7 +192,7 @@ export function PollQrCard({
         )}
       >
         {size === "pair" ? (
-          <p className="font-heading text-sm font-bold tracking-tight text-gray-900 sm:text-2xl">
+          <p className="font-heading text-2xl font-bold tracking-tight text-gray-900">
             {hint}
           </p>
         ) : (
@@ -192,7 +218,7 @@ export function PollQrCard({
         <div
           data-poll-qr
           className={cn(
-            "mx-auto mt-3 w-fit rounded-xl border border-gray-100 bg-white p-2 sm:mt-4 sm:rounded-2xl sm:p-3",
+            "mx-auto mt-4 w-fit rounded-2xl border border-gray-100 bg-white p-3",
             size === "poster" && "mt-5 p-4",
           )}
         >

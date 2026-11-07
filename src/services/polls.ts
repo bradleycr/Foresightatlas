@@ -16,20 +16,52 @@ function teamStorageKey(slug: string) {
   return `foresightatlas_poll_team_${slug}`;
 }
 
-export function getStoredTeam(slug: string): string | null {
+/**
+ * Team choice is bound to poll.id. After a Reset the slug stays but the id
+ * rotates — a bare option id like "1" would otherwise latch onto the wrong
+ * project on the next slate.
+ */
+export function getStoredTeam(slug: string, pollId?: string | null): string | null {
   try {
     const value = localStorage.getItem(teamStorageKey(slug));
-    return value && value.length > 0 ? value : null;
+    if (!value) return null;
+    try {
+      const parsed = JSON.parse(value) as { pollId?: string; optionId?: string };
+      if (parsed && typeof parsed === "object" && parsed.optionId) {
+        if (pollId && parsed.pollId && parsed.pollId !== pollId) return null;
+        return parsed.optionId;
+      }
+    } catch {
+      /* legacy plain option id — only trust it when we have no poll id yet */
+    }
+    if (pollId) return null;
+    return value.length > 0 ? value : null;
   } catch {
     return null;
   }
 }
 
-export function setStoredTeam(slug: string, optionId: string) {
+export function setStoredTeam(slug: string, optionId: string, pollId?: string | null) {
   try {
+    if (!optionId) {
+      localStorage.removeItem(teamStorageKey(slug));
+      return;
+    }
+    if (pollId) {
+      localStorage.setItem(teamStorageKey(slug), JSON.stringify({ pollId, optionId }));
+      return;
+    }
     localStorage.setItem(teamStorageKey(slug), optionId);
   } catch {
     /* private mode still votes for this page load */
+  }
+}
+
+export function clearStoredTeam(slug: string) {
+  try {
+    localStorage.removeItem(teamStorageKey(slug));
+  } catch {
+    /* ignore */
   }
 }
 

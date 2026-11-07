@@ -114,7 +114,14 @@ function cleanPeople(raw) {
   if (people.length > MAX_PEOPLE) {
     throw new Error(`Keep the names under ${MAX_PEOPLE} characters.`);
   }
-  return people;
+  const parts = people
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 2) {
+    throw new Error("Add at least two names, separated by commas.");
+  }
+  return parts.join(", ");
 }
 
 /**
@@ -128,12 +135,16 @@ function cleanPeople(raw) {
 function cleanGithubRepo(raw) {
   let value = String(raw || "")
     .trim()
-    .replace(/^<|>$/g, "")
+    .replace(/^[\s"'`“”‘’<]+|[\s"'`“”‘’>]+$/g, "")
     .replace(/\s+/g, "");
   if (!value) throw new Error("Add the GitHub repo.");
 
   /* Paste from chat sometimes includes the @ of an @mention. */
   value = value.replace(/^@/, "");
+
+  /* git@github.com:org/repo(.git) → https */
+  const ssh = value.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i);
+  if (ssh) value = `https://github.com/${ssh[1]}/${ssh[2]}`;
 
   if (!/^https?:\/\//i.test(value)) {
     if (/^(www\.)?github\.com\//i.test(value)) {
@@ -955,6 +966,9 @@ async function castVote({ slug, optionId, secondOptionId, thirdOptionId, teamOpt
  * A pitcher adds their own project while the poll is still a draft.
  * One phone can submit a few (a team, a typo). The room shares Wi-Fi,
  * so the address cap stays high enough for a full lab.
+ *
+ * Sheet writes are last-write-wins on the whole options cell — if two phones
+ * add at once, re-read and retry so nobody's project silently disappears.
  */
 async function addProject(body, req) {
   const ip = clientIp(req);
@@ -980,32 +994,52 @@ async function addProject(body, req) {
     }
   }
 
-  const { polls, votes } = await loadAll();
-  const poll = findPoll(polls, body.slug || body.id);
-  if (!poll) {
-    const err = new Error("Poll not found.");
-    err.statusCode = 404;
-    throw err;
-  }
-  await settleDuePolls([poll]);
-  if (poll.status === "closed") {
-    const err = new Error("This poll is closed.");
-    err.statusCode = 400;
-    throw err;
-  }
   const people = cleanPeople(body.people);
   if (people.length < 2) {
     throw new Error("Add the names, separated by commas.");
   }
-  poll.options = appendProject(poll.options, {
-    label: body.label || body.name,
-    people,
-    url: cleanGithubRepo(body.url),
-  });
-  poll.updatedAt = new Date().toISOString();
-  await persistPoll(poll);
+  const label = String(body.label || body.name || "").trim();
+  const url = cleanGithubRepo(body.url);
+  const labelKey = label.toLowerCase();
   const voterKey = rawKey.length >= 8 ? hashVoterKey(rawKey) : "";
-  return publicPollShape(poll, votes, ballotFor(poll, votes, voterKey), { reveal: false });
+  const slugOrId = body.slug || body.id;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    dropPollCache();
+    const { polls, votes } = await loadAll();
+    const poll = findPoll(polls, slugOrId);
+    if (!poll) {
+      const err = new Error("Poll not found.");
+      err.statusCode = 404;
+      throw err;
+    }
+    await settleDuePolls([poll]);
+    if (poll.status === "closed") {
+      const err = new Error("This poll is closed.");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (poll.options.some((option) => String(option.label || "").trim().toLowerCase() === labelKey)) {
+      return publicPollShape(poll, votes, ballotFor(poll, votes, voterKey), { reveal: false });
+    }
+    poll.options = appendProject(poll.options, { label, people, url });
+    poll.updatedAt = new Date().toISOString();
+    await persistPoll(poll);
+    dropPollCache();
+    const { polls: checkPolls, votes: checkVotes } = await loadAll();
+    const verified = findPoll(checkPolls, slugOrId);
+    if (
+      verified &&
+      verified.options.some((option) => String(option.label || "").trim().toLowerCase() === labelKey)
+    ) {
+      return publicPollShape(verified, checkVotes, ballotFor(verified, checkVotes, voterKey), {
+        reveal: false,
+      });
+    }
+  }
+  const err = new Error("The slate is busy — tap Add project once more.");
+  err.statusCode = 503;
+  throw err;
 }
 
 /**

@@ -170,23 +170,44 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             )}
           </div>
           {poll.status === "closed" ? null : (
-            <div className="grid shrink-0 grid-cols-2 gap-3 lg:flex lg:min-h-0 lg:flex-col lg:justify-center lg:gap-4">
-              <PollQrCard
-                slug={poll.slug}
-                question={poll.question}
-                eventTitle={poll.eventTitle}
-                hint="Vote"
-                size="pair"
-              />
-              <PollQrCard
-                slug={poll.slug}
-                question="Add your project"
-                eventTitle={poll.eventTitle}
-                href={getPollAddUrl(poll.slug)}
-                hint="Add project"
-                size="pair"
-              />
-            </div>
+            <>
+              {/* Phone: quiet footer codes — the slate stays the main view. */}
+              <div className="mt-1 flex shrink-0 items-end justify-center gap-6 border-t border-black/5 pt-3 lg:hidden">
+                <PollQrCard
+                  slug={poll.slug}
+                  question={poll.question}
+                  eventTitle={poll.eventTitle}
+                  hint="Vote"
+                  size="thumb"
+                />
+                <PollQrCard
+                  slug={poll.slug}
+                  question="Add your project"
+                  eventTitle={poll.eventTitle}
+                  href={getPollAddUrl(poll.slug)}
+                  hint="Add"
+                  size="thumb"
+                />
+              </div>
+              {/* Projector: full side banners. */}
+              <div className="hidden min-h-0 flex-col justify-center gap-4 lg:flex">
+                <PollQrCard
+                  slug={poll.slug}
+                  question={poll.question}
+                  eventTitle={poll.eventTitle}
+                  hint="Vote"
+                  size="pair"
+                />
+                <PollQrCard
+                  slug={poll.slug}
+                  question="Add your project"
+                  eventTitle={poll.eventTitle}
+                  href={getPollAddUrl(poll.slug)}
+                  hint="Add project"
+                  size="pair"
+                />
+              </div>
+            </>
           )}
         </div>
       ) : null}
