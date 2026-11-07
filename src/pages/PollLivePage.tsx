@@ -53,6 +53,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
   const theme = themeForEvent(poll?.eventTitle);
   const rows = poll ? (poll.results.length > 0 ? poll.results : poll.options) : [];
   const nameSize = `clamp(1rem, ${Math.min(3.4, 26 / Math.max(rows.length, 1))}vh, 2.4rem)`;
+  const waiting = poll?.status === "draft";
 
   return (
     <div
@@ -73,6 +74,16 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             </p>
           </div>
         </div>
+        {poll && waiting ? (
+          <p className={`shrink-0 text-right leading-none ${theme.inkClass}`}>
+            <span className="font-heading text-3xl font-bold tabular-nums sm:text-5xl xl:text-6xl">
+              {poll.options.length}
+            </span>
+            <span className={`mt-1 block text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-sm ${theme.mutedClass}`}>
+              {poll.options.length === 1 ? "project" : "projects"} on the slate
+            </span>
+          </p>
+        ) : null}
         {poll && poll.status !== "draft" ? (
           <p className={`shrink-0 text-right leading-none ${theme.inkClass}`}>
             <span className="font-heading text-3xl font-bold tabular-nums sm:text-5xl xl:text-6xl">
@@ -99,7 +110,94 @@ export function PollLivePage({ slug }: PollLivePageProps) {
         </div>
       ) : null}
 
-      {poll ? (
+      {poll && waiting ? (
+        <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch lg:gap-8 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-10">
+          <div
+            className={`flex min-h-0 flex-col rounded-[1.35rem] border px-4 py-5 sm:rounded-[1.75rem] sm:px-8 sm:py-7 xl:px-10 xl:py-9 ${theme.ticketClass}`}
+          >
+            <div className="shrink-0 text-center sm:text-left">
+              <p className="inline-flex items-center gap-2 rounded-full border border-[#e7d3bc] bg-[#fbf6ea] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9a4b2f]">
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#9a4b2f]/40" />
+                  <span className="relative inline-flex size-2 rounded-full bg-[#9a4b2f]" />
+                </span>
+                Waiting room
+              </p>
+              <h1 className="font-heading mt-4 text-3xl font-bold leading-tight text-inherit sm:text-5xl xl:text-6xl">
+                Voting hasn’t started yet
+              </h1>
+              <p className={`mt-3 max-w-2xl text-base leading-relaxed sm:text-xl ${theme.mutedClass}`}>
+                Projects are still joining the slate. Scan <span className="font-semibold">Add project</span>{" "}
+                if yours isn’t here. Voting opens when the host says go — stay on this screen.
+              </p>
+            </div>
+            {rows.length === 0 ? (
+              <p className={`mt-10 text-center text-lg sm:text-2xl ${theme.mutedClass}`}>
+                First projects will appear here as teams add them.
+              </p>
+            ) : (
+              <ol className="mt-6 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto sm:mt-8 lg:justify-center lg:overflow-hidden">
+                {rows.map((option, index) => (
+                  <li
+                    key={option.id}
+                    className="flex items-baseline gap-3 border-b border-black/5 py-[0.55em] last:border-b-0 sm:gap-5"
+                  >
+                    <span
+                      className="w-8 shrink-0 tabular-nums text-neutral-400 sm:w-10"
+                      style={{ fontSize: `calc(${nameSize} * 0.55)` }}
+                    >
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold leading-tight" style={{ fontSize: nameSize }}>
+                        {option.label}
+                      </p>
+                      {option.people ? (
+                        <p
+                          className="mt-0.5 text-neutral-600"
+                          style={{ fontSize: `calc(${nameSize} * 0.48)` }}
+                        >
+                          {option.people}
+                        </p>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+          <div className="mt-1 flex shrink-0 flex-col items-center justify-center gap-3 border-t border-black/5 pt-3 lg:mt-0 lg:border-t-0 lg:pt-0">
+            <p className={`text-center text-xs font-semibold uppercase tracking-[0.16em] lg:mb-1 ${theme.mutedClass}`}>
+              Add your project
+            </p>
+            <div className="lg:hidden">
+              <PollQrCard
+                slug={poll.slug}
+                question="Add your project"
+                eventTitle={poll.eventTitle}
+                href={getPollAddUrl(poll.slug)}
+                hint="Add"
+                size="thumb"
+              />
+            </div>
+            <div className="hidden w-full lg:block">
+              <PollQrCard
+                slug={poll.slug}
+                question="Add your project"
+                eventTitle={poll.eventTitle}
+                href={getPollAddUrl(poll.slug)}
+                hint="Add project"
+                size="pair"
+              />
+            </div>
+            <p className={`max-w-[16rem] text-center text-sm leading-snug ${theme.mutedClass}`}>
+              Vote QR appears when voting opens.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {poll && !waiting ? (
         <div
           className={
             poll.status === "closed"
@@ -171,7 +269,6 @@ export function PollLivePage({ slug }: PollLivePageProps) {
           </div>
           {poll.status === "closed" ? null : (
             <>
-              {/* Phone: quiet footer codes — the slate stays the main view. */}
               <div className="mt-1 flex shrink-0 items-end justify-center gap-6 border-t border-black/5 pt-3 lg:hidden">
                 <PollQrCard
                   slug={poll.slug}
@@ -189,7 +286,6 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                   size="thumb"
                 />
               </div>
-              {/* Projector: full side banners. */}
               <div className="hidden min-h-0 flex-col justify-center gap-4 lg:flex">
                 <PollQrCard
                   slug={poll.slug}
