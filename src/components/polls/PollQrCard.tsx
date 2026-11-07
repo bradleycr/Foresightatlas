@@ -161,13 +161,13 @@ export function PollQrCard({
 
   if (size === "solo") {
     return (
-      <div className={cn("flex w-full min-w-0 justify-center", className)}>
+      <div className={cn("flex h-full w-full min-w-0", className)}>
         <div
           ref={cardRef}
-          className="w-full rounded-[1.75rem] border border-black/10 bg-white px-5 py-5 text-center shadow-sm"
+          className="flex h-full w-full flex-col items-center justify-center rounded-[1.75rem] border border-black/10 bg-white px-6 py-8 text-center shadow-sm"
         >
-          <p className="font-heading text-2xl font-bold tracking-tight text-gray-900">{hint}</p>
-          <div data-poll-qr className="mx-auto mt-4 w-full">
+          <p className="font-heading text-3xl font-bold tracking-tight text-gray-900">{hint}</p>
+          <div data-poll-qr className="mx-auto mt-6 w-full max-w-[20rem]">
             <QRCodeSVG
               value={voteUrl}
               size={480}

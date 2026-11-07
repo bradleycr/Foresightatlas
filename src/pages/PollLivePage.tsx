@@ -91,7 +91,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
 
   return (
     <div
-      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-8 sm:py-5 xl:px-12 xl:py-6"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-8 sm:py-5 xl:px-12 xl:pt-6 xl:pb-10"
       style={{ background: theme.pageBackground }}
     >
       <header className="flex shrink-0 items-center justify-between gap-3 sm:gap-6">
@@ -229,7 +229,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
           }
         >
           <div
-            className={`flex h-full min-h-0 min-w-0 flex-col rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-8 sm:py-6 xl:px-10 xl:py-8 ${theme.ticketClass}`}
+            className={`flex h-full min-h-0 min-w-0 flex-col rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-8 sm:py-6 xl:px-10 xl:pt-8 xl:pb-12 ${theme.ticketClass}`}
           >
             <h1 className="shrink-0 font-heading text-2xl font-bold leading-tight text-inherit sm:text-4xl xl:text-5xl">
               {shown.status === "closed" ? "Results" : shown.question}
@@ -250,7 +250,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                 <PollPodium results={shown.results} totalBallots={shown.totalVotes} size="stage" />
               </div>
             ) : (
-              <ol className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden">
+              <ol className="mt-4 flex min-h-0 flex-1 flex-col justify-between overflow-hidden pb-1">
                 {rows.map((option) => {
                   const points = "points" in option ? option.points : 0;
                   const leading = shown.status === "live" && points > 0 && points === leadPoints;
@@ -297,14 +297,14 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             )}
           </div>
           {shown.status === "closed" ? null : (
-            <div className="flex min-h-0 min-w-0 flex-col justify-start">
+            <div className="flex h-full min-h-0 min-w-0">
               <PollQrCard
                 slug={shown.slug}
                 question={shown.question}
                 eventTitle={shown.eventTitle}
                 hint="Vote"
                 size="solo"
-                className="w-full"
+                className="h-full w-full"
               />
             </div>
           )}
