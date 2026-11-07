@@ -18,6 +18,10 @@ export interface PollResultOption extends PollOption {
   audiencePoints?: number;
   /** Raw judge points before the 50/50 blend. */
   judgePoints?: number;
+  /** This project's slice of the room's 50. */
+  audienceShare?: number;
+  /** This project's slice of the judges' 50. */
+  judgeShare?: number;
   firsts: number;
   seconds: number;
   thirds: number;

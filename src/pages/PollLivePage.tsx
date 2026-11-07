@@ -14,8 +14,18 @@ import { PollQrCard } from "../components/polls/PollQrCard";
 import { themeForEvent } from "../components/polls/pollEventTheme";
 import { fetchPublicPoll } from "../services/polls";
 import { getPollAddUrl } from "../utils/pollUrls";
+import {
+  PREVIEW_JUDGE_BALLOTS,
+  PREVIEW_ROOM_BALLOTS,
+  previewWeightedResults,
+} from "../utils/pollWeightPreview";
 import { subscribeToDataChanges } from "../services/sync";
 import type { PollPublic } from "../types/polls";
+
+function wantsFinalPreview() {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("preview") === "final";
+}
 
 interface PollLivePageProps {
   slug: string;
@@ -50,11 +60,34 @@ export function PollLivePage({ slug }: PollLivePageProps) {
     };
   }, [load]);
 
-  const theme = themeForEvent(poll?.eventTitle);
-  const rows = poll ? (poll.results.length > 0 ? poll.results : poll.options) : [];
+  const preview = wantsFinalPreview();
+  const shown = poll
+    ? preview
+      ? {
+          ...poll,
+          status: "closed" as const,
+          results: previewWeightedResults(poll.options),
+          totalVotes: PREVIEW_ROOM_BALLOTS + PREVIEW_JUDGE_BALLOTS,
+          audienceVotes: PREVIEW_ROOM_BALLOTS,
+          judgeVotes: PREVIEW_JUDGE_BALLOTS,
+          weighted: true,
+        }
+      : poll
+    : null;
+  const theme = themeForEvent(shown?.eventTitle);
+  const scoreById = new Map((shown?.results ?? []).map((row) => [row.id, row.points]));
+  const leadPoints = Math.max(0, ...scoreById.values());
+  /* While voting, keep the talk order. Ranking waits until the poll closes. */
+  const rows = !shown
+    ? []
+    : shown.status === "live"
+      ? shown.options.map((option) => ({ ...option, points: scoreById.get(option.id) ?? 0 }))
+      : shown.results.length > 0
+        ? shown.results
+        : shown.options;
   /* Projector: every row must fit — size scales with how many projects are on the slate. */
   const nameSize = `clamp(0.8rem, ${Math.min(3.2, 38 / Math.max(rows.length, 1))}vh, 2.2rem)`;
-  const waiting = poll?.status === "draft";
+  const waiting = shown?.status === "draft";
 
   return (
     <div
@@ -75,43 +108,44 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             </p>
           </div>
         </div>
-        {poll && waiting ? (
+        {shown && waiting ? (
           <p className={`shrink-0 text-right leading-none ${theme.inkClass}`}>
             <span className="font-heading text-3xl font-bold tabular-nums sm:text-5xl xl:text-6xl">
-              {poll.options.length}
+              {shown.options.length}
             </span>
             <span className={`mt-1 block text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-sm ${theme.mutedClass}`}>
-              {poll.options.length === 1 ? "project" : "projects"} on the slate
+              {shown.options.length === 1 ? "project" : "projects"} on the slate
             </span>
           </p>
         ) : null}
-        {poll && poll.status !== "draft" ? (
+        {shown && shown.status !== "draft" ? (
           <p className={`shrink-0 text-right leading-none ${theme.inkClass}`}>
             <span className="font-heading text-3xl font-bold tabular-nums sm:text-5xl xl:text-6xl">
-              {poll.totalVotes}
+              {preview ? "50 / 50" : shown.totalVotes}
             </span>
             <span className={`mt-1 block text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-sm ${theme.mutedClass}`}>
-              {poll.totalVotes === 1 ? "vote" : "votes"}
-              {poll.status === "closed" ? " · closed" : ""}
+              {preview
+                ? "judges · room"
+                : `${shown.totalVotes === 1 ? "vote" : "votes"}${shown.status === "closed" ? " · closed" : ""}`}
             </span>
           </p>
         ) : null}
       </header>
 
-      {!poll && !error ? (
+      {!shown && !error ? (
         <div className="flex flex-1 items-center justify-center gap-3 py-16 text-base text-gray-600 sm:text-xl">
           <Loader2 className="size-5 animate-spin sm:size-6" />
           Loading
         </div>
       ) : null}
 
-      {error && !poll ? (
+      {error && !shown ? (
         <div className="flex flex-1 items-center justify-center px-2 py-16">
           <p className="max-w-lg text-center text-lg text-gray-800 sm:text-2xl">{error}</p>
         </div>
       ) : null}
 
-      {poll && waiting ? (
+      {shown && waiting ? (
         <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-stretch lg:gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
           <div
             className={`flex min-h-0 flex-col overflow-hidden rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-7 sm:py-5 xl:px-9 xl:py-6 ${theme.ticketClass}`}
@@ -171,10 +205,10 @@ export function PollLivePage({ slug }: PollLivePageProps) {
           {/* Always on stage — projector column, never pushed below the fold. */}
           <div className="flex min-h-0 shrink-0 flex-col items-center justify-center gap-2 lg:gap-3">
             <PollQrCard
-              slug={poll.slug}
+              slug={shown.slug}
               question="Add your project"
-              eventTitle={poll.eventTitle}
-              href={getPollAddUrl(poll.slug)}
+              eventTitle={shown.eventTitle}
+              href={getPollAddUrl(shown.slug)}
               hint="Add project"
               size="pair"
               className="w-full max-w-[14rem] lg:max-w-none"
@@ -186,34 +220,40 @@ export function PollLivePage({ slug }: PollLivePageProps) {
         </div>
       ) : null}
 
-      {poll && !waiting ? (
+      {shown && !waiting ? (
         <div
           className={
-            poll.status === "closed"
+            shown.status === "closed"
               ? "mt-4 flex min-h-0 flex-1 flex-col sm:mt-6"
-              : "mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch lg:gap-8 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-10"
+              : "mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-center lg:gap-8 xl:grid-cols-[minmax(0,1fr)_30rem] xl:gap-10"
           }
         >
           <div
             className={`flex min-h-0 flex-col rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-8 sm:py-6 xl:px-10 xl:py-8 ${theme.ticketClass}`}
           >
             <h1 className="shrink-0 font-heading text-2xl font-bold leading-tight text-inherit sm:text-4xl xl:text-5xl">
-              {poll.status === "closed" ? "Results" : poll.question}
+              {shown.status === "closed" ? "Results" : shown.question}
             </h1>
-            {poll.status === "live" && poll.closesAt ? (
+            {preview ? (
+              <p className="mt-2 max-w-3xl text-sm text-neutral-600 sm:text-base">
+                Sample final. Two judges together are always 50, the room is always 50 —
+                whether {PREVIEW_ROOM_BALLOTS} people vote or 200. Each line is judges’ half plus the room’s half.
+              </p>
+            ) : null}
+            {shown.status === "live" && shown.closesAt ? (
               <div className="mt-3 shrink-0 sm:mt-4">
-                <PollCountdown closesAt={poll.closesAt} onElapsed={() => void load()} size="stage" />
+                <PollCountdown closesAt={shown.closesAt} onElapsed={() => void load()} size="stage" />
               </div>
             ) : null}
-            {poll.status === "closed" ? (
-              <div className="mt-4 min-h-0 flex-1 overflow-hidden sm:mt-5">
-                <PollPodium results={poll.results} totalBallots={poll.totalVotes} size="stage" />
+            {shown.status === "closed" ? (
+              <div className="mt-4 min-h-0 flex-1 overflow-y-auto sm:mt-5">
+                <PollPodium results={shown.results} totalBallots={shown.totalVotes} size="stage" />
               </div>
             ) : (
               <ol className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden">
-                {rows.map((option, index) => {
+                {rows.map((option) => {
                   const points = "points" in option ? option.points : 0;
-                  const leading = index === 0 && points > 0 && poll.status === "live";
+                  const leading = shown.status === "live" && points > 0 && points === leadPoints;
                   return (
                     <li
                       key={option.id}
@@ -237,7 +277,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                           </p>
                         ) : null}
                       </div>
-                      {poll.status === "live" ? (
+                      {shown.status === "live" ? (
                         <p className="w-14 shrink-0 text-right leading-none sm:w-28">
                           <span
                             className="font-heading font-bold tabular-nums"
@@ -256,43 +296,25 @@ export function PollLivePage({ slug }: PollLivePageProps) {
               </ol>
             )}
           </div>
-          {poll.status === "closed" ? null : (
-            <>
-              <div className="mt-1 flex shrink-0 items-end justify-center gap-6 border-t border-black/5 pt-3 lg:hidden">
-                <PollQrCard
-                  slug={poll.slug}
-                  question={poll.question}
-                  eventTitle={poll.eventTitle}
-                  hint="Vote"
-                  size="thumb"
-                />
-                <PollQrCard
-                  slug={poll.slug}
-                  question="Add your project"
-                  eventTitle={poll.eventTitle}
-                  href={getPollAddUrl(poll.slug)}
-                  hint="Add"
-                  size="thumb"
-                />
-              </div>
-              <div className="hidden min-h-0 flex-col justify-center gap-4 lg:flex">
-                <PollQrCard
-                  slug={poll.slug}
-                  question={poll.question}
-                  eventTitle={poll.eventTitle}
-                  hint="Vote"
-                  size="pair"
-                />
-                <PollQrCard
-                  slug={poll.slug}
-                  question="Add your project"
-                  eventTitle={poll.eventTitle}
-                  href={getPollAddUrl(poll.slug)}
-                  hint="Add project"
-                  size="pair"
-                />
-              </div>
-            </>
+          {shown.status === "closed" ? null : (
+            <div className="flex min-h-0 items-center justify-center">
+              <PollQrCard
+                slug={shown.slug}
+                question={shown.question}
+                eventTitle={shown.eventTitle}
+                hint="Vote"
+                size="pair"
+                className="w-full max-w-[16rem] lg:hidden"
+              />
+              <PollQrCard
+                slug={shown.slug}
+                question={shown.question}
+                eventTitle={shown.eventTitle}
+                hint="Vote"
+                size="solo"
+                className="hidden w-full lg:flex"
+              />
+            </div>
           )}
         </div>
       ) : null}

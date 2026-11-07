@@ -45,6 +45,8 @@ const THIRD_POINTS = 1;
 /** Marker on PollVotes.fullName — room ballots leave this blank. */
 const JUDGE_MARKER = "__judge__";
 const JUDGE_SEATS = 2;
+/** teamOptionId for a phone that was not on a project. No lockout. */
+const GUEST_TEAM = "__guest__";
 
 function sheetsId() {
   return getSpreadsheetId();
@@ -402,8 +404,9 @@ function latestBallots(poll, votes) {
 function awardedIds(vote, score) {
   const judge = isJudgeVote(vote);
   const team = String(vote.teamOptionId || "");
-  if (!judge && (!team || !score[team])) return null;
-  const seen = new Set(judge ? [] : [team]);
+  const guest = team === GUEST_TEAM;
+  if (!judge && !guest && (!team || !score[team])) return null;
+  const seen = new Set(judge || guest ? [] : [team]);
   const picks = [];
   for (const id of [vote.optionId, vote.secondOptionId, vote.thirdOptionId]) {
     const key = String(id || "");
@@ -1054,6 +1057,7 @@ async function castVote(
   if (picks.size !== 3) throw new Error("Pick three different projects.");
 
   let team = null;
+  let guest = false;
   let rawKey = "";
   let personId = "";
   let fullName = "";
@@ -1062,6 +1066,10 @@ async function castVote(
     rawKey = `judge-seat:${judge.token}`;
     personId = `judge:${judge.seat}`;
     fullName = JUDGE_MARKER;
+  } else if (String(teamOptionId || "").trim() === GUEST_TEAM) {
+    guest = true;
+    rawKey = String(voterKeyRaw || "").trim();
+    if (!rawKey || rawKey.length < 8) throw new Error("A voter key is required.");
   } else {
     team = poll.options.find((option) => option.id === String(teamOptionId || "").trim());
     if (!team) throw new Error("Select your team.");
@@ -1083,7 +1091,7 @@ async function castVote(
     optionId: first.id,
     secondOptionId: second.id,
     thirdOptionId: third.id,
-    teamOptionId: team ? team.id : "",
+    teamOptionId: guest ? GUEST_TEAM : team ? team.id : "",
     createdAt: previous?.createdAt || now,
     updatedAt: now,
   };
@@ -1096,7 +1104,7 @@ async function castVote(
       firstId: first.id,
       secondId: second.id,
       thirdId: third.id,
-      teamId: team ? team.id : null,
+      teamId: guest ? GUEST_TEAM : team ? team.id : null,
     },
     { reveal: false },
   );

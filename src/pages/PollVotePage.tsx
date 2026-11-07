@@ -31,6 +31,15 @@ import type { Identity } from "../services/identity";
 import type { PollPublic } from "../types/polls";
 import { Button } from "../components/ui/button";
 
+/** Matches GUEST_TEAM in server/polls-store.js. No project is locked out. */
+const GUEST_TEAM_ID = "__guest__";
+
+function isChosenTeam(options: { id: string }[], id: string | null | undefined) {
+  if (!id) return false;
+  if (id === GUEST_TEAM_ID) return true;
+  return options.some((option) => option.id === id);
+}
+
 interface PollVotePageProps {
   slug: string;
   identity: Identity | null;
@@ -121,17 +130,12 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
       return;
     }
     const stored = getStoredTeam(slug, poll.id);
-    const fromBallot =
-      poll.yourTeamId && poll.options.some((option) => option.id === poll.yourTeamId)
-        ? poll.yourTeamId
-        : null;
-    const resolved =
-      fromBallot ||
-      (stored && poll.options.some((option) => option.id === stored) ? stored : null);
+    const fromBallot = isChosenTeam(poll.options, poll.yourTeamId) ? poll.yourTeamId : null;
+    const resolved = fromBallot || (isChosenTeam(poll.options, stored) ? stored : null);
 
     setTeamId((prev) => {
       if (resolved) return resolved;
-      if (prev && poll.options.some((option) => option.id === prev)) return prev;
+      if (isChosenTeam(poll.options, prev)) return prev;
       return null;
     });
     if (resolved) setStoredTeam(slug, resolved, poll.id);
@@ -222,7 +226,8 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
 
   const theme = themeForEvent(poll?.eventTitle);
   const isJudge = purpose === "judge";
-  const knownTeam = Boolean(teamId && poll?.options.some((option) => option.id === teamId));
+  const knownTeam = Boolean(poll && isChosenTeam(poll.options, teamId));
+  const isGuest = teamId === GUEST_TEAM_ID;
   const myProject =
     knownTeam && poll ? poll.options.find((option) => option.id === teamId) || null : null;
   const showGoVote = Boolean(
@@ -422,14 +427,16 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
                     </Button>
                   </>
                 ) : !knownTeam ? (
-                  <PollTeamGate options={poll.options} onConfirm={chooseTeam} />
+                  <PollTeamGate options={poll.options} guestId={GUEST_TEAM_ID} onConfirm={chooseTeam} />
                 ) : (
                   <>
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <p className="min-w-0 truncate text-sm">
                         <span className="text-neutral-500">Your team </span>
                         <span className="font-medium">
-                          {poll.options.find((option) => option.id === teamId)?.label}
+                          {isGuest
+                            ? "Not on a team"
+                            : poll.options.find((option) => option.id === teamId)?.label}
                         </span>
                       </p>
                       <button
@@ -443,7 +450,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
                     <div className="mt-3">
                       <PollBallot
                         options={poll.options}
-                        teamId={teamId || ""}
+                        teamId={isGuest ? "" : teamId || ""}
                         firstId={firstId}
                         secondId={secondId}
                         thirdId={thirdId}

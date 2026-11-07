@@ -60,6 +60,11 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
               {" "}
               {option.points === 1 ? "point" : "points"}
             </p>
+            {option.judgeShare != null && option.audienceShare != null ? (
+              <p className={cn("mt-1 text-neutral-500", stage ? "text-sm sm:text-base" : "text-xs")}>
+                judges {option.judgeShare} · room {option.audienceShare}
+              </p>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -79,7 +84,14 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
                   </span>
                 ) : null}
               </p>
-              <p className={cn("shrink-0 tabular-nums text-neutral-500", stage ? "text-2xl font-semibold" : "text-sm")}>{option.points}</p>
+              <p className={cn("shrink-0 text-right tabular-nums text-neutral-500", stage ? "text-2xl font-semibold" : "text-sm")}>
+                {option.points}
+                {option.judgeShare != null && option.audienceShare != null ? (
+                  <span className="mt-0.5 block text-[11px] font-medium tracking-normal text-neutral-400 sm:text-xs">
+                    judges {option.judgeShare} · room {option.audienceShare}
+                  </span>
+                ) : null}
+              </p>
             </li>
           ))}
         </ul>

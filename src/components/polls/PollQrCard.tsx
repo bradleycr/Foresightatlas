@@ -27,9 +27,10 @@ interface PollQrCardProps {
    * poster — print / admin preview
    * stage — single projector corner
    * pair — tall projector side banners
+   * solo — one vote code filling the projector column
    * thumb — quiet mobile footer (live page only)
    */
-  size?: "poster" | "stage" | "pair" | "thumb";
+  size?: "poster" | "stage" | "pair" | "solo" | "thumb";
   className?: string;
   showActions?: boolean;
 }
@@ -49,7 +50,7 @@ export function PollQrCard({
   const voteUrl = href || getPollVoteUrl(slug);
   const theme = themeForEvent(eventTitle);
   const qrSize =
-    size === "poster" ? 280 : size === "pair" ? 232 : size === "thumb" ? 72 : 196;
+    size === "poster" ? 280 : size === "solo" ? 340 : size === "pair" ? 232 : size === "thumb" ? 72 : 196;
   const logo = size === "thumb" ? 0 : Math.round(qrSize * 0.18);
 
   const handleCopy = async () => {
@@ -191,8 +192,8 @@ export function PollQrCard({
           size === "poster" ? "px-6 py-7" : "px-4 py-4",
         )}
       >
-        {size === "pair" ? (
-          <p className="font-heading text-2xl font-bold tracking-tight text-gray-900">
+        {size === "pair" || size === "solo" ? (
+          <p className={cn("font-heading font-bold tracking-tight text-gray-900", size === "solo" ? "text-3xl" : "text-2xl")}>
             {hint}
           </p>
         ) : (
@@ -238,7 +239,7 @@ export function PollQrCard({
             }}
           />
         </div>
-        {size === "pair" ? null : (
+        {size === "pair" || size === "solo" ? null : (
           <p className="mt-3 break-all text-[11px] leading-relaxed text-gray-400">
             {voteUrl.replace(/^https?:\/\//, "")}
           </p>

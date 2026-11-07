@@ -11,9 +11,11 @@ import { cn } from "../ui/utils";
 interface PollTeamGateProps {
   options: PollOption[];
   onConfirm: (id: string) => void;
+  /** Sentinel stored when this phone was not on a project. Every team stays open. */
+  guestId: string;
 }
 
-export function PollTeamGate({ options, onConfirm }: PollTeamGateProps) {
+export function PollTeamGate({ options, onConfirm, guestId }: PollTeamGateProps) {
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
@@ -52,6 +54,13 @@ export function PollTeamGate({ options, onConfirm }: PollTeamGateProps) {
       >
         This is my team
       </Button>
+      <button
+        type="button"
+        onClick={() => onConfirm(guestId)}
+        className="mt-3 min-h-[48px] w-full rounded-xl text-sm font-medium text-neutral-600 underline-offset-2 touch-manipulation hover:text-neutral-900 hover:underline"
+      >
+        I wasn’t on a team
+      </button>
     </div>
   );
 }
