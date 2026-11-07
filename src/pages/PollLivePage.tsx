@@ -75,13 +75,28 @@ export function PollLivePage({ slug }: PollLivePageProps) {
       : poll
     : null;
   const theme = themeForEvent(shown?.eventTitle);
-  const scoreById = new Map((shown?.results ?? []).map((row) => [row.id, row.points]));
-  const leadPoints = Math.max(0, ...scoreById.values());
-  /* While voting, keep the talk order. Ranking waits until the poll closes. */
+  const resultById = new Map((shown?.results ?? []).map((row) => [row.id, row]));
+  const leadPoints = Math.max(0, ...[...resultById.values()].map((row) => row.points));
+  /*
+   * While the room is still voting, keep talk order. Once the judges are in,
+   * the board ranks by the 50/50 score so the final is readable.
+   */
   const rows = !shown
     ? []
     : shown.status === "live"
-      ? shown.options.map((option) => ({ ...option, points: scoreById.get(option.id) ?? 0 }))
+      ? shown.options
+          .map((option) => {
+            const result = resultById.get(option.id);
+            return {
+              ...option,
+              points: result?.points ?? 0,
+              audiencePoints: result?.audiencePoints,
+              judgePoints: result?.judgePoints,
+            };
+          })
+          .sort((a, b) =>
+            shown.weighted ? b.points - a.points || a.label.localeCompare(b.label) : 0,
+          )
       : shown.results.length > 0
         ? shown.results
         : shown.options;
@@ -121,12 +136,12 @@ export function PollLivePage({ slug }: PollLivePageProps) {
         {shown && shown.status !== "draft" ? (
           <p className={`shrink-0 text-right leading-none ${theme.inkClass}`}>
             <span className="font-heading text-3xl font-bold tabular-nums sm:text-5xl xl:text-6xl">
-              {preview ? "50 / 50" : shown.totalVotes}
+              {shown.weighted || preview ? "50 / 50" : shown.audienceVotes ?? shown.totalVotes}
             </span>
             <span className={`mt-1 block text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-sm ${theme.mutedClass}`}>
-              {preview
+              {shown.weighted || preview
                 ? "judges · room"
-                : `${shown.totalVotes === 1 ? "vote" : "votes"}${shown.status === "closed" ? " · closed" : ""}`}
+                : `${(shown.audienceVotes ?? shown.totalVotes) === 1 ? "phone" : "phones"}`}
             </span>
           </p>
         ) : null}
