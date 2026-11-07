@@ -164,7 +164,7 @@ export function PollQrCard({
       <div className={cn("flex w-full min-w-0 justify-center", className)}>
         <div
           ref={cardRef}
-          className="w-full max-w-[20rem] rounded-[1.75rem] border border-black/10 bg-white px-5 py-5 text-center shadow-sm"
+          className="w-full rounded-[1.75rem] border border-black/10 bg-white px-5 py-5 text-center shadow-sm"
         >
           <p className="font-heading text-2xl font-bold tracking-tight text-gray-900">{hint}</p>
           <div data-poll-qr className="mx-auto mt-4 w-full">

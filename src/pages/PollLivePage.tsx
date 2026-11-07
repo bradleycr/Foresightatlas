@@ -225,11 +225,11 @@ export function PollLivePage({ slug }: PollLivePageProps) {
           className={
             shown.status === "closed"
               ? "mt-4 flex min-h-0 flex-1 flex-col sm:mt-6"
-              : "mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]"
+              : "mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch lg:gap-8 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-10"
           }
         >
           <div
-            className={`flex min-h-0 min-w-0 flex-col rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-8 sm:py-6 xl:px-10 xl:py-8 ${theme.ticketClass}`}
+            className={`flex h-full min-h-0 min-w-0 flex-col rounded-[1.35rem] border px-4 py-4 sm:rounded-[1.75rem] sm:px-8 sm:py-6 xl:px-10 xl:py-8 ${theme.ticketClass}`}
           >
             <h1 className="shrink-0 font-heading text-2xl font-bold leading-tight text-inherit sm:text-4xl xl:text-5xl">
               {shown.status === "closed" ? "Results" : shown.question}
@@ -297,7 +297,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             )}
           </div>
           {shown.status === "closed" ? null : (
-            <div className="flex min-h-0 min-w-0 items-center justify-center">
+            <div className="flex min-h-0 min-w-0 flex-col justify-start">
               <PollQrCard
                 slug={shown.slug}
                 question={shown.question}
