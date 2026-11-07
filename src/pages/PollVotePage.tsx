@@ -172,7 +172,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
             {purpose === "vote" && poll.status === "live" ? (
               <div className="mt-4">
                 <p className="text-sm text-gray-600">
-                  Your favourite gets 2 points, your runner-up gets 1. One ballot on this phone. Scores stay hidden until voting closes.
+                  Give 2 points to your favourite and 1 point to a runner-up. One ballot on this phone.
                 </p>
                 {poll.options.length < 2 ? (
                   <p className="mt-4 text-sm text-gray-600">The slate needs at least two projects.</p>
@@ -198,11 +198,11 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
                       className="mt-4 min-h-[48px] w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
                     >
                       {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-                      {submitted ? "Update ballot" : "Cast ballot"}
+                      {submitted ? "Update your points" : "Submit your points"}
                     </Button>
                     {submitted ? (
-                      <p className="mt-3 text-center text-xs text-neutral-500">
-                        You’re in. {poll.totalVotes} ballot{poll.totalVotes === 1 ? "" : "s"} so far.
+                      <p className="mt-3 text-center text-sm text-neutral-600">
+                        One ballot on this phone. Change the points and submit again until the organiser ends voting — that replaces this ballot, it does not add another.
                       </p>
                     ) : null}
                   </>
@@ -212,7 +212,7 @@ export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
 
             {purpose === "vote" && poll.status === "closed" ? (
               <div className="mt-5">
-                <p className="mb-4 text-sm text-gray-600">Voting is closed.</p>
+                <p className="mb-4 text-sm text-gray-600">Voting has ended. Here’s who won.</p>
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} />
               </div>
             ) : null}

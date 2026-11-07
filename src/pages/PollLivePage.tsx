@@ -105,6 +105,9 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             </h1>
             {poll.status === "closed" ? (
               <div className="mt-8">
+                <p className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                  Winners
+                </p>
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} size="stage" />
               </div>
             ) : (
