@@ -45,12 +45,12 @@ interface PollsPageProps {
 
 const EMPTY_PROJECTS = ["", ""];
 const MAX_POLL_OPTIONS = 48;
-const DEFAULT_QUESTION = "Which project should win?";
+const DEFAULT_QUESTION = "Vote for your favourite project";
 
 /** Titles the vote page recognises. Anything else stays on the plain Atlas look. */
 const EVENT_LOOKS = [
   { label: "Vision Weekend USA", title: "Vision Weekend USA" },
-  { label: "Impact Lab with Claude", title: "Impact Lab with Claude" },
+  { label: "Claude Impact Lab", title: "Claude Impact Lab" },
 ] as const;
 
 /** Soft paper + ink — matches Atlas chrome, not generic sky/indigo SaaS. */
@@ -191,6 +191,21 @@ export function PollsPage({
     }
   };
 
+  const handleReset = async (poll: PollAdmin) => {
+    if (!identity?.token) return;
+    const ok = window.confirm(
+      "Clear every project and stop voting? The add link stays. Go live again when the real slate is in.",
+    );
+    if (!ok) return;
+    try {
+      await updatePoll(identity.token, { slug: poll.slug, reset: true });
+      await load();
+      toast.success("Slate cleared.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not reset this poll.");
+    }
+  };
+
   const handleGoLive = async (poll: PollAdmin) => {
     if (poll.options.length < 2) {
       toast.error("Add at least two projects before voting opens.");
@@ -293,7 +308,7 @@ export function PollsPage({
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-600">
               Best-project prize. People add their own project from the public
               page, then you go live and put the QR on the screen. Each phone
-              picks a favorite (2 points) and a runner-up (1). Scores stay
+              picks a favourite (2 points) and a runner-up (1). Scores stay
               hidden until you close it. This page is at{" "}
               <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-800">
                 /polls
@@ -354,11 +369,7 @@ export function PollsPage({
                   maxLength={200}
                 />
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {[
-                    DEFAULT_QUESTION,
-                    "Favourite project?",
-                    "Which demo should win?",
-                  ].map((preset) => (
+                  {[DEFAULT_QUESTION].map((preset) => (
                     <button
                       key={preset}
                       type="button"
@@ -459,6 +470,8 @@ export function PollsPage({
           onQr={setQrPoll}
           onLiveDisplay={(p) => onNavigate(`/polls/${p.slug}/live`)}
           onVote={(p) => onNavigate(`/polls/${p.slug}`)}
+          onAddPage={(p) => onNavigate(`/polls/${p.slug}/add`)}
+          onReset={(p) => void handleReset(p)}
           onClose={(p) => void setStatus(p, "closed")}
           onAddProject={(p) => {
             setAddProjectFor(p);
@@ -471,7 +484,9 @@ export function PollsPage({
           polls={drafts}
           canManage={canManage}
           onVote={(p) => onNavigate(`/polls/${p.slug}`)}
+          onAddPage={(p) => onNavigate(`/polls/${p.slug}/add`)}
           onLiveDisplay={(p) => onNavigate(`/polls/${p.slug}/live`)}
+          onReset={(p) => void handleReset(p)}
           onGoLive={(p) => void handleGoLive(p)}
           onEdit={openEdit}
           onRemove={(poll, optionId) => void handleRemove(poll, optionId)}
@@ -762,11 +777,13 @@ function PollSection({
   onQr,
   onLiveDisplay,
   onVote,
+  onAddPage,
   onGoLive,
   onClose,
   onEdit,
   onAddProject,
   onRemove,
+  onReset,
 }: {
   title: string;
   empty: string;
@@ -776,11 +793,13 @@ function PollSection({
   onQr?: (poll: PollAdmin) => void;
   onLiveDisplay?: (poll: PollAdmin) => void;
   onVote?: (poll: PollAdmin) => void;
+  onAddPage?: (poll: PollAdmin) => void;
   onGoLive?: (poll: PollAdmin) => void;
   onClose?: (poll: PollAdmin) => void;
   onEdit?: (poll: PollAdmin) => void;
   onAddProject?: (poll: PollAdmin) => void;
   onRemove?: (poll: PollAdmin, optionId: string) => void;
+  onReset?: (poll: PollAdmin) => void;
 }) {
   return (
     <section className="mt-10">
@@ -835,9 +854,14 @@ function PollSection({
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {onAddPage ? (
+                    <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => onAddPage(poll)}>
+                      Add page
+                    </Button>
+                  ) : null}
                   {onVote ? (
                     <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => onVote(poll)}>
-                      {poll.status === "draft" ? "Preview" : "Vote view"}
+                      Vote page
                     </Button>
                   ) : null}
                   {onQr ? (
@@ -871,6 +895,11 @@ function PollSection({
                       onClick={() => onGoLive(poll)}
                     >
                       Go live
+                    </Button>
+                  ) : null}
+                  {canManage && onReset && poll.status !== "closed" ? (
+                    <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => onReset(poll)}>
+                      Reset
                     </Button>
                   ) : null}
                   {canManage && onClose ? (

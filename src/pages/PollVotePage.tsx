@@ -1,9 +1,8 @@
 /**
- * The phone that scans the QR.
+ * Two public phones for one poll.
  *
- * While the poll is a draft, this page is how pitchers add a project.
- * Once the host goes live, the same URL becomes the ballot: one favorite
- * (2 points) and one runner-up (1). Scores stay hidden until it closes.
+ * `/polls/:slug/add` is where a pitcher adds a project.
+ * `/polls/:slug` is the ballot: favorite gets 2 points, runner-up gets 1.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -24,9 +23,10 @@ import { Button } from "../components/ui/button";
 interface PollVotePageProps {
   slug: string;
   identity: Identity | null;
+  purpose: "add" | "vote";
 }
 
-export function PollVotePage({ slug, identity }: PollVotePageProps) {
+export function PollVotePage({ slug, identity, purpose }: PollVotePageProps) {
   const [poll, setPoll] = useState<PollPublic | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,22 +147,32 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
         {poll ? (
           <div className={`rounded-[1.5rem] border p-4 shadow-xl sm:rounded-[1.75rem] sm:p-7 ${theme.ticketClass}`}>
             <h1 className="font-heading text-[1.35rem] font-bold leading-snug text-inherit sm:text-2xl">
-              {poll.question}
+              {purpose === "add" ? "Add your project" : poll.question}
             </h1>
 
-            {poll.status === "draft" ? (
+            {purpose === "add" && poll.status !== "closed" ? (
               <div className="mt-4">
                 <p className="mb-4 text-sm text-gray-600">
-                  Add your project before the pitches. Voting opens when the host starts it — same page, same QR.
+                  Name it, add the people on it, and a link if there’s a demo to open.
                 </p>
                 <PollProjectSubmit options={poll.options} saving={saving} onSubmit={handleAdd} />
               </div>
             ) : null}
 
-            {poll.status === "live" ? (
+            {purpose === "add" && poll.status === "closed" ? (
+              <p className="mt-4 text-sm text-gray-600">This poll is closed.</p>
+            ) : null}
+
+            {purpose === "vote" && poll.status === "draft" ? (
+              <p className="mt-4 text-sm text-gray-600">
+                Voting opens when the host starts it.
+              </p>
+            ) : null}
+
+            {purpose === "vote" && poll.status === "live" ? (
               <div className="mt-4">
                 <p className="text-sm text-gray-600">
-                  Your favorite gets 2 points, your runner-up gets 1. One ballot on this phone. Scores stay hidden until voting closes.
+                  Your favourite gets 2 points, your runner-up gets 1. One ballot on this phone. Scores stay hidden until voting closes.
                 </p>
                 {poll.options.length < 2 ? (
                   <p className="mt-4 text-sm text-gray-600">The slate needs at least two projects.</p>
@@ -200,7 +210,7 @@ export function PollVotePage({ slug, identity }: PollVotePageProps) {
               </div>
             ) : null}
 
-            {poll.status === "closed" ? (
+            {purpose === "vote" && poll.status === "closed" ? (
               <div className="mt-5">
                 <p className="mb-4 text-sm text-gray-600">Voting is closed.</p>
                 <PollPodium results={poll.results} totalBallots={poll.totalVotes} />

@@ -693,6 +693,15 @@ async function updatePoll(session, body) {
   }
   const now = new Date().toISOString();
 
+  if (body.reset) {
+    poll.status = "draft";
+    poll.options = [];
+    poll.closedAt = "";
+    poll.updatedAt = now;
+    await persistPoll(poll);
+    return adminPollShape(poll, votes);
+  }
+
   /*
    * Live polls may only grow: append a project name without renumbering ids.
    * Full question/options replace stays draft-only so existing votes stay valid.
@@ -869,12 +878,8 @@ async function addProject(body, req) {
     err.statusCode = 404;
     throw err;
   }
-  if (poll.status !== "draft") {
-    const err = new Error(
-      poll.status === "live"
-        ? "Voting has started, so the list is locked. Ask the host if a project is missing."
-        : "This poll is closed.",
-    );
+  if (poll.status === "closed") {
+    const err = new Error("This poll is closed.");
     err.statusCode = 400;
     throw err;
   }
@@ -940,6 +945,34 @@ async function refreshBestProjectDraft({ slug, question }) {
   return { slug, updated: true };
 }
 
+/**
+ * Fill a poll with sample projects and open voting, so the vote page can be
+ * looked at before the real slate exists. Reset from /polls clears it.
+ */
+async function installPreviewSlate({ slug, eventTitle, question, projects }) {
+  const { polls } = await loadAll();
+  const poll = findPoll(polls, slug);
+  if (!poll) {
+    const err = new Error(`No poll named ${slug}.`);
+    err.statusCode = 404;
+    throw err;
+  }
+  const now = new Date().toISOString();
+  poll.eventTitle = eventTitle;
+  poll.question = normalizeQuestion(question);
+  poll.options = projects.map((project, index) => ({
+    id: String(index + 1),
+    label: String(project.label).trim(),
+    people: String(project.people || "").trim(),
+    url: project.url ? cleanUrl(project.url) : "",
+  }));
+  poll.status = "live";
+  poll.closedAt = "";
+  poll.updatedAt = now;
+  await persistPoll(poll);
+  return { slug, projects: poll.options.length, status: poll.status };
+}
+
 module.exports = {
   canManagePolls,
   listAdminPolls,
@@ -951,4 +984,5 @@ module.exports = {
   hashVoterKey,
   ensureEventPoll,
   refreshBestProjectDraft,
+  installPreviewSlate,
 };

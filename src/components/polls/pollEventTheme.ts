@@ -48,12 +48,12 @@ const VISION_WEEKEND: PollEventTheme = {
 };
 
 /**
- * Claude Impact Lab with Foresight — CIC Berlin, 7 Nov 2026.
+ * Claude Impact Lab — CIC Berlin, 7 Nov 2026.
  * A work day, not a gala: warm paper and a clay mark.
  */
 const IMPACT_LAB: PollEventTheme = {
   id: "impact-lab",
-  kicker: "Impact Lab with Claude",
+  kicker: "Claude Impact Lab",
   detail: "CIC Berlin · 7 Nov",
   pageBackground:
     "linear-gradient(165deg, #f4efe6 0%, #fffdf8 42%, #efe4d4 100%)",

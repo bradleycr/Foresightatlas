@@ -15,15 +15,15 @@ const { ensureEventPoll, refreshBestProjectDraft } = require("../server/polls-st
 const POLLS = [
   {
     slug: "impact-lab",
-    eventTitle: "Impact Lab with Claude",
-    question: "Which project should win?",
+    eventTitle: "Claude Impact Lab",
+    question: "Vote for your favourite project",
     status: "draft",
     options: [],
   },
   {
     slug: "vision-weekend",
     eventTitle: "Vision Weekend USA",
-    question: "Which project should win?",
+    question: "Vote for your favourite project",
     status: "draft",
     options: [],
   },
@@ -36,7 +36,7 @@ async function main() {
     if (!process.argv.includes("--reset")) continue;
     const refreshed = await refreshBestProjectDraft({
       slug: poll.slug,
-      question: "Which project should win?",
+      question: "Vote for your favourite project",
     });
     console.log(refreshed.updated ? `reset ${poll.slug} to an open slate` : `left ${poll.slug} (${refreshed.reason})`);
   }

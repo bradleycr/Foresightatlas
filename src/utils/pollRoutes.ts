@@ -5,6 +5,7 @@
 
 export type PollsRoute =
   | { kind: "admin" }
+  | { kind: "add"; slug: string }
   | { kind: "vote"; slug: string }
   | { kind: "live"; slug: string };
 
@@ -13,6 +14,10 @@ export function parsePollsRoute(route: string): PollsRoute | null {
   const live = route.match(/^\/polls\/([^/]+)\/live$/);
   if (live) {
     return { kind: "live", slug: decodeURIComponent(live[1]) };
+  }
+  const add = route.match(/^\/polls\/([^/]+)\/add$/);
+  if (add) {
+    return { kind: "add", slug: decodeURIComponent(add[1]) };
   }
   const vote = route.match(/^\/polls\/([^/]+)$/);
   if (vote) {
@@ -31,5 +36,5 @@ export function isPollsRoute(route: string): boolean {
 /** Vote + live display are public (QR / projector). Admin hub stays signed-in. */
 export function isPollsPublicRoute(route: string): boolean {
   const parsed = parsePollsRoute(route);
-  return parsed?.kind === "vote" || parsed?.kind === "live";
+  return parsed?.kind === "vote" || parsed?.kind === "live" || parsed?.kind === "add";
 }

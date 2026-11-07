@@ -94,6 +94,8 @@ export async function updatePoll(
     status?: "draft" | "live" | "closed";
     /** When going live, close every other live poll first. */
     closeOtherLive?: boolean;
+    /** Drop the slate and return the poll to a draft. Old ballots no longer match. */
+    reset?: boolean;
   },
 ): Promise<PollAdmin> {
   const res = await fetch(`${getApiBase()}/polls`, {

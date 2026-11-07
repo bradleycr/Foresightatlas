@@ -112,7 +112,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
                 <p className="text-sm text-neutral-600 sm:text-base">
                   {poll.status === "draft"
                     ? "Add your project from the QR. Voting opens when the host starts it."
-                    : "Scores stay hidden until voting closes. Favorite is 2 points, runner-up is 1."}
+                    : "Scores stay hidden until voting closes. A favourite is 2 points, a runner-up is 1."}
                 </p>
                 {poll.status === "draft" && poll.options.length > 0 ? (
                   <ul className="mt-6 divide-y divide-black/5">

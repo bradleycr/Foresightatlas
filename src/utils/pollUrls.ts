@@ -14,6 +14,10 @@ export function getPollVotePath(slug: string): string {
   return buildFullPath(`/polls/${encodeURIComponent(slug)}`);
 }
 
+export function getPollAddPath(slug: string): string {
+  return buildFullPath(`/polls/${encodeURIComponent(slug)}/add`);
+}
+
 export function getPollLivePath(slug: string): string {
   return buildFullPath(`/polls/${encodeURIComponent(slug)}/live`);
 }
@@ -33,6 +37,13 @@ export function getPollVoteUrl(
   origin: string = currentOrigin(),
 ): string {
   return `${origin.replace(/\/$/, "")}${getPollVotePath(slug)}`;
+}
+
+export function getPollAddUrl(
+  slug: string,
+  origin: string = currentOrigin(),
+): string {
+  return `${origin.replace(/\/$/, "")}${getPollAddPath(slug)}`;
 }
 
 export function getPollLiveUrl(

@@ -52,7 +52,7 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
               {" "}
               {option.points === 1 ? "point" : "points"}
               <span className="text-neutral-500">
-                {" "}· {option.firsts} favorite{option.firsts === 1 ? "" : "s"}
+                {" "}· {option.firsts} favourite{option.firsts === 1 ? "" : "s"}
               </span>
             </p>
           </li>
@@ -78,7 +78,7 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
       ) : null}
       <p className="mt-4 text-xs text-neutral-500">
         {totalBallots} ballot{totalBallots === 1 ? "" : "s"}
-        {" "}· a favorite is 2 points, a runner-up is 1
+        {" "}· a favourite is 2 points, a runner-up is 1
       </p>
     </div>
   );
