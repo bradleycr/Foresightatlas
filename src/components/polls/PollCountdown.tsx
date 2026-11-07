@@ -49,7 +49,7 @@ export function PollCountdown({ closesAt, onElapsed, size = "phone" }: PollCount
     <p
       className={cn(
         "font-heading font-bold tabular-nums leading-none",
-        size === "stage" && "text-6xl sm:text-7xl",
+        size === "stage" && "text-4xl sm:text-6xl md:text-7xl",
         size === "phone" && "text-5xl",
         size === "inline" && "text-2xl",
       )}

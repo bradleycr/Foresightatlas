@@ -42,13 +42,20 @@ export function PollPodium({ results, totalBallots, size = "phone" }: PollPodium
                 ? `Tied for ${PLACE[option.place - 1] || `${option.place}th`}`
                 : PLACE[option.place - 1] || `${option.place}th`}
             </p>
-            <p className={cn("font-heading mt-1 font-bold leading-snug text-inherit", stage ? "text-4xl" : "text-lg")}>
+            <p
+              className={cn(
+                "font-heading mt-1 font-bold leading-snug text-inherit",
+                stage ? "text-2xl sm:text-4xl" : "text-lg",
+              )}
+            >
               {option.label}
             </p>
             {option.people ? (
-              <p className={cn("mt-1 text-neutral-600", stage ? "text-lg" : "text-sm")}>{option.people}</p>
+              <p className={cn("mt-1 text-neutral-600", stage ? "text-sm sm:text-lg" : "text-sm")}>
+                {option.people}
+              </p>
             ) : null}
-            <p className={cn("mt-3 tabular-nums text-neutral-700", stage ? "text-2xl" : "text-sm")}>
+            <p className={cn("mt-3 tabular-nums text-neutral-700", stage ? "text-lg sm:text-2xl" : "text-sm")}>
               <span className="font-semibold">{option.points}</span>
               {" "}
               {option.points === 1 ? "point" : "points"}
