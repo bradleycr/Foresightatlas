@@ -47,7 +47,7 @@ function shuffle(list) {
   return copy;
 }
 
-const timings = { get: [], vote: [] };
+const timings = { open: [], board: [], vote: [] };
 const failures = [];
 
 async function timed(kind, fn) {
@@ -102,7 +102,7 @@ async function request(phone, method, url, body, { sendKey = true, sendCookie = 
 async function runPhone(phone, index) {
   try {
     await sleep(Math.random() * 1500);
-    await timed("get", () =>
+    await timed("open", () =>
       request(phone, "GET", `${BASE}/api/polls?slug=${SLUG}&voterKey=${phone.storageKey}`),
     );
     await timed("vote", () =>
@@ -134,7 +134,7 @@ async function runProjector(stopAt, seen) {
   let shownAt = 0;
   while (Date.now() < stopAt) {
     try {
-      const { poll } = await timed("get", () =>
+      const { poll } = await timed("board", () =>
         request(viewer, "GET", `${BASE}/api/polls?slug=${SLUG}&voterKey=${viewer.storageKey}`),
       );
       const asOf = Date.parse(poll.asOf);
@@ -198,8 +198,10 @@ async function run() {
     console.log(`  submissions sent        ${counted.submissions}`);
     console.log(`  ballots in database     ${counted.ballots}   (expected ${expected})`);
     console.log(`  count on the projector  ${poll.totalVotes}`);
-    console.log(`  GET   p50 ${percentile(timings.get, 50)}ms  p95 ${percentile(timings.get, 95)}ms  (${timings.get.length})`);
-    console.log(`  VOTE  p50 ${percentile(timings.vote, 50)}ms  p95 ${percentile(timings.vote, 95)}ms  (${timings.vote.length})`);
+    for (const [label, list] of [["phone opens poll", timings.open], ["projector refresh", timings.board]]) {
+      console.log(`  ${label.padEnd(18)} p50 ${percentile(list, 50)}ms  p95 ${percentile(list, 95)}ms  (${list.length})`);
+    }
+    console.log(`  ${"vote".padEnd(18)} p50 ${percentile(timings.vote, 50)}ms  p95 ${percentile(timings.vote, 95)}ms  (${timings.vote.length})`);
     const backwards = seen.some((count, i) => i > 0 && count < seen[i - 1]);
     console.log(`  projector reads         ${seen.length}${backwards ? "  (count stepped back)" : ""}`);
     console.log(`  failures                ${failures.length}`);

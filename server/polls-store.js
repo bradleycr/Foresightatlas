@@ -70,8 +70,14 @@ async function readSnapshot(slugOrId) {
       let poll = await store.findPoll(key);
       if (!poll) throw httpError(404, "This poll is not available.");
       poll = (await settle(poll)) || poll;
+      /*
+       * Stamp the snapshot when the ballot read *starts*: everything saved
+       * before that moment is in it. Comparing stamps then never shows a
+       * count going backwards, whichever instance answers.
+       */
+      const at = Date.now();
       const ballots = await store.listBallots([poll.id]);
-      const snapshot = { at: Date.now(), poll, ballots };
+      const snapshot = { at, poll, ballots };
       snapshots.set(key, snapshot);
       return snapshot;
     } catch (err) {
@@ -284,12 +290,13 @@ async function castVote(input, voter, req) {
     throw httpError(400, "This poll has closed.");
   }
 
-  /* Fold this ballot into the snapshot so this instance shows it at once. */
-  snapshot.ballots = [
-    ...snapshot.ballots.filter((row) => row.voterKey !== saved.voterKey),
-    saved,
-  ];
-  return publicPollShape(poll, snapshot.ballots, saved, {
+  /*
+   * The voter's own screen includes their ballot straight away. The shared
+   * snapshot is left as read, so its timestamp stays honest; it refreshes
+   * within a second and a half.
+   */
+  const ballots = [...snapshot.ballots.filter((row) => row.voterKey !== saved.voterKey), saved];
+  return publicPollShape(poll, ballots, saved, {
     reveal: false,
     asOf: new Date(snapshot.at).toISOString(),
   });
