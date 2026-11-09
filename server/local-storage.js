@@ -1013,7 +1013,7 @@ async function appendLocalLoginEvent(row) {
   return next;
 }
 
-async function upsertLocalPoll(poll) {
+async function upsertLocalPoll(poll, { previousId = poll.id } = {}) {
   const db = await getLocalDatabase();
   const next = {
     id: String(poll.id || "").trim(),
@@ -1031,31 +1031,41 @@ async function upsertLocalPoll(poll) {
     closesAt: String(poll.closesAt || ""),
   };
   if (!next.id || !next.slug) throw new Error("Poll id and slug are required.");
-  const index = db.polls.findIndex((row) => row.id === next.id || row.slug === next.slug);
+  const index = db.polls.findIndex(
+    (row) => row.id === previousId || row.id === next.id || row.slug === next.slug,
+  );
   if (index >= 0) db.polls[index] = next;
   else db.polls.push(next);
   await saveLocalDatabase(db);
   return next;
 }
 
-async function appendLocalPollVote(vote) {
+/** One row per (poll, phone). A resubmit replaces it and counts the revision. */
+async function upsertLocalPollBallot(ballot) {
   const db = await getLocalDatabase();
-  const row = {
-    pollId: String(vote.pollId || "").trim(),
-    voterKey: String(vote.voterKey || "").trim(),
-    personId: String(vote.personId || "").trim(),
-    fullName: String(vote.fullName || "").trim(),
-    optionId: String(vote.optionId || "").trim(),
-    secondOptionId: String(vote.secondOptionId || "").trim(),
-    thirdOptionId: String(vote.thirdOptionId || "").trim(),
-    teamOptionId: String(vote.teamOptionId || "").trim(),
-    createdAt: String(vote.createdAt || new Date().toISOString()),
-    updatedAt: String(vote.updatedAt || new Date().toISOString()),
-  };
-  if (!row.pollId || !row.voterKey || !row.optionId) {
-    throw new Error("pollId, voterKey, and optionId are required.");
+  const now = new Date().toISOString();
+  const pollId = String(ballot.pollId || "").trim();
+  const voterKey = String(ballot.voterKey || "").trim();
+  if (!pollId || !voterKey || !ballot.firstId) {
+    throw new Error("pollId, voterKey, and a first pick are required.");
   }
-  db.pollVotes.push(row);
+  const index = db.pollVotes.findIndex((row) => row.pollId === pollId && row.voterKey === voterKey);
+  const previous = index >= 0 ? db.pollVotes[index] : null;
+  const row = {
+    pollId,
+    voterKey,
+    kind: ballot.kind,
+    personId: String(ballot.personId || "").trim(),
+    teamOptionId: String(ballot.teamOptionId || "").trim(),
+    firstId: String(ballot.firstId).trim(),
+    secondId: String(ballot.secondId || "").trim(),
+    thirdId: String(ballot.thirdId || "").trim(),
+    revisions: (Number(previous?.revisions) || (previous ? 1 : 0)) + 1,
+    createdAt: previous?.createdAt || now,
+    updatedAt: now,
+  };
+  if (index >= 0) db.pollVotes[index] = row;
+  else db.pollVotes.push(row);
   await saveLocalDatabase(db);
   return row;
 }
@@ -1148,7 +1158,7 @@ module.exports = {
   appendLocalLoginEvent,
   appendLocalSuggestion,
   upsertLocalPoll,
-  appendLocalPollVote,
+  upsertLocalPollBallot,
   getMockLumaEvents,
   getMockLumaGuests,
   getMockCalendarEvents,

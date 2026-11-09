@@ -3,18 +3,12 @@
  *
  * GET  /api/polls?admin=1          staff/member list (session)
  * GET  /api/polls?slug=k7m2xq      public vote/live payload
+ * GET  /api/polls?ping=1           keeps the database awake (daily cron)
  * POST /api/polls                  { action: "create" | "update" | "vote" | "addProject", ... }
  *
  * Vote is public and anonymous (QR from a room). Create/update require a
  * directory session and the Foresight Team role.
  */
-
-const path = require("path");
-const fs = require("fs");
-const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-if (credPath && !fs.existsSync(path.resolve(credPath))) {
-  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
-}
 
 const {
   readDirectoryTokenFromRequest,
@@ -27,90 +21,95 @@ const {
   updatePoll,
   castVote,
   addProject,
+  pingPollStore,
 } = require("../server/polls-store");
+const { resolveVoter } = require("../server/polls/voter");
 
 function requireSession(req) {
   return verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
 }
 
-function sendError(res, error, fallback) {
-  const status = error && typeof error === "object" && error.statusCode
-    ? error.statusCode
-    : 400;
-  return res.status(status).json({
-    error: error instanceof Error ? error.message : fallback,
-  });
+/** Database unreachable or overloaded — a retry, not the voter's fault. */
+function isTransient(error) {
+  const code = String(error?.code || "");
+  return (
+    /^(ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|57P01|53300|08\d{3})$/.test(code) ||
+    /timeout|terminated|too many clients/i.test(String(error?.message || ""))
+  );
 }
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Foresight-Write-Secret",
-  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Foresight-Write-Secret");
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
 
   try {
     if (req.method === "GET") {
-      const admin = String(req.query?.admin || "") === "1";
-      const slug = String(req.query?.slug || req.query?.id || "").trim();
-      if (admin) {
-        const session = requireSession(req);
-        const payload = await listAdminPolls(session);
-        return res.status(200).json(payload);
+      if (String(req.query?.ping || "") === "1") {
+        await pingPollStore();
+        return res.status(200).json({ ok: true });
       }
+      if (String(req.query?.admin || "") === "1") {
+        return res.status(200).json(await listAdminPolls(requireSession(req)));
+      }
+      const slug = String(req.query?.slug || req.query?.id || "").trim();
       if (!slug) {
         return res.status(400).json({ error: "Pass ?slug= for a poll, or ?admin=1 when signed in." });
       }
-      const voterKey = String(req.query?.voterKey || "").trim();
-      const poll = await getPublicPoll(slug, voterKey);
-      return res.status(200).json({ poll });
+      const voter = resolveVoter(req, res, req.query?.voterKey);
+      const poll = await getPublicPoll(slug, voter, { judgeToken: req.query?.judgeToken });
+      return res.status(200).json({ poll, voterKey: voter.deviceKey });
     }
 
     if (req.method === "POST") {
       const body = req.body || {};
       const action = String(body.action || "").trim();
       if (action === "vote") {
-        const poll = await castVote({
-          slug: body.slug || body.id,
-          optionId: body.optionId,
-          secondOptionId: body.secondOptionId,
-          thirdOptionId: body.thirdOptionId,
-          teamOptionId: body.teamOptionId,
-          voterKeyRaw: body.voterKey,
-          judgeToken: body.judgeToken,
-        }, req);
-        return res.status(200).json({ poll });
+        const voter = resolveVoter(req, res, body.voterKey);
+        const poll = await castVote(
+          {
+            slug: body.slug || body.id,
+            firstId: body.optionId,
+            secondId: body.secondOptionId,
+            thirdId: body.thirdOptionId,
+            teamOptionId: body.teamOptionId,
+            judgeToken: body.judgeToken,
+          },
+          voter,
+          req,
+        );
+        return res.status(200).json({ poll, voterKey: voter.deviceKey });
       }
       if (action === "addProject") {
-        const poll = await addProject(body, req);
-        return res.status(200).json({ poll });
+        const voter = resolveVoter(req, res, body.voterKey);
+        const poll = await addProject(body, req, voter);
+        return res.status(200).json({ poll, voterKey: voter.deviceKey });
       }
       const session = requireSession(req);
-      if (action === "create") {
-        const poll = await createPoll(session, body);
-        return res.status(201).json({ poll });
-      }
-      if (action === "update") {
-        const poll = await updatePoll(session, body);
-        return res.status(200).json({ poll });
-      }
+      if (action === "create") return res.status(201).json({ poll: await createPoll(session, body) });
+      if (action === "update") return res.status(200).json({ poll: await updatePoll(session, body) });
       return res.status(400).json({ error: "Unknown action. Use create, update, vote, or addProject." });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
-    if (error && error.statusCode === 401) {
+    if (error?.statusCode === 401) {
       return res.status(401).json({ error: "Sign in to manage polls." });
     }
-    const message = String(error?.message || error || "");
-    if (message.includes("Quota exceeded")) {
-      console.error("api/polls: sheet quota");
+    if (isTransient(error)) {
+      console.error("api/polls: database unavailable:", error.code || error.message);
       return res.status(503).json({ error: "The poll is busy. Wait a few seconds and try again." });
     }
-    console.error("api/polls:", message);
-    return sendError(res, error, "Poll request failed.");
+    if (error?.severity) {
+      console.error("api/polls: database error:", error.code, error.message);
+      return res.status(500).json({ error: "Poll request failed. Try again." });
+    }
+    if (!error?.statusCode) console.error("api/polls:", error?.message || error);
+    return res.status(error?.statusCode || 400).json({
+      error: error instanceof Error ? error.message : "Poll request failed.",
+    });
   }
 };

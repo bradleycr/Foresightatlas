@@ -50,6 +50,8 @@ export interface PollPublic {
   judgeVotes?: number;
   /** True once both room and judges have cast at least one ballot. */
   weighted?: boolean;
+  /** When the server read these ballots. Older snapshots are dropped. */
+  asOf?: string;
   yourOptionId: string | null;
   yourFirstId: string | null;
   yourSecondId: string | null;
@@ -58,9 +60,23 @@ export interface PollPublic {
   yourTeamId: string | null;
 }
 
+/** Counts a host can check against the room. Each phone holds one ballot. */
+export interface PollBallotStats {
+  /** Phones with a ballot (not judges). */
+  phones: number;
+  /** Phones that said they weren't on a team. */
+  guests: number;
+  judges: number;
+  /** Phones that resubmitted. Still one ballot each. */
+  changedMind: number;
+  /** Ballots that point at a removed project or the voter's own team. */
+  notCounted: number;
+}
+
 export interface PollAdmin extends PollPublic {
   createdByPersonId: string;
   createdByName: string;
+  ballotStats?: PollBallotStats;
 }
 
 export interface PollsAdminPayload {

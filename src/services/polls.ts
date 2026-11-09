@@ -65,19 +65,53 @@ export function clearStoredTeam(slug: string) {
   }
 }
 
+/**
+ * This phone's device id. The server also pins it in a cookie and echoes it
+ * back, so losing either copy doesn't turn one phone into a new voter. The
+ * module copy keeps it stable for the page's lifetime even where storage is
+ * blocked.
+ */
+let pageVoterKey: string | null = null;
+
 export function getPollVoterKey(): string {
+  if (pageVoterKey) return pageVoterKey;
   try {
     const existing = localStorage.getItem(VOTER_STORAGE_KEY);
-    if (existing && existing.length >= 8) return existing;
-    const next =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `voter-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-    localStorage.setItem(VOTER_STORAGE_KEY, next);
-    return next;
+    if (existing && existing.length >= 8) return (pageVoterKey = existing);
   } catch {
-    return `voter-${Date.now()}`;
+    /* storage blocked — the server cookie still remembers this phone */
   }
+  const next =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `voter-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  rememberVoterKey(next);
+  return next;
+}
+
+/** Adopt the id the server settled on, so cookie and storage agree. */
+function rememberVoterKey(key: string | undefined) {
+  if (!key || key.length < 8) return;
+  pageVoterKey = key;
+  try {
+    localStorage.setItem(VOTER_STORAGE_KEY, key);
+  } catch {
+    /* private mode — the cookie carries it */
+  }
+}
+
+type PollResponse = { poll: PollPublic; voterKey?: string };
+
+async function readPoll(res: Response): Promise<PollPublic> {
+  const body = (await res.json()) as PollResponse;
+  rememberVoterKey(body.voterKey);
+  return body.poll;
+}
+
+/** Keep whichever snapshot is newer, so a count never steps backwards. */
+export function newerPoll(prev: PollPublic | null, next: PollPublic): PollPublic {
+  if (!prev || prev.id !== next.id || !prev.asOf || !next.asOf) return next;
+  return Date.parse(next.asOf) >= Date.parse(prev.asOf) ? next : prev;
 }
 
 function authHeaders(token?: string | null): HeadersInit {
@@ -120,26 +154,20 @@ export function setStoredJudgeToken(slug: string, token: string) {
   }
 }
 
-/** Judge seats hash their invite token as the voter key so one seat = one ballot. */
-export function judgeVoterKey(token: string): string {
-  return `judge-seat:${String(token || "").trim()}`;
-}
-
 export async function fetchPublicPoll(
   slug: string,
   token?: string | null,
   opts?: { judgeToken?: string | null },
 ): Promise<PollPublic> {
   const judgeToken = opts?.judgeToken || null;
-  const voterKey = encodeURIComponent(
-    judgeToken ? judgeVoterKey(judgeToken) : getPollVoterKey(),
-  );
-  const res = await fetch(`${getApiBase()}/polls?slug=${encodeURIComponent(slug)}&voterKey=${voterKey}`, {
+  const params = new URLSearchParams({ slug, voterKey: getPollVoterKey() });
+  if (judgeToken) params.set("judgeToken", judgeToken);
+  const res = await fetch(`${getApiBase()}/polls?${params}`, {
     headers: authHeaders(token),
+    credentials: "same-origin",
   });
   if (!res.ok) throw new Error(await readError(res, "This poll is not available."));
-  const body = (await res.json()) as { poll: PollPublic };
-  return body.poll;
+  return readPoll(res);
 }
 
 export async function createPoll(
@@ -207,6 +235,7 @@ export async function voteOnPoll(
   const res = await fetch(`${getApiBase()}/polls`, {
     method: "POST",
     headers: authHeaders(token),
+    credentials: "same-origin",
     body: JSON.stringify({
       action: "vote",
       slug,
@@ -214,14 +243,14 @@ export async function voteOnPoll(
       secondOptionId,
       thirdOptionId,
       teamOptionId: judgeToken ? "" : teamOptionId,
-      voterKey: judgeToken ? judgeVoterKey(judgeToken) : getPollVoterKey(),
+      voterKey: getPollVoterKey(),
       judgeToken: judgeToken || undefined,
     }),
   });
   if (!res.ok) throw new Error(await readError(res, "Could not record your vote."));
-  const body = (await res.json()) as { poll: PollPublic };
+  const poll = await readPoll(res);
   publishDataChanged("polls");
-  return body.poll;
+  return poll;
 }
 
 /** A pitcher adds their own project while submissions are open. */
@@ -232,6 +261,7 @@ export async function addProjectToPoll(
   const res = await fetch(`${getApiBase()}/polls`, {
     method: "POST",
     headers: authHeaders(null),
+    credentials: "same-origin",
     body: JSON.stringify({
       action: "addProject",
       slug,
@@ -240,7 +270,7 @@ export async function addProjectToPoll(
     }),
   });
   if (!res.ok) throw new Error(await readError(res, "Could not add that project."));
-  const body = (await res.json()) as { poll: PollPublic };
+  const poll = await readPoll(res);
   publishDataChanged("polls");
-  return body.poll;
+  return poll;
 }

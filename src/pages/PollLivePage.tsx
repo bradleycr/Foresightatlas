@@ -12,7 +12,7 @@ import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
 import { themeForEvent } from "../components/polls/pollEventTheme";
-import { fetchPublicPoll } from "../services/polls";
+import { fetchPublicPoll, newerPoll } from "../services/polls";
 import { getPollAddUrl } from "../utils/pollUrls";
 import {
   PREVIEW_JUDGE_BALLOTS,
@@ -38,7 +38,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
   const load = useCallback(async () => {
     try {
       const next = await fetchPublicPoll(slug);
-      setPoll(next);
+      setPoll((prev) => newerPoll(prev, next));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "This poll is not available.");
@@ -251,7 +251,7 @@ export function PollLivePage({ slug }: PollLivePageProps) {
             </h1>
             {preview ? (
               <p className="mt-2 max-w-3xl text-sm text-neutral-600 sm:text-base">
-                Sample final. Two judges together are always 50, the room is always 50 —
+                Sample final. The judges together are always 50, the room is always 50 —
                 whether {PREVIEW_ROOM_BALLOTS} people vote or 200. Each line is judges’ half plus the room’s half.
               </p>
             ) : null}

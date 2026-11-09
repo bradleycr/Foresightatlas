@@ -1,808 +1,134 @@
 /**
- * Event polls — Google Sheet (Polls + PollVotes) or local mock files.
+ * Event polls — the service the API calls.
  *
  * Designed like Mentimeter / Slido: a short slug in a QR lands a phone on a
- * one-question vote screen. Votes are append-only; the latest row for
- * (pollId, voterKey) wins so someone can change their mind while the poll
- * is live. Draft → live → closed. Closed polls stay in the archive.
+ * one-question vote screen. Draft → live → closed; closed polls stay in the
+ * archive. Storage is Postgres (see server/polls/store), where each phone
+ * owns exactly one ballot row, so the count is the number of phones — no
+ * matter how many times anyone taps Submit.
+ *
+ * Reads go through a short per-poll snapshot so a full room polling the
+ * projector costs the database one query pair per second per instance.
  */
 
 "use strict";
 
-const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
-const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-if (credPath && !fs.existsSync(path.resolve(credPath))) {
-  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
-}
-
-const { google } = require("googleapis");
-const {
-  getSpreadsheetId,
-  SHEET_NAMES,
-  POLLS_HEADERS,
-  POLL_VOTES_HEADERS,
-  getSheetColumnLetter,
-} = require("../scripts/sheet-schema.js");
 const { parseRoleTypes } = require("./role-types");
-const { isLocalMockMode } = require("./local-storage");
-
 const { rateLimit } = require("./rate-limit");
+const { pollStore } = require("./polls/store");
+const {
+  STATUSES,
+  MIN_LIVE_OPTIONS,
+  FINAL_MINUTE_MS,
+  GUEST_TEAM,
+  randomSlug,
+  normalizeQuestion,
+  normalizeOptions,
+  appendProject,
+  cleanPeople,
+  cleanGithubRepo,
+  cleanUrl,
+  sameLabel,
+} = require("./polls/rules");
+const { tallyVotes, ballotStats, publicPollShape } = require("./polls/tally");
+const {
+  JUDGE_SEATS,
+  verifyJudgeToken,
+  judgeBallotKey,
+  listJudgeLinks,
+} = require("./polls/judges");
+const { hashVoterKey, clientIp } = require("./polls/voter");
 
 const TEAM_ROLE = "Foresight Team";
-const STATUSES = new Set(["draft", "live", "closed"]);
-const SLUG_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
-const MAX_OPTIONS = 48;
-const MIN_LIVE_OPTIONS = 4;
-const MAX_QUESTION = 200;
-const MAX_OPTION = 120;
-const MAX_PEOPLE = 160;
-const MAX_URL = 400;
-const FIRST_POINTS = 3;
-const SECOND_POINTS = 2;
-const THIRD_POINTS = 1;
-/** Marker on PollVotes.fullName — room ballots leave this blank. */
-const JUDGE_MARKER = "__judge__";
-const JUDGE_SEATS = 2;
-/** teamOptionId for a phone that was not on a project. No lockout. */
-const GUEST_TEAM = "__guest__";
+const SNAPSHOT_MS = 1500;
+const EDIT_ATTEMPTS = 5;
 
-function sheetsId() {
-  return getSpreadsheetId();
+function httpError(statusCode, message) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
 }
 
-function judgeSigningSecret() {
-  return (
-    process.env.DIRECTORY_SESSION_SECRET ||
-    process.env.SESSION_SECRET ||
-    process.env.POLL_JUDGE_SECRET ||
-    ""
-  );
+/* ── Snapshot: one read serves every phone on this instance for a moment ── */
+
+const snapshots = new Map();
+const inflight = new Map();
+
+function forgetSnapshots() {
+  snapshots.clear();
 }
 
-/** Stable per-poll tokens for the two judge seats. */
-function judgeTokenForSeat(slug, seat) {
-  const secret = judgeSigningSecret();
-  if (!secret) return "";
-  return crypto
-    .createHmac("sha256", secret)
-    .update(`poll-judge:v1:${String(slug || "").trim().toLowerCase()}:${seat}`)
-    .digest("base64url")
-    .slice(0, 28);
+async function readSnapshot(slugOrId) {
+  const key = String(slugOrId || "").trim().toLowerCase();
+  const cached = snapshots.get(key);
+  if (cached && Date.now() - cached.at < SNAPSHOT_MS) return cached;
+  if (inflight.has(key)) return inflight.get(key);
+
+  const pending = (async () => {
+    try {
+      const store = pollStore();
+      let poll = await store.findPoll(key);
+      if (!poll) throw httpError(404, "This poll is not available.");
+      poll = (await settle(poll)) || poll;
+      const ballots = await store.listBallots([poll.id]);
+      const snapshot = { at: Date.now(), poll, ballots };
+      snapshots.set(key, snapshot);
+      return snapshot;
+    } catch (err) {
+      /* A database blip shouldn't blank the projector: serve the last good read. */
+      if (cached && err.statusCode !== 404) return cached;
+      throw err;
+    } finally {
+      inflight.delete(key);
+    }
+  })();
+  inflight.set(key, pending);
+  return pending;
 }
 
-function verifyJudgeToken(slug, tokenRaw) {
-  const token = String(tokenRaw || "").trim();
-  if (!token || !judgeSigningSecret()) return null;
-  for (let seat = 1; seat <= JUDGE_SEATS; seat += 1) {
-    const expected = judgeTokenForSeat(slug, seat);
-    if (!expected) continue;
-    const a = Buffer.from(expected);
-    const b = Buffer.from(token);
-    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
-      return { seat, token: expected };
+/* ── Poll lifecycle ── */
+
+/** Close a live poll whose final minute ran out. Returns the closed poll, if any. */
+async function settle(poll) {
+  if (poll.status !== "live" || !poll.closesAt) return null;
+  if (Date.parse(poll.closesAt) > Date.now()) return null;
+  const closed = await pollStore().closeIfDue(poll.id);
+  if (closed) forgetSnapshots();
+  return closed;
+}
+
+/**
+ * Read, change, write — and if someone else wrote in between, start over
+ * from their version. `mutate` may return `false` to leave the poll as is.
+ */
+async function mutatePoll(slugOrId, mutate) {
+  const store = pollStore();
+  for (let attempt = 0; attempt < EDIT_ATTEMPTS; attempt += 1) {
+    const current = await store.findPoll(slugOrId);
+    if (!current) throw httpError(404, "Poll not found.");
+    const draft = structuredClone(current);
+    if ((await mutate(draft, current)) === false) return current;
+    draft.updatedAt = new Date().toISOString();
+    const saved = await store.savePoll(draft, { previousId: current.id });
+    if (saved) {
+      forgetSnapshots();
+      return saved;
     }
   }
-  return null;
-}
-
-function listJudgeLinks(slug, origin) {
-  const base = String(origin || "").replace(/\/$/, "") || "https://atlas.foresight.org";
-  const links = [];
-  for (let seat = 1; seat <= JUDGE_SEATS; seat += 1) {
-    const token = judgeTokenForSeat(slug, seat);
-    if (!token) continue;
-    links.push({
-      seat,
-      url: `${base}/polls/${encodeURIComponent(slug)}/judge?t=${encodeURIComponent(token)}`,
-    });
-  }
-  return links;
-}
-
-function isJudgeVote(vote) {
-  return (
-    String(vote?.fullName || "") === JUDGE_MARKER ||
-    /^judge:\d+$/i.test(String(vote?.personId || ""))
-  );
-}
-
-function hashVoterKey(raw) {
-  const secret =
-    process.env.DIRECTORY_SESSION_SECRET ||
-    process.env.SESSION_SECRET ||
-    "foresight-atlas-dev";
-  return crypto
-    .createHash("sha256")
-    .update(`${secret}:poll-voter:${String(raw || "").trim()}`)
-    .digest("hex")
-    .slice(0, 32);
-}
-
-function randomSlug(length = 6) {
-  const bytes = crypto.randomBytes(length);
-  let out = "";
-  for (let i = 0; i < length; i += 1) {
-    out += SLUG_ALPHABET[bytes[i] % SLUG_ALPHABET.length];
-  }
-  return out;
-}
-
-function colIndex(headerRow, name) {
-  return headerRow.findIndex((c) => String(c).trim().toLowerCase() === name.toLowerCase());
-}
-
-function cell(row, headerRow, name) {
-  const i = colIndex(headerRow, name);
-  if (i < 0) return "";
-  return row[i] != null ? String(row[i]).trim() : "";
-}
-
-function parseOptions(raw) {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(String(raw));
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((item, index) => {
-        if (item && typeof item === "object") {
-          const id = String(item.id || "").trim() || optionIdFromIndex(index);
-          const label = String(item.label || "").trim();
-          if (!label) return null;
-          return {
-            id,
-            label,
-            people: String(item.people || "").trim(),
-            url: String(item.url || "").trim(),
-          };
-        }
-        const label = String(item || "").trim();
-        return label ? { id: optionIdFromIndex(index), label, people: "", url: "" } : null;
-      })
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-function optionIdFromIndex(index) {
-  return String(index + 1);
-}
-
-function cleanPeople(raw) {
-  const people = String(raw || "").replace(/\s+/g, " ").trim();
-  if (people.length > MAX_PEOPLE) {
-    throw new Error(`Keep the names under ${MAX_PEOPLE} characters.`);
-  }
-  const parts = people
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (parts.length < 2) {
-    throw new Error("Add at least two names, separated by commas.");
-  }
-  return parts.join(", ");
-}
-
-/**
- * A GitHub repo only. Accepts:
- *   https://github.com/org/project
- *   github.com/org/project
- *   www.github.com/org/project
- *   org/project
- * Extra path (/tree/…, /blob/…, .git) is trimmed to the repo root.
- */
-function cleanGithubRepo(raw) {
-  let value = String(raw || "")
-    .trim()
-    .replace(/^[\s"'`“”‘’<]+|[\s"'`“”‘’>]+$/g, "")
-    .replace(/\s+/g, "");
-  if (!value) throw new Error("Add the GitHub repo.");
-
-  /* Paste from chat sometimes includes the @ of an @mention. */
-  value = value.replace(/^@/, "");
-
-  /* git@github.com:org/repo(.git) → https */
-  const ssh = value.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i);
-  if (ssh) value = `https://github.com/${ssh[1]}/${ssh[2]}`;
-
-  if (!/^https?:\/\//i.test(value)) {
-    if (/^(www\.)?github\.com\//i.test(value)) {
-      value = `https://${value.replace(/^www\./i, "")}`;
-    } else if (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/.test(value)) {
-      value = `https://github.com/${value.replace(/^\/+/, "")}`;
-    } else {
-      throw new Error("Use github.com/org/project — or just org/project.");
-    }
-  }
-
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("Use github.com/org/project — or just org/project.");
-  }
-  const host = url.hostname.replace(/^www\./, "").toLowerCase();
-  if (host !== "github.com") {
-    throw new Error("Only GitHub repos work here (github.com/org/project).");
-  }
-  const [owner, repo] = url.pathname.split("/").filter(Boolean);
-  if (!owner || !repo) {
-    throw new Error("Needs org and repo — e.g. github.com/anthropics/claude-code");
-  }
-  const cleanRepo = repo.replace(/\.git$/i, "");
-  if (!/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(cleanRepo)) {
-    throw new Error("That doesn’t look like a GitHub owner/repo.");
-  }
-  return `https://github.com/${owner}/${cleanRepo}`;
-}
-
-/** http(s) only. A bare domain gets https:// so a pitch link still opens. */
-function cleanUrl(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return "";
-  const withProto = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-  let url;
-  try {
-    url = new URL(withProto);
-  } catch {
-    throw new Error("That link doesn’t look right.");
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error("The link needs to be a normal web address.");
-  }
-  if (url.href.length > MAX_URL) {
-    throw new Error("That link is too long.");
-  }
-  return url.href;
-}
-
-function projectFromInput(item, previous = []) {
-  const label =
-    typeof item === "string"
-      ? item.trim()
-      : String(item?.label || "").trim();
-  if (!label) return null;
-  if (label.length < 2) throw new Error("Project name needs at least 2 characters.");
-  if (label.length > MAX_OPTION) {
-    throw new Error(`Each project name must be ${MAX_OPTION} characters or fewer.`);
-  }
-  const prev = previous.find(
-    (option) => String(option.label || "").trim().toLowerCase() === label.toLowerCase(),
-  );
-  const people =
-    item && typeof item === "object" && item.people != null
-      ? cleanPeople(item.people)
-      : cleanPeople(prev?.people || "");
-  const url =
-    item && typeof item === "object" && item.url != null
-      ? cleanUrl(item.url)
-      : String(prev?.url || "");
-  return { label, people, url };
-}
-
-function normalizeOptions(input, previous = []) {
-  const list = Array.isArray(input) ? input : [];
-  const options = [];
-  const seen = new Set();
-  for (const item of list) {
-    const project = projectFromInput(item, previous);
-    if (!project) continue;
-    const key = project.label.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    options.push({ id: optionIdFromIndex(options.length), ...project });
-  }
-  if (options.length > MAX_OPTIONS) {
-    throw new Error(`Keep it to ${MAX_OPTIONS} projects or fewer.`);
-  }
-  return options;
-}
-
-/**
- * Append one project without renumbering existing ids — votes already point
- * at those ids. Draft submissions and a host's late add both come through here.
- */
-function appendProject(existing, project) {
-  const label = String(project?.label || "").trim();
-  const people = cleanPeople(project?.people);
-  const url = cleanUrl(project?.url);
-  if (label.length < 2) throw new Error("Project name needs at least 2 characters.");
-  if (label.length > MAX_OPTION) {
-    throw new Error(`Each project name must be ${MAX_OPTION} characters or fewer.`);
-  }
-  const options = Array.isArray(existing) ? [...existing] : [];
-  if (options.length >= MAX_OPTIONS) {
-    throw new Error(`Keep it to ${MAX_OPTIONS} projects or fewer.`);
-  }
-  const dup = options.some(
-    (option) => String(option.label || "").trim().toLowerCase() === label.toLowerCase(),
-  );
-  if (dup) throw new Error("That project is already on this poll.");
-
-  let maxId = 0;
-  for (const option of options) {
-    const n = Number.parseInt(String(option.id), 10);
-    if (Number.isFinite(n) && n > maxId) maxId = n;
-  }
-  options.push({ id: String(maxId + 1), label, people, url });
-  return options;
-}
-
-function clientIp(req) {
-  const forwarded = String(req?.headers?.["x-forwarded-for"] || "")
-    .split(",")[0]
-    .trim();
-  return String(forwarded || req?.socket?.remoteAddress || "unknown").slice(0, 80);
-}
-
-function normalizeQuestion(value) {
-  const question = String(value || "").trim();
-  if (!question) throw new Error("A question is required.");
-  if (question.length > MAX_QUESTION) {
-    throw new Error(`Keep the question under ${MAX_QUESTION} characters.`);
-  }
-  return question;
-}
-
-function pollFromRow(row, headerRow, rowNumber) {
-  const id = cell(row, headerRow, "id");
-  const slug = cell(row, headerRow, "slug");
-  if (!id && !slug) return null;
-  const statusRaw = cell(row, headerRow, "status") || "draft";
-  const status = STATUSES.has(statusRaw) ? statusRaw : "draft";
-  return {
-    id: id || `poll-${slug}`,
-    slug: slug || id,
-    eventId: cell(row, headerRow, "eventId"),
-    eventTitle: cell(row, headerRow, "eventTitle"),
-    question: cell(row, headerRow, "question"),
-    options: parseOptions(cell(row, headerRow, "options")),
-    status,
-    createdByPersonId: cell(row, headerRow, "createdByPersonId"),
-    createdByName: cell(row, headerRow, "createdByName"),
-    createdAt: cell(row, headerRow, "createdAt"),
-    updatedAt: cell(row, headerRow, "updatedAt"),
-    closedAt: cell(row, headerRow, "closedAt"),
-    closesAt: cell(row, headerRow, "closesAt"),
-    rowNumber,
-  };
-}
-
-function pollToRow(poll) {
-  return [
-    poll.id,
-    poll.slug,
-    poll.eventId || "",
-    poll.eventTitle || "",
-    poll.question,
-    JSON.stringify(poll.options),
-    poll.status,
-    poll.createdByPersonId || "",
-    poll.createdByName || "",
-    poll.createdAt,
-    poll.updatedAt,
-    poll.closedAt || "",
-    poll.closesAt || "",
-  ];
-}
-
-function latestBallots(poll, votes) {
-  const latest = new Map();
-  for (const vote of votes) {
-    if (vote.pollId !== poll.id) continue;
-    latest.set(vote.voterKey, vote);
-  }
-  return [...latest.values()];
-}
-
-/**
- * Truncated Borda: 3, then 2, then 1. Room phones cannot award their own team.
- * Judges have no team — every project is fair game. One key = one ballot.
- */
-function awardedIds(vote, score) {
-  const judge = isJudgeVote(vote);
-  const team = String(vote.teamOptionId || "");
-  const guest = team === GUEST_TEAM;
-  if (!judge && !guest && (!team || !score[team])) return null;
-  const seen = new Set(judge || guest ? [] : [team]);
-  const picks = [];
-  for (const id of [vote.optionId, vote.secondOptionId, vote.thirdOptionId]) {
-    const key = String(id || "");
-    if (!key || seen.has(key) || !score[key]) return null;
-    seen.add(key);
-    picks.push(key);
-  }
-  return picks;
-}
-
-function emptyScore(poll) {
-  const score = {};
-  for (const option of poll.options) {
-    score[option.id] = { points: 0, firsts: 0, seconds: 0, thirds: 0 };
-  }
-  return score;
-}
-
-function applyBallots(poll, ballots) {
-  const score = emptyScore(poll);
-  let totalBallots = 0;
-  for (const vote of ballots) {
-    const picks = awardedIds(vote, score);
-    if (!picks) continue;
-    const [first, second, third] = picks;
-    totalBallots += 1;
-    score[first].points += FIRST_POINTS;
-    score[first].firsts += 1;
-    score[second].points += SECOND_POINTS;
-    score[second].seconds += 1;
-    score[third].points += THIRD_POINTS;
-    score[third].thirds += 1;
-  }
-  return { score, totalBallots };
-}
-
-/**
- * Final standing: room 50% + judges 50%, each side normalized to its own
- * point pool. If only one side has ballots yet, that side carries 100%.
- */
-function tallyVotes(poll, votes) {
-  const ballots = latestBallots(poll, votes);
-  const audienceBallots = ballots.filter((vote) => !isJudgeVote(vote));
-  const judgeBallots = ballots.filter((vote) => isJudgeVote(vote));
-  const audience = applyBallots(poll, audienceBallots);
-  const judges = applyBallots(poll, judgeBallots);
-
-  let audienceSum = 0;
-  let judgeSum = 0;
-  for (const option of poll.options) {
-    audienceSum += audience.score[option.id].points;
-    judgeSum += judges.score[option.id].points;
-  }
-
-  const ranked = poll.options.map((option) => {
-    const a = audience.score[option.id];
-    const j = judges.score[option.id];
-    let points = 0;
-    if (audienceSum > 0 && judgeSum > 0) {
-      points = (a.points / audienceSum) * 50 + (j.points / judgeSum) * 50;
-    } else if (audienceSum > 0) {
-      points = a.points;
-    } else if (judgeSum > 0) {
-      points = j.points;
-    }
-    const blended = audienceSum > 0 && judgeSum > 0;
-    return {
-      ...option,
-      points: blended ? Math.round(points * 10) / 10 : points,
-      audiencePoints: a.points,
-      judgePoints: j.points,
-      firsts: a.firsts + j.firsts,
-      seconds: a.seconds + j.seconds,
-      thirds: a.thirds + j.thirds,
-      votes: blended ? Math.round(points * 10) / 10 : points,
-    };
-  });
-  ranked.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.judgePoints !== a.judgePoints) return b.judgePoints - a.judgePoints;
-    if (b.audiencePoints !== a.audiencePoints) return b.audiencePoints - a.audiencePoints;
-    if (b.firsts !== a.firsts) return b.firsts - a.firsts;
-    return a.label.localeCompare(b.label);
-  });
-  ranked.forEach((row, index) => {
-    const prev = ranked[index - 1];
-    const tied =
-      prev &&
-      prev.points === row.points &&
-      prev.judgePoints === row.judgePoints &&
-      prev.audiencePoints === row.audiencePoints;
-    row.place = tied ? prev.place : index + 1;
-  });
-  return {
-    ranked,
-    totalBallots: audience.totalBallots + judges.totalBallots,
-    audienceBallots: audience.totalBallots,
-    judgeBallots: judges.totalBallots,
-    weighted: audienceSum > 0 && judgeSum > 0,
-  };
-}
-
-function publicOption(option) {
-  return {
-    id: option.id,
-    label: option.label,
-    people: option.people || "",
-    url: option.url || "",
-  };
-}
-
-function publicPollShape(poll, votes, yours, { reveal } = {}) {
-  const show = Boolean(reveal);
-  const { ranked, totalBallots, audienceBallots, judgeBallots, weighted } = tallyVotes(
-    poll,
-    votes,
-  );
-  const firstId = yours?.firstId || null;
-  const secondId = yours?.secondId || null;
-  const thirdId = yours?.thirdId || null;
-  const teamId = yours?.teamId || null;
-  return {
-    id: poll.id,
-    slug: poll.slug,
-    question: poll.question,
-    options: poll.options.map(publicOption),
-    status: poll.status,
-    eventId: poll.eventId || "",
-    eventTitle: poll.eventTitle || "",
-    createdAt: poll.createdAt,
-    updatedAt: poll.updatedAt,
-    closedAt: poll.closedAt || "",
-    closesAt: poll.status === "live" ? poll.closesAt || "" : "",
-    // Hidden until the host closes, so a live room isn't pulled onto an early lead.
-    results: show
-      ? ranked.map(publicOption).map((option, index) => ({
-          ...option,
-          points: ranked[index].points,
-          audiencePoints: ranked[index].audiencePoints,
-          judgePoints: ranked[index].judgePoints,
-          firsts: ranked[index].firsts,
-          seconds: ranked[index].seconds,
-          thirds: ranked[index].thirds,
-          votes: ranked[index].points,
-          place: ranked[index].place,
-        }))
-      : [],
-    scoresHidden: !show,
-    totalVotes: totalBallots,
-    audienceVotes: audienceBallots,
-    judgeVotes: judgeBallots,
-    weighted: Boolean(weighted),
-    yourOptionId: firstId,
-    yourFirstId: firstId,
-    yourSecondId: secondId,
-    yourThirdId: thirdId,
-    yourTeamId: teamId,
-  };
-}
-
-function adminPollShape(poll, votes) {
-  const publicShape = publicPollShape(poll, votes, null, { reveal: true });
-  return {
-    ...publicShape,
-    createdByPersonId: poll.createdByPersonId,
-    createdByName: poll.createdByName,
-  };
+  throw httpError(409, "Someone else just changed this poll. Try again.");
 }
 
 function canManagePolls(person) {
   if (!person) return false;
-  const roles = Array.isArray(person.roleTypes) && person.roleTypes.length
-    ? person.roleTypes
-    : parseRoleTypes(person.roleType);
+  const roles =
+    Array.isArray(person.roleTypes) && person.roleTypes.length
+      ? person.roleTypes
+      : parseRoleTypes(person.roleType);
   return roles.includes(TEAM_ROLE);
 }
 
-async function getSheetsClient() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  let key = null;
-  if (keyJson) {
-    try {
-      key = JSON.parse(keyJson);
-    } catch {
-      return null;
-    }
-  } else if (keyPath) {
-    const resolved = path.resolve(keyPath);
-    if (fs.existsSync(resolved)) {
-      try {
-        key = JSON.parse(fs.readFileSync(resolved, "utf8"));
-      } catch {
-        return null;
-      }
-    }
-  }
-  if (!key) return null;
-  const auth = new google.auth.GoogleAuth({
-    credentials: key,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-  return google.sheets({ version: "v4", auth });
-}
-
-const ensuredTabs = new Set();
-
-async function ensureTab(sheets, title, headers) {
-  if (ensuredTabs.has(title)) return;
-  const spreadsheetId = sheetsId();
-  const { data } = await sheets.spreadsheets.get({
-    spreadsheetId,
-    fields: "sheets.properties(sheetId,title)",
-  });
-  const exists = (data.sheets || []).some(
-    (s) => String(s?.properties?.title || "") === title,
-  );
-  if (!exists) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [{ addSheet: { properties: { title } } }],
-      },
-    });
-  }
-  const lastCol = String.fromCharCode(64 + headers.length);
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: `'${title}'!A1:${lastCol}1`,
-    valueInputOption: "RAW",
-    requestBody: { values: [headers] },
-  });
-  ensuredTabs.add(title);
-}
-
-async function loadSheetPollsAndVotes(sheets) {
-  const spreadsheetId = sheetsId();
-  /* One quota unit for both tabs. The tabs already exist; don't rewrite headers. */
-  const res = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId,
-    ranges: [`'${SHEET_NAMES.POLLS}'`, `'${SHEET_NAMES.POLL_VOTES}'`],
-  });
-  const ranges = res.data.valueRanges || [];
-  const pollValues = ranges[0]?.values || [];
-  const voteValues = ranges[1]?.values || [];
-  const pollHeader = pollValues[0] || POLLS_HEADERS;
-  const voteHeader = voteValues[0] || POLL_VOTES_HEADERS;
-
-  const polls = [];
-  for (let i = 1; i < pollValues.length; i += 1) {
-    const poll = pollFromRow(pollValues[i], pollHeader, i + 1);
-    if (poll) polls.push(poll);
-  }
-
-  const votes = [];
-  for (let i = 1; i < voteValues.length; i += 1) {
-    const row = voteValues[i];
-    const pollId = cell(row, voteHeader, "pollId");
-    const voterKey = cell(row, voteHeader, "voterKey");
-    const optionId = cell(row, voteHeader, "optionId");
-    if (!pollId || !voterKey || !optionId) continue;
-    votes.push({
-      pollId,
-      voterKey,
-      personId: cell(row, voteHeader, "personId"),
-      fullName: cell(row, voteHeader, "fullName"),
-      optionId,
-      secondOptionId: cell(row, voteHeader, "secondOptionId"),
-      thirdOptionId: cell(row, voteHeader, "thirdOptionId"),
-      teamOptionId: cell(row, voteHeader, "teamOptionId"),
-      createdAt: cell(row, voteHeader, "createdAt"),
-      updatedAt: cell(row, voteHeader, "updatedAt"),
-      rowNumber: i + 1,
-    });
-  }
-
-  return { polls, votes };
-}
-
-async function loadMockPollsAndVotes() {
-  const { getLocalDatabase } = require("./local-storage");
-  const db = await getLocalDatabase();
-  return {
-    polls: Array.isArray(db.polls) ? db.polls : [],
-    votes: Array.isArray(db.pollVotes) ? db.pollVotes : [],
-  };
-}
-
-/**
- * One sheet read serves the whole room. Votes append onto this snapshot
- * instead of throwing it away — a fresh read on every phone was the quota.
- * If Sheets is already limiting us, the last snapshot is still served.
- */
-let pollCache = { at: 0, value: null };
-let pollInflight = null;
-const POLL_CACHE_MS = 20000;
-
-function dropPollCache() {
-  pollCache = { at: 0, value: null };
-}
-
-function rememberVote(vote) {
-  if (!pollCache.value) return;
-  pollCache.value.votes.push(vote);
-}
-
-async function loadAll() {
-  if (isLocalMockMode()) return loadMockPollsAndVotes();
-  const now = Date.now();
-  if (pollCache.value && now - pollCache.at < POLL_CACHE_MS) return pollCache.value;
-  if (pollInflight) return pollInflight;
-  pollInflight = (async () => {
-    try {
-      const sheets = await getSheetsClient();
-      if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
-      const value = await loadSheetPollsAndVotes(sheets);
-      pollCache = { at: Date.now(), value };
-      return value;
-    } catch (err) {
-      const message = String(err?.message || err || "");
-      if (pollCache.value && /quota/i.test(message)) return pollCache.value;
-      throw err;
-    } finally {
-      pollInflight = null;
-    }
-  })();
-  return pollInflight;
-}
-
-async function persistPoll(poll) {
-  if (isLocalMockMode()) {
-    const { upsertLocalPoll } = require("./local-storage");
-    return upsertLocalPoll(poll);
-  }
-  const sheets = await getSheetsClient();
-  if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
-  const spreadsheetId = sheetsId();
-  await ensureTab(sheets, SHEET_NAMES.POLLS, POLLS_HEADERS);
-  const { polls } = await loadSheetPollsAndVotes(sheets);
-  const existing = polls.find((p) => p.id === poll.id || p.slug === poll.slug);
-  const row = pollToRow(poll);
-  const lastCol = getSheetColumnLetter(POLLS_HEADERS.length - 1);
-  if (existing?.rowNumber) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `'${SHEET_NAMES.POLLS}'!A${existing.rowNumber}:${lastCol}${existing.rowNumber}`,
-      valueInputOption: "RAW",
-      requestBody: { values: [row] },
-    });
-  } else {
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `'${SHEET_NAMES.POLLS}'!A:${lastCol}`,
-      valueInputOption: "RAW",
-      insertDataOption: "INSERT_ROWS",
-      requestBody: { values: [row] },
-    });
-  }
-  dropPollCache();
-  return poll;
-}
-
-async function persistVote(vote) {
-  if (isLocalMockMode()) {
-    const { appendLocalPollVote } = require("./local-storage");
-    return appendLocalPollVote(vote);
-  }
-  const sheets = await getSheetsClient();
-  if (!sheets) throw new Error("Google Sheets write credentials are not configured.");
-  const spreadsheetId = sheetsId();
-  const lastCol = getSheetColumnLetter(POLL_VOTES_HEADERS.length - 1);
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: `'${SHEET_NAMES.POLL_VOTES}'!A:${lastCol}`,
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: {
-      values: [[
-        vote.pollId,
-        vote.voterKey,
-        vote.personId || "",
-        vote.fullName || "",
-        vote.optionId,
-        vote.createdAt,
-        vote.updatedAt,
-        vote.secondOptionId || "",
-        vote.thirdOptionId || "",
-        vote.teamOptionId || "",
-      ]],
-    },
-  });
-  rememberVote(vote);
-  return vote;
-}
-
 async function lookupStaffPerson(personId) {
+  const { isLocalMockMode } = require("./local-storage");
   if (isLocalMockMode()) {
     const { getLocalDatabase } = require("./local-storage");
     const db = await getLocalDatabase();
@@ -810,502 +136,391 @@ async function lookupStaffPerson(personId) {
   }
   const { loadRealDataRecords } = require("./realdata-store");
   const { records } = await loadRealDataRecords({ write: false });
-  const match = records.find((r) => r.person?.id === personId);
-  return match?.person || null;
+  return records.find((r) => r.person?.id === personId)?.person || null;
 }
 
-const FINAL_MINUTE_MS = 60 * 1000;
-
-/** A live poll with a deadline in the past becomes closed on the next read. */
-async function settleDuePolls(polls) {
-  const now = Date.now();
-  for (const poll of polls) {
-    if (poll.status !== "live" || !poll.closesAt) continue;
-    const due = Date.parse(poll.closesAt);
-    if (!Number.isFinite(due) || due > now) continue;
-    poll.status = "closed";
-    poll.closedAt = new Date(due).toISOString();
-    poll.updatedAt = new Date(now).toISOString();
-    await persistPoll(poll);
-  }
+async function requireStaff(session, verb) {
+  const person = await lookupStaffPerson(session.personId);
+  if (!canManagePolls(person)) throw httpError(403, `Only Foresight Team can ${verb} polls.`);
+  return person;
 }
 
-function findPoll(polls, slugOrId) {
-  const key = String(slugOrId || "").trim().toLowerCase();
-  if (!key) return null;
-  return (
-    polls.find((p) => String(p.slug).toLowerCase() === key) ||
-    polls.find((p) => String(p.id).toLowerCase() === key) ||
-    null
-  );
+function adminPollShape(poll, ballots) {
+  return {
+    ...publicPollShape(poll, ballots, null, { reveal: true, asOf: new Date().toISOString() }),
+    createdByPersonId: poll.createdByPersonId,
+    createdByName: poll.createdByName,
+    ballotStats: ballotStats(poll, ballots),
+  };
 }
+
+/* ── Reads ── */
 
 async function listAdminPolls(session) {
   const person = session?.personId ? await lookupStaffPerson(session.personId) : null;
-  const manage = canManagePolls(person);
-  const { polls, votes } = await loadAll();
-  await settleDuePolls(polls);
-  const sorted = [...polls].sort((a, b) =>
-    String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)),
-  );
+  const store = pollStore();
+  const listed = await store.listPolls();
+  const polls = await Promise.all(listed.map(async (poll) => (await settle(poll)) || poll));
+  const ballots = await store.listBallots(polls.map((poll) => poll.id));
   return {
-    canManage: manage,
-    polls: sorted.map((poll) => adminPollShape(poll, votes)),
+    canManage: canManagePolls(person),
+    polls: polls.map((poll) =>
+      adminPollShape(
+        poll,
+        ballots.filter((ballot) => ballot.pollId === poll.id),
+      ),
+    ),
   };
 }
 
-async function getPublicPoll(slug, voterKeyRaw) {
-  const { polls, votes } = await loadAll();
-  const poll = findPoll(polls, slug);
-  if (!poll) {
-    const err = new Error("This poll is not available.");
-    err.statusCode = 404;
-    throw err;
-  }
-  await settleDuePolls([poll]);
-  const voterKey = voterKeyRaw ? hashVoterKey(voterKeyRaw) : "";
-  const yours = ballotFor(poll, votes, voterKey);
-  return publicPollShape(poll, votes, yours, {
+/** The ballot this phone (or judge seat) holds, if any. */
+function yoursIn(ballots, voterKeys) {
+  const keys = new Set(voterKeys);
+  return (
+    ballots
+      .filter((ballot) => keys.has(ballot.voterKey))
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || null
+  );
+}
+
+/**
+ * @param {string} slug
+ * @param {{ knownKeys: string[] }} voter  from resolveVoter()
+ * @param {{ judgeToken?: string }} [opts]
+ */
+async function getPublicPoll(slug, voter, { judgeToken } = {}) {
+  const { at, poll, ballots } = await readSnapshot(slug);
+  const judge = verifyJudgeToken(poll.slug, judgeToken);
+  const keys = judge ? [judgeBallotKey(judge.seat)] : voter?.knownKeys || [];
+  return publicPollShape(poll, ballots, yoursIn(ballots, keys), {
     reveal: poll.status === "live" || poll.status === "closed",
+    asOf: new Date(at).toISOString(),
   });
 }
 
-function ballotFor(poll, votes, voterKey) {
-  if (!voterKey) return null;
-  const latest = [...votes].reverse().find(
-    (vote) => vote.pollId === poll.id && vote.voterKey === voterKey,
-  );
-  if (!latest) return null;
-  return {
-    firstId: latest.optionId || null,
-    secondId: latest.secondOptionId || null,
-    thirdId: latest.thirdOptionId || null,
-    teamId: latest.teamOptionId || null,
-  };
+/* ── Voting ── */
+
+function pickOption(poll, id) {
+  const key = String(id || "").trim();
+  return poll.options.find((option) => option.id === key) || null;
 }
 
-async function createPoll(session, body) {
-  const person = await lookupStaffPerson(session.personId);
-  if (!canManagePolls(person)) {
-    const err = new Error("Only Foresight Team can create polls.");
-    err.statusCode = 403;
-    throw err;
-  }
-  const { polls } = await loadAll();
-  let slug = randomSlug();
-  for (let i = 0; i < 6 && findPoll(polls, slug); i += 1) {
-    slug = randomSlug();
-  }
-  const now = new Date().toISOString();
-  const poll = {
-    id: `poll-${slug}`,
-    slug,
-    eventId: String(body.eventId || "").trim(),
-    eventTitle: String(body.eventTitle || "").trim(),
-    question: normalizeQuestion(body.question),
-    options: normalizeOptions(body.options),
-    status: "draft",
-    createdByPersonId: session.personId,
-    createdByName: person.fullName || session.fullName || "",
-    createdAt: now,
-    updatedAt: now,
-    closedAt: "",
-    closesAt: "",
-  };
-  await persistPoll(poll);
-  return adminPollShape(poll, []);
-}
-
-async function updatePoll(session, body) {
-  const person = await lookupStaffPerson(session.personId);
-  if (!canManagePolls(person)) {
-    const err = new Error("Only Foresight Team can edit polls.");
-    err.statusCode = 403;
-    throw err;
-  }
-  const { polls, votes } = await loadAll();
-  const poll = findPoll(polls, body.slug || body.id);
-  if (!poll) {
-    const err = new Error("Poll not found.");
-    err.statusCode = 404;
-    throw err;
-  }
-  const now = new Date().toISOString();
-
-  if (body.reset) {
-    await applyPollReset(poll, now);
-    return adminPollShape(poll, votes);
-  }
-
-  /*
-   * Live polls may only grow: append a project name without renumbering ids.
-   * Full question/options replace stays draft-only so existing votes stay valid.
-   */
-  const addOption =
-    body.addOption != null
-      ? body.addOption
-      : body.appendOption != null
-        ? body.appendOption
-        : null;
-  if (body.removeOptionId) {
-    if (poll.status !== "draft") {
-      throw new Error("You can only remove a project before voting opens.");
-    }
-    const removeId = String(body.removeOptionId).trim();
-    const nextOptions = poll.options.filter((option) => option.id !== removeId);
-    if (nextOptions.length === poll.options.length) {
-      throw new Error("That project is not on this poll.");
-    }
-    poll.options = nextOptions;
-  }
-
-  if (addOption != null) {
-    if (poll.status === "closed") {
-      throw new Error("Closed polls can’t gain new projects. Open a new poll.");
-    }
-    const project = typeof addOption === "string" ? { label: addOption } : addOption;
-    poll.options = appendProject(poll.options, project);
-  }
-
-  if (body.question != null || body.options != null) {
-    if (poll.status !== "draft") {
-      throw new Error(
-        "Question and the full project list can only change while the poll is a draft. " +
-          "On a live poll, add one project at a time.",
-      );
-    }
-    if (body.question != null) poll.question = normalizeQuestion(body.question);
-    if (body.options != null) poll.options = normalizeOptions(body.options, poll.options);
-  }
-  if (body.eventId != null) poll.eventId = String(body.eventId || "").trim();
-  if (body.eventTitle != null) poll.eventTitle = String(body.eventTitle || "").trim();
-  if (body.finalMinute) {
-    if (poll.status !== "live") {
-      throw new Error("Voting has to be open.");
-    }
-    poll.closesAt = new Date(Date.now() + FINAL_MINUTE_MS).toISOString();
-  }
-  if (body.status) {
-    const next = String(body.status).trim();
-    if (!STATUSES.has(next)) throw new Error("Status must be draft, live, or closed.");
-    if (poll.status === "closed" && next !== "closed") {
-      throw new Error("Closed polls stay in the archive. Create a new poll to run it again.");
-    }
-    if (poll.status === "draft" && next === "closed") {
-      throw new Error("Go live before closing, or leave it as a draft.");
-    }
-    /*
-     * Soft single-live: when going live, optionally close every other live
-     * poll so the room isn’t split across two QR codes by accident.
-     */
-    if (next === "live" && poll.options.length < MIN_LIVE_OPTIONS) {
-      throw new Error("Add at least four projects before voting opens.");
-    }
-    if (next === "live" && body.closeOtherLive) {
-      for (const other of polls) {
-        if (other.id === poll.id || other.status !== "live") continue;
-        other.status = "closed";
-        other.closedAt = now;
-        other.updatedAt = now;
-        await persistPoll(other);
-      }
-    }
-    poll.status = next;
-    if (next === "live") poll.closesAt = "";
-    if (next === "closed") {
-      poll.closedAt = now;
-      poll.closesAt = "";
-    }
-  }
-  poll.updatedAt = now;
-  await persistPoll(poll);
-  const { votes: freshVotes } = await loadAll();
-  return adminPollShape(poll, freshVotes);
-}
-
-async function castVote(
-  { slug, optionId, secondOptionId, thirdOptionId, teamOptionId, voterKeyRaw, judgeToken },
-  req,
-) {
-  const flood = rateLimit(`poll-vote:${clientIp(req)}`, {
-    /* A room shares one address. The sheet still keeps one ballot per phone. */
+/**
+ * One phone, one ballot. The ballot row is found by any key this phone has
+ * ever used and overwritten in place, so a resubmit changes picks, never
+ * the count.
+ */
+async function castVote(input, voter, req) {
+  const network = rateLimit(`poll-vote:ip:${clientIp(req)}`, {
+    /* A whole room shares one address. */
     limit: 4000,
     windowMs: 15 * 60 * 1000,
   });
-  if (!flood.ok) {
-    const err = new Error("Too many ballots from this network. Wait a minute and try again.");
-    err.statusCode = 429;
-    throw err;
+  const phone = rateLimit(`poll-vote:phone:${voter.ballotKey}`, {
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
+  if (!network.ok || !phone.ok) {
+    throw httpError(429, "That's a lot of ballots at once. Wait a moment and try again.");
   }
 
-  const { polls, votes } = await loadAll();
-  const poll = findPoll(polls, slug);
-  if (!poll) {
-    const err = new Error("Poll not found.");
-    err.statusCode = 404;
-    throw err;
-  }
-  await settleDuePolls([poll]);
+  /* The snapshot is enough to validate picks; the write itself re-checks "live". */
+  const snapshot = await readSnapshot(input.slug);
+  const { poll } = snapshot;
   if (poll.status !== "live") {
-    const err = new Error(
-      poll.status === "closed"
-        ? "This poll has closed."
-        : "Voting isn’t open yet. You can still add a project.",
+    throw httpError(
+      400,
+      poll.status === "closed" ? "This poll has closed." : "Voting isn’t open yet. You can still add a project.",
     );
-    err.statusCode = 400;
-    throw err;
   }
 
-  const judge = verifyJudgeToken(poll.slug, judgeToken);
-  const first = poll.options.find((option) => option.id === String(optionId || "").trim());
-  const second = poll.options.find((option) => option.id === String(secondOptionId || "").trim());
-  const third = poll.options.find((option) => option.id === String(thirdOptionId || "").trim());
+  const judge = verifyJudgeToken(poll.slug, input.judgeToken);
+  const first = pickOption(poll, input.firstId);
+  const second = pickOption(poll, input.secondId);
+  const third = pickOption(poll, input.thirdId);
   if (!first || !second || !third) {
-    throw new Error(
-      judge
-        ? "Give 3, 2, and 1 points to three projects."
-        : "Give 3, 2, and 1 points to three other teams.",
+    throw httpError(
+      400,
+      judge ? "Give 3, 2, and 1 points to three projects." : "Give 3, 2, and 1 points to three other teams.",
     );
   }
-  const picks = new Set([first.id, second.id, third.id]);
-  if (picks.size !== 3) throw new Error("Pick three different projects.");
-
-  let team = null;
-  let guest = false;
-  let rawKey = "";
-  let personId = "";
-  let fullName = "";
-  if (judge) {
-    /* One seat = one ballot. Token is the voter key so a judge can revise. */
-    rawKey = `judge-seat:${judge.token}`;
-    personId = `judge:${judge.seat}`;
-    fullName = JUDGE_MARKER;
-  } else if (String(teamOptionId || "").trim() === GUEST_TEAM) {
-    guest = true;
-    rawKey = String(voterKeyRaw || "").trim();
-    if (!rawKey || rawKey.length < 8) throw new Error("A voter key is required.");
-  } else {
-    team = poll.options.find((option) => option.id === String(teamOptionId || "").trim());
-    if (!team) throw new Error("Select your team.");
-    if (picks.has(team.id)) throw new Error("You can't vote for your own team.");
-    rawKey = String(voterKeyRaw || "").trim();
-    if (!rawKey || rawKey.length < 8) throw new Error("A voter key is required.");
+  if (new Set([first.id, second.id, third.id]).size !== 3) {
+    throw httpError(400, "Pick three different projects.");
   }
 
-  const voterKey = hashVoterKey(rawKey);
-  const now = new Date().toISOString();
-  const previous = [...votes].reverse().find(
-    (vote) => vote.pollId === poll.id && vote.voterKey === voterKey,
-  );
-  const vote = {
-    pollId: poll.id,
-    voterKey,
-    personId,
-    fullName,
-    optionId: first.id,
-    secondOptionId: second.id,
-    thirdOptionId: third.id,
-    teamOptionId: guest ? GUEST_TEAM : team ? team.id : "",
-    createdAt: previous?.createdAt || now,
-    updatedAt: now,
-  };
-  await persistVote(vote);
-  const nextVotes = [...votes, vote];
-  return publicPollShape(
-    poll,
-    nextVotes,
+  const teamInput = String(input.teamOptionId || "").trim();
+  let ballot;
+  if (judge) {
+    ballot = {
+      voterKey: judgeBallotKey(judge.seat),
+      kind: "judge",
+      personId: judgeBallotKey(judge.seat),
+      teamOptionId: "",
+    };
+  } else {
+    const guest = teamInput === GUEST_TEAM;
+    const team = guest ? null : pickOption(poll, teamInput);
+    if (!guest && !team) throw httpError(400, "Select your team.");
+    if (team && [first.id, second.id, third.id].includes(team.id)) {
+      throw httpError(400, "You can't vote for your own team.");
+    }
+    ballot = {
+      voterKey: voter.ballotKey,
+      kind: guest ? "guest" : "room",
+      personId: "",
+      teamOptionId: guest ? GUEST_TEAM : team.id,
+    };
+  }
+
+  const saved = await pollStore().castBallot(
+    { ...ballot, pollId: poll.id, firstId: first.id, secondId: second.id, thirdId: third.id },
     {
-      firstId: first.id,
-      secondId: second.id,
-      thirdId: third.id,
-      teamId: guest ? GUEST_TEAM : team ? team.id : null,
+      knownKeys: judge ? [ballot.voterKey] : voter.knownKeys,
+      deviceHint: judge ? "" : voter.hint,
     },
-    { reveal: false },
   );
+  if (!saved) {
+    forgetSnapshots();
+    throw httpError(400, "This poll has closed.");
+  }
+
+  /* Fold this ballot into the snapshot so this instance shows it at once. */
+  snapshot.ballots = [
+    ...snapshot.ballots.filter((row) => row.voterKey !== saved.voterKey),
+    saved,
+  ];
+  return publicPollShape(poll, snapshot.ballots, saved, {
+    reveal: false,
+    asOf: new Date(snapshot.at).toISOString(),
+  });
+}
+
+/* ── Slate edits ── */
+
+async function createPoll(session, body) {
+  const person = await requireStaff(session, "create");
+  const store = pollStore();
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const slug = randomSlug();
+    const now = new Date().toISOString();
+    try {
+      const poll = await store.insertPoll({
+        id: `poll-${slug}`,
+        slug,
+        eventId: String(body.eventId || "").trim(),
+        eventTitle: String(body.eventTitle || "").trim(),
+        question: normalizeQuestion(body.question),
+        options: normalizeOptions(body.options),
+        status: "draft",
+        createdByPersonId: session.personId,
+        createdByName: person.fullName || session.fullName || "",
+        createdAt: now,
+        updatedAt: now,
+      });
+      return adminPollShape(poll, []);
+    } catch (err) {
+      if (err.code !== "23505") throw err;
+    }
+  }
+  throw httpError(503, "Could not find a free poll code. Try again.");
+}
+
+function rotateForReset(draft) {
+  draft.id = `poll-${draft.slug}-${Date.now().toString(36)}`;
+  draft.status = "draft";
+  draft.options = [];
+  draft.closedAt = "";
+  draft.closesAt = "";
+}
+
+function applyStatus(draft, next) {
+  if (!STATUSES.has(next)) throw httpError(400, "Status must be draft, live, or closed.");
+  if (draft.status === "closed" && next !== "closed") {
+    throw httpError(400, "Closed polls stay in the archive. Create a new poll to run it again.");
+  }
+  if (draft.status === "draft" && next === "closed") {
+    throw httpError(400, "Go live before closing, or leave it as a draft.");
+  }
+  if (next === "live" && draft.options.length < MIN_LIVE_OPTIONS) {
+    throw httpError(400, "Add at least four projects before voting opens.");
+  }
+  const now = new Date().toISOString();
+  draft.status = next;
+  if (next === "live") draft.closesAt = "";
+  if (next === "closed") {
+    draft.closedAt = now;
+    draft.closesAt = "";
+  }
+}
+
+async function closeOtherLivePolls(keepId) {
+  const others = (await pollStore().listPolls()).filter(
+    (poll) => poll.id !== keepId && poll.status === "live",
+  );
+  for (const other of others) {
+    await mutatePoll(other.id, (draft) => {
+      if (draft.status !== "live") return false;
+      draft.status = "closed";
+      draft.closedAt = new Date().toISOString();
+      draft.closesAt = "";
+    });
+  }
+}
+
+async function updatePoll(session, body) {
+  await requireStaff(session, "edit");
+  const target = body.slug || body.id;
+
+  if (body.status === "live" && body.closeOtherLive) {
+    const current = await pollStore().findPoll(target);
+    if (current) await closeOtherLivePolls(current.id);
+  }
+
+  const saved = await mutatePoll(target, (draft) => {
+    if (body.reset) {
+      rotateForReset(draft);
+      return;
+    }
+    if (body.removeOptionId) {
+      if (draft.status !== "draft") {
+        throw httpError(400, "You can only remove a project before voting opens.");
+      }
+      const removeId = String(body.removeOptionId).trim();
+      const kept = draft.options.filter((option) => option.id !== removeId);
+      if (kept.length === draft.options.length) {
+        throw httpError(400, "That project is not on this poll.");
+      }
+      draft.options = kept;
+    }
+    const addOption = body.addOption ?? body.appendOption ?? null;
+    if (addOption != null) {
+      if (draft.status === "closed") {
+        throw httpError(400, "Closed polls can’t gain new projects. Open a new poll.");
+      }
+      draft.options = appendProject(
+        draft.options,
+        typeof addOption === "string" ? { label: addOption } : addOption,
+      );
+    }
+    if (body.question != null || body.options != null) {
+      if (draft.status !== "draft") {
+        throw httpError(
+          400,
+          "Question and the full project list can only change while the poll is a draft. " +
+            "On a live poll, add one project at a time.",
+        );
+      }
+      if (body.question != null) draft.question = normalizeQuestion(body.question);
+      if (body.options != null) draft.options = normalizeOptions(body.options, draft.options);
+    }
+    if (body.eventId != null) draft.eventId = String(body.eventId || "").trim();
+    if (body.eventTitle != null) draft.eventTitle = String(body.eventTitle || "").trim();
+    if (body.finalMinute) {
+      if (draft.status !== "live") throw httpError(400, "Voting has to be open.");
+      draft.closesAt = new Date(Date.now() + FINAL_MINUTE_MS).toISOString();
+    }
+    if (body.status) applyStatus(draft, String(body.status).trim());
+  });
+
+  const ballots = await pollStore().listBallots([saved.id]);
+  return adminPollShape(saved, ballots);
 }
 
 /**
- * A pitcher adds their own project while the poll is still a draft.
- * One phone can submit a few (a team, a typo). The room shares Wi-Fi,
- * so the address cap stays high enough for a full lab.
- *
- * Sheet writes are last-write-wins on the whole options cell — if two phones
- * add at once, re-read and retry so nobody's project silently disappears.
+ * A pitcher adds their own project while submissions are open. The room
+ * shares Wi-Fi, so the network cap stays high enough for a full lab.
  */
-async function addProject(body, req) {
-  const ip = clientIp(req);
-  const ipLimit = rateLimit(`poll-add:ip:${ip}`, {
+async function addProject(body, req, voter) {
+  const network = rateLimit(`poll-add:ip:${clientIp(req)}`, {
     limit: 80,
     windowMs: 60 * 60 * 1000,
   });
-  if (!ipLimit.ok) {
-    const err = new Error("Too many projects from this network. Ask the host to add it.");
-    err.statusCode = 429;
-    throw err;
-  }
-  const rawKey = String(body.voterKey || "").trim();
-  if (rawKey.length >= 8) {
-    const deviceLimit = rateLimit(`poll-add:device:${hashVoterKey(rawKey)}`, {
-      limit: 5,
-      windowMs: 60 * 60 * 1000,
-    });
-    if (!deviceLimit.ok) {
-      const err = new Error("This phone has added enough projects. Ask the host if one is missing.");
-      err.statusCode = 429;
-      throw err;
-    }
+  if (!network.ok) throw httpError(429, "Too many projects from this network. Ask the host to add it.");
+  const phone = rateLimit(`poll-add:phone:${voter.ballotKey}`, {
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!phone.ok) {
+    throw httpError(429, "This phone has added enough projects. Ask the host if one is missing.");
   }
 
-  const people = cleanPeople(body.people);
-  if (people.length < 2) {
-    throw new Error("Add the names, separated by commas.");
-  }
   const label = String(body.label || body.name || "").trim();
+  const people = cleanPeople(body.people);
   const url = cleanGithubRepo(body.url);
-  const labelKey = label.toLowerCase();
-  const voterKey = rawKey.length >= 8 ? hashVoterKey(rawKey) : "";
-  const slugOrId = body.slug || body.id;
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    dropPollCache();
-    const { polls, votes } = await loadAll();
-    const poll = findPoll(polls, slugOrId);
-    if (!poll) {
-      const err = new Error("Poll not found.");
-      err.statusCode = 404;
-      throw err;
-    }
-    await settleDuePolls([poll]);
-    if (poll.status === "closed") {
-      const err = new Error("This poll is closed.");
-      err.statusCode = 400;
-      throw err;
-    }
-    if (poll.options.some((option) => String(option.label || "").trim().toLowerCase() === labelKey)) {
-      return publicPollShape(poll, votes, ballotFor(poll, votes, voterKey), { reveal: false });
-    }
-    poll.options = appendProject(poll.options, { label, people, url });
-    poll.updatedAt = new Date().toISOString();
-    await persistPoll(poll);
-    dropPollCache();
-    const { polls: checkPolls, votes: checkVotes } = await loadAll();
-    const verified = findPoll(checkPolls, slugOrId);
-    if (
-      verified &&
-      verified.options.some((option) => String(option.label || "").trim().toLowerCase() === labelKey)
-    ) {
-      return publicPollShape(verified, checkVotes, ballotFor(verified, checkVotes, voterKey), {
-        reveal: false,
-      });
-    }
-  }
-  const err = new Error("The slate is busy — tap Add project once more.");
-  err.statusCode = 503;
-  throw err;
+  const saved = await mutatePoll(body.slug || body.id, (draft) => {
+    if (draft.status === "closed") throw httpError(400, "This poll is closed.");
+    if (draft.options.some((option) => sameLabel(option.label, label))) return false;
+    draft.options = appendProject(draft.options, { label, people, url });
+  });
+
+  const ballots = await pollStore().listBallots([saved.id]);
+  return publicPollShape(saved, ballots, yoursIn(ballots, voter.knownKeys), {
+    reveal: false,
+    asOf: new Date().toISOString(),
+  });
 }
 
-/**
- * Reopen as a blank draft. Slug (add/vote/QR URLs) stays. poll.id rotates so
- * earlier ballots — keyed by the old id — do not tally on the next slate.
- */
-async function applyPollReset(poll, now = new Date().toISOString()) {
-  poll.id = `poll-${poll.slug}-${Date.now().toString(36)}`;
-  poll.status = "draft";
-  poll.options = [];
-  poll.closedAt = "";
-  poll.closesAt = "";
-  poll.updatedAt = now;
-  await persistPoll(poll);
-  return poll;
-}
+/* ── Ops helpers (scripts) ── */
 
-/** Script / ops helper — same wipe as the admin Reset button, no session. */
+/** Same wipe as the admin Reset button, no session. */
 async function resetPollBySlug(slug) {
-  const { polls } = await loadAll();
-  const poll = findPoll(polls, slug);
-  if (!poll) {
-    const err = new Error(`No poll named ${slug}.`);
-    err.statusCode = 404;
-    throw err;
-  }
-  await applyPollReset(poll);
+  const poll = await mutatePoll(slug, rotateForReset);
   return { slug: poll.slug, id: poll.id, status: poll.status };
 }
 
-/**
- * Idempotent room polls for a known event. A second run leaves the row alone
- * so a host's later edits are not overwritten.
- */
+/** Idempotent room poll for a known event. An existing slug is left alone. */
 async function ensureEventPoll({ slug, eventTitle, question, options, status }) {
-  const { polls } = await loadAll();
-  if (findPoll(polls, slug)) return { slug, created: false };
+  const store = pollStore();
+  if (await store.findPoll(slug)) return { slug, created: false };
   const now = new Date().toISOString();
-  const poll = {
+  await store.insertPoll({
     id: `poll-${slug}`,
     slug,
-    eventId: "",
     eventTitle,
     question,
-    options: options.map((label, index) => ({
-      id: String(index + 1),
-      label,
-    })),
+    options: options.map((label, index) => ({ id: String(index + 1), label, people: "", url: "" })),
     status,
-    createdByPersonId: "",
     createdByName: "Foresight",
     createdAt: now,
     updatedAt: now,
-    closedAt: "",
-    closesAt: "",
-  };
-  await persistPoll(poll);
+  });
   return { slug, created: true, status };
 }
 
-/**
- * Point an existing untouched draft at a best-project ballot.
- * Leaves the row alone once anyone has voted, or once it is live.
- */
+/** Point an untouched draft at a best-project ballot. Never touches a voted poll. */
 async function refreshBestProjectDraft({ slug, question }) {
-  const { polls, votes } = await loadAll();
-  const poll = findPoll(polls, slug);
+  const store = pollStore();
+  const poll = await store.findPoll(slug);
   if (!poll) return { slug, updated: false, reason: "missing" };
   if (poll.status !== "draft") return { slug, updated: false, reason: poll.status };
-  const ballots = votes.filter((vote) => vote.pollId === poll.id);
-  if (ballots.length) return { slug, updated: false, reason: "has-votes" };
-  poll.question = normalizeQuestion(question);
-  poll.options = [];
-  poll.updatedAt = new Date().toISOString();
-  await persistPoll(poll);
+  if ((await store.listBallots([poll.id])).length) return { slug, updated: false, reason: "has-votes" };
+  await mutatePoll(slug, (draft) => {
+    draft.question = normalizeQuestion(question);
+    draft.options = [];
+  });
   return { slug, updated: true };
 }
 
-/**
- * Fill a poll with sample projects and open voting, so the vote page can be
- * looked at before the real slate exists. Reset from /polls clears it.
- */
+/** Sample projects + open voting, to look at the vote page before the real slate. */
 async function installPreviewSlate({ slug, eventTitle, question, projects }) {
-  const { polls } = await loadAll();
-  const poll = findPoll(polls, slug);
-  if (!poll) {
-    const err = new Error(`No poll named ${slug}.`);
-    err.statusCode = 404;
-    throw err;
-  }
-  const now = new Date().toISOString();
-  poll.eventTitle = eventTitle;
-  poll.question = normalizeQuestion(question);
-  poll.options = projects.map((project, index) => ({
-    id: String(index + 1),
-    label: String(project.label).trim(),
-    people: String(project.people || "").trim(),
-    url: project.url ? cleanUrl(project.url) : "",
-  }));
-  poll.status = "live";
-  poll.closedAt = "";
-  poll.updatedAt = now;
-  await persistPoll(poll);
+  const poll = await mutatePoll(slug, (draft) => {
+    draft.eventTitle = eventTitle;
+    draft.question = normalizeQuestion(question);
+    draft.options = projects.map((project, index) => ({
+      id: String(index + 1),
+      label: String(project.label).trim(),
+      people: String(project.people || "").trim(),
+      url: project.url ? cleanUrl(project.url) : "",
+    }));
+    draft.status = "live";
+    draft.closedAt = "";
+  });
   return { slug, projects: poll.options.length, status: poll.status };
+}
+
+async function pingPollStore() {
+  await pollStore().ping();
 }
 
 module.exports = {
@@ -1317,11 +532,13 @@ module.exports = {
   castVote,
   addProject,
   hashVoterKey,
+  tallyVotes,
   ensureEventPoll,
   refreshBestProjectDraft,
   installPreviewSlate,
   resetPollBySlug,
   listJudgeLinks,
   verifyJudgeToken,
+  pingPollStore,
   JUDGE_SEATS,
 };

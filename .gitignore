@@ -44,3 +44,5 @@ keys/*.json
 *-credentials*.json
 foresight-map-*.json
 .vercel
+.env*
+!.env.example

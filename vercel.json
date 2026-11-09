@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "installCommand": "pnpm install",
+  "crons": [{ "path": "/api/polls?ping=1", "schedule": "0 6 * * *" }],
   "rewrites": [
     { "source": "/api/member-login", "destination": "/api/member?route=login" },
     { "source": "/api/member-refresh", "destination": "/api/member?route=refresh" },

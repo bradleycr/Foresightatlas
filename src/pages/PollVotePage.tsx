@@ -22,6 +22,7 @@ import {
   fetchPublicPoll,
   getStoredJudgeToken,
   getStoredTeam,
+  newerPoll,
   setStoredJudgeToken,
   setStoredTeam,
   voteOnPoll,
@@ -87,7 +88,7 @@ export function PollVotePage({ slug, identity, purpose, onNavigate }: PollVotePa
       const next = await fetchPublicPoll(slug, identity?.token, {
         judgeToken: purpose === "judge" ? judgeToken : null,
       });
-      setPoll(next);
+      setPoll((prev) => newerPoll(prev, next));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "This poll is not available.");

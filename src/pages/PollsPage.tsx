@@ -29,6 +29,7 @@ import {
 } from "../services/polls";
 import { subscribeToDataChanges } from "../services/sync";
 import { isEventUpcoming } from "../utils/eventTiming";
+import { BallotStatsLine } from "../components/polls/BallotStatsLine";
 import { PollCountdown } from "../components/polls/PollCountdown";
 import { PollPodium } from "../components/polls/PollPodium";
 import { PollQrCard } from "../components/polls/PollQrCard";
@@ -851,7 +852,13 @@ function PollSection({
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
                     {poll.options.length} project{poll.options.length === 1 ? "" : "s"}
-                    {poll.totalVotes ? ` · ${poll.totalVotes} votes` : ""}
+                    {poll.ballotStats ? (
+                      <BallotStatsLine stats={poll.ballotStats} />
+                    ) : poll.totalVotes ? (
+                      ` · ${poll.totalVotes} votes`
+                    ) : (
+                      ""
+                    )}
                   </p>
                   {poll.status === "live" && poll.closesAt ? (
                     <div className="mt-2">
