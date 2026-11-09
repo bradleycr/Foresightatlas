@@ -31,6 +31,7 @@ function requireSession(req) {
 
 /** Database unreachable or overloaded — a retry, not the voter's fault. */
 function isTransient(error) {
+  if (error?.transient) return true;
   const code = String(error?.code || "");
   return (
     /^(ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|57P01|53300|08\d{3})$/.test(code) ||

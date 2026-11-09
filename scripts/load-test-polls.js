@@ -18,7 +18,11 @@ const crypto = require("crypto");
 require("dotenv").config({ path: path.resolve(__dirname, "../.env.local") });
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
-const { query, closePool } = require("../server/db/postgres");
+const { withDirectClient } = require("../server/db/postgres");
+
+/* Setup and checks use the direct connection, so the test never competes with the API for pooler slots. */
+let db = null;
+const query = (text, params) => db.query(text, params);
 
 function arg(name, fallback) {
   const index = process.argv.indexOf(`--${name}`);
@@ -146,6 +150,13 @@ const percentile = (list, p) => {
 };
 
 async function main() {
+  await withDirectClient(async (client) => {
+    db = client;
+    await run();
+  });
+}
+
+async function run() {
   const options = Array.from({ length: OPTION_COUNT }, (_, i) => ({
     id: String(i + 1),
     label: `Load test project ${i + 1}`,
@@ -174,12 +185,12 @@ async function main() {
          from poll_ballots where poll_id = $1`,
       [`poll-${SLUG}`],
     );
-    const db = rows[0];
+    const counted = rows[0];
     const expected = PHONES - failures.filter((f) => f.startsWith("phone")).length;
 
     console.log(`\nFinished in ${seconds}s`);
-    console.log(`  submissions sent        ${db.submissions}`);
-    console.log(`  ballots in database     ${db.ballots}   (expected ${expected})`);
+    console.log(`  submissions sent        ${counted.submissions}`);
+    console.log(`  ballots in database     ${counted.ballots}   (expected ${expected})`);
     console.log(`  count on the projector  ${poll.totalVotes}`);
     console.log(`  GET   p50 ${percentile(timings.get, 50)}ms  p95 ${percentile(timings.get, 95)}ms  (${timings.get.length})`);
     console.log(`  VOTE  p50 ${percentile(timings.vote, 50)}ms  p95 ${percentile(timings.vote, 95)}ms  (${timings.vote.length})`);
@@ -188,19 +199,17 @@ async function main() {
     console.log(`  failures                ${failures.length}`);
     failures.slice(0, 8).forEach((f) => console.log(`    ${f}`));
 
-    const ok = db.ballots === expected && poll.totalVotes === expected && failures.length === 0;
+    const ok = counted.ballots === expected && poll.totalVotes === expected && failures.length === 0;
     console.log(ok ? "\nPASS — one ballot per phone, nothing lost." : "\nFAIL");
     process.exitCode = ok ? 0 : 1;
   } finally {
     await query("delete from poll_ballots where poll_id = $1", [`poll-${SLUG}`]);
     await query("delete from polls where id = $1", [`poll-${SLUG}`]);
     console.log(`Removed ${SLUG}.`);
-    await closePool();
   }
 }
 
-main().catch(async (err) => {
+main().catch((err) => {
   console.error(err.message || err);
-  await closePool().catch(() => {});
   process.exit(1);
 });

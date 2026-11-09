@@ -19,7 +19,7 @@ require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const { google } = require("googleapis");
 const { getSpreadsheetId, SHEET_NAMES } = require("./sheet-schema.js");
-const { query, closePool } = require("../server/db/postgres");
+const { withDirectClient } = require("../server/db/postgres");
 
 const WRITE = process.argv.includes("--write");
 const GUEST_TEAM = "__guest__";
@@ -101,6 +101,10 @@ function isThreePickBallot(ballot) {
 }
 
 async function main() {
+  await withDirectClient((client) => importAll((text, params) => client.query(text, params)));
+}
+
+async function importAll(query) {
   const sheets = google.sheets({ version: "v4", auth: sheetsAuth() });
   const { data } = await sheets.spreadsheets.values.batchGet({
     spreadsheetId: getSpreadsheetId(),
@@ -175,11 +179,9 @@ async function main() {
   } else {
     console.log("Dry run. Pass --write to import.");
   }
-  await closePool();
 }
 
-main().catch(async (err) => {
+main().catch((err) => {
   console.error(err.message || err);
-  await closePool().catch(() => {});
   process.exit(1);
 });

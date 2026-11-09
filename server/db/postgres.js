@@ -1,12 +1,13 @@
 "use strict";
 
 /**
- * Postgres for Atlas (Supabase, provisioned through the Vercel Marketplace).
+ * A direct Postgres connection: migrations, imports, the load test, and
+ * self-hosted installs without Supabase's HTTP API.
  *
- * Serverless fans out into many small instances. Each one keeps a tiny pool
- * and talks to Supabase's pooler (POSTGRES_URL, transaction mode), which
- * multiplexes them onto a handful of real connections. That is what lets a
- * room of 300 phones hit the API at once without exhausting the database.
+ * The production request path does not use this. Every socket counts
+ * against the pooler's client cap, and serverless can start more instances
+ * than that cap allows — so the API talks to Supabase over HTTP instead
+ * (server/db/supabase-rest.js). Pools here stay tiny for the same reason.
  */
 
 const { Pool } = require("pg");
@@ -47,7 +48,7 @@ function getPool() {
   if (pool) return pool;
   pool = new Pool({
     ...connectionConfig(),
-    max: 6,
+    max: 2,
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 8_000,
   });

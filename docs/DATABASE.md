@@ -13,8 +13,15 @@ the Vercel project for every environment:
 
 | Variable | Used for |
 |---|---|
-| `POSTGRES_URL` | The API. Supabase's pooler (port 6543, transaction mode). |
-| `POSTGRES_URL_NON_POOLING` | Migrations (`pnpm db:migrate`). |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | The API. Supabase's HTTP API, server-side only. |
+| `POSTGRES_URL_NON_POOLING` | Migrations, the Sheet import, and the load test. |
+| `POSTGRES_URL` | Self-hosting without Supabase (pooled socket). |
+
+The API reaches the database over HTTP, not a Postgres socket. Serverless can
+start more instances than Supabase's pooler accepts clients (200 on this plan);
+a socket per instance filled it during the first production load test. Over
+HTTP an instance holds nothing between requests. Atomic writes are SQL
+functions (`db/migrations/002_poll_functions.sql`) called through `/rpc`.
 
 `vercel env pull .env.local` brings them to a laptop. Local dev then uses the
 same database as production, like the sheet did. Without them, local dev keeps
@@ -72,5 +79,6 @@ storage.
 
 ## Self-hosting
 
-Any Postgres 14+ works. Set `POSTGRES_URL` (and `POSTGRES_URL_NON_POOLING` if
-it's behind a pooler), then run `pnpm db:migrate`.
+Any Postgres 14+ works. Leave the Supabase variables unset, set `POSTGRES_URL`
+(and `POSTGRES_URL_NON_POOLING` if it's behind a pooler), then run
+`pnpm db:migrate`. The API uses the same SQL functions over a socket.
