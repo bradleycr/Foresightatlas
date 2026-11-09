@@ -28,6 +28,22 @@ function normalizeNullableString(value) {
   return normalized || null;
 }
 
+/** One sentence on the profile. Matches the input maxLength in the editor. */
+const LOOKING_FOR_MAX_LENGTH = 220;
+
+function normalizeLookingFor(value) {
+  const text = String(value ?? "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length > LOOKING_FOR_MAX_LENGTH) {
+    throw new Error(
+      "Currently looking for must be one sentence (220 characters or fewer).",
+    );
+  }
+  return text;
+}
+
 function normalizeCoordinates(value) {
   const lat = Number(value?.lat);
   const lng = Number(value?.lng);
@@ -82,6 +98,7 @@ function normalizePerson(input) {
     expandedProjectDescription: normalizeString(
       input?.expandedProjectDescription,
     ),
+    currentlyLookingFor: normalizeLookingFor(input?.currentlyLookingFor),
     isAlumni: normalizeBoolean(input?.isAlumni),
     isPrivate: normalizeBoolean(input?.isPrivate),
   };
@@ -172,6 +189,7 @@ function normalizePersonForCreate(input) {
     expandedProjectDescription: normalizeString(
       input?.expandedProjectDescription,
     ),
+    currentlyLookingFor: normalizeLookingFor(input?.currentlyLookingFor),
     isAlumni: normalizeBoolean(input?.isAlumni),
     isPrivate: normalizeBoolean(input?.isPrivate),
     email: normalizeString(input?.email),

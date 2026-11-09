@@ -281,6 +281,10 @@ function rowToPersonRecord(orderedRow, rowNumber) {
     isPrivate: normalizeBoolean(orderedRow[idx("isPrivate")]),
     // Roster email — kept server-side; stripped from the public payload.
     email: normalizeString(orderedRow[idx("email")]),
+    // One public sentence. Missing column (rows written before the append) → "".
+    currentlyLookingFor: normalizeString(orderedRow[idx("currentlyLookingFor")])
+      .replace(/\s+/g, " ")
+      .trim(),
   };
 
   if (!person.id && person.fullName) {
@@ -332,6 +336,7 @@ function personRecordToRow(record) {
     // Extended fields (appended last to match PEOPLE_EXTENDED_HEADERS order).
     person.isPrivate ? "TRUE" : "FALSE",
     person.email ?? "",
+    person.currentlyLookingFor ?? "",
   ];
 }
 

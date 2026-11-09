@@ -65,6 +65,7 @@ import { getCohortLabel, effectiveIsAlumni } from "../utils/cohortLabel";
 import { getPrimaryRoleType } from "../utils/roleTypes";
 import { PRESET_FOCUS_AREAS, CUSTOM_FOCUS_AREAS_ENABLED, getPresetFocusTags, getCustomFocusTags, formatCustomFocusTags, mergeFocusTags } from "../data/focusAreas";
 import { FocusTagsDisplay } from "./FocusTagsDisplay";
+import { LookingForNote, LOOKING_FOR_MAX_LENGTH } from "./profile/LookingForNote";
 import { CustomFocusInput } from "./CustomFocusInput";
 import { PersonContactLinks } from "./PersonContactLinks";
 import { Z_INDEX_MODAL_BACKDROP, Z_INDEX_MODAL_CONTENT } from "../constants/zIndex";
@@ -516,6 +517,7 @@ export function PersonDetailModal({
     : null;
 
   // Project/bio + location — empty profiles still show a short “not added yet” note.
+  const lookingFor = (displayPerson.currentlyLookingFor ?? "").trim();
   const hasProjectContent = !!(
     (displayPerson.shortProjectTagline ?? "").trim() ||
     (displayPerson.expandedProjectDescription ?? "").trim() ||
@@ -861,6 +863,21 @@ export function PersonDetailModal({
                       <Input value={editingPerson.shortProjectTagline} onChange={(e) => setEditingPerson({ ...editingPerson, shortProjectTagline: e.target.value })} placeholder="Short tagline" />
                       <Textarea value={editingPerson.expandedProjectDescription} onChange={(e) => setEditingPerson({ ...editingPerson, expandedProjectDescription: e.target.value })} rows={4} placeholder="About you, your work, or project — full description" />
                       <div>
+                        <Label className="text-sm font-medium text-gray-700">Currently looking for</Label>
+                        <Input
+                          value={editingPerson.currentlyLookingFor ?? ""}
+                          maxLength={LOOKING_FOR_MAX_LENGTH}
+                          onChange={(e) =>
+                            setEditingPerson({
+                              ...editingPerson,
+                              currentlyLookingFor: e.target.value.replace(/[\r\n]+/g, " "),
+                            })
+                          }
+                          placeholder="One sentence — what you want to build, or be contacted about"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
                         <Label className="text-sm font-medium text-gray-700">Affiliation</Label>
                         <Input value={editingPerson.affiliationOrInstitution ?? ""} onChange={(e) => setEditingPerson({ ...editingPerson, affiliationOrInstitution: e.target.value || null })} placeholder="Institution or company" className="mt-1" />
                       </div>
@@ -902,9 +919,10 @@ export function PersonDetailModal({
                         );
                       })()}
                     </div>
-                  ) : (
+                  ) : lookingFor ? null : (
                     <p className="text-sm text-gray-600 leading-relaxed">{missingDetailsMessage(displayPerson.fullName)}</p>
                   )}
+                  {!isEditing && lookingFor ? <LookingForNote text={lookingFor} /> : null}
                 </section>
 
                 {/* Right sidebar: meta + contact */}

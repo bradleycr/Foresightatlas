@@ -90,6 +90,7 @@ function defaultPeople() {
       contactUrlOrHandle: "@casey",
       shortProjectTagline: "Hosts node polls in local mock mode.",
       expandedProjectDescription: "Staff seed profile so /polls admin can be tested locally.",
+      currentlyLookingFor: "Looking for someone to try the next node poll with me.",
       isAlumni: false,
     },
     {
@@ -468,6 +469,18 @@ function normalizePersonForCreate(input) {
       input?.contactUrlOrHandle == null ? null : String(input.contactUrlOrHandle).trim() || null,
     shortProjectTagline: String(input?.shortProjectTagline || "").trim(),
     expandedProjectDescription: String(input?.expandedProjectDescription || "").trim(),
+    currentlyLookingFor: (() => {
+      const text = String(input?.currentlyLookingFor || "")
+        .replace(/[\r\n\t]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (text.length > 220) {
+        throw new Error(
+          "Currently looking for must be one sentence (220 characters or fewer).",
+        );
+      }
+      return text;
+    })(),
     isAlumni: Boolean(input?.isAlumni),
     isPrivate: Boolean(input?.isPrivate),
   };

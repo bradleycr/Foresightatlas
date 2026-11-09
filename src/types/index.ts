@@ -40,6 +40,11 @@ export interface Person {
   availabilityUrl?: string | null;
   shortProjectTagline: string;
   expandedProjectDescription: string;
+  /**
+   * One sentence: what they want to build right now, or the one thing they
+   * want to be contacted about. Empty until they write it.
+   */
+  currentlyLookingFor: string;
   isAlumni: boolean;
   /**
    * When true the member has opted their profile out of the public atlas.

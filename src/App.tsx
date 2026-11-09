@@ -442,6 +442,7 @@ export default function App() {
           person.fullName.toLowerCase().includes(q) ||
           (person.affiliationOrInstitution ?? "").toLowerCase().includes(q) ||
           person.shortProjectTagline.toLowerCase().includes(q) ||
+          (person.currentlyLookingFor ?? "").toLowerCase().includes(q) ||
           person.currentCity.toLowerCase().includes(q);
         if (!match) return false;
       }

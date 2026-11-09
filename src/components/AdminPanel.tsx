@@ -133,6 +133,7 @@ export function AdminPanel({
       contactUrlOrHandle: null,
       shortProjectTagline: "",
       expandedProjectDescription: "",
+      currentlyLookingFor: "",
       isAlumni: false,
     };
     setEditingPerson(newPerson);
@@ -1009,6 +1010,22 @@ function PersonEditForm({
           }
           rows={4}
           placeholder="About them, their work, research, or project"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="lookingFor">Currently looking for</Label>
+        <Input
+          id="lookingFor"
+          value={person.currentlyLookingFor ?? ""}
+          maxLength={220}
+          onChange={(e) =>
+            onChange({
+              ...person,
+              currentlyLookingFor: e.target.value.replace(/[\r\n]+/g, " "),
+            })
+          }
+          placeholder="One sentence — what they want to build, or be contacted about"
         />
       </div>
 

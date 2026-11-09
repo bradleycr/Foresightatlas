@@ -107,8 +107,10 @@ const PEOPLE_AUTH_HEADERS = [
  *   STRIPPED from the /api/database payload (see server/sheet-database.js) so
  *   it is never broadcast to the client. Used for the official roster, dedupe,
  *   and sending claim / invite links.
+ * - currentlyLookingFor: one public sentence — what they want to build now,
+ *   or the one thing they want to be contacted about. Empty until they write it.
  */
-const PEOPLE_EXTENDED_HEADERS = ["isPrivate", "email"];
+const PEOPLE_EXTENDED_HEADERS = ["isPrivate", "email", "currentlyLookingFor"];
 
 const PEOPLE_HEADERS = [
   ...PEOPLE_PUBLIC_HEADERS,

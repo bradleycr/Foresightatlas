@@ -33,6 +33,7 @@ import { buildFullPath } from "../utils/router";
 import { armWelcomeLetter } from "../services/welcomeLetter";
 import { PrivacyConsentNote } from "../components/auth/PrivacyConsentNote";
 import { downloadMemberDataExport } from "../services/dataExport";
+import { LOOKING_FOR_MAX_LENGTH } from "../components/profile/LookingForNote";
 import {
   atlasPrivacyMailto,
   atlasProfileRemovalMailto,
@@ -117,6 +118,7 @@ const EMPTY_PERSON: Person = {
   availabilityUrl: null,
   shortProjectTagline: "",
   expandedProjectDescription: "",
+  currentlyLookingFor: "",
   isAlumni: false,
   isPrivate: false,
   profileImageUrl: null,
@@ -1054,6 +1056,23 @@ export function ProfilePage({
                       updateDraft("expandedProjectDescription", event.target.value)
                     }
                     placeholder="About you, your work, research direction, or project — fuller context."
+                  />
+                </Field>
+
+                <Field
+                  label="Currently looking for"
+                  description="One sentence. What you want to build right now, or the one thing you’d like people to contact you about."
+                >
+                  <Input
+                    value={draft.currentlyLookingFor ?? ""}
+                    maxLength={LOOKING_FOR_MAX_LENGTH}
+                    onChange={(event) =>
+                      updateDraft(
+                        "currentlyLookingFor",
+                        event.target.value.replace(/[\r\n]+/g, " "),
+                      )
+                    }
+                    placeholder="Looking for a cofounder to build…"
                   />
                 </Field>
               </ProfileSection>

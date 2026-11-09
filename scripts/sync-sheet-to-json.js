@@ -148,6 +148,7 @@ function rowToPerson(row) {
     contactUrlOrHandle: sanitizeContact(row[idx("contactUrlOrHandle")]),
     shortProjectTagline: get(idx("shortProjectTagline")),
     expandedProjectDescription: sanitizeBio(row[idx("expandedProjectDescription")]),
+    currentlyLookingFor: get(idx("currentlyLookingFor")).replace(/\s+/g, " ").trim(),
     isAlumni: String(row[idx("isAlumni")]).toLowerCase() === "true",
   };
 }

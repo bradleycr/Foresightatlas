@@ -290,6 +290,7 @@ function normalizePerson(
     availabilityUrl: p.availabilityUrl ?? null,
     shortProjectTagline: p.shortProjectTagline ?? "",
     expandedProjectDescription: p.expandedProjectDescription ?? "",
+    currentlyLookingFor: (p.currentlyLookingFor ?? "").replace(/\s+/g, " ").trim(),
     isAlumni: p.isAlumni ?? false,
     isPrivate: p.isPrivate ?? false,
   } as Person;

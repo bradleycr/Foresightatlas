@@ -87,6 +87,7 @@ function pinsToMarkers(pins: AtlasPreviewPin[]): PinLocation[] {
             contactUrlOrHandle: null,
             shortProjectTagline: "",
             expandedProjectDescription: "",
+            currentlyLookingFor: "",
             isAlumni,
           },
         });
@@ -116,6 +117,7 @@ function pinsToMarkers(pins: AtlasPreviewPin[]): PinLocation[] {
           contactUrlOrHandle: null,
           shortProjectTagline: "",
           expandedProjectDescription: "",
+          currentlyLookingFor: "",
           isAlumni,
         },
       });
