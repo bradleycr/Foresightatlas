@@ -128,14 +128,20 @@ async function runPhone(phone, index) {
   }
 }
 
+/** Like the projector page: a snapshot older than the one on screen is dropped. */
 async function runProjector(stopAt, seen) {
   const viewer = makePhone(-1);
+  let shownAt = 0;
   while (Date.now() < stopAt) {
     try {
       const { poll } = await timed("get", () =>
         request(viewer, "GET", `${BASE}/api/polls?slug=${SLUG}&voterKey=${viewer.storageKey}`),
       );
-      seen.push(poll.totalVotes);
+      const asOf = Date.parse(poll.asOf);
+      if (asOf >= shownAt) {
+        shownAt = asOf;
+        seen.push(poll.totalVotes);
+      }
     } catch (err) {
       failures.push(`projector: ${err.message}`);
     }

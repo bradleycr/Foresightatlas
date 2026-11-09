@@ -10,8 +10,6 @@
  * (server/db/supabase-rest.js). Pools here stay tiny for the same reason.
  */
 
-const { Pool } = require("pg");
-
 let pool = null;
 
 function hasDatabase() {
@@ -46,6 +44,7 @@ function connectionConfig({ direct = false } = {}) {
 
 function getPool() {
   if (pool) return pool;
+  const { Pool } = require("pg");
   pool = new Pool({
     ...connectionConfig(),
     max: 2,

@@ -11,10 +11,6 @@
  */
 
 const {
-  readDirectoryTokenFromRequest,
-  verifyDirectorySessionToken,
-} = require("../server/directory-auth");
-const {
   listAdminPolls,
   getPublicPoll,
   createPoll,
@@ -25,7 +21,16 @@ const {
 } = require("../server/polls-store");
 const { resolveVoter } = require("../server/polls/voter");
 
+/**
+ * Host actions only. Loaded on demand: directory auth pulls in the Sheets
+ * client, and a phone that just wants to vote shouldn't wait for it on a
+ * cold start.
+ */
 function requireSession(req) {
+  const {
+    readDirectoryTokenFromRequest,
+    verifyDirectorySessionToken,
+  } = require("../server/directory-auth");
   return verifyDirectorySessionToken(readDirectoryTokenFromRequest(req));
 }
 
